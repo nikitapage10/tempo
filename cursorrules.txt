@@ -1,0 +1,62 @@
+# TEMPO — Cursor Project Rules
+
+You are building TEMPO, a music project management web app for a solo musician.
+The complete specification lives in `tempo-design-spec.md` in the repo root.
+ALWAYS consult it before building any feature. It is the source of truth for
+scope, data model, screens, and visual design.
+
+## Stack (fixed — do not substitute)
+- Next.js 14+ App Router, TypeScript strict mode
+- Tailwind CSS + shadcn/ui components
+- Supabase (Postgres, Auth via magic link, Storage bucket `audio`)
+- TanStack React Query for data fetching/caching
+- wavesurfer.js for audio playback/waveforms
+- @dnd-kit for Kanban drag and drop
+- three (from npm) ONLY for the shader components in tempo-design-spec.md §5
+
+Do not add other dependencies without asking. No Redux, no Prisma, no CSS-in-JS.
+
+## Design system (from spec §5) — non-negotiable
+- Dark UI only. Use the CSS variables defined in `app/globals.css`
+  (--bg-0 #0A0A0C, --bg-1 #121216, --bg-2 #1A1A21, --line #26262E,
+   --text-hi #F2F0EB, --text-lo #8B8B96, --ice #7FB4FF, --amber #FFB56B,
+   --violet #9D8CFF, --ok #6FD99A, --warn #FF7A6B).
+- Fonts: Space Grotesk (display), Inter (body), JetBrains Mono (ALL musical/
+  technical data: BPM, keys, timestamps, version numbers, durations, counts).
+- Ice = interactive (buttons, links, focus). Amber = status/emphasis
+  ("current" markers, momentum, flare-line centers). Never both as CTAs together.
+- Radius: 10px cards, 8px inputs, 999px chips. 1px --line borders.
+- Signature motif: .flare-line (1px horizontal gradient
+  transparent → ice → white → amber → transparent) for dividers/active markers.
+- Respect prefers-reduced-motion everywhere; shader components must pause
+  when offscreen/hidden and have static gradient fallbacks.
+
+## Database rules — CRITICAL
+- The production database is live Supabase with the user's real music data.
+- NEVER drop, truncate, or recreate tables. NEVER suggest "resetting" the DB.
+- Schema changes go in numbered files in /migrations (e.g. 002_add_x.sql)
+  for the user to run manually in the Supabase SQL editor. Tell them when
+  a migration needs running.
+- versions rows are append-only: never UPDATE file_url, never auto-delete.
+- version_no and is_current are managed by DB triggers — do not set version_no
+  in application code.
+- Completion % is always computed from checklist_items, never stored.
+
+## Storage rules
+- All file access goes through `lib/storage.ts` (single module) so the
+  provider can be swapped later. Upload paths:
+  tracks/{track_id}/versions/{version_id}/{filename}
+  tracks/{track_id}/assets/{asset_id}/{filename}
+- Playback/download uses signed URLs with 1-hour expiry. The `audio` bucket
+  is private; never make it public.
+
+## Secrets
+- Supabase URL and anon key live ONLY in .env.local (gitignored) and Vercel
+  env vars. Never hardcode them, never print them, never commit .env.local.
+
+## Working style
+- Small scoped changes; finish the current work package before expanding scope.
+- After each work package, output a short manual test checklist.
+- Optimistic UI updates for drag-and-drop and checkbox toggles.
+- Mobile-responsive per spec §6 (rail collapses to bottom tab bar).
+- Plain, studio-casual UI copy per spec §5 ("Upload a bounce", "Log a session").

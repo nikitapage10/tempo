@@ -1,0 +1,111 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* TEMPO Spectra tokens (spec §5) */
+    --bg-0: #0a0a0c;
+    --bg-1: #121216;
+    --bg-2: #1a1a21;
+    --line: #26262e;
+    --text-hi: #f2f0eb;
+    --text-lo: #8b8b96;
+    --ice: #7fb4ff;
+    --amber: #ffb56b;
+    --violet: #9d8cff;
+    --ok: #6fd99a;
+    --warn: #ff7a6b;
+
+    /* shadcn mapped to Spectra */
+    --background: 240 10% 4%;
+    --foreground: 40 20% 94%;
+    --card: 240 9% 8%;
+    --card-foreground: 40 20% 94%;
+    --popover: 240 9% 8%;
+    --popover-foreground: 40 20% 94%;
+    --primary: 214 100% 75%;
+    --primary-foreground: 240 10% 4%;
+    --secondary: 240 8% 12%;
+    --secondary-foreground: 40 20% 94%;
+    --muted: 240 8% 12%;
+    --muted-foreground: 240 5% 57%;
+    --accent: 240 8% 12%;
+    --accent-foreground: 40 20% 94%;
+    --destructive: 6 100% 71%;
+    --destructive-foreground: 40 20% 94%;
+    --border: 240 8% 16%;
+    --input: 240 8% 16%;
+    --ring: 214 100% 75%;
+    --radius: 0.5rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-bg-0 text-text-hi font-sans antialiased;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ice);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  .flare-line {
+    height: 1px;
+    width: 100%;
+    border: none;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      var(--ice) 30%,
+      #ffffff 50%,
+      var(--amber) 70%,
+      transparent 100%
+    );
+    opacity: 0.85;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .flare-line {
+      background-size: 200% 100%;
+      animation: flare-shimmer 6s ease-in-out infinite;
+    }
+  }
+
+  @keyframes flare-shimmer {
+    0%,
+    100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+
+  .edge-strip {
+    height: 2px;
+    width: 100%;
+    background: linear-gradient(
+      90deg,
+      var(--ice) 0%,
+      #ffffff 50%,
+      var(--amber) 100%
+    );
+    opacity: 0.7;
+  }
+
+  .font-data {
+    font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+  }
+}
