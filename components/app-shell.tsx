@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   CalendarDays,
   Columns3,
@@ -11,6 +11,8 @@ import {
   Settings,
   Plus,
 } from "lucide-react";
+import { SpaceSwitcher } from "@/components/space-switcher";
+import { APP_VERSION } from "@/lib/version";
 import { cn } from "@/lib/utils";
 
 const mainNav = [
@@ -34,6 +36,7 @@ function isActive(pathname: string, href: string) {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
 
   return (
     <div className="flex min-h-screen flex-col bg-bg-0">
@@ -43,7 +46,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {/* Desktop left rail */}
         <aside className="sticky top-[2px] hidden h-[calc(100vh-2px)] w-[220px] shrink-0 flex-col border-r border-line bg-bg-1 md:flex">
           <div className="px-5 pt-6 pb-4">
-            <Link href="/" className="block">
+            <Link href="/">
               <span className="font-display text-xl font-bold tracking-tight text-text-hi">
                 TEMPO
               </span>
@@ -51,17 +54,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div className="flare-line mt-3" />
           </div>
 
-          {/* Space switcher placeholder */}
           <div className="px-3 pb-4">
-            <button
-              type="button"
-              className="flex w-full items-center justify-between rounded-input border border-line bg-bg-2 px-3 py-2 text-left text-sm text-text-lo transition-colors duration-hover hover:text-text-hi"
-              disabled
-              title="Spaces come in the next work package"
-            >
-              <span>Originals</span>
-              <span className="font-mono text-[11px] text-text-lo/60">▾</span>
-            </button>
+            <SpaceSwitcher />
           </div>
 
           <nav className="flex flex-1 flex-col gap-0.5 px-3">
@@ -107,6 +101,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               />
               Settings
             </Link>
+            <p className="mt-3 px-3 font-mono text-[11px] text-text-lo/70">
+              v{APP_VERSION}
+            </p>
           </div>
         </aside>
 
@@ -139,8 +136,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <button
           type="button"
           className="flex flex-1 flex-col items-center justify-center gap-1 py-2.5 text-[11px] text-text-lo"
-          aria-label="Quick add"
-          title="Quick add comes later"
+          aria-label="Add track"
+          onClick={() => router.push("/board?new=1")}
         >
           <span className="flex size-7 items-center justify-center rounded-full bg-ice/15 text-ice">
             <Plus className="size-4" strokeWidth={2} />

@@ -67,6 +67,21 @@ Do not add other dependencies without asking. No Redux, no Prisma, no CSS-in-JS.
 - Mobile-responsive per spec §6 (rail collapses to bottom tab bar).
 - Plain, studio-casual UI copy per spec §5 ("Upload a bounce", "Log a session").
 
+## App version — REQUIRED after every change
+The release version shown under Settings in the left rail lives in
+`lib/version.ts` as `APP_VERSION`, and must match `version` in `package.json`.
+
+Bump BOTH on every work package and every later change request (feature,
+fix, behavior, or design). Skipping this is failing the task.
+
+Semver for TEMPO (still 0.x):
+- Patch (0.2.0 → 0.2.1): bug fix or tiny tweak with no user-facing feature.
+- Minor (0.2.0 → 0.3.0): new feature or meaningful behavior/UI change.
+- Do not bump major until the product leaves 0.x.
+
+Mention the new version in the CHANGELOG entry for that change
+(e.g. a bullet or parenthetical like "v0.2.1").
+
 ## Living documentation — REQUIRED after every change
 Two documents in the repo root must stay current. Update them as the FINAL
 step of every work package AND every later change request (feature added,

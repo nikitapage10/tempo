@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { SpacesManager } from "@/components/spaces/spaces-manager";
 import { Button } from "@/components/ui/button";
 
 export default function SettingsPage() {
@@ -18,15 +19,19 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="max-w-lg">
-      <h1 className="font-display text-xl font-semibold tracking-tight text-text-hi">
-        Settings
-      </h1>
-      <p className="mt-2 text-text-lo">
-        Spaces, stages, and templates will live here. For now — account.
-      </p>
+    <div className="mx-auto max-w-lg space-y-6">
+      <div>
+        <h1 className="font-display text-xl font-semibold tracking-tight text-text-hi">
+          Settings
+        </h1>
+        <p className="mt-2 text-text-lo">
+          Manage spaces and your account. Stage editing lives on the board.
+        </p>
+      </div>
 
-      <section className="mt-8 rounded-card border border-line bg-bg-1 p-5">
+      <SpacesManager />
+
+      <section className="rounded-card border border-line bg-bg-1 p-5">
         <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
           Account
         </p>

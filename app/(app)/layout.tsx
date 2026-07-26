@@ -1,3 +1,6 @@
+"use client";
+
+import { ActiveSpaceProvider } from "@/components/active-space-provider";
 import { AppShell } from "@/components/app-shell";
 
 export default function AppLayout({
@@ -5,5 +8,9 @@ export default function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <AppShell>{children}</AppShell>;
+  return (
+    <ActiveSpaceProvider>
+      <AppShell>{children}</AppShell>
+    </ActiveSpaceProvider>
+  );
 }
