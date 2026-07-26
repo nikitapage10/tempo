@@ -3,11 +3,14 @@
 ## The pipeline
 GitHub → Vercel (app) + Supabase (database, auth, file storage).
 
+- **Production URL:** https://tempo-ten-sigma.vercel.app (sign-in at `/login`).
 - Every push to `main` auto-deploys to production (~1–2 min).
 - Every push to any other branch gets its own preview URL — use branches for
   risky changes; merge to main only when the preview looks right.
 - Rollback: Vercel → Deployments → pick a previous deploy → Promote to
   Production.
+- Absolute links that ship (auth redirects, PWA `start_url`, etc.) must use
+  the production URL — never hardcode localhost.
 
 ## Environments & secrets
 Two environment variables, set in BOTH places:
@@ -39,5 +42,5 @@ inside `lib/storage.ts` (e.g. Cloudflare R2) — nothing else changes.
 ## Routine
 1. Change in Cursor → test at localhost:3000 (`npm run dev`).
 2. "Commit and push to main" in Cursor chat.
-3. Vercel deploys automatically. Check the live URL.
+3. Vercel deploys automatically. Check https://tempo-ten-sigma.vercel.app.
 4. Broke something? Promote the previous deployment, then fix calmly.

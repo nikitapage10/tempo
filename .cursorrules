@@ -50,6 +50,12 @@ Do not add other dependencies without asking. No Redux, no Prisma, no CSS-in-JS.
 - Playback/download uses signed URLs with 1-hour expiry. The `audio` bucket
   is private; never make it public.
 
+## Production URL
+- Live app: https://tempo-ten-sigma.vercel.app (sign-in at /login).
+- Auto-deployed from `main` via Vercel.
+- Use this URL for absolute links that ship (auth redirects, PWA manifest
+  `start_url`, etc.). Never hardcode localhost in anything that ships.
+
 ## Secrets
 - Supabase URL and anon key live ONLY in .env.local (gitignored) and Vercel
   env vars. Never hardcode them, never print them, never commit .env.local.
@@ -60,3 +66,34 @@ Do not add other dependencies without asking. No Redux, no Prisma, no CSS-in-JS.
 - Optimistic UI updates for drag-and-drop and checkbox toggles.
 - Mobile-responsive per spec §6 (rail collapses to bottom tab bar).
 - Plain, studio-casual UI copy per spec §5 ("Upload a bounce", "Log a session").
+
+## Living documentation — REQUIRED after every change
+Two documents in the repo root must stay current. Update them as the FINAL
+step of every work package AND every later change request (feature added,
+feature removed, behavior changed, design changed). Skipping this is failing
+the task. Pure bug fixes with no behavior change may be logged in one line.
+
+1. CHANGELOG.md — a plain-English, reverse-chronological log for the product
+   owner (a musician, not a developer). Each entry: a date heading (## YYYY-MM-DD)
+   and bullets in the form "Added / Changed / Removed / Fixed: <what it means for
+   the user>" — e.g. "Added: you can now drag tracks between stages on the
+   board", never "refactored KanbanColumn props". One optional "Under the hood"
+   line only if the user must act (e.g. "run migration 003 in Supabase before
+   deploying").
+
+2. PRODUCT.md — the overarching living description of TEMPO: what it is, who
+   it's for, and its current feature set in natural language. It describes the
+   product AS IT EXISTS TODAY — not the roadmap. When a feature ships, fold it
+   into the relevant section in flowing prose; when something changes or is
+   removed, rewrite that part so the document never describes anything untrue.
+   A stranger reading only PRODUCT.md should accurately understand the product.
+
+Both documents are written in plain language for a non-programmer. No file
+paths, component names, or library names unless the user must interact with
+them.
+
+## Live deployment
+The production app is live at https://tempo-ten-sigma.vercel.app (sign-in at
+/login). Every push to main auto-deploys there via Vercel. Use this URL for
+absolute links (auth redirects, PWA manifest start_url) and when telling the
+user where to verify changes. Never hardcode localhost in anything that ships.
