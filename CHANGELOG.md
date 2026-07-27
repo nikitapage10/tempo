@@ -4,6 +4,7 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-26
 
+- Fixed (v0.6.7): wav→mp3 converter loads from the app itself (not a flaky CDN), so localhost conversion works; if conversion still fails, TEMPO uploads the original bounce when it’s under 200 MB.
 - Added (v0.6.6): wav and aiff bounces are automatically converted to mp3 in your browser before upload (320 kbps) so big studio exports fit under cloud size limits — you’ll see “Converting…” then “Uploading…”.
 - Fixed: production magic-link sign-in no longer sends you to localhost — the live app always redirects to https://tempo-ten-sigma.vercel.app (local still uses localhost when you sign in there).
 - Fixed: Vercel build failure from the shader / Three.js types.

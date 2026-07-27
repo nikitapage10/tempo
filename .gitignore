@@ -50,3 +50,6 @@ next-env.d.ts
 .LSOverride
 .Spotlight-V100
 .Trashes
+
+# ffmpeg.wasm assets (copied from node_modules on install/build)
+/public/ffmpeg/

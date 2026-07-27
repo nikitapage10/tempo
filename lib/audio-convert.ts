@@ -1,6 +1,6 @@
 /**
  * Client-side lossless → mp3 conversion (ffmpeg.wasm).
- * Used before version upload so big wav/aiff bounces fit storage limits.
+ * Prefers same-origin /ffmpeg UMD assets (postinstall copy), then jsDelivr.
  */
 
 const LOSSLESS_EXT = [".wav", ".aiff", ".aif"] as const;
@@ -20,6 +20,33 @@ export function needsMp3Conversion(file: File): boolean {
 
 export type ConvertProgress = (percent: number) => void;
 
+async function loadFfmpeg(ffmpeg: {
+  load: (config: {
+    coreURL: string;
+    wasmURL: string;
+  }) => Promise<unknown>;
+}) {
+  const { toBlobURL } = await import("@ffmpeg/util");
+
+  const tryLoad = async (base: string) => {
+    await ffmpeg.load({
+      coreURL: await toBlobURL(`${base}/ffmpeg-core.js`, "text/javascript"),
+      wasmURL: await toBlobURL(`${base}/ffmpeg-core.wasm`, "application/wasm"),
+    });
+  };
+
+  // 1) Local UMD files served from /public/ffmpeg
+  try {
+    await tryLoad(`${window.location.origin}/ffmpeg`);
+    return;
+  } catch (err) {
+    console.warn("[tempo] local ffmpeg load failed, trying CDN", err);
+  }
+
+  // 2) jsDelivr UMD (works when public assets missing)
+  await tryLoad("https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd");
+}
+
 /**
  * Convert wav/aiff to a 320 kbps mp3 File. Throws with actionable copy on failure.
  */
@@ -32,7 +59,7 @@ export async function convertLosslessToMp3(
   }
 
   const { FFmpeg } = await import("@ffmpeg/ffmpeg");
-  const { fetchFile, toBlobURL } = await import("@ffmpeg/util");
+  const { fetchFile } = await import("@ffmpeg/util");
 
   const ffmpeg = new FFmpeg();
 
@@ -44,15 +71,11 @@ export async function convertLosslessToMp3(
   }
 
   try {
-    // Single-thread core — no COOP/COEP headers required on the app.
-    const base = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm";
-    await ffmpeg.load({
-      coreURL: await toBlobURL(`${base}/ffmpeg-core.js`, "text/javascript"),
-      wasmURL: await toBlobURL(`${base}/ffmpeg-core.wasm`, "application/wasm"),
-    });
-  } catch {
+    await loadFfmpeg(ffmpeg);
+  } catch (err) {
+    console.error("[tempo] ffmpeg load failed", err);
     throw new Error(
-      "Couldn’t load the audio converter — check your connection and try again. Or export an mp3 from your DAW and upload that."
+      "Couldn’t load the audio converter — refresh the page and try again. Or export an mp3 from your DAW and upload that."
     );
   }
 
@@ -74,7 +97,7 @@ export async function convertLosslessToMp3(
       outputName,
     ]);
     if (code !== 0) {
-      throw new Error("ffmpeg exited with an error");
+      throw new Error(`ffmpeg exited with code ${code}`);
     }
 
     const data = await ffmpeg.readFile(outputName);
@@ -82,12 +105,10 @@ export async function convertLosslessToMp3(
       data instanceof Uint8Array
         ? data
         : new TextEncoder().encode(String(data));
-    // Copy into a plain ArrayBuffer-backed view for BlobPart typing.
     const copy = new Uint8Array(bytes.byteLength);
     copy.set(bytes);
 
-    const baseName =
-      file.name.replace(/\.[^.]+$/, "").trim() || "bounce";
+    const baseName = file.name.replace(/\.[^.]+$/, "").trim() || "bounce";
     const out = new File([copy], `${baseName}.mp3`, {
       type: "audio/mpeg",
       lastModified: Date.now(),
@@ -96,6 +117,7 @@ export async function convertLosslessToMp3(
     onProgress?.(100);
     return out;
   } catch (err) {
+    console.error("[tempo] ffmpeg convert failed", err);
     if (err instanceof Error && err.message.includes("Couldn’t load")) {
       throw err;
     }

@@ -80,7 +80,21 @@ export async function uploadVersion(
   if (needsMp3Conversion(input.file)) {
     input.onPhase?.("converting");
     input.onProgress?.(0);
-    fileToUpload = await convertLosslessToMp3(input.file, input.onProgress);
+    try {
+      fileToUpload = await convertLosslessToMp3(input.file, input.onProgress);
+    } catch (err) {
+      // If conversion fails but the original is still under the app cap, upload it.
+      if (input.file.size <= MAX_UPLOAD_BYTES) {
+        console.warn("[tempo] mp3 conversion failed; uploading original", err);
+        fileToUpload = input.file;
+      } else {
+        throw err instanceof Error
+          ? err
+          : new Error(
+              "Couldn’t convert that bounce — export an mp3 from your DAW and upload that."
+            );
+      }
+    }
   }
 
   if (fileToUpload.size > MAX_UPLOAD_BYTES) {
