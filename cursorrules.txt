@@ -1,3 +1,16 @@
+> ⚠️ SUPERSEDED — DO NOT FOLLOW THIS FILE.
+>
+> This is an outdated snapshot kept only for reference. The authoritative rules
+> live in `.cursorrules` in the repo root.
+>
+> Known contradictions with the current rules:
+> - Says auth is magic link. It is email + password (since v0.6.8).
+> - Says versions are append-only and never auto-deleted. Current rule: keep at
+>   most 2 versions per track and auto-delete older ones after upload.
+> - Missing the REQUIRED app-version bump rule (`lib/version.ts` + `package.json`).
+> - Missing the REQUIRED living-documentation rule (CHANGELOG.md + PRODUCT.md).
+> - Missing the next-gen planning docs and the production URL / deployment rules.
+
 # TEMPO — Cursor Project Rules
 
 You are building TEMPO, a music project management web app for a solo musician.
