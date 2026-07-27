@@ -8,7 +8,7 @@ scope, data model, screens, and visual design.
 ## Stack (fixed — do not substitute)
 - Next.js 14+ App Router, TypeScript strict mode
 - Tailwind CSS + shadcn/ui components
-- Supabase (Postgres, Auth via magic link, Storage bucket `audio`)
+- Supabase (Postgres, Auth via email + password, Storage bucket `audio`)
 - TanStack React Query for data fetching/caching
 - wavesurfer.js for audio playback/waveforms
 - @dnd-kit for Kanban drag and drop

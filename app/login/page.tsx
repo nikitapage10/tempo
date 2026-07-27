@@ -1,16 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { IntroMoment } from "@/components/intro-moment";
-import { getAuthCallbackUrl } from "@/lib/site";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"idle" | "loading" | "sent" | "error">(
-    "idle"
-  );
+  const [password, setPassword] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -19,28 +19,31 @@ export default function LoginPage() {
     setError(null);
 
     const supabase = createClient();
-    const { error: signInError } = await supabase.auth.signInWithOtp({
+    const { error: signInError } = await supabase.auth.signInWithPassword({
       email: email.trim(),
-      options: {
-        emailRedirectTo: getAuthCallbackUrl(),
-      },
+      password,
     });
 
     if (signInError) {
       setStatus("error");
       const raw = signInError.message;
       const lower = raw.toLowerCase();
-      if (lower.includes("rate limit") || lower.includes("too many")) {
+      if (lower.includes("invalid login") || lower.includes("invalid credentials")) {
         setError(
-          "Too many sign-in emails just now — wait a few minutes (or up to an hour), then try again. Check your inbox for an earlier link first."
+          "Wrong email or password. If you haven’t set a password yet, open Supabase → Authentication → Users, select your user, and set one (or Add user with email + password)."
+        );
+      } else if (lower.includes("email not confirmed")) {
+        setError(
+          "Email confirmation is still on in Supabase. Turn off “Confirm email” under Authentication → Providers → Email, or confirm the user in the dashboard."
         );
       } else {
-        setError(raw);
+        setError(`${raw} — try again.`);
       }
       return;
     }
 
-    setStatus("sent");
+    router.replace("/");
+    router.refresh();
   }
 
   return (
@@ -56,66 +59,70 @@ export default function LoginPage() {
             </h1>
             <div className="flare-line mx-auto mt-3 max-w-[120px]" />
             <p className="mt-4 text-text-lo">
-              Sign in with a magic link. No password needed.
+              Sign in with email and password.
             </p>
           </div>
 
-          {status === "sent" ? (
-            <div className="rounded-card border border-line bg-bg-1 p-6 text-center shadow-raise">
-              <p className="text-text-hi">Check your email</p>
-              <p className="mt-2 text-sm text-text-lo">
-                We sent a sign-in link to{" "}
-                <span className="font-mono text-ice">{email}</span>. Open it
-                on this device to continue.
-              </p>
-              <button
-                type="button"
-                className="mt-4 text-sm text-ice hover:underline"
-                onClick={() => {
-                  setStatus("idle");
-                  setEmail("");
-                }}
-              >
-                Use a different email
-              </button>
-            </div>
-          ) : (
-            <form
-              onSubmit={handleSubmit}
-              className="rounded-card border border-line bg-bg-1 p-6 shadow-raise"
+          <form
+            onSubmit={handleSubmit}
+            className="rounded-card border border-line bg-bg-1 p-6 shadow-raise"
+          >
+            <label
+              htmlFor="email"
+              className="mb-2 block font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo"
             >
-              <label
-                htmlFor="email"
-                className="mb-2 block font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo"
-              >
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                required
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@studio.com"
-                className="h-10 w-full rounded-input border border-line bg-bg-2 px-3 text-text-hi placeholder:text-text-lo/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
-              />
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              required
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@studio.com"
+              className="h-10 w-full rounded-input border border-line bg-bg-2 px-3 text-text-hi placeholder:text-text-lo/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+            />
 
-              {error && (
-                <p className="mt-3 text-sm text-warn" role="alert">
-                  {error} — try again, or check that the email is correct.
-                </p>
-              )}
+            <label
+              htmlFor="password"
+              className="mb-2 mt-4 block font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo"
+            >
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              required
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              className="h-10 w-full rounded-input border border-line bg-bg-2 px-3 text-text-hi placeholder:text-text-lo/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+            />
 
-              <Button
-                type="submit"
-                className="mt-5 w-full"
-                disabled={status === "loading" || !email.trim()}
-              >
-                {status === "loading" ? "Sending link…" : "Send magic link"}
-              </Button>
-            </form>
-          )}
+            {error && (
+              <p className="mt-3 text-sm text-warn" role="alert">
+                {error}
+              </p>
+            )}
+
+            <Button
+              type="submit"
+              className="mt-5 w-full"
+              disabled={
+                status === "loading" || !email.trim() || password.length < 1
+              }
+            >
+              {status === "loading" ? "Signing in…" : "Sign in"}
+            </Button>
+
+            <p className="mt-4 text-center text-[11px] leading-relaxed text-text-lo">
+              First time: in Supabase → Authentication → Users, add your email
+              with a password (and disable “Confirm email” under Providers →
+              Email so nothing has to hit your inbox).
+            </p>
+          </form>
         </div>
       </div>
     </div>
