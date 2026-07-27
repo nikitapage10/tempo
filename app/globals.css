@@ -61,6 +61,38 @@
 }
 
 @layer utilities {
+  /* Static prismatic fallback — reduced motion, no WebGL, kill-switch */
+  .flare-static {
+    background: linear-gradient(
+      120deg,
+      var(--bg-0) 0%,
+      #1a2233 35%,
+      #2a1f14 70%,
+      var(--bg-0) 100%
+    );
+  }
+
+  /* Intro punches chrome so the root Lightfield is visible */
+  html[data-lf-intro] .lf-app {
+    background-color: transparent !important;
+  }
+
+  html[data-lf-intro] .lf-app .bg-bg-0,
+  html[data-lf-intro] .lf-app .bg-bg-1,
+  html[data-lf-intro] .lf-app .bg-bg-2,
+  html[data-lf-intro] .lf-app [data-lf-chrome] {
+    background-color: transparent !important;
+  }
+
+  html[data-lf-intro] .lf-app aside,
+  html[data-lf-intro] .lf-app main,
+  html[data-lf-intro] .lf-app nav,
+  html[data-lf-intro] .lf-app .edge-strip,
+  html[data-lf-intro] [data-lf-chrome] > *:not([data-lf-intro-layer]) {
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
   .flare-line {
     height: 1px;
     width: 100%;

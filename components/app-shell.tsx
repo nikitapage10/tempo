@@ -40,7 +40,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   return (
-    <div className="flex min-h-screen flex-col bg-bg-0">
+    <div className="flex min-h-screen flex-col bg-bg-0" data-lf-chrome>
       <IntroMoment />
       <EdgeStrip />
 

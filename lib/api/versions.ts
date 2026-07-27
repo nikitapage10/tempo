@@ -214,3 +214,20 @@ export async function deleteVersion(version: Version): Promise<void> {
     /* DB row is gone; orphaned file is acceptable to clean later */
   }
 }
+
+/** Count version uploads since local Monday 00:00 (for Lightfield activity). */
+export async function countVersionsThisWeek(): Promise<number> {
+  const supabase = createClient();
+  const now = new Date();
+  const day = (now.getDay() + 6) % 7; // Mon=0
+  const start = new Date(now);
+  start.setDate(now.getDate() - day);
+  start.setHours(0, 0, 0, 0);
+
+  const { count, error } = await supabase
+    .from("versions")
+    .select("*", { count: "exact", head: true })
+    .gte("created_at", start.toISOString());
+  if (error) throw error;
+  return count ?? 0;
+}

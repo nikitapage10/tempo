@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono, Space_Grotesk } from "next/font/google";
+import { LightfieldRoot } from "@/components/lightfield";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
@@ -54,7 +55,9 @@ export default function RootLayout({
       className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable}`}
     >
       <body>
-        <Providers>{children}</Providers>
+        <Providers>
+          <LightfieldRoot>{children}</LightfieldRoot>
+        </Providers>
       </body>
     </html>
   );

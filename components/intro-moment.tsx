@@ -1,13 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { ShaderLines } from "@/components/shader-lines";
+import { setIntroActive } from "@/lib/lightfield";
 import { cn } from "@/lib/utils";
 
 const INTRO_KEY = "tempo.introPlayed";
 
 /**
- * Full-bleed shader behind TEMPO wordmark for ~1.2s, then scale-Y collapse
+ * Boot intro over the root Lightfield (no extra WebGL context).
+ * Full-bleed field visible through punched chrome, then scale-Y collapse
  * into the top edge. Once per session; skipped under prefers-reduced-motion.
  */
 export function IntroMoment({
@@ -39,6 +40,14 @@ export function IntroMoment({
   }, [onDone]);
 
   React.useEffect(() => {
+    if (phase === "play" || phase === "collapse") {
+      setIntroActive(true);
+      return () => setIntroActive(false);
+    }
+    setIntroActive(false);
+  }, [phase]);
+
+  React.useEffect(() => {
     if (phase !== "play") return;
     const t = window.setTimeout(() => setPhase("collapse"), 1200);
     return () => window.clearTimeout(t);
@@ -62,8 +71,9 @@ export function IntroMoment({
 
   return (
     <div
+      data-lf-intro-layer
       className={cn(
-        "pointer-events-none fixed inset-0 z-[300] flex items-center justify-center overflow-hidden bg-bg-0",
+        "pointer-events-none fixed inset-0 z-[300] flex items-center justify-center overflow-hidden",
         phase === "collapse" &&
           "origin-center transition-transform duration-drawer ease-out"
       )}
@@ -74,9 +84,7 @@ export function IntroMoment({
       }
       aria-hidden
     >
-      <div className="absolute inset-0">
-        <ShaderLines className="h-full w-full" intensity={1.2} speed={1.1} />
-      </div>
+      {/* Scrim only — light comes from the root Lightfield behind chrome */}
       <div className="absolute inset-0 bg-bg-0/55" />
       <span
         className={cn(
@@ -90,39 +98,7 @@ export function IntroMoment({
   );
 }
 
-/** Desktop: thin animated shader strip. Mobile: static gradient (battery). */
+/** Thin top edge marker. Live field windows land in a later step. */
 export function EdgeStrip() {
-  const [desktop, setDesktop] = React.useState(false);
-  const [reduced, setReduced] = React.useState(true);
-
-  React.useEffect(() => {
-    const mq = window.matchMedia("(min-width: 768px)");
-    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const sync = () => {
-      setDesktop(mq.matches);
-      setReduced(motion.matches);
-    };
-    sync();
-    mq.addEventListener("change", sync);
-    motion.addEventListener("change", sync);
-    return () => {
-      mq.removeEventListener("change", sync);
-      motion.removeEventListener("change", sync);
-    };
-  }, []);
-
-  if (!desktop || reduced) {
-    return <div className="edge-strip sticky top-0 z-50" aria-hidden />;
-  }
-
-  return (
-    <div
-      className="sticky top-0 z-50 h-[3px] w-full overflow-hidden opacity-40"
-      aria-hidden
-    >
-      <div className="h-[120px] w-full -translate-y-[58px]">
-        <ShaderLines className="h-full w-full" intensity={0.9} speed={0.7} />
-      </div>
-    </div>
-  );
+  return <div className="edge-strip sticky top-0 z-50" aria-hidden />;
 }

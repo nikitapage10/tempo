@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -30,7 +31,7 @@ export default function LoginPage() {
       const lower = raw.toLowerCase();
       if (lower.includes("invalid login") || lower.includes("invalid credentials")) {
         setError(
-          "Wrong email or password. If you haven’t set a password yet, open Supabase → Authentication → Users, select your user, and set one (or Add user with email + password)."
+          "Wrong email or password. Create an account from Sign in → Create one, or set a password in Supabase → Authentication → Users."
         );
       } else if (lower.includes("email not confirmed")) {
         setError(
@@ -47,7 +48,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-bg-0">
+    <div className="relative flex min-h-screen flex-col bg-bg-0" data-lf-chrome>
       <IntroMoment />
       <div className="edge-strip" aria-hidden />
 
@@ -117,10 +118,11 @@ export default function LoginPage() {
               {status === "loading" ? "Signing in…" : "Sign in"}
             </Button>
 
-            <p className="mt-4 text-center text-[11px] leading-relaxed text-text-lo">
-              First time: in Supabase → Authentication → Users, add your email
-              with a password (and disable “Confirm email” under Providers →
-              Email so nothing has to hit your inbox).
+            <p className="mt-4 text-center text-xs text-text-lo">
+              No account yet?{" "}
+              <Link href="/register" className="text-ice hover:underline">
+                Create one
+              </Link>
             </p>
           </form>
         </div>
