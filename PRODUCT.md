@@ -4,7 +4,7 @@
 
 ## What TEMPO is
 
-TEMPO is a web app for managing a musician’s work from idea through release and beyond — not only production stages, but also the pitching, social posts, edit packs, and follow-ups that surround a track. It is a dark, studio-feeling workspace you open in a browser (phone or desktop), with your account and data living in the cloud so nothing depends on one machine.
+TEMPO is a web app for managing a musician’s work from idea through release and beyond — not only production stages, but also the pitching, social posts, edit packs, and follow-ups that surround a track. It is a dark, studio-feeling workspace you open in a browser (phone or desktop), with your account and data living in the cloud so nothing depends on one machine. You can install it as an app on your phone or computer (PWA) with the same dark look.
 
 ## Who it’s for
 
@@ -12,24 +12,32 @@ A solo working artist who wants one place for tracks, projects, and tasks instea
 
 ## The big ideas
 
-Three kinds of things sit at the center of TEMPO: **tracks** (a musical work with stages, versions, and notes), **projects** (containers like an EP or edit pack), and **tasks** (actionable items that may or may not belong to a track or project). Progress is meant to feel honest — stage and “momentum” matter as much as checklist percentages — and every bounce you upload should become an immutable version rather than overwriting the last file.
-
-Today, spaces and the Kanban board are live so you can organize tracks by workflow stage. Track detail (versions, audio, checklists), projects, and the full Today dashboard are still coming.
+Three kinds of things sit at the center of TEMPO: **tracks** (a musical work with stages, versions, and notes), **projects** (containers like an EP or edit pack), and **tasks** (actionable items that may or may not belong to a track or project). Progress is meant to feel honest — stage and “momentum” matter as much as checklist percentages — and every bounce you upload becomes an immutable version rather than overwriting the last file.
 
 ## Current feature set
 
-**Sign-in.** You open the live site, go to sign-in, enter your email, and receive a magic link — no password. Opening the link on that device signs you in. You can sign out from Settings.
+**Sign-in.** You open the live site, go to sign-in, enter your email, and receive a magic link — no password. Opening the link on that device signs you in. You can sign out from Settings. On first load of a session you may see a short Spectra light intro behind the TEMPO wordmark (skipped if you prefer reduced motion).
 
-**App shell.** Once signed in you get TEMPO’s dark UI: a left rail on desktop (Today, Board, Tracks, Projects, Tasks, plus Settings) and a bottom tab bar on phone (Today, Board, Tasks, plus Add, which opens a new track on the board). Under Settings in the rail, the current app version is shown in small mono type. Branding, type, and the thin ice-to-amber accent line match the intended studio look.
+**App shell.** Once signed in you land on **Today**. Desktop has a left rail (Today, Board, Tracks, Projects, Tasks, plus Settings) and a thin animated light strip along the top; phone uses a bottom tab bar (Today, Board, Tasks, plus Add). Under Settings in the rail, the current app version is shown in small mono type.
 
-**Spaces.** On first sign-in TEMPO creates two workspaces for you: **Originals** and **Edits & Remixes**. Each comes with a default stage pipeline (Idea → Writing → Production → Mixdown → Master → Release Prep → Released). The rail space switcher lets you jump between spaces. In Settings you can create, rename, reorder (drag), and delete spaces — deleting a space removes its stages and tracks, with a confirm step. New spaces get the same default stages.
+**Today.** A greeting banner shows the date and three quick counts: active tracks, tasks due this week, and sessions this week. Below: **Tasks due** (checkable, overdue in warm red) and **In motion** (tracks marked Active, with stage and last session). Quick actions: + Track, + Task, Log session. An empty Today uses a contained light panel with a short invite.
 
-**Board.** The Board page is a horizontal Kanban for the active space. Column headers show the stage name and a track count. Cards show title, type badge, BPM and key in mono when set, a momentum dot, deadline if set, and artwork or a color placeholder. Drag a card between stages; the move saves immediately. Filter chips narrow the board by track type and by tag. An empty board invites you to start a track. Use **Stages** on the board to add, rename, drag-reorder, or delete stages; if a stage still has tracks, you choose where those tracks should move.
+**Spaces.** On first sign-in TEMPO creates two workspaces: **Originals** and **Edits & Remixes**, each with a default stage pipeline. Switch spaces from the rail; manage them in Settings. First sign-in also seeds four checklist templates.
 
-**Tracks.** Create a track with title and type (everything else is optional and tucked under “More details”). Edit from the board or the Tracks list. Park a track (sets momentum to parked) or delete it with a confirm. The Tracks page lists everything in the active space.
+**Board.** Horizontal Kanban for the active space: drag tracks between stages, filter by type and tag, tap a card to open the track workspace. Empty boards get the same Spectra empty panel as Today.
 
-**Still coming.** Today, Projects, and Tasks remain placeholder screens. Track workspace (versions, player, checklist, session log) and audio uploads are not built yet.
+**Tracks.** Create with title and type (more details optional). The Tracks page lists everything in the active space.
+
+**Track workspace.** Header with artwork or gradient, editable title, mono meta line, momentum, stage, and deadline. Left column: waveform player (current or selected version, A/B via dropdown), version history (upload with “what changed?”, set current, download, delete), and session log. Right column: checklist (templates, progress bar), stems & assets by kind, notes, and details. Uploading artwork sets the track thumbnail. Audio lives in private cloud storage and plays via time-limited links.
+
+**Tasks.** Global list with quick-add, category chips, status, due date, optional link to a track or project, and notes. Grouped into Overdue / Today / This week / Later; filters by category and status. Linked items show as chips that jump to the track or project.
+
+**Projects.** Card grid showing name, deadline, track/task counts, and combined checklist %. Open a project to edit description and deadline, and attach or detach existing tracks and tasks.
+
+**Checklists & templates.** Arrangement, Mixdown, Master Prep, and Release Prep ship on first login. Apply a template to a track or save any checklist as a new template.
+
+**Look & feel.** Dark Spectra palette (ice for interaction, amber for “current” / status). Thin prismatic light appears only as intro, top edge, empty states, and the Today banner atmosphere — never as a full-page background behind dense data. Keyboard focus uses a clear ice ring. Errors surface as short toasts with what to try next.
 
 ## How it’s hosted
 
-The live app is at **https://tempo-ten-sigma.vercel.app** (sign-in at `/login`). Pushes to the main branch deploy there automatically. Local development is for building and testing; anything that ships uses the production address for absolute links, not localhost.
+The live app is at **https://tempo-ten-sigma.vercel.app** (sign-in at `/login`). Pushes to the main branch deploy there automatically. For local work on a Mac, double-click **Launch TEMPO.command** in the project folder — it starts a local server and opens the app in your browser (keep that Terminal window open; Ctrl+C stops it). Local development uses your `.env.local` keys; anything that ships uses the production address for absolute links, not localhost.

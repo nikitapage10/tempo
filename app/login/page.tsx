@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
+import { IntroMoment } from "@/components/intro-moment";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -35,6 +36,7 @@ export default function LoginPage() {
 
   return (
     <div className="relative flex min-h-screen flex-col bg-bg-0">
+      <IntroMoment />
       <div className="edge-strip" aria-hidden />
 
       <div className="flex flex-1 items-center justify-center px-6 py-16">

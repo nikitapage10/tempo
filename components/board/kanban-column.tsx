@@ -9,14 +9,14 @@ type KanbanColumnProps = {
   stage: Stage;
   tracks: Track[];
   isOver: boolean;
-  onEditTrack: (track: Track) => void;
+  onOpenTrack: (track: Track) => void;
 };
 
 export function KanbanColumn({
   stage,
   tracks,
   isOver,
-  onEditTrack,
+  onOpenTrack,
 }: KanbanColumnProps) {
   const { setNodeRef } = useDroppable({
     id: stage.id,
@@ -50,7 +50,7 @@ export function KanbanColumn({
           </p>
         ) : (
           tracks.map((track) => (
-            <TrackCard key={track.id} track={track} onEdit={onEditTrack} />
+            <TrackCard key={track.id} track={track} onOpen={onOpenTrack} />
           ))
         )}
       </div>

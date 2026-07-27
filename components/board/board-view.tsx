@@ -16,6 +16,7 @@ import { Plus, Settings2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useActiveSpace } from "@/components/active-space-provider";
 import { KanbanColumn } from "@/components/board/kanban-column";
+import { EmptyShaderPanel } from "@/components/shader-empty";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { TrackCard } from "@/components/tracks/track-card";
@@ -33,7 +34,7 @@ export function BoardView() {
     useActiveSpace();
   const stagesQuery = useStages(activeSpaceId);
   const tracksQuery = useTracks(activeSpaceId);
-  const { create, update, remove, moveStage } = useTrackMutations(activeSpaceId);
+  const { create, moveStage } = useTrackMutations(activeSpaceId);
 
   const stages = React.useMemo(
     () => stagesQuery.data ?? [],
@@ -47,12 +48,10 @@ export function BoardView() {
   const [typeFilter, setTypeFilter] = React.useState<TrackType | "all">("all");
   const [tagFilter, setTagFilter] = React.useState<string | "all">("all");
   const [trackModalOpen, setTrackModalOpen] = React.useState(false);
-  const [editingTrack, setEditingTrack] = React.useState<Track | null>(null);
   const [stageEditorOpen, setStageEditorOpen] = React.useState(false);
 
   React.useEffect(() => {
     if (searchParams.get("new") === "1") {
-      setEditingTrack(null);
       setTrackModalOpen(true);
       router.replace("/board", { scroll: false });
     }
@@ -133,13 +132,8 @@ export function BoardView() {
     moveStage.mutate({ id: trackId, stageId: targetStageId });
   }
 
-  async function handleCreateOrUpdate(values: TrackInsert & { id?: string }) {
-    if (values.id) {
-      const { id, space_id: _s, ...patch } = values;
-      await update.mutateAsync({ id, patch });
-    } else {
-      await create.mutateAsync(values);
-    }
+  async function handleCreate(values: TrackInsert & { id?: string }) {
+    await create.mutateAsync(values);
   }
 
   const loading =
@@ -155,7 +149,7 @@ export function BoardView() {
               {activeSpace?.name ?? "Board"}
             </h1>
             <p className="mt-1 text-sm text-text-lo">
-              Drag tracks across stages. Tap a card to edit.
+              Drag tracks across stages. Tap a card to open it.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -170,10 +164,7 @@ export function BoardView() {
             </Button>
             <Button
               size="sm"
-              onClick={() => {
-                setEditingTrack(null);
-                setTrackModalOpen(true);
-              }}
+              onClick={() => setTrackModalOpen(true)}
               disabled={!activeSpaceId || stages.length === 0}
             >
               <Plus className="size-3.5" />
@@ -240,10 +231,7 @@ export function BoardView() {
       ) : emptyBoard ? (
         <EmptyBoard
           spaceName={activeSpace?.name ?? "this space"}
-          onAdd={() => {
-            setEditingTrack(null);
-            setTrackModalOpen(true);
-          }}
+          onAdd={() => setTrackModalOpen(true)}
         />
       ) : (
         <DndContext
@@ -264,10 +252,7 @@ export function BoardView() {
                 stage={stage}
                 tracks={tracksByStage.get(stage.id) ?? []}
                 isOver={overStageId === stage.id}
-                onEditTrack={(t) => {
-                  setEditingTrack(t);
-                  setTrackModalOpen(true);
-                }}
+                onOpenTrack={(t) => router.push(`/track/${t.id}`)}
               />
             ))}
           </div>
@@ -275,7 +260,7 @@ export function BoardView() {
             {activeDrag ? (
               <TrackCard
                 track={activeDrag}
-                onEdit={() => {}}
+                onOpen={() => {}}
                 isDragOverlay
               />
             ) : null}
@@ -287,21 +272,10 @@ export function BoardView() {
         <>
           <TrackFormModal
             open={trackModalOpen}
-            onOpenChange={(open) => {
-              setTrackModalOpen(open);
-              if (!open) setEditingTrack(null);
-            }}
+            onOpenChange={setTrackModalOpen}
             spaceId={activeSpaceId}
             stages={stages}
-            track={editingTrack}
-            onSubmit={handleCreateOrUpdate}
-            onDelete={
-              editingTrack
-                ? async () => {
-                    await remove.mutateAsync(editingTrack.id);
-                  }
-                : undefined
-            }
+            onSubmit={handleCreate}
           />
           <StageEditor
             open={stageEditorOpen}
@@ -323,29 +297,15 @@ function EmptyBoard({
   onAdd: () => void;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-card border border-line bg-bg-1">
-      <div
-        className="pointer-events-none absolute inset-0 opacity-40"
-        style={{
-          background:
-            "linear-gradient(135deg, rgba(127,180,255,0.25) 0%, transparent 40%, rgba(255,181,107,0.2) 100%)",
-        }}
-        aria-hidden
-      />
-      <div className="relative mx-auto flex max-w-md flex-col items-center px-6 py-16 text-center">
-        <div className="flare-line mb-6 w-24" />
-        <h2 className="font-display text-lg font-semibold text-text-hi">
-          Nothing on the board yet
-        </h2>
-        <p className="mt-2 text-sm text-text-lo">
-          {spaceName} is ready. Drop in a first track and drag it through the
-          stages as it grows.
-        </p>
-        <Button className="mt-6" onClick={onAdd}>
+    <EmptyShaderPanel
+      title="Nothing on the board yet"
+      copy={`${spaceName} is ready. Drop in a first track and drag it through the stages as it grows.`}
+      action={
+        <Button onClick={onAdd}>
           <Plus className="size-3.5" />
           Start a track
         </Button>
-      </div>
-    </div>
+      }
+    />
   );
 }

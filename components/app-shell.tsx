@@ -12,6 +12,7 @@ import {
   Plus,
 } from "lucide-react";
 import { SpaceSwitcher } from "@/components/space-switcher";
+import { EdgeStrip, IntroMoment } from "@/components/intro-moment";
 import { APP_VERSION } from "@/lib/version";
 import { cn } from "@/lib/utils";
 
@@ -40,13 +41,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen flex-col bg-bg-0">
-      <div className="edge-strip sticky top-0 z-50" aria-hidden />
+      <IntroMoment />
+      <EdgeStrip />
 
       <div className="flex flex-1">
-        {/* Desktop left rail */}
-        <aside className="sticky top-[2px] hidden h-[calc(100vh-2px)] w-[220px] shrink-0 flex-col border-r border-line bg-bg-1 md:flex">
+        <aside className="sticky top-[3px] hidden h-[calc(100vh-3px)] w-[220px] shrink-0 flex-col border-r border-line bg-bg-1 md:flex">
           <div className="px-5 pt-6 pb-4">
-            <Link href="/">
+            <Link
+              href="/"
+              className="rounded-input focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+            >
               <span className="font-display text-xl font-bold tracking-tight text-text-hi">
                 TEMPO
               </span>
@@ -66,7 +70,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   key={href}
                   href={href}
                   className={cn(
-                    "flex items-center gap-2.5 rounded-input px-3 py-2 text-sm transition-colors duration-hover",
+                    "flex items-center gap-2.5 rounded-input px-3 py-2 text-sm transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
                     active
                       ? "bg-bg-2 text-text-hi"
                       : "text-text-lo hover:bg-bg-2/60 hover:text-text-hi"
@@ -86,7 +90,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Link
               href="/settings"
               className={cn(
-                "flex items-center gap-2.5 rounded-input px-3 py-2 text-sm transition-colors duration-hover",
+                "flex items-center gap-2.5 rounded-input px-3 py-2 text-sm transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
                 isActive(pathname, "/settings")
                   ? "bg-bg-2 text-text-hi"
                   : "text-text-lo hover:bg-bg-2/60 hover:text-text-hi"
@@ -107,7 +111,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </aside>
 
-        {/* Content */}
         <main className="flex-1 overflow-x-hidden pb-20 md:pb-0">
           <div className="mx-auto w-full max-w-[1440px] px-4 py-6 md:px-8">
             {children}
@@ -115,7 +118,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </main>
       </div>
 
-      {/* Mobile bottom tab bar */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-stretch border-t border-line bg-bg-1 md:hidden">
         {mobileNav.map(({ href, label, icon: Icon }) => {
           const active = isActive(pathname, href);
@@ -124,7 +126,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               key={href}
               href={href}
               className={cn(
-                "flex flex-1 flex-col items-center justify-center gap-1 py-2.5 text-[11px]",
+                "flex flex-1 flex-col items-center justify-center gap-1 py-2.5 text-[11px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ice",
                 active ? "text-ice" : "text-text-lo"
               )}
             >
@@ -135,7 +137,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         })}
         <button
           type="button"
-          className="flex flex-1 flex-col items-center justify-center gap-1 py-2.5 text-[11px] text-text-lo"
+          className="flex flex-1 flex-col items-center justify-center gap-1 py-2.5 text-[11px] text-text-lo focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ice"
           aria-label="Add track"
           onClick={() => router.push("/board?new=1")}
         >

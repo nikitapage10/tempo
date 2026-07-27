@@ -12,6 +12,27 @@ export async function fetchTracks(spaceId: string): Promise<Track[]> {
   return (data ?? []).map(normalizeTrack);
 }
 
+export async function fetchTrack(id: string): Promise<Track> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("tracks")
+    .select("*")
+    .eq("id", id)
+    .single();
+  if (error) throw error;
+  return normalizeTrack(data);
+}
+
+export async function fetchVersionCount(trackId: string): Promise<number> {
+  const supabase = createClient();
+  const { count, error } = await supabase
+    .from("versions")
+    .select("*", { count: "exact", head: true })
+    .eq("track_id", trackId);
+  if (error) throw error;
+  return count ?? 0;
+}
+
 export async function createTrack(input: TrackInsert): Promise<Track> {
   const supabase = createClient();
   const { data, error } = await supabase

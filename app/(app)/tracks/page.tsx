@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useActiveSpace } from "@/components/active-space-provider";
 import { Button } from "@/components/ui/button";
 import { TrackFormModal } from "@/components/tracks/track-form-modal";
@@ -13,15 +14,16 @@ import {
   momentumDotClass,
   typeChipClass,
 } from "@/lib/track-style";
-import type { Track, TrackInsert } from "@/lib/types";
+import type { TrackInsert } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export default function TracksPage() {
+  const router = useRouter();
   const { activeSpace, activeSpaceId, isLoading: spacesLoading } =
     useActiveSpace();
   const stagesQuery = useStages(activeSpaceId);
   const tracksQuery = useTracks(activeSpaceId);
-  const { create, update, remove } = useTrackMutations(activeSpaceId);
+  const { create } = useTrackMutations(activeSpaceId);
 
   const stages = React.useMemo(
     () => stagesQuery.data ?? [],
@@ -34,15 +36,9 @@ export default function TracksPage() {
   }, [stages]);
 
   const [modalOpen, setModalOpen] = React.useState(false);
-  const [editing, setEditing] = React.useState<Track | null>(null);
 
   async function handleSubmit(values: TrackInsert & { id?: string }) {
-    if (values.id) {
-      const { id, space_id: _s, ...patch } = values;
-      await update.mutateAsync({ id, patch });
-    } else {
-      await create.mutateAsync(values);
-    }
+    await create.mutateAsync(values);
   }
 
   const loading = spacesLoading || tracksQuery.isLoading;
@@ -61,10 +57,7 @@ export default function TracksPage() {
         <Button
           size="sm"
           disabled={!activeSpaceId || stages.length === 0}
-          onClick={() => {
-            setEditing(null);
-            setModalOpen(true);
-          }}
+          onClick={() => setModalOpen(true)}
         >
           <Plus className="size-3.5" />
           Track
@@ -85,13 +78,7 @@ export default function TracksPage() {
           <p className="text-sm text-text-lo">
             No tracks yet. Start one and park it on the board.
           </p>
-          <Button
-            className="mt-4"
-            onClick={() => {
-              setEditing(null);
-              setModalOpen(true);
-            }}
-          >
+          <Button className="mt-4" onClick={() => setModalOpen(true)}>
             <Plus className="size-3.5" />
             Start a track
           </Button>
@@ -106,10 +93,7 @@ export default function TracksPage() {
               <li key={track.id}>
                 <button
                   type="button"
-                  onClick={() => {
-                    setEditing(track);
-                    setModalOpen(true);
-                  }}
+                  onClick={() => router.push(`/track/${track.id}`)}
                   className="flex w-full items-center gap-3 rounded-card border border-line bg-bg-1 p-3 text-left transition-colors duration-hover hover:border-ice/30"
                 >
                   <span
@@ -170,21 +154,10 @@ export default function TracksPage() {
       {activeSpaceId ? (
         <TrackFormModal
           open={modalOpen}
-          onOpenChange={(open) => {
-            setModalOpen(open);
-            if (!open) setEditing(null);
-          }}
+          onOpenChange={setModalOpen}
           spaceId={activeSpaceId}
           stages={stages}
-          track={editing}
           onSubmit={handleSubmit}
-          onDelete={
-            editing
-              ? async () => {
-                  await remove.mutateAsync(editing.id);
-                }
-              : undefined
-          }
         />
       ) : null}
     </div>

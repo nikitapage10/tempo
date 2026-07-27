@@ -9,6 +9,7 @@ import {
   renameSpace,
   reorderSpaces,
 } from "@/lib/api/spaces";
+import { ensureDefaultTemplates } from "@/lib/api/templates";
 import { ACTIVE_SPACE_KEY } from "@/lib/constants";
 import type { Space } from "@/lib/types";
 
@@ -43,6 +44,14 @@ function writeStoredSpaceId(id: string) {
   }
 }
 
+async function bootstrapUserDefaults(): Promise<Space[]> {
+  const [spaces] = await Promise.all([
+    ensureDefaultSpaces(),
+    ensureDefaultTemplates(),
+  ]);
+  return spaces;
+}
+
 export function ActiveSpaceProvider({
   children,
 }: {
@@ -60,7 +69,7 @@ export function ActiveSpaceProvider({
 
   const spacesQuery = useQuery({
     queryKey: ["spaces"],
-    queryFn: ensureDefaultSpaces,
+    queryFn: bootstrapUserDefaults,
     enabled: hydrated,
   });
 

@@ -4,7 +4,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createTrack,
   deleteTrack,
+  fetchTrack,
   fetchTracks,
+  fetchVersionCount,
   moveTrackStage,
   updateTrack,
 } from "@/lib/api/tracks";
@@ -18,26 +20,66 @@ export function useTracks(spaceId: string | null) {
   });
 }
 
+export function useTrack(trackId: string | null) {
+  return useQuery({
+    queryKey: ["track", trackId],
+    queryFn: () => fetchTrack(trackId!),
+    enabled: !!trackId,
+  });
+}
+
+export function useVersionCount(trackId: string | null) {
+  return useQuery({
+    queryKey: ["version-count", trackId],
+    queryFn: () => fetchVersionCount(trackId!),
+    enabled: !!trackId,
+  });
+}
+
 export function useTrackMutations(spaceId: string | null) {
   const qc = useQueryClient();
   const key = ["tracks", spaceId] as const;
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: key });
+  const invalidateLists = () => {
+    qc.invalidateQueries({ queryKey: key });
+    qc.invalidateQueries({ queryKey: ["track"] });
+  };
 
   const create = useMutation({
     mutationFn: (input: TrackInsert) => createTrack(input),
-    onSuccess: invalidate,
+    onSuccess: invalidateLists,
   });
 
   const update = useMutation({
     mutationFn: ({ id, patch }: { id: string; patch: TrackUpdate }) =>
       updateTrack(id, patch),
-    onSuccess: invalidate,
+    onMutate: async ({ id, patch }) => {
+      await qc.cancelQueries({ queryKey: ["track", id] });
+      const prev = qc.getQueryData<Track>(["track", id]);
+      if (prev) {
+        qc.setQueryData<Track>(["track", id], {
+          ...prev,
+          ...patch,
+          updated_at: new Date().toISOString(),
+        });
+      }
+      return { prev };
+    },
+    onError: (_e, { id }, ctx) => {
+      if (ctx?.prev) qc.setQueryData(["track", id], ctx.prev);
+    },
+    onSuccess: (data) => {
+      qc.setQueryData(["track", data.id], data);
+      invalidateLists();
+    },
   });
 
   const remove = useMutation({
     mutationFn: (id: string) => deleteTrack(id),
-    onSuccess: invalidate,
+    onSuccess: (_void, id) => {
+      qc.removeQueries({ queryKey: ["track", id] });
+      invalidateLists();
+    },
   });
 
   const moveStage = useMutation({
@@ -61,7 +103,7 @@ export function useTrackMutations(spaceId: string | null) {
     onError: (_e, _v, ctx) => {
       if (ctx?.prev) qc.setQueryData(key, ctx.prev);
     },
-    onSettled: invalidate,
+    onSettled: invalidateLists,
   });
 
   return { create, update, remove, moveStage };

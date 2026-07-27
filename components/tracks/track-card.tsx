@@ -2,6 +2,7 @@
 
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
+import { SignedImage } from "@/components/ui/signed-image";
 import type { Track } from "@/lib/types";
 import {
   formatTrackType,
@@ -13,11 +14,11 @@ import { cn } from "@/lib/utils";
 
 type TrackCardProps = {
   track: Track;
-  onEdit: (track: Track) => void;
+  onOpen: (track: Track) => void;
   isDragOverlay?: boolean;
 };
 
-export function TrackCard({ track, onEdit, isDragOverlay }: TrackCardProps) {
+export function TrackCard({ track, onOpen, isDragOverlay }: TrackCardProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
       id: track.id,
@@ -63,22 +64,17 @@ export function TrackCard({ track, onEdit, isDragOverlay }: TrackCardProps) {
           type="button"
           className="relative size-11 shrink-0 overflow-hidden rounded-input border border-line"
           onPointerDown={(e) => e.stopPropagation()}
-          onClick={() => onEdit(track)}
-          aria-label={`Edit ${track.title}`}
+          onClick={() => onOpen(track)}
+          aria-label={`Open ${track.title}`}
         >
-          {track.artwork_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={track.artwork_url}
-              alt=""
-              className="size-full object-cover"
-            />
-          ) : (
-            <span
-              className="block size-full"
-              style={{ background: gradientFromTrackId(track.id) }}
-            />
-          )}
+          <span
+            className="absolute inset-0 block size-full"
+            style={{ background: gradientFromTrackId(track.id) }}
+          />
+          <SignedImage
+            path={track.artwork_url}
+            className="absolute inset-0 size-full"
+          />
         </button>
 
         <div
@@ -93,7 +89,7 @@ export function TrackCard({ track, onEdit, isDragOverlay }: TrackCardProps) {
               type="button"
               className="min-w-0 text-left"
               onPointerDown={(e) => e.stopPropagation()}
-              onClick={() => onEdit(track)}
+              onClick={() => onOpen(track)}
             >
               <h3 className="truncate text-sm font-medium text-text-hi hover:text-ice">
                 {track.title}
