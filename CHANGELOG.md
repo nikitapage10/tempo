@@ -4,6 +4,8 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-26
 
+- Fixed (v0.12.2): collaboration features now explain themselves instead of breaking. If the database isn't set up for collaboration yet, the People panel loads empty rather than erroring, and trying to invite someone tells you to run the migrations first. Invite links that can't be opened because the server is missing its access key now show a clear "unavailable" message instead of failing silently.
+- Under the hood: there's now a single `migrations/_run_all_001_to_011.sql` file you can paste into Supabase in one go, instead of running migrations 001–011 one at a time.
 - Changed (v0.12.1): the animated light strip along the very top of the app is a bit taller (~14px) so you can actually see the Spectra motion running there.
 - Added (v0.12.0): **Release workspace** on projects — choose General / Single / EP / Album / Edit pack; release types get date/countdown, transparent readiness, metadata & credits with copy/CSV export, distribution & pitching fields, timeline, optional release-plan preview, and a post-release section. **Track collaboration** — invite by email + role (editor / uploader / commenter / viewer), copy invite link, accept after sign-in, People + Activity tabs, in-app notification center (no email yet). **Workspace customize** — presets and module order per user. **Today & Board polish** — Needs attention queue with plain-English reasons, Board attention filters and Compact/Comfortable density.
 - Under the hood: run migrations `001` through `011` in Supabase (in order) before relying on these features in production, and set `SUPABASE_SERVICE_ROLE_KEY` in Vercel / `.env.local` for guest review and invite acceptance.
