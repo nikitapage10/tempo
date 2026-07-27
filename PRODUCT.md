@@ -16,7 +16,7 @@ Three kinds of things sit at the center of TEMPO: **tracks** (a musical work wit
 
 ## Current feature set
 
-**Sign-in.** You open the live site, go to sign-in, and enter your email and password. (Magic-link email sign-in is off for now so testing isn’t blocked by Supabase’s free email limits.) Create the account once in the Supabase dashboard if needed. You can sign out from Settings. On first load of a session you may see a short Spectra light intro behind the TEMPO wordmark (skipped if you prefer reduced motion).
+**Sign-in.** You open the live site, go to sign-in, and enter your email and password — or use Create account if you don’t have one yet. (Magic-link email sign-in is off for now so testing isn’t blocked by Supabase’s free email limits.) If “Confirm email” is still on in Supabase, turn it off under Authentication → Providers → Email so new accounts can sign in immediately. You can sign out from Settings. On first load of a session you may see a short Spectra light intro behind the TEMPO wordmark (skipped if you prefer reduced motion).
 
 **App shell.** Once signed in you land on **Today**. Desktop has a left rail (Today, Board, Tracks, Projects, Tasks, plus Settings) and a thin animated light strip along the top; phone uses a bottom tab bar (Today, Board, Tasks, plus Add). Under Settings in the rail, the current app version is shown in small mono type.
 

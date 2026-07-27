@@ -10,7 +10,8 @@ export async function updateSession(request: NextRequest) {
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !anonKey) {
-    if (!request.nextUrl.pathname.startsWith("/login")) {
+    const path = request.nextUrl.pathname;
+    if (!path.startsWith("/login") && !path.startsWith("/register")) {
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = "/login";
       return NextResponse.redirect(redirectUrl);
@@ -43,7 +44,9 @@ export async function updateSession(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
   const isAuthRoute =
-    path.startsWith("/login") || path.startsWith("/auth");
+    path.startsWith("/login") ||
+    path.startsWith("/register") ||
+    path.startsWith("/auth");
 
   if (!user && !isAuthRoute) {
     const redirectUrl = request.nextUrl.clone();
@@ -51,7 +54,7 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  if (user && path.startsWith("/login")) {
+  if (user && (path.startsWith("/login") || path.startsWith("/register"))) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/";
     return NextResponse.redirect(redirectUrl);
