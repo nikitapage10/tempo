@@ -31,6 +31,9 @@ export function VersionsPanel({
   const [changelog, setChangelog] = React.useState("");
   const [dragging, setDragging] = React.useState(false);
   const [progress, setProgress] = React.useState<number | null>(null);
+  const [phase, setPhase] = React.useState<"converting" | "uploading" | null>(
+    null
+  );
   const [error, setError] = React.useState<string | null>(null);
   const [confirmId, setConfirmId] = React.useState<string | null>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -40,18 +43,22 @@ export function VersionsPanel({
     if (!file) return;
     setError(null);
     setProgress(0);
+    setPhase(null);
     try {
       const version = await upload.mutateAsync({
         file,
         changelog,
         onProgress: setProgress,
+        onPhase: setPhase,
       });
       setChangelog("");
       setProgress(null);
+      setPhase(null);
       onPlay(version.id);
       toast(`Uploaded v${version.version_no}`, "ok");
     } catch (err) {
       setProgress(null);
+      setPhase(null);
       const msg =
         err instanceof Error
           ? err.message
@@ -106,8 +113,8 @@ export function VersionsPanel({
       >
         <p className="text-sm text-text-hi">Upload a bounce</p>
         <p className="mt-1 text-xs text-text-lo">
-          mp3 / wav / aiff / m4a · up to 200 MB · keeps the latest 2 versions
-          (older ones are removed)
+          mp3 / wav / aiff / m4a · up to 200 MB · keeps the latest 2 versions.
+          Wav and aiff are converted to mp3 in your browser before upload.
         </p>
         <div className="mt-3 space-y-2">
           <Label htmlFor={`changelog-${trackId}`}>What changed?</Label>
@@ -126,7 +133,11 @@ export function VersionsPanel({
             disabled={progress != null}
             onClick={() => inputRef.current?.click()}
           >
-            {progress != null ? `Uploading ${progress}%` : "Upload new version"}
+            {progress != null
+              ? phase === "converting"
+                ? `Converting ${progress}%`
+                : `Uploading ${progress}%`
+              : "Upload new version"}
           </Button>
           <input
             ref={inputRef}

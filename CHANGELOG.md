@@ -4,6 +4,9 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-26
 
+- Added (v0.6.6): wav and aiff bounces are automatically converted to mp3 in your browser before upload (320 kbps) so big studio exports fit under cloud size limits — you’ll see “Converting…” then “Uploading…”.
+- Fixed: production magic-link sign-in no longer sends you to localhost — the live app always redirects to https://tempo-ten-sigma.vercel.app (local still uses localhost when you sign in there).
+- Fixed: Vercel build failure from the shader / Three.js types.
 - Changed (v0.6.5): each track keeps only the **latest 2** bounces — uploading a third removes the oldest so storage stays lean (you can still A/B the two you have).
 - Fixed (v0.6.4): artwork / file names with spaces no longer fail upload (“Invalid key”); bounce size errors now explain the real limit (your Supabase Storage setting, often 50 MB by default).
 - Added: tap the track’s cover square to upload cover art (also still works from Stems & assets → Artwork).

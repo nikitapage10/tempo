@@ -48,8 +48,14 @@ export default function TasksPage() {
   const tracksQuery = useTracks(activeSpaceId);
   const projectsQuery = useProjects();
 
-  const tracks = tracksQuery.data ?? [];
-  const projects = projectsQuery.data ?? [];
+  const tracks = React.useMemo(
+    () => tracksQuery.data ?? [],
+    [tracksQuery.data]
+  );
+  const projects = React.useMemo(
+    () => projectsQuery.data ?? [],
+    [projectsQuery.data]
+  );
 
   const [categoryFilter, setCategoryFilter] = React.useState<
     TaskCategory | "all"

@@ -16,7 +16,7 @@ Three kinds of things sit at the center of TEMPO: **tracks** (a musical work wit
 
 ## Current feature set
 
-**Sign-in.** You open the live site, go to sign-in, enter your email, and receive a magic link — no password. Opening the link on that device signs you in. You can sign out from Settings. On first load of a session you may see a short Spectra light intro behind the TEMPO wordmark (skipped if you prefer reduced motion).
+**Sign-in.** You open the live site, go to sign-in, enter your email, and receive a magic link — no password. Opening the link signs you into the live app (not a local copy). You can sign out from Settings. On first load of a session you may see a short Spectra light intro behind the TEMPO wordmark (skipped if you prefer reduced motion).
 
 **App shell.** Once signed in you land on **Today**. Desktop has a left rail (Today, Board, Tracks, Projects, Tasks, plus Settings) and a thin animated light strip along the top; phone uses a bottom tab bar (Today, Board, Tasks, plus Add). Under Settings in the rail, the current app version is shown in small mono type.
 
@@ -28,7 +28,7 @@ Three kinds of things sit at the center of TEMPO: **tracks** (a musical work wit
 
 **Tracks.** Create with title and type (more details optional). The Tracks page lists everything in the active space.
 
-**Track workspace.** Header with artwork or gradient (tap to set cover), editable title, mono meta line, momentum, stage, and deadline. Left column: waveform player (current or selected version, A/B via dropdown), versions (upload with “what changed?”, set current, download, delete — only the latest two bounces are kept), and session log. Right column: checklist (templates, progress bar), stems & assets by kind, notes, and details. Uploading artwork (from the header or Stems & assets) sets the track cover. Audio lives in private cloud storage and plays via time-limited links; large bounces need your Storage size limit raised in Supabase if uploads over ~50 MB fail.
+**Track workspace.** Header with artwork or gradient (tap to set cover), editable title, mono meta line, momentum, stage, and deadline. Left column: waveform player (current or selected version, A/B via dropdown), versions (upload with “what changed?”, set current, download, delete — only the latest two bounces are kept; wav/aiff are converted to mp3 in the browser before upload), and session log. Right column: checklist (templates, progress bar), stems & assets by kind, notes, and details. Uploading artwork (from the header or Stems & assets) sets the track cover. Audio lives in private cloud storage and plays via time-limited links; large bounces need your Storage size limit raised in Supabase if uploads over ~50 MB fail.
 
 **Tasks.** Global list with quick-add, category chips, status, due date, optional link to a track or project, and notes. Grouped into Overdue / Today / This week / Later; filters by category and status. Linked items show as chips that jump to the track or project.
 

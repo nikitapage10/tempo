@@ -33,7 +33,7 @@ export function SessionLog({ trackId }: SessionLogProps) {
 
   React.useEffect(() => {
     if (todayUpload) setLinkToday(true);
-  }, [todayUpload?.id]);
+  }, [todayUpload]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

@@ -9,6 +9,11 @@
  */
 
 import * as React from "react";
+import type {
+  BufferGeometry,
+  ShaderMaterial,
+  WebGLRenderer,
+} from "three";
 import { cn } from "@/lib/utils";
 
 const VERTEX_SHADER = `
@@ -104,13 +109,9 @@ export function ShaderLines({
 
     let cancelled = false;
     let animationId: number | null = null;
-    // three is loaded dynamically; keep refs loosely typed for cleanup.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let renderer: any = null;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let geometry: any = null;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let material: any = null;
+    let renderer: WebGLRenderer | null = null;
+    let geometry: BufferGeometry | null = null;
+    let material: ShaderMaterial | null = null;
     let io: IntersectionObserver | null = null;
     let onResize: (() => void) | null = null;
     let onVisibility: (() => void) | null = null;

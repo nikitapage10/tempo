@@ -1,5 +1,9 @@
 import { createClient } from "@/lib/supabase/client";
 import {
+  convertLosslessToMp3,
+  needsMp3Conversion,
+} from "@/lib/audio-convert";
+import {
   AUDIO_EXTENSIONS,
   MAX_UPLOAD_BYTES,
   MAX_VERSIONS_PER_TRACK,
@@ -32,12 +36,15 @@ export async function fetchCurrentVersion(
   return data;
 }
 
+export type UploadPhase = "converting" | "uploading";
+
 export type UploadVersionInput = {
   trackId: string;
   file: File;
   changelog?: string;
   label?: string;
   onProgress?: (percent: number) => void;
+  onPhase?: (phase: UploadPhase) => void;
 };
 
 export function assertAudioFile(file: File): void {
@@ -64,18 +71,39 @@ export async function uploadVersion(
 ): Promise<Version> {
   assertAudioFile(input.file);
 
+  let fileToUpload = input.file;
+  const originalLabel =
+    input.label?.trim() ||
+    input.file.name.replace(/\.[^.]+$/, "") ||
+    "Bounce";
+
+  if (needsMp3Conversion(input.file)) {
+    input.onPhase?.("converting");
+    input.onProgress?.(0);
+    fileToUpload = await convertLosslessToMp3(input.file, input.onProgress);
+  }
+
+  if (fileToUpload.size > MAX_UPLOAD_BYTES) {
+    throw new Error(
+      "Upload failed — even after converting to mp3 this file is over 200 MB. Export a shorter bounce or a lower bitrate mp3 from your DAW."
+    );
+  }
+
+  input.onPhase?.("uploading");
+  input.onProgress?.(0);
+
   const versionId = crypto.randomUUID();
   const path = buildStoragePath({
     trackId: input.trackId,
     kind: "version",
     entityId: versionId,
-    filename: input.file.name,
+    filename: fileToUpload.name,
   });
 
   try {
-    await uploadFile(path, input.file, {
+    await uploadFile(path, fileToUpload, {
       onProgress: input.onProgress,
-      contentType: input.file.type || undefined,
+      contentType: fileToUpload.type || "audio/mpeg",
     });
   } catch (err) {
     throw err instanceof Error
@@ -84,10 +112,6 @@ export async function uploadVersion(
   }
 
   const supabase = createClient();
-  const label =
-    input.label?.trim() ||
-    input.file.name.replace(/\.[^.]+$/, "") ||
-    "Bounce";
 
   const { data, error } = await supabase
     .from("versions")
@@ -95,10 +119,10 @@ export async function uploadVersion(
       id: versionId,
       track_id: input.trackId,
       version_no: 0, // DB trigger assigns the real number
-      label,
+      label: originalLabel,
       changelog: input.changelog?.trim() || null,
       file_url: path,
-      file_size: input.file.size,
+      file_size: fileToUpload.size,
       is_current: true,
     })
     .select()
