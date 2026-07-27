@@ -72,9 +72,22 @@
     );
   }
 
-  /* Intro punches chrome so the root Lightfield is visible */
-  html[data-lf-intro] .lf-app {
-    background-color: transparent !important;
+  /**
+   * Lightfield window — unpainted slit onto the root canvas.
+   * Ancestors in the punch path must not cover these pixels with opaque fills.
+   * Body copy never sits on a raw window; use ≥85% black scrim.
+   */
+  .lf-window {
+    background: transparent;
+  }
+
+  .lf-window-scrim {
+    background: rgb(10 10 12 / 0.85);
+  }
+
+  /* Intro: hide punched chrome so the full field is visible */
+  html[data-lf-intro] .lf-chrome-overlay {
+    opacity: 0 !important;
   }
 
   html[data-lf-intro] .lf-app .bg-bg-0,
@@ -93,6 +106,7 @@
     pointer-events: none !important;
   }
 
+  /* Legacy static flare gradient (non-window contexts / reduced-motion accents) */
   .flare-line {
     height: 1px;
     width: 100%;
@@ -128,6 +142,10 @@
   .edge-strip {
     height: 2px;
     width: 100%;
+    background: transparent;
+  }
+
+  .edge-strip:not(.lf-window) {
     background: linear-gradient(
       90deg,
       var(--ice) 0%,

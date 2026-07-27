@@ -3,6 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { ArrowLeft, ImagePlus } from "lucide-react";
+import { FlareLine } from "@/components/flare-line";
 import { SignedImage } from "@/components/ui/signed-image";
 import { useToast } from "@/components/ui/toast";
 import { useAssetMutations } from "@/hooks/use-assets";
@@ -225,7 +226,7 @@ export function TrackHeader({
           </div>
         </div>
       </div>
-      <div className="flare-line" />
+      <FlareLine />
     </header>
   );
 }

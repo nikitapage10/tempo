@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { SpaceSwitcher } from "@/components/space-switcher";
 import { EdgeStrip, IntroMoment } from "@/components/intro-moment";
+import { FlareLine } from "@/components/flare-line";
+import { LfWindow } from "@/components/lf-windows";
 import { APP_VERSION } from "@/lib/version";
 import { cn } from "@/lib/utils";
 
@@ -40,12 +42,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   return (
-    <div className="flex min-h-screen flex-col bg-bg-0" data-lf-chrome>
+    <div className="flex min-h-screen flex-col" data-lf-chrome>
       <IntroMoment />
       <EdgeStrip />
 
       <div className="flex flex-1">
-        <aside className="sticky top-[3px] hidden h-[calc(100vh-3px)] w-[220px] shrink-0 flex-col border-r border-line bg-bg-1 md:flex">
+        {/* Left 2px gutter stays transparent so active-nav windows can punch through */}
+        <aside
+          className="sticky top-[2px] hidden h-[calc(100vh-2px)] w-[220px] shrink-0 flex-col border-r border-line md:flex"
+          style={{
+            background:
+              "linear-gradient(to right, transparent 2px, var(--bg-1) 2px)",
+          }}
+        >
           <div className="px-5 pt-6 pb-4">
             <Link
               href="/"
@@ -55,7 +64,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 TEMPO
               </span>
             </Link>
-            <div className="flare-line mt-3" />
+            <FlareLine className="mt-3" />
           </div>
 
           <div className="px-3 pb-4">
@@ -70,12 +79,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   key={href}
                   href={href}
                   className={cn(
-                    "flex items-center gap-2.5 rounded-input px-3 py-2 text-sm transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
+                    "relative flex items-center gap-2.5 rounded-input px-3 py-2 text-sm transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
                     active
-                      ? "bg-bg-2 text-text-hi"
+                      ? "text-text-hi"
                       : "text-text-lo hover:bg-bg-2/60 hover:text-text-hi"
                   )}
                 >
+                  {active ? (
+                    <LfWindow
+                      className="absolute left-[-12px] top-1.5 bottom-1.5 w-[2px]"
+                      aria-hidden
+                    />
+                  ) : null}
                   <Icon
                     className={cn("size-4", active ? "text-ice" : "text-text-lo")}
                     strokeWidth={1.75}
@@ -90,12 +105,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Link
               href="/settings"
               className={cn(
-                "flex items-center gap-2.5 rounded-input px-3 py-2 text-sm transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
+                "relative flex items-center gap-2.5 rounded-input px-3 py-2 text-sm transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
                 isActive(pathname, "/settings")
-                  ? "bg-bg-2 text-text-hi"
+                  ? "text-text-hi"
                   : "text-text-lo hover:bg-bg-2/60 hover:text-text-hi"
               )}
             >
+              {isActive(pathname, "/settings") ? (
+                <LfWindow
+                  className="absolute left-[-12px] top-1.5 bottom-1.5 w-[2px]"
+                  aria-hidden
+                />
+              ) : null}
               <Settings
                 className={cn(
                   "size-4",
@@ -126,10 +147,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               key={href}
               href={href}
               className={cn(
-                "flex flex-1 flex-col items-center justify-center gap-1 py-2.5 text-[11px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ice",
+                "relative flex flex-1 flex-col items-center justify-center gap-1 py-2.5 text-[11px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ice",
                 active ? "text-ice" : "text-text-lo"
               )}
             >
+              {active ? (
+                <LfWindow
+                  className="absolute left-3 right-3 top-0 h-[2px]"
+                  aria-hidden
+                />
+              ) : null}
               <Icon className="size-5" strokeWidth={1.75} />
               {label}
             </Link>

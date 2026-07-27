@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
+import { EmptyShaderPanel } from "@/components/shader-empty";
+import { FlareLine } from "@/components/flare-line";
 import { useActiveSpace } from "@/components/active-space-provider";
 import { useProjectMutations, useProjects } from "@/hooks/use-projects";
 import { formatShortDate } from "@/lib/format";
@@ -77,45 +79,45 @@ export default function ProjectsPage() {
           <div className="h-32 animate-pulse rounded-card bg-bg-1" />
         </div>
       ) : projects.length === 0 ? (
-        <div className="rounded-card border border-dashed border-line px-6 py-14 text-center">
-          <p className="text-sm text-text-lo">
-            No projects yet. Start something like “Edit Pack Vol. 2”.
-          </p>
-          <Button type="button" className="mt-4" onClick={() => setOpen(true)}>
-            Create a project
-          </Button>
-        </div>
+        <EmptyShaderPanel
+          title="No projects yet"
+          copy="Start something like an EP or edit pack."
+          action={
+            <Button type="button" onClick={() => setOpen(true)}>
+              Create a project
+            </Button>
+          }
+        />
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((p) => (
             <Link
               key={p.id}
               href={`/projects/${p.id}`}
-              className="rounded-card border border-line bg-bg-1 p-4 transition-colors duration-hover hover:border-ice/40"
+              className="overflow-hidden rounded-card border border-line transition-colors duration-hover hover:border-ice/40"
             >
-              <h2 className="font-display text-base font-semibold text-text-hi">
-                {p.name}
-              </h2>
-              {p.deadline ? (
-                <p className="mt-1 font-mono text-[11px] text-text-lo">
-                  Due {formatShortDate(p.deadline + "T12:00:00")}
-                </p>
-              ) : null}
-              <div className="mt-3 flex flex-wrap gap-3 font-mono text-[11px] text-text-lo">
-                <span>{p.track_count} tracks</span>
-                <span>{p.task_count} tasks</span>
-                <span>
-                  {p.checklist_pct == null
-                    ? "— checklist"
-                    : `${p.checklist_pct}% checklist`}
-                </span>
+              <div className="bg-bg-1 p-4 pb-3">
+                <h2 className="font-display text-base font-semibold text-text-hi">
+                  {p.name}
+                </h2>
+                {p.deadline ? (
+                  <p className="mt-1 font-mono text-[11px] text-text-lo">
+                    Due {formatShortDate(p.deadline + "T12:00:00")}
+                  </p>
+                ) : null}
+                <div className="mt-3 flex flex-wrap gap-3 font-mono text-[11px] text-text-lo">
+                  <span>{p.track_count} tracks</span>
+                  <span>{p.task_count} tasks</span>
+                  <span>
+                    {p.checklist_pct == null
+                      ? "— checklist"
+                      : `${p.checklist_pct}% checklist`}
+                  </span>
+                </div>
               </div>
               {p.checklist_pct != null ? (
-                <div className="mt-3 h-1 overflow-hidden rounded-full bg-bg-2">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-ice to-amber"
-                    style={{ width: `${p.checklist_pct}%` }}
-                  />
+                <div className="px-4 pb-4">
+                  <FlareLine variant="partial" pct={p.checklist_pct} />
                 </div>
               ) : null}
             </Link>

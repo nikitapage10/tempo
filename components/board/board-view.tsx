@@ -250,6 +250,7 @@ export function BoardView() {
               <KanbanColumn
                 key={stage.id}
                 stage={stage}
+                stages={stages}
                 tracks={tracksByStage.get(stage.id) ?? []}
                 isOver={overStageId === stage.id}
                 onOpenTrack={(t) => router.push(`/track/${t.id}`)}
@@ -290,7 +291,6 @@ export function BoardView() {
 }
 
 function EmptyBoard({
-  spaceName,
   onAdd,
 }: {
   spaceName: string;
@@ -298,8 +298,8 @@ function EmptyBoard({
 }) {
   return (
     <EmptyShaderPanel
-      title="Nothing on the board yet"
-      copy={`${spaceName} is ready. Drop in a first track and drag it through the stages as it grows.`}
+      title="Board is empty"
+      copy="Start a track and drag it through the stages."
       action={
         <Button onClick={onAdd}>
           <Plus className="size-3.5" />

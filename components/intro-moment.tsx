@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { setIntroActive } from "@/lib/lightfield";
+import { LfWindow } from "@/components/lf-windows";
 import { cn } from "@/lib/utils";
 
 const INTRO_KEY = "tempo.introPlayed";
@@ -98,7 +99,9 @@ export function IntroMoment({
   );
 }
 
-/** Thin top edge marker. Live field windows land in a later step. */
+/** Thin top edge — Lightfield window strip. */
 export function EdgeStrip() {
-  return <div className="edge-strip sticky top-0 z-50" aria-hidden />;
+  return (
+    <LfWindow className="edge-strip lf-window sticky top-0 z-50" aria-hidden />
+  );
 }

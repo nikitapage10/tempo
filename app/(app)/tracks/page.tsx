@@ -5,6 +5,7 @@ import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useActiveSpace } from "@/components/active-space-provider";
 import { Button } from "@/components/ui/button";
+import { EmptyShaderPanel } from "@/components/shader-empty";
 import { TrackFormModal } from "@/components/tracks/track-form-modal";
 import { useStages } from "@/hooks/use-stages";
 import { useTrackMutations, useTracks } from "@/hooks/use-tracks";
@@ -74,15 +75,16 @@ export default function TracksPage() {
           ))}
         </div>
       ) : tracks.length === 0 ? (
-        <div className="rounded-card border border-line bg-bg-1 px-6 py-12 text-center">
-          <p className="text-sm text-text-lo">
-            No tracks yet. Start one and park it on the board.
-          </p>
-          <Button className="mt-4" onClick={() => setModalOpen(true)}>
-            <Plus className="size-3.5" />
-            Start a track
-          </Button>
-        </div>
+        <EmptyShaderPanel
+          title="No tracks yet"
+          copy="Start a track and park it on the board."
+          action={
+            <Button onClick={() => setModalOpen(true)}>
+              <Plus className="size-3.5" />
+              Start a track
+            </Button>
+          }
+        />
       ) : (
         <ul className="space-y-2">
           {tracks.map((track) => {

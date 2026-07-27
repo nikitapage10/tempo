@@ -27,7 +27,7 @@ import {
   tickLightfield,
   type LightfieldUniforms,
 } from "@/lib/lightfield";
-import { cn } from "@/lib/utils";
+import { LightfieldWindowsProvider } from "@/components/lf-windows";
 
 const MAX_INTERNAL_PIXELS = 1280 * 720;
 const DPR_CAP = 1.5;
@@ -274,7 +274,7 @@ function DebugGate() {
 
 /**
  * Mount once in the root layout. Renders the field canvas (or `.flare-static`)
- * and wraps app chrome in an opaque surface so only explicit windows show light.
+ * and wraps app chrome so only registered windows show light.
  */
 export function LightfieldRoot({ children }: { children: React.ReactNode }) {
   const enabled = useLightfieldEnabled();
@@ -290,12 +290,11 @@ export function LightfieldRoot({ children }: { children: React.ReactNode }) {
           aria-hidden
         />
       )}
-      <div
-        className={cn("lf-app relative z-[1] min-h-screen bg-bg-0")}
-        data-pathname={pathname}
-      >
-        {children}
-      </div>
+      <LightfieldWindowsProvider>
+        <div className="lf-app min-h-screen" data-pathname={pathname}>
+          {children}
+        </div>
+      </LightfieldWindowsProvider>
       <React.Suspense fallback={null}>
         <DebugGate />
       </React.Suspense>

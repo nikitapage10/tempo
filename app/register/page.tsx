@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { IntroMoment } from "@/components/intro-moment";
+import { FlareLine } from "@/components/flare-line";
+import { LfWindow } from "@/components/lf-windows";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -66,9 +68,9 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-bg-0" data-lf-chrome>
+    <div className="relative flex min-h-screen flex-col" data-lf-chrome>
       <IntroMoment />
-      <div className="edge-strip" aria-hidden />
+      <LfWindow className="edge-strip lf-window" aria-hidden />
 
       <div className="flex flex-1 items-center justify-center px-6 py-16">
         <div className="w-full max-w-sm">
@@ -76,7 +78,7 @@ export default function RegisterPage() {
             <h1 className="font-display text-[28px] font-bold tracking-tight text-text-hi">
               TEMPO
             </h1>
-            <div className="flare-line mx-auto mt-3 max-w-[120px]" />
+            <FlareLine className="mx-auto mt-3 max-w-[120px]" />
             <p className="mt-4 text-text-lo">Create an account.</p>
           </div>
 

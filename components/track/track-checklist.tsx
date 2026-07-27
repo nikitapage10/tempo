@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FlareLine } from "@/components/flare-line";
 import {
   useChecklist,
   useChecklistMutations,
@@ -125,34 +126,23 @@ export function TrackChecklist({ trackId }: TrackChecklistProps) {
   }
 
   return (
-    <section className="rounded-card border border-line bg-bg-1 p-4">
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <h2 className="font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
-          Checklist
-        </h2>
-        <span className="font-mono text-[11px] text-text-lo">
-          {total === 0 ? "—" : `${pct}%`}
-        </span>
+    <section className="overflow-hidden rounded-card border border-line">
+      <div className="bg-bg-1 p-4 pb-3">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <h2 className="font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+            Checklist
+          </h2>
+          <span className="font-mono text-[11px] text-text-lo">
+            {total === 0 ? "—" : `${pct}%`}
+          </span>
+        </div>
       </div>
 
-      <div
-        className="mb-3 h-1 overflow-hidden rounded-full bg-bg-2"
-        role="progressbar"
-        aria-valuenow={pct}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-label="Checklist completion"
-      >
-        <div
-          className="h-full rounded-full transition-[width] duration-hover"
-          style={{
-            width: `${pct}%`,
-            background:
-              "linear-gradient(90deg, var(--ice) 0%, var(--amber) 100%)",
-          }}
-        />
+      <div className="px-4">
+        <FlareLine variant="partial" pct={pct} />
       </div>
 
+      <div className="bg-bg-1 p-4 pt-3">
       <div className="mb-3 flex flex-wrap gap-2">
         <div className="relative">
           <Button
@@ -304,6 +294,7 @@ export function TrackChecklist({ trackId }: TrackChecklistProps) {
           </form>
         </DialogContent>
       </Dialog>
+      </div>
     </section>
   );
 }

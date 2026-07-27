@@ -10,6 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { SignedImage } from "@/components/ui/signed-image";
 import { useToast } from "@/components/ui/toast";
 import { EmptyShaderPanel } from "@/components/shader-empty";
+import { FlareLine } from "@/components/flare-line";
+import { LfWindow } from "@/components/lf-windows";
 import { TrackFormModal } from "@/components/tracks/track-form-modal";
 import { useActiveSpace } from "@/components/active-space-provider";
 import { useStages } from "@/hooks/use-stages";
@@ -92,44 +94,28 @@ export default function TodayPage() {
 
   return (
     <div className="space-y-5">
-      {/* Contained banner — static ice→amber + black scrim (shader optional on empty) */}
-      <section className="relative overflow-hidden rounded-card border border-line">
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(120deg, #7FB4FF 0%, #F2F0EB 45%, #FFB56B 100%)",
-          }}
-          aria-hidden
-        />
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(180deg, rgba(10,10,12,0.88) 0%, rgba(10,10,12,0.92) 100%)",
-          }}
-          aria-hidden
-        />
+      {/* Today hero window — knockout type lands in Step 6 */}
+      <LfWindow className="relative min-h-[140px] overflow-hidden rounded-card border border-line">
+        <div className="lf-window-scrim absolute inset-0" aria-hidden />
         <div className="relative px-5 py-6 sm:px-6 sm:py-7">
           <p className="font-display text-xl font-semibold tracking-tight text-text-hi sm:text-2xl">
             {greetingForHour(now.getHours())}
           </p>
           <p className="mt-1 text-sm text-text-lo">{dateLabel}</p>
-          <p className="mt-4 font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo sm:text-xs">
-            <span className="text-text-hi">
-              Active tracks {activeTracks.length}
+          <p className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo sm:text-xs">
+            <span className="text-amber">{activeTracks.length}</span>
+            <span>active</span>
+            <FlareLine variant="tick" />
+            <span className="text-amber">{statsQuery.data?.due ?? "—"}</span>
+            <span>due</span>
+            <FlareLine variant="tick" />
+            <span className="text-amber">
+              {statsQuery.data?.sessions ?? "—"}
             </span>
-            {" · "}
-            <span className="text-text-hi">
-              Due this week {statsQuery.data?.due ?? "—"}
-            </span>
-            {" · "}
-            <span className="text-text-hi">
-              Sessions this week {statsQuery.data?.sessions ?? "—"}
-            </span>
+            <span>sessions</span>
           </p>
         </div>
-      </section>
+      </LfWindow>
 
       <div className="flex flex-wrap gap-2">
         <Button type="button" size="sm" onClick={() => setTrackModalOpen(true)}>
@@ -160,8 +146,8 @@ export default function TodayPage() {
 
       {empty ? (
         <EmptyShaderPanel
-          title="Nothing on the slate"
-          copy="Add a track, a task, or log a session to fill Today."
+          title="Today is clear"
+          copy="Add a track, a task, or log a session."
         />
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
