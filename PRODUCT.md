@@ -12,7 +12,7 @@ A solo working artist who wants one place for tracks, projects, and tasks instea
 
 ## The big ideas
 
-Three kinds of things sit at the center of TEMPO: **tracks** (a musical work with stages, versions, and notes), **projects** (containers like an EP or edit pack), and **tasks** (actionable items that may or may not belong to a track or project). Progress is meant to feel honest — stage and “momentum” matter as much as checklist percentages — and every bounce you upload becomes an immutable version rather than overwriting the last file.
+Three kinds of things sit at the center of TEMPO: **tracks** (a musical work with stages, versions, and notes), **projects** (containers like an EP or edit pack), and **tasks** (actionable items that may or may not belong to a track or project). Progress is meant to feel honest — stage and “momentum” matter as much as checklist percentages — and each track keeps the latest two bounces so you can A/B without filling the cloud with every old export.
 
 ## Current feature set
 
@@ -28,7 +28,7 @@ Three kinds of things sit at the center of TEMPO: **tracks** (a musical work wit
 
 **Tracks.** Create with title and type (more details optional). The Tracks page lists everything in the active space.
 
-**Track workspace.** Header with artwork or gradient, editable title, mono meta line, momentum, stage, and deadline. Left column: waveform player (current or selected version, A/B via dropdown), version history (upload with “what changed?”, set current, download, delete), and session log. Right column: checklist (templates, progress bar), stems & assets by kind, notes, and details. Uploading artwork sets the track thumbnail. Audio lives in private cloud storage and plays via time-limited links.
+**Track workspace.** Header with artwork or gradient (tap to set cover), editable title, mono meta line, momentum, stage, and deadline. Left column: waveform player (current or selected version, A/B via dropdown), versions (upload with “what changed?”, set current, download, delete — only the latest two bounces are kept), and session log. Right column: checklist (templates, progress bar), stems & assets by kind, notes, and details. Uploading artwork (from the header or Stems & assets) sets the track cover. Audio lives in private cloud storage and plays via time-limited links; large bounces need your Storage size limit raised in Supabase if uploads over ~50 MB fail.
 
 **Tasks.** Global list with quick-add, category chips, status, due date, optional link to a track or project, and notes. Grouped into Overdue / Today / This week / Later; filters by category and status. Linked items show as chips that jump to the track or project.
 

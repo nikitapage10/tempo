@@ -104,16 +104,13 @@ export function ShaderLines({
 
     let cancelled = false;
     let animationId: number | null = null;
-    let renderer: {
-      dispose: () => void;
-      getContext: () => unknown;
-      setPixelRatio: (n: number) => void;
-      setSize: (w: number, h: number, updateStyle?: boolean) => void;
-      domElement: HTMLCanvasElement;
-      render: (scene: unknown, camera: unknown) => void;
-    } | null = null;
-    let geometry: { dispose: () => void } | null = null;
-    let material: { dispose: () => void } | null = null;
+    // three is loaded dynamically; keep refs loosely typed for cleanup.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let renderer: any = null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let geometry: any = null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let material: any = null;
     let io: IntersectionObserver | null = null;
     let onResize: (() => void) | null = null;
     let onVisibility: (() => void) | null = null;

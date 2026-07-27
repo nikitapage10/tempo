@@ -30,7 +30,18 @@ export function buildStoragePath(params: {
 }
 
 export function sanitizeFilename(name: string): string {
-  return name.replace(/[/\\?%*:|"<>]/g, "_").trim() || "file";
+  const trimmed = name.trim() || "file";
+  const lastDot = trimmed.lastIndexOf(".");
+  const base = lastDot > 0 ? trimmed.slice(0, lastDot) : trimmed;
+  const ext = lastDot > 0 ? trimmed.slice(lastDot) : "";
+  const safeBase = base
+    .normalize("NFKD")
+    .replace(/[^\w.\-]+/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_|_$/g, "")
+    .slice(0, 120);
+  const safeExt = ext.replace(/[^\w.]/g, "").slice(0, 16);
+  return `${safeBase || "file"}${safeExt}`;
 }
 
 export type UploadOptions = {
@@ -175,9 +186,21 @@ function mapStorageError(message: string): Error {
       "That file path is already taken — try uploading again (a new version id will be used)."
     );
   }
-  if (lower.includes("payload") || lower.includes("too large") || lower.includes("413")) {
+  if (
+    lower.includes("payload") ||
+    lower.includes("too large") ||
+    lower.includes("exceeded") ||
+    lower.includes("maximum allowed size") ||
+    lower.includes("entity too large") ||
+    lower.includes("413")
+  ) {
     return new Error(
-      "Upload failed — file is over the storage limit. Bounce a smaller format or compress the wav."
+      "Upload failed — this file is over your Supabase storage size limit (often 50 MB by default, even though TEMPO allows up to 200 MB). In Supabase → Storage → Settings, raise “Global file size limit” to at least 200 MB, then try again — or bounce a smaller format."
+    );
+  }
+  if (lower.includes("invalid key") || lower.includes("invalidname")) {
+    return new Error(
+      "Upload failed — the file name isn’t valid for storage. Try renaming it to something simple (letters, numbers, dashes) and upload again."
     );
   }
   if (lower.includes("jwt") || lower.includes("auth") || lower.includes("401")) {

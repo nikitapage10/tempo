@@ -2,8 +2,10 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ImagePlus } from "lucide-react";
 import { SignedImage } from "@/components/ui/signed-image";
+import { useToast } from "@/components/ui/toast";
+import { useAssetMutations } from "@/hooks/use-assets";
 import { MOMENTUM_OPTIONS } from "@/lib/constants";
 import {
   formatTrackType,
@@ -28,7 +30,11 @@ export function TrackHeader({
 }: TrackHeaderProps) {
   const [title, setTitle] = React.useState(track.title);
   const [editingTitle, setEditingTitle] = React.useState(false);
+  const [coverBusy, setCoverBusy] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const coverInputRef = React.useRef<HTMLInputElement>(null);
+  const { upload } = useAssetMutations(track.id);
+  const { toast } = useToast();
 
   React.useEffect(() => {
     setTitle(track.title);
@@ -48,6 +54,28 @@ export function TrackHeader({
     await onPatch({ title: next });
   }
 
+  async function handleCover(files: FileList | null) {
+    const file = files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast("Pick an image file (png, jpg, webp) for the cover.");
+      return;
+    }
+    setCoverBusy(true);
+    try {
+      await upload.mutateAsync({ file, kind: "artwork" });
+      toast("Cover updated", "ok");
+    } catch (err) {
+      toast(
+        err instanceof Error
+          ? err.message
+          : "Couldn’t upload cover — try a smaller image."
+      );
+    } finally {
+      setCoverBusy(false);
+    }
+  }
+
   const metaParts: string[] = [];
   if (track.bpm != null) metaParts.push(`${track.bpm} BPM`);
   if (track.musical_key) metaParts.push(track.musical_key);
@@ -59,14 +87,39 @@ export function TrackHeader({
   return (
     <header className="overflow-hidden rounded-card border border-line bg-bg-1">
       <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start sm:gap-5 sm:p-5">
-        <div
-          className="relative size-20 shrink-0 overflow-hidden rounded-input border border-line sm:size-24"
-          style={{ background: gradientFromTrackId(track.id) }}
-        >
-          <SignedImage
-            path={track.artwork_url}
-            className="absolute inset-0 size-full"
+        <div className="shrink-0">
+          <button
+            type="button"
+            className="group relative size-20 overflow-hidden rounded-input border border-line focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice sm:size-24"
+            style={{ background: gradientFromTrackId(track.id) }}
+            aria-label="Upload cover art"
+            disabled={coverBusy}
+            onClick={() => coverInputRef.current?.click()}
+          >
+            <SignedImage
+              path={track.artwork_url}
+              className="absolute inset-0 size-full"
+            />
+            <span className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-bg-0/70 opacity-0 transition-opacity duration-hover group-hover:opacity-100 group-focus-visible:opacity-100">
+              <ImagePlus className="size-5 text-ice" />
+              <span className="text-[10px] text-text-hi">
+                {coverBusy ? "Uploading…" : "Cover"}
+              </span>
+            </span>
+          </button>
+          <input
+            ref={coverInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/gif,.png,.jpg,.jpeg,.webp,.gif"
+            className="hidden"
+            onChange={(e) => {
+              void handleCover(e.target.files);
+              e.target.value = "";
+            }}
           />
+          <p className="mt-1.5 max-w-[6rem] text-center text-[10px] text-text-lo sm:max-w-[6.5rem]">
+            Tap to set cover
+          </p>
         </div>
 
         <div className="min-w-0 flex-1">

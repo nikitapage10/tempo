@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/client";
 import {
   AUDIO_EXTENSIONS,
   MAX_UPLOAD_BYTES,
+  MAX_VERSIONS_PER_TRACK,
 } from "@/lib/constants";
 import { buildStoragePath, deleteFile, uploadFile } from "@/lib/storage";
 import type { Version } from "@/lib/types";
@@ -114,7 +115,24 @@ export async function uploadVersion(
     );
   }
 
+  await pruneOldVersions(input.trackId);
+
   return data;
+}
+
+/** Keep only the newest N versions; delete older rows + storage files. */
+async function pruneOldVersions(trackId: string): Promise<void> {
+  const versions = await fetchVersions(trackId);
+  if (versions.length <= MAX_VERSIONS_PER_TRACK) return;
+
+  const toDelete = versions.slice(MAX_VERSIONS_PER_TRACK);
+  for (const v of toDelete) {
+    try {
+      await deleteVersion(v);
+    } catch {
+      /* best-effort — list refresh will show what's left */
+    }
+  }
 }
 
 export async function setCurrentVersion(

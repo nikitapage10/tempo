@@ -4,6 +4,11 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-26
 
+- Changed (v0.6.5): each track keeps only the **latest 2** bounces — uploading a third removes the oldest so storage stays lean (you can still A/B the two you have).
+- Fixed (v0.6.4): artwork / file names with spaces no longer fail upload (“Invalid key”); bounce size errors now explain the real limit (your Supabase Storage setting, often 50 MB by default).
+- Added: tap the track’s cover square to upload cover art (also still works from Stems & assets → Artwork).
+- Under the hood: to allow ~80–200 MB wavs, open Supabase → Storage → Settings and raise “Global file size limit” to at least 200 MB (TEMPO already allows up to 200 MB on the client).
+
 - Fixed (v0.6.3): Today / Board no longer crash with “Cannot find module three.js” — the shader loads only in the browser and the Next cache is cleared on the next local start.
 - Fixed (v0.6.2): local launcher finds Node when started from Finder (loads your usual PATH / Homebrew).
 - Added (v0.6.1): double-click **Launch TEMPO.command** in the project folder to start a local copy and open it in your browser (leave the Terminal window open while you work; Ctrl+C stops it).

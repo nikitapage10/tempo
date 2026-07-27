@@ -37,7 +37,9 @@ Do not add other dependencies without asking. No Redux, no Prisma, no CSS-in-JS.
 - Schema changes go in numbered files in /migrations (e.g. 002_add_x.sql)
   for the user to run manually in the Supabase SQL editor. Tell them when
   a migration needs running.
-- versions rows are append-only: never UPDATE file_url, never auto-delete.
+- versions rows: never UPDATE file_url. Keep at most 2 versions per track —
+  after upload, auto-delete older ones (and their storage files). Manual
+  delete still requires a strong confirm.
 - version_no and is_current are managed by DB triggers — do not set version_no
   in application code.
 - Completion % is always computed from checklist_items, never stored.

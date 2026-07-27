@@ -143,6 +143,11 @@ export function AssetsPanel({ trackId }: AssetsPanelProps) {
           <input
             ref={inputRef}
             type="file"
+            accept={
+              kind === "artwork"
+                ? "image/png,image/jpeg,image/webp,image/gif,.png,.jpg,.jpeg,.webp,.gif"
+                : undefined
+            }
             className="hidden"
             onChange={(e) => {
               void handleFiles(e.target.files);
@@ -151,7 +156,7 @@ export function AssetsPanel({ trackId }: AssetsPanelProps) {
           />
         </div>
         <p className="mt-2 text-[11px] text-text-lo">
-          Drop a file here. Artwork uploads set the track thumbnail.
+          Drop a file here. Artwork uploads set the track cover.
         </p>
       </div>
 

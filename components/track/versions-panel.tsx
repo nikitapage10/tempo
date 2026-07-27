@@ -106,7 +106,8 @@ export function VersionsPanel({
       >
         <p className="text-sm text-text-hi">Upload a bounce</p>
         <p className="mt-1 text-xs text-text-lo">
-          mp3 / wav / aiff / m4a · max 200 MB
+          mp3 / wav / aiff / m4a · up to 200 MB · keeps the latest 2 versions
+          (older ones are removed)
         </p>
         <div className="mt-3 space-y-2">
           <Label htmlFor={`changelog-${trackId}`}>What changed?</Label>
