@@ -48,7 +48,28 @@ export async function updateSession(request: NextRequest) {
     path.startsWith("/register") ||
     path.startsWith("/auth");
 
-  if (!user && !isAuthRoute) {
+  // Guest review is intentionally public — exact `/review` and `/api/review`
+  // prefixes only (SECURITY-AND-PERMISSIONS.md §4, TECHNICAL-ARCHITECTURE §3).
+  // The route handlers under /api/review/* independently validate the guest
+  // token via the service-role client; this only keeps the page reachable
+  // without a TEMPO account.
+  const isGuestReviewRoute =
+    path === "/review" ||
+    path.startsWith("/review/") ||
+    path === "/api/review" ||
+    path.startsWith("/api/review/");
+
+  // Invite landing pages are public so an unauthenticated invitee can read
+  // the preview and get routed to sign in; accepting itself still requires
+  // an authenticated session (checked in the route handler) — see
+  // SECURITY-AND-PERMISSIONS.md §4.
+  const isInviteRoute =
+    path === "/invite" ||
+    path.startsWith("/invite/") ||
+    path === "/api/invite" ||
+    path.startsWith("/api/invite/");
+
+  if (!user && !isAuthRoute && !isGuestReviewRoute && !isInviteRoute) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/login";
     return NextResponse.redirect(redirectUrl);

@@ -21,6 +21,12 @@ type TrackHeaderProps = {
   stages: Stage[];
   versionCount: number;
   onPatch: (patch: TrackUpdate) => Promise<void>;
+  /** Hide the stage dropdown — used when a stage timeline is the primary control. */
+  hideStage?: boolean;
+  /** Render without the outer bordered/background chrome (a wrapper supplies it). */
+  bare?: boolean;
+  /** Routes stage changes through the recipe-aware transition helper instead of a plain patch. */
+  onStageChange?: (stageId: string) => void;
 };
 
 export function TrackHeader({
@@ -28,6 +34,9 @@ export function TrackHeader({
   stages,
   versionCount,
   onPatch,
+  hideStage = false,
+  bare = false,
+  onStageChange,
 }: TrackHeaderProps) {
   const [title, setTitle] = React.useState(track.title);
   const [editingTitle, setEditingTitle] = React.useState(false);
@@ -85,8 +94,8 @@ export function TrackHeader({
   );
   metaParts.push(formatTrackType(track.type));
 
-  return (
-    <header className="overflow-hidden rounded-card border border-line bg-bg-1">
+  const content = (
+    <>
       <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start sm:gap-5 sm:p-5">
         <div className="shrink-0">
           <button
@@ -193,23 +202,30 @@ export function TrackHeader({
               </select>
             </div>
 
-            <label className="sr-only" htmlFor="track-stage">
-              Stage
-            </label>
-            <select
-              id="track-stage"
-              value={track.stage_id ?? ""}
-              onChange={(e) =>
-                void onPatch({ stage_id: e.target.value || null })
-              }
-              className="h-8 rounded-input border border-line bg-bg-2 px-2.5 text-xs text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
-            >
-              {stages.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
+            {hideStage ? null : (
+              <>
+                <label className="sr-only" htmlFor="track-stage">
+                  Stage
+                </label>
+                <select
+                  id="track-stage"
+                  value={track.stage_id ?? ""}
+                  onChange={(e) => {
+                    const stageId = e.target.value;
+                    if (!stageId) return;
+                    if (onStageChange) onStageChange(stageId);
+                    else void onPatch({ stage_id: stageId });
+                  }}
+                  className="h-8 rounded-input border border-line bg-bg-2 px-2.5 text-xs text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+                >
+                  {stages.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </>
+            )}
 
             <label className="sr-only" htmlFor="track-deadline">
               Deadline
@@ -227,6 +243,14 @@ export function TrackHeader({
         </div>
       </div>
       <FlareLine />
+    </>
+  );
+
+  if (bare) return content;
+
+  return (
+    <header className="overflow-hidden rounded-card border border-line bg-bg-1">
+      {content}
     </header>
   );
 }

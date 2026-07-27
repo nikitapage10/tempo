@@ -17,6 +17,9 @@
     --ok: #6fd99a;
     --warn: #ff7a6b;
 
+    /* Top Spectra lightfield strip — visible animated sliver */
+    --edge-strip-h: 14px;
+
     /* shadcn mapped to Spectra */
     --background: 240 10% 4%;
     --foreground: 40 20% 94%;
@@ -140,7 +143,7 @@
   }
 
   .edge-strip {
-    height: 2px;
+    height: var(--edge-strip-h, 14px);
     width: 100%;
     background: transparent;
   }

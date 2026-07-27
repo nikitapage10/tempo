@@ -6,6 +6,7 @@ import {
   createChecklistItem,
   deleteChecklistItem,
   fetchChecklistItems,
+  fetchChecklistItemsForTracks,
   reorderChecklistItems,
   updateChecklistItem,
 } from "@/lib/api/checklist";
@@ -20,6 +21,15 @@ export function useChecklist(trackId: string | null) {
     queryKey: ["checklist", trackId],
     queryFn: () => fetchChecklistItems(trackId!),
     enabled: !!trackId,
+  });
+}
+
+/** Batch checklist rollup for a set of tracks (e.g. release readiness). */
+export function useChecklistForTracks(trackIds: string[]) {
+  return useQuery({
+    queryKey: ["checklist-batch", [...trackIds].sort().join(",")],
+    queryFn: () => fetchChecklistItemsForTracks(trackIds),
+    enabled: trackIds.length > 0,
   });
 }
 

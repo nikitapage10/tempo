@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { logActivity } from "@/lib/api/activity";
 import type { Track, TrackInsert, TrackUpdate } from "@/lib/types";
 
 export async function fetchTracks(spaceId: string): Promise<Track[]> {
@@ -81,7 +82,31 @@ export async function moveTrackStage(
   id: string,
   stageId: string
 ): Promise<Track> {
-  return updateTrack(id, { stage_id: stageId });
+  const track = await updateTrack(id, { stage_id: stageId });
+  void logStageChange(id, stageId);
+  return track;
+}
+
+/** Best-effort activity log — never blocks the stage move itself. */
+async function logStageChange(trackId: string, stageId: string): Promise<void> {
+  try {
+    const supabase = createClient();
+    const [{ data: userData }, { data: stage }] = await Promise.all([
+      supabase.auth.getUser(),
+      supabase.from("stages").select("name").eq("id", stageId).maybeSingle(),
+    ]);
+    const actorLabel = userData.user?.email ?? null;
+    await logActivity({
+      trackId,
+      eventType: "stage_changed",
+      summary: `${actorLabel ?? "Someone"} moved this to ${stage?.name ?? "a new stage"}`,
+      entityType: "stage",
+      entityId: stageId,
+      actorLabel,
+    });
+  } catch {
+    /* best-effort */
+  }
 }
 
 export async function deleteTrack(id: string): Promise<void> {
@@ -95,5 +120,12 @@ function normalizeTrack(row: Track): Track {
     ...row,
     tags: row.tags ?? [],
     bpm: row.bpm != null ? Number(row.bpm) : null,
+    // Defaults for workflow fields (migration 001) so older rows / pre-migration
+    // schemas don't crash the workspace — see FEATURE-SPECS.md §2.
+    next_action: row.next_action ?? null,
+    next_action_due: row.next_action_due ?? null,
+    blocked_reason: row.blocked_reason ?? null,
+    waiting_on: row.waiting_on ?? null,
+    stage_entered_at: row.stage_entered_at ?? row.created_at,
   };
 }

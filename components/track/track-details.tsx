@@ -9,6 +9,8 @@ import type { Track, TrackType, TrackUpdate } from "@/lib/types";
 type TrackDetailsProps = {
   track: Track;
   onPatch: (patch: TrackUpdate) => Promise<void>;
+  /** Viewers/commenters see these fields but can't change them (RLS enforces this either way). */
+  readOnly?: boolean;
 };
 
 function parseTags(raw: string): string[] {
@@ -18,7 +20,7 @@ function parseTags(raw: string): string[] {
     .filter(Boolean);
 }
 
-export function TrackDetails({ track, onPatch }: TrackDetailsProps) {
+export function TrackDetails({ track, onPatch, readOnly }: TrackDetailsProps) {
   const [artistAlias, setArtistAlias] = React.useState(
     track.artist_alias ?? ""
   );
@@ -56,6 +58,7 @@ export function TrackDetails({ track, onPatch }: TrackDetailsProps) {
           <Input
             id="detail-alias"
             value={artistAlias}
+            disabled={readOnly}
             onChange={(e) => setArtistAlias(e.target.value)}
             onBlur={() => {
               const next = artistAlias.trim() || null;
@@ -71,12 +74,13 @@ export function TrackDetails({ track, onPatch }: TrackDetailsProps) {
           <select
             id="detail-type"
             value={type}
+            disabled={readOnly}
             onChange={(e) => {
               const next = e.target.value as TrackType;
               setType(next);
               void commit({ type: next });
             }}
-            className="flex h-9 w-full rounded-input border border-line bg-bg-2 px-3 text-sm text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+            className="flex h-9 w-full rounded-input border border-line bg-bg-2 px-3 text-sm text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice disabled:opacity-50"
           >
             {TRACK_TYPES.map((t) => (
               <option key={t.value} value={t.value}>
@@ -94,6 +98,7 @@ export function TrackDetails({ track, onPatch }: TrackDetailsProps) {
               className="font-mono"
               inputMode="decimal"
               value={bpm}
+              disabled={readOnly}
               onChange={(e) => setBpm(e.target.value)}
               onBlur={() => {
                 const next = bpm.trim() ? Number(bpm) : null;
@@ -110,6 +115,7 @@ export function TrackDetails({ track, onPatch }: TrackDetailsProps) {
               id="detail-key"
               className="font-mono"
               value={musicalKey}
+              disabled={readOnly}
               onChange={(e) => setMusicalKey(e.target.value)}
               onBlur={() => {
                 const next = musicalKey.trim() || null;
@@ -127,6 +133,7 @@ export function TrackDetails({ track, onPatch }: TrackDetailsProps) {
           <Input
             id="detail-genre"
             value={genre}
+            disabled={readOnly}
             onChange={(e) => setGenre(e.target.value)}
             onBlur={() => {
               const next = genre.trim() || null;
@@ -142,6 +149,7 @@ export function TrackDetails({ track, onPatch }: TrackDetailsProps) {
           <Input
             id="detail-dest"
             value={destination}
+            disabled={readOnly}
             onChange={(e) => setDestination(e.target.value)}
             onBlur={() => {
               const next = destination.trim() || null;
@@ -158,6 +166,7 @@ export function TrackDetails({ track, onPatch }: TrackDetailsProps) {
           <Input
             id="detail-tags"
             value={tags}
+            disabled={readOnly}
             onChange={(e) => setTags(e.target.value)}
             onBlur={() => {
               const next = parseTags(tags);

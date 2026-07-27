@@ -16,12 +16,14 @@ import {
   useProjectTasks,
   useProjectTracks,
 } from "@/hooks/use-projects";
-import { useTasks } from "@/hooks/use-tasks";
+import { useTaskMutations, useTasks } from "@/hooks/use-tasks";
 import { useTracks } from "@/hooks/use-tracks";
 import { formatShortDate } from "@/lib/format";
 import { gradientFromTrackId } from "@/lib/track-style";
 import { SignedImage } from "@/components/ui/signed-image";
-import { TASK_CATEGORIES } from "@/lib/constants";
+import { PROJECT_TYPES, TASK_CATEGORIES } from "@/lib/constants";
+import { ReleaseWorkspace } from "@/components/projects/release-workspace";
+import type { ProjectType } from "@/lib/types";
 
 export default function ProjectDetailPage() {
   const params = useParams<{ id: string }>();
@@ -37,6 +39,7 @@ export default function ProjectDetailPage() {
 
   const allTracksQuery = useTracks(activeSpaceId);
   const allTasksQuery = useTasks();
+  const { update: updateTask } = useTaskMutations();
 
   const project = projectQuery.data;
   const tracks = tracksQuery.data ?? [];
@@ -47,6 +50,7 @@ export default function ProjectDetailPage() {
   const [name, setName] = React.useState("");
   const [description, setDescription] = React.useState("");
   const [deadline, setDeadline] = React.useState("");
+  const [projectType, setProjectType] = React.useState<ProjectType>("general");
   const [attachTrackId, setAttachTrackId] = React.useState("");
   const [attachTaskId, setAttachTaskId] = React.useState("");
 
@@ -55,6 +59,7 @@ export default function ProjectDetailPage() {
     setName(project.name);
     setDescription(project.description ?? "");
     setDeadline(project.deadline ?? "");
+    setProjectType(project.project_type);
   }, [project]);
 
   const availableTracks = allTracks.filter(
@@ -84,7 +89,7 @@ export default function ProjectDetailPage() {
     );
   }
 
-  async function saveMeta() {
+  async function saveMeta(patch: Partial<{ name: string; description: string; deadline: string | null; project_type: ProjectType }> = {}) {
     try {
       await update.mutateAsync({
         id,
@@ -92,6 +97,8 @@ export default function ProjectDetailPage() {
           name: name.trim() || project!.name,
           description,
           deadline: deadline || null,
+          project_type: projectType,
+          ...patch,
         },
       });
       toast("Project saved", "ok");
@@ -124,16 +131,24 @@ export default function ProjectDetailPage() {
               className="mt-1 font-display text-lg font-semibold"
             />
           </div>
-          <div className="sm:col-span-2">
-            <Label htmlFor="p-desc">Description</Label>
-            <Textarea
-              id="p-desc"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              onBlur={() => void saveMeta()}
-              className="mt-1"
-              rows={3}
-            />
+          <div>
+            <Label htmlFor="p-type">Type</Label>
+            <select
+              id="p-type"
+              value={projectType}
+              onChange={(e) => {
+                const next = e.target.value as ProjectType;
+                setProjectType(next);
+                void saveMeta({ project_type: next });
+              }}
+              className="mt-1 flex h-9 w-full rounded-input border border-line bg-bg-2 px-3 text-sm text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+            >
+              {PROJECT_TYPES.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <Label htmlFor="p-deadline">Deadline</Label>
@@ -146,8 +161,30 @@ export default function ProjectDetailPage() {
               className="mt-1"
             />
           </div>
+          <div className="sm:col-span-2">
+            <Label htmlFor="p-desc">Description</Label>
+            <Textarea
+              id="p-desc"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              onBlur={() => void saveMeta()}
+              className="mt-1"
+              rows={3}
+            />
+          </div>
         </div>
       </div>
+
+      {project.project_type !== "general" ? (
+        <ReleaseWorkspace
+          project={project}
+          tracks={tracks}
+          tasks={tasks}
+          onUpdateTask={async (taskId, patch) => {
+            await updateTask.mutateAsync({ id: taskId, patch });
+          }}
+        />
+      ) : null}
 
       <section className="rounded-card border border-line bg-bg-1 p-4">
         <h2 className="mb-3 font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">

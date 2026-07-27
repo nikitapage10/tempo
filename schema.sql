@@ -240,3 +240,27 @@ create index idx_assets_track on assets(track_id);
 create index idx_checklist_track on checklist_items(track_id);
 create index idx_tasks_due on tasks(due_date);
 create index idx_sessions_track on sessions(track_id);
+
+-- ---------- Additive schema from migrations 001–011 (canonical snapshot notes) ----------
+-- Prefer running numbered files in /migrations on live databases.
+-- The blocks below document the intended end state for greenfield installs.
+
+-- 001 track workflow
+alter table tracks add column if not exists next_action text;
+alter table tracks add column if not exists next_action_due date;
+alter table tracks add column if not exists blocked_reason text;
+alter table tracks add column if not exists waiting_on text;
+alter table tracks add column if not exists stage_entered_at timestamptz not null default now();
+
+-- 002 comments extensions (see migrations/002_timestamped_comments.sql)
+-- 003 guest_review_links (see migrations/003_guest_review_links.sql)
+-- 004 version milestones + version_decisions
+-- 005 stage_recipes + stage_recipe_runs
+-- 006 sessions focus fields
+-- 007 track_references
+-- 008 projects.project_type + release_details + release_track_metadata
+-- 009 track_collaborators + activity_events + notifications + RLS helpers
+-- 010 user_track_workspace_preferences
+-- 011 dashboard aggregate views
+
+-- Full SQL for each lives in /migrations — run 001 through 011 in order on production.

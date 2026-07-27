@@ -12,6 +12,7 @@ import {
   Plus,
 } from "lucide-react";
 import { SpaceSwitcher } from "@/components/space-switcher";
+import { NotificationCenter } from "@/components/notification-center";
 import { EdgeStrip, IntroMoment } from "@/components/intro-moment";
 import { FlareLine } from "@/components/flare-line";
 import { LfWindow } from "@/components/lf-windows";
@@ -37,9 +38,16 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+const FOCUS_ROUTE = /^\/track\/[^/]+\/focus(\/|$)/;
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+
+  if (FOCUS_ROUTE.test(pathname)) {
+    // Focus sessions get a distraction-free, full-bleed shell — no rail, no tab bar (FEATURE-SPECS §10).
+    return <main className="min-h-screen">{children}</main>;
+  }
 
   return (
     <div className="flex min-h-screen flex-col" data-lf-chrome>
@@ -49,21 +57,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="flex flex-1">
         {/* Left 2px gutter stays transparent so active-nav windows can punch through */}
         <aside
-          className="sticky top-[2px] hidden h-[calc(100vh-2px)] w-[220px] shrink-0 flex-col border-r border-line md:flex"
+          className="sticky top-[var(--edge-strip-h)] hidden h-[calc(100vh-var(--edge-strip-h))] w-[220px] shrink-0 flex-col border-r border-line md:flex"
           style={{
             background:
               "linear-gradient(to right, transparent 2px, var(--bg-1) 2px)",
           }}
         >
           <div className="px-5 pt-6 pb-4">
-            <Link
-              href="/"
-              className="rounded-input focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
-            >
-              <span className="font-display text-xl font-bold tracking-tight text-text-hi">
-                TEMPO
-              </span>
-            </Link>
+            <div className="flex items-center justify-between gap-2">
+              <Link
+                href="/"
+                className="rounded-input focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+              >
+                <span className="font-display text-xl font-bold tracking-tight text-text-hi">
+                  TEMPO
+                </span>
+              </Link>
+              <NotificationCenter />
+            </div>
             <FlareLine className="mt-3" />
           </div>
 

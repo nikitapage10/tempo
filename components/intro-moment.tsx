@@ -80,7 +80,7 @@ export function IntroMoment({
       )}
       style={
         phase === "collapse"
-          ? { transform: "scaleY(0.004)", opacity: 0.9 }
+          ? { transform: "scaleY(0.018)", opacity: 0.9 }
           : undefined
       }
       aria-hidden
@@ -99,9 +99,9 @@ export function IntroMoment({
   );
 }
 
-/** Thin top edge — Lightfield window strip. */
+/** Top edge Lightfield window strip (height via --edge-strip-h). */
 export function EdgeStrip() {
   return (
-    <LfWindow className="edge-strip lf-window sticky top-0 z-50" aria-hidden />
+    <LfWindow className="edge-strip lf-window sticky top-0 z-50 shrink-0" aria-hidden />
   );
 }

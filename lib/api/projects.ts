@@ -101,6 +101,7 @@ export async function createProject(input: ProjectInsert): Promise<Project> {
       deadline: input.deadline || null,
       space_id: input.space_id ?? null,
       status: input.status ?? "active",
+      project_type: input.project_type ?? "general",
     })
     .select()
     .single();

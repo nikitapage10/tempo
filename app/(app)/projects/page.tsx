@@ -15,6 +15,8 @@ import { FlareLine } from "@/components/flare-line";
 import { useActiveSpace } from "@/components/active-space-provider";
 import { useProjectMutations, useProjects } from "@/hooks/use-projects";
 import { formatShortDate } from "@/lib/format";
+import { PROJECT_TYPES } from "@/lib/constants";
+import type { ProjectType } from "@/lib/types";
 
 export default function ProjectsPage() {
   const router = useRouter();
@@ -26,6 +28,7 @@ export default function ProjectsPage() {
   const [name, setName] = React.useState("");
   const [description, setDescription] = React.useState("");
   const [deadline, setDeadline] = React.useState("");
+  const [projectType, setProjectType] = React.useState<ProjectType>("general");
   const [busy, setBusy] = React.useState(false);
 
   async function handleCreate(e: React.FormEvent) {
@@ -38,11 +41,13 @@ export default function ProjectsPage() {
         description,
         deadline: deadline || null,
         space_id: activeSpaceId,
+        project_type: projectType,
       });
       setOpen(false);
       setName("");
       setDescription("");
       setDeadline("");
+      setProjectType("general");
       toast("Project created", "ok");
       router.push(`/projects/${p.id}`);
     } catch (err) {
@@ -97,9 +102,17 @@ export default function ProjectsPage() {
               className="overflow-hidden rounded-card border border-line transition-colors duration-hover hover:border-ice/40"
             >
               <div className="bg-bg-1 p-4 pb-3">
-                <h2 className="font-display text-base font-semibold text-text-hi">
-                  {p.name}
-                </h2>
+                <div className="flex items-center gap-1.5">
+                  <h2 className="font-display text-base font-semibold text-text-hi">
+                    {p.name}
+                  </h2>
+                  {p.project_type !== "general" ? (
+                    <span className="rounded-chip border border-amber/30 bg-amber/10 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-amber">
+                      {PROJECT_TYPES.find((t) => t.value === p.project_type)
+                        ?.label ?? p.project_type}
+                    </span>
+                  ) : null}
+                </div>
                 {p.deadline ? (
                   <p className="mt-1 font-mono text-[11px] text-text-lo">
                     Due {formatShortDate(p.deadline + "T12:00:00")}
@@ -142,6 +155,26 @@ export default function ProjectsPage() {
                 required
                 autoFocus
               />
+            </div>
+            <div>
+              <Label htmlFor="proj-type">Type</Label>
+              <select
+                id="proj-type"
+                value={projectType}
+                onChange={(e) => setProjectType(e.target.value as ProjectType)}
+                className="mt-1 flex h-9 w-full rounded-input border border-line bg-bg-2 px-3 text-sm text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+              >
+                {PROJECT_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+              {projectType !== "general" ? (
+                <p className="mt-1 text-[11px] text-text-lo">
+                  Adds a release workspace — date, readiness, track order, metadata, pitching.
+                </p>
+              ) : null}
             </div>
             <div>
               <Label htmlFor="proj-desc">Description</Label>

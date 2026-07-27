@@ -3,13 +3,27 @@ import {
   convertLosslessToMp3,
   needsMp3Conversion,
 } from "@/lib/audio-convert";
+import { logActivity } from "@/lib/api/activity";
+import { notify } from "@/lib/api/notify";
 import {
   AUDIO_EXTENSIONS,
   MAX_UPLOAD_BYTES,
   MAX_VERSIONS_PER_TRACK,
 } from "@/lib/constants";
 import { buildStoragePath, deleteFile, uploadFile } from "@/lib/storage";
-import type { Version } from "@/lib/types";
+import { selectVersionsToPrune } from "@/lib/version-prune";
+import type { MilestoneType, Version } from "@/lib/types";
+
+/** Old rows predate the milestone/pin columns — default them so callers never see undefined. */
+function normalizeVersion(row: Version): Version {
+  return {
+    ...row,
+    is_pinned: row.is_pinned ?? false,
+    milestone_type: row.milestone_type ?? null,
+    milestone_label: row.milestone_label ?? null,
+    pinned_at: row.pinned_at ?? null,
+  };
+}
 
 export async function fetchVersions(trackId: string): Promise<Version[]> {
   const supabase = createClient();
@@ -19,7 +33,29 @@ export async function fetchVersions(trackId: string): Promise<Version[]> {
     .eq("track_id", trackId)
     .order("version_no", { ascending: false });
   if (error) throw error;
-  return data ?? [];
+  return (data ?? []).map(normalizeVersion);
+}
+
+/** Batch versions fetch across many tracks — used by the release workspace (master/artwork status). */
+export async function fetchVersionsForTracks(
+  trackIds: string[]
+): Promise<Map<string, Version[]>> {
+  const map = new Map<string, Version[]>();
+  if (trackIds.length === 0) return map;
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("versions")
+    .select("*")
+    .in("track_id", trackIds)
+    .order("version_no", { ascending: false });
+  if (error) throw error;
+  for (const row of data ?? []) {
+    const v = normalizeVersion(row);
+    const list = map.get(v.track_id) ?? [];
+    list.push(v);
+    map.set(v.track_id, list);
+  }
+  return map;
 }
 
 export async function fetchCurrentVersion(
@@ -33,7 +69,7 @@ export async function fetchCurrentVersion(
     .eq("is_current", true)
     .maybeSingle();
   if (error) throw error;
-  return data;
+  return data ? normalizeVersion(data) : null;
 }
 
 export type UploadPhase = "converting" | "uploading";
@@ -155,15 +191,52 @@ export async function uploadVersion(
 
   await pruneOldVersions(input.trackId);
 
-  return data;
+  void notifyVersionUpload(input.trackId, data.id, originalLabel);
+
+  return normalizeVersion(data);
 }
 
-/** Keep only the newest N versions; delete older rows + storage files. */
+/** Best-effort activity log + notify-collaborators after a version lands. */
+async function notifyVersionUpload(
+  trackId: string,
+  versionId: string,
+  label: string
+): Promise<void> {
+  try {
+    const supabase = createClient();
+    const [{ data: userData }, { data: track }] = await Promise.all([
+      supabase.auth.getUser(),
+      supabase.from("tracks").select("title").eq("id", trackId).maybeSingle(),
+    ]);
+    const actorLabel = userData.user?.email ?? null;
+    await logActivity({
+      trackId,
+      eventType: "version_uploaded",
+      summary: `${actorLabel ?? "Someone"} uploaded ${label}`,
+      entityType: "version",
+      entityId: versionId,
+      actorLabel,
+    });
+    await notify({
+      trackId,
+      type: "new_version",
+      title: `New version on ${track?.title ?? "a track"}`,
+      body: `${actorLabel ?? "Someone"} uploaded ${label}.`,
+    });
+  } catch {
+    /* best-effort — never block the upload on logging */
+  }
+}
+
+/**
+ * Keep every pinned version plus the newest MAX_VERSIONS_PER_TRACK unpinned
+ * versions; delete the rest (and their storage files). Never touches the
+ * current version. Delegates the keep/delete decision to
+ * lib/version-prune.ts so the rule lives in one place.
+ */
 async function pruneOldVersions(trackId: string): Promise<void> {
   const versions = await fetchVersions(trackId);
-  if (versions.length <= MAX_VERSIONS_PER_TRACK) return;
-
-  const toDelete = versions.slice(MAX_VERSIONS_PER_TRACK);
+  const toDelete = selectVersionsToPrune(versions, MAX_VERSIONS_PER_TRACK);
   for (const v of toDelete) {
     try {
       await deleteVersion(v);
@@ -186,7 +259,51 @@ export async function setCurrentVersion(
     .select()
     .single();
   if (error) throw error;
-  return data;
+  return normalizeVersion(data);
+}
+
+export type PinVersionInput = {
+  milestoneType?: MilestoneType | null;
+  milestoneLabel?: string | null;
+};
+
+/** Pin a version so it survives pruning; optionally tag it as a milestone. */
+export async function pinVersion(
+  versionId: string,
+  input: PinVersionInput = {}
+): Promise<Version> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("versions")
+    .update({
+      is_pinned: true,
+      milestone_type: input.milestoneType ?? null,
+      milestone_label: input.milestoneLabel?.trim() || null,
+      pinned_at: new Date().toISOString(),
+    })
+    .eq("id", versionId)
+    .select()
+    .single();
+  if (error) throw error;
+  return normalizeVersion(data);
+}
+
+/** Unpin a version — it becomes eligible for pruning again on the next upload. */
+export async function unpinVersion(versionId: string): Promise<Version> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("versions")
+    .update({
+      is_pinned: false,
+      milestone_type: null,
+      milestone_label: null,
+      pinned_at: null,
+    })
+    .eq("id", versionId)
+    .select()
+    .single();
+  if (error) throw error;
+  return normalizeVersion(data);
 }
 
 export async function updateVersionDuration(

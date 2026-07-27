@@ -1,9 +1,19 @@
 # TEMPO — Cursor Project Rules
 
 You are building TEMPO, a music project management web app for a solo musician.
-The complete specification lives in `tempo-design-spec.md` in the repo root.
-ALWAYS consult it before building any feature. It is the source of truth for
-scope, data model, screens, and visual design.
+The original product specification lives in `tempo-design-spec.md` in the repo root.
+Next-generation planning lives in these living documents (also repo root) — consult
+them in addition to the design spec before building any feature:
+- `FEATURE-SPECS.md` — planned feature areas, flows, non-goals
+- `TECHNICAL-ARCHITECTURE.md` — client/server boundaries, query keys, routes
+- `DATA-MODEL.md` — current vs proposed schema (additive migrations only)
+- `DESIGN-SYSTEM-V2.md` — track workspace layout and interaction hierarchy
+- `IMPLEMENTATION-PLAN.md` — work-package order, migration gates, verification
+- `SECURITY-AND-PERMISSIONS.md` — threat model and role matrix
+- `TESTING-STRATEGY.md` — manual regression and future automation notes
+`tempo-design-spec.md` plus these documents are the source of truth for scope,
+data model, screens, and visual design. `PRODUCT.md` describes only what exists
+today — never treat roadmap specs as shipped product.
 
 ## Stack (fixed — do not substitute)
 - Next.js 14+ App Router, TypeScript strict mode

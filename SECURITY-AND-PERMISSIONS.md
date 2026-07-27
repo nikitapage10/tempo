@@ -1,0 +1,165 @@
+# TEMPO — Security and Permissions
+
+*Living document. Threat model and permissions matrix for current solo app and planned guest / collaboration features.*
+
+**Status today:** Single-user ownership via Supabase Auth + RLS. Private `audio` bucket. No service-role usage yet. `comments` / `feedback` tables exist but are owner-only and unused in UI.
+
+---
+
+## 1. Security principles
+
+1. **RLS is authoritative** for authenticated data access. UI hiding is not security.
+2. **`audio` bucket is never public.** Playback always uses short-lived signed URLs.
+3. **Raw secrets and tokens are never stored** when a hash will do (guest links, invite tokens).
+4. **Service-role key** only in server-only modules / route handlers — never `NEXT_PUBLIC_*`, never client bundles, never guest-visible errors.
+5. **Fail closed.** Invalid guest/collaborator tokens get generic “unavailable” responses.
+6. **Least privilege.** Track collaboration does not grant catalog-wide or project-wide access.
+7. **No security through obscurity** for version ids — guest APIs must ignore client-supplied ids that disagree with the link record.
+
+---
+
+## 2. Threat model
+
+### T1 — Guest review links
+| Threat | Mitigation |
+|--------|------------|
+| Token guessing | Long opaque tokens; store SHA-256 only; rate/burst limits |
+| Token leakage in logs | Never log raw token; show once to owner |
+| Expired/revoked use | Check `expires_at` / `revoked_at` server-side every request |
+| Enumerating tracks via `/review/*` | Generic unavailable; no existence oracle beyond unavoidable timing |
+| Making bucket public “for guests” | Forbidden — signed URL after validation only |
+| Guest reads private notes/tasks | Review page + APIs return allowlisted fields only |
+| Guest posts spam | Honeypot; length limits; burst limits per link via recent rows |
+| Guest escalates to edit/resolve | v1 API simply does not implement those actions; RLS/service writes constrained |
+
+### T2 — Public comments abuse
+| Threat | Mitigation |
+|--------|------------|
+| XSS via comment text | React text escaping; no `dangerouslySetInnerHTML` for comment bodies |
+| Huge payloads | Server max length; trim; reject empty |
+| Impersonation of owner | Guest rows tagged guest_name / guest_link_id; no author_user_id elevation |
+
+### T3 — Private signed audio
+| Threat | Mitigation |
+|--------|------------|
+| Long-lived URL sharing | 1-hour expiry (or shorter for guests if chosen) |
+| URL in static HTML / CDN cache | `no-store`; fetch URL client-side after auth/validation |
+| Path traversal in storage keys | `sanitizeFilename` + fixed path layout |
+| Referrer leakage | Restrictive Referrer-Policy on review routes |
+
+### T4 — Collaborator invitations (Prompt 10)
+| Threat | Mitigation |
+|--------|------------|
+| Invite token theft | Hash at rest; expiry; revoke; single-use accept if feasible |
+| Wrong account accepts | Require signed-in email match `invited_email` |
+| Privilege escalation via role tampering | Role changes owner-only; server/RLS enforce |
+| Lateral movement to other tracks | RLS scoped to invited `track_id` only |
+| Project/task leakage via FKs | Do not grant SELECT on projects/tasks merely because `track.project_id` is set |
+| Recursive RLS bugs | SECURITY DEFINER helpers for `is_track_owner` / `track_role` |
+
+### T5 — RLS changes
+| Threat | Mitigation |
+|--------|------------|
+| Over-broad `USING (true)` policies | Banned; review every policy in Prompt 10 |
+| Breaking owner access | Explicit owner OR collaborator predicates; test matrix |
+| Anon policies for convenience | Guest access via service-role after token check, not anon SELECT |
+
+### T6 — Token / secret storage
+| Secret | Storage |
+|--------|---------|
+| Supabase anon | `NEXT_PUBLIC_*` (expected); RLS required |
+| Service role | Server env only |
+| Guest raw token | Memory/URL once; DB = hash |
+| Invite raw token | URL once; DB = hash |
+| Signed audio URL | Client memory; not persisted in DB |
+
+### T7 — Accidental data exposure
+| Risk | Mitigation |
+|------|------------|
+| Error objects to guests | Map to generic messages |
+| Verbose Supabase errors in toasts for guests | Separate guest error path |
+| Middleware allowlist too broad | Exact `/review` and `/api/review` paths only |
+| Selecting `*` on tracks for guests | Explicit column allowlists in server serializers |
+
+### T8 — Abuse controls (pragmatic, no new deps)
+- Burst comment limits per `guest_link_id` using recent `comments.created_at` counts
+- Calm 429-style message without infra vendor lock-in
+- Optional: CAPTCHA later — out of scope unless requested
+
+---
+
+## 3. Permissions matrix
+
+Legend: **F** full · **R** read · **W** write/create · **O** own rows only · **—** none · **Own** track owner (`tracks.user_id`)
+
+Roles (planned): **Owner** · **Editor** · **Uploader** · **Commenter** · **Viewer** · **Guest reviewer** (link-scoped, no account)
+
+| Capability | Owner | Editor | Uploader | Commenter | Viewer | Guest |
+|------------|-------|--------|----------|-----------|--------|-------|
+| View track workspace (allowed surfaces) | F | R | R | R | R | Allowlisted review only |
+| Edit metadata / notes / workflow | F | W | — | — | — | — |
+| Change stage / momentum | F | W | — | — | — | — |
+| Upload version / asset | F | W | W | — | — | — |
+| Delete version / asset | F | W* | — | — | — | — |
+| Set current / pin milestone | F | W | — | — | — | — |
+| Delete track | F | — | — | — | — | — |
+| Manage guest links | F | — | — | — | — | — |
+| Manage collaborators / recipes | F | — | — | — | — | — |
+| Checklist edit | F | W | — | — | — | — |
+| Checklist read | F | R | R | R | R | — |
+| Play versions | F | R | R | R | R | Linked version only |
+| Download version | F | R | R | R† | R† | Only if `allow_download` |
+| Create comment | F | W | — | W | — | If `allow_comments` |
+| Edit/delete comment | F / own | own unresolved‡ | — | own unresolved | — | — |
+| Resolve any comment | F | W | — | — | — | — |
+| Reply to comment | F | W | — | W | — | — (v1) |
+| Record version decision | F | W | — | — | — | — (schema later) |
+| Focus session | F | W? | — | — | — | — |
+| References CRUD | F | W | — | — | R | — |
+| See projects/tasks/spaces list | F | —§ | — | — | — | — |
+| Activity / notifications | F | own+track | limited | limited | limited | — |
+| Customize workspace prefs | F | own prefs | own | own | own | — |
+
+\* Confirm whether editors may delete pinned/current — default: editors can delete unpinned non-current with confirm; owner for dangerous cases. Finalize in Prompt 10 plan gate.  
+† Product may hide download for commenter/viewer — default: allow read download for signed-in roles unless owner setting later.  
+‡ Commenters: edit/delete **only their own unresolved** comments.  
+§ Collaborators must not enumerate projects/tasks; if a track shows a project name, use a narrow RPC or denormalized label — decide in Prompt 10 approval.
+
+### Guest allowlist (explicit)
+**May see:** track title, artwork (signed), version number/label/changelog, waveform for linked version, comments for that version (as configured), own posted guest name.  
+**Must not see:** notes, checklist, assets list (except artwork if shown), other versions, tasks, sessions, workflow fields, owner email, collaborator list, project internals, space data.
+
+---
+
+## 4. Middleware and route exposure
+
+| Path | Unauthenticated | Notes |
+|------|-----------------|-------|
+| `/login`, `/register`, `/auth/*` | Yes | Existing |
+| `/review`, `/review/[token]` | Yes | Prompt 4 |
+| `/api/review/*` | Yes + server validation | Exact paths only |
+| `/invite/[token]` | Landing may be public; accept requires auth | Prompt 10 |
+| All `app/(app)/*` | No | Redirect login |
+
+---
+
+## 5. Verification requirements (Prompt 10)
+
+- Two test accounts + one unauthorized account
+- Direct Supabase queries must fail for disallowed roles
+- Collaborator cannot fetch other tracks by UUID guessing
+- Guest cannot change `version_id` in API body to another bounce
+- Unauthorized access = **release blocker**
+
+---
+
+## 6. Unresolved decisions (blocking only for Prompt 10+)
+
+| Decision | Why it matters | Blocks Prompt 1–9? |
+|----------|----------------|--------------------|
+| Exact editor delete powers | RLS policies | No |
+| Whether commenters can download | Product | No |
+| Project name visibility on shared tracks | Data leak risk | Prompt 10 only |
+| Invite single-use vs multi-open before accept | Token theft window | Prompt 10 only |
+
+Prompt 4 guest work can proceed with the matrix above for Guest column.

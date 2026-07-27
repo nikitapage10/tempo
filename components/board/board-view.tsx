@@ -23,8 +23,10 @@ import { TrackCard } from "@/components/tracks/track-card";
 import { TrackFormModal } from "@/components/tracks/track-form-modal";
 import { StageEditor } from "@/components/stages/stage-editor";
 import { useStages } from "@/hooks/use-stages";
+import { useStageTransitionController } from "@/hooks/use-stage-transition";
 import { useTrackMutations, useTracks } from "@/hooks/use-tracks";
 import { TRACK_TYPES } from "@/lib/constants";
+import { deriveAttentionSignals } from "@/lib/attention/signals";
 import type { Track, TrackInsert, TrackType } from "@/lib/types";
 
 export function BoardView() {
@@ -34,7 +36,9 @@ export function BoardView() {
     useActiveSpace();
   const stagesQuery = useStages(activeSpaceId);
   const tracksQuery = useTracks(activeSpaceId);
-  const { create, moveStage } = useTrackMutations(activeSpaceId);
+  const { create } = useTrackMutations(activeSpaceId);
+  const { changeStage, dialog: stageTransitionDialog } =
+    useStageTransitionController(activeSpaceId);
 
   const stages = React.useMemo(
     () => stagesQuery.data ?? [],
@@ -47,6 +51,13 @@ export function BoardView() {
 
   const [typeFilter, setTypeFilter] = React.useState<TrackType | "all">("all");
   const [tagFilter, setTagFilter] = React.useState<string | "all">("all");
+  const [attentionFilter, setAttentionFilter] = React.useState<
+    "all" | "blocked" | "overdue" | "waiting"
+  >("all");
+  const [density, setDensity] = React.useState<"comfortable" | "compact">(() => {
+    if (typeof window === "undefined") return "comfortable";
+    return (localStorage.getItem("tempo.boardDensity") as "comfortable" | "compact") || "comfortable";
+  });
   const [trackModalOpen, setTrackModalOpen] = React.useState(false);
   const [stageEditorOpen, setStageEditorOpen] = React.useState(false);
 
@@ -72,9 +83,21 @@ export function BoardView() {
       if (typeFilter !== "all" && t.type !== typeFilter) return false;
       if (tagFilter !== "all" && !(t.tags ?? []).includes(tagFilter))
         return false;
+      if (attentionFilter !== "all") {
+        const signals = deriveAttentionSignals({ track: t });
+        const ids = new Set(signals.map((s) => s.id));
+        if (attentionFilter === "blocked" && !ids.has("blocked")) return false;
+        if (attentionFilter === "waiting" && !ids.has("waiting")) return false;
+        if (
+          attentionFilter === "overdue" &&
+          !ids.has("next-overdue") &&
+          !ids.has("deadline-approaching")
+        )
+          return false;
+      }
       return true;
     });
-  }, [tracks, typeFilter, tagFilter]);
+  }, [tracks, typeFilter, tagFilter, attentionFilter]);
 
   const tracksByStage = React.useMemo(() => {
     const map = new Map<string, Track[]>();
@@ -129,7 +152,10 @@ export function BoardView() {
     }
 
     if (!targetStageId || targetStageId === track.stage_id) return;
-    moveStage.mutate({ id: trackId, stageId: targetStageId });
+    void changeStage(trackId, targetStageId, {
+      trackTitle: track.title,
+      fromStageId: track.stage_id,
+    });
   }
 
   async function handleCreate(values: TrackInsert & { id?: string }) {
@@ -216,6 +242,48 @@ export function BoardView() {
               ))}
             </div>
           ) : null}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="mr-1 font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+              Attention
+            </span>
+            {(
+              [
+                ["all", "All"],
+                ["blocked", "Blocked"],
+                ["waiting", "Waiting"],
+                ["overdue", "Overdue"],
+              ] as const
+            ).map(([value, label]) => (
+              <Chip
+                key={value}
+                active={attentionFilter === value}
+                onClick={() => setAttentionFilter(value)}
+              >
+                {label}
+              </Chip>
+            ))}
+            <span className="ml-2 mr-1 font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+              Density
+            </span>
+            <Chip
+              active={density === "comfortable"}
+              onClick={() => {
+                setDensity("comfortable");
+                localStorage.setItem("tempo.boardDensity", "comfortable");
+              }}
+            >
+              Comfortable
+            </Chip>
+            <Chip
+              active={density === "compact"}
+              onClick={() => {
+                setDensity("compact");
+                localStorage.setItem("tempo.boardDensity", "compact");
+              }}
+            >
+              Compact
+            </Chip>
+          </div>
         </div>
       </header>
 
@@ -254,6 +322,7 @@ export function BoardView() {
                 tracks={tracksByStage.get(stage.id) ?? []}
                 isOver={overStageId === stage.id}
                 onOpenTrack={(t) => router.push(`/track/${t.id}`)}
+                compact={density === "compact"}
               />
             ))}
           </div>
@@ -286,6 +355,7 @@ export function BoardView() {
           />
         </>
       ) : null}
+      {stageTransitionDialog}
     </div>
   );
 }

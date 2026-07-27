@@ -16,12 +16,14 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Plus, Trash2 } from "lucide-react";
+import { GripVertical, Plus, Trash2, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RecipeEditor } from "@/components/stages/recipe-editor";
 import { useStageMutations, useStages } from "@/hooks/use-stages";
+import { useStagesWithRecipes } from "@/hooks/use-recipes";
 import type { Stage } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -41,6 +43,9 @@ export function StageEditor({
   const { data: stages = [], isLoading } = useStages(spaceId);
   const { create, rename, remove, reorder, countTracksInStage } =
     useStageMutations(spaceId);
+  const { data: recipeStageIds } = useStagesWithRecipes(
+    stages.map((s) => s.id)
+  );
 
   const [newName, setNewName] = React.useState("");
   const [deleteTarget, setDeleteTarget] = React.useState<Stage | null>(null);
@@ -48,6 +53,7 @@ export function StageEditor({
   const [moveTo, setMoveTo] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState(false);
+  const [recipeStage, setRecipeStage] = React.useState<Stage | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } })
@@ -155,6 +161,8 @@ export function StageEditor({
                       onRename={handleRename}
                       onDelete={() => beginDelete(stage)}
                       canDelete={stages.length > 1}
+                      hasRecipe={recipeStageIds?.has(stage.id) ?? false}
+                      onOpenRecipe={() => setRecipeStage(stage)}
                     />
                   ))}
                 </ul>
@@ -228,6 +236,15 @@ export function StageEditor({
 
         {error ? <p className="mt-3 text-sm text-warn">{error}</p> : null}
       </DialogContent>
+
+      {recipeStage ? (
+        <RecipeEditor
+          open={!!recipeStage}
+          onOpenChange={(o) => !o && setRecipeStage(null)}
+          stageId={recipeStage.id}
+          stageName={recipeStage.name}
+        />
+      ) : null}
     </Dialog>
   );
 }
@@ -237,11 +254,15 @@ function SortableStageRow({
   onRename,
   onDelete,
   canDelete,
+  hasRecipe,
+  onOpenRecipe,
 }: {
   stage: Stage;
   onRename: (id: string, name: string) => void;
   onDelete: () => void;
   canDelete: boolean;
+  hasRecipe: boolean;
+  onOpenRecipe: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: stage.id });
@@ -289,6 +310,17 @@ function SortableStageRow({
         }}
         className="h-8 border-transparent bg-transparent px-1 focus-visible:border-line focus-visible:bg-bg-0"
       />
+      <Button
+        type="button"
+        variant={hasRecipe ? "secondary" : "ghost"}
+        size="icon"
+        className={cn("shrink-0", hasRecipe ? "text-amber" : "text-text-lo")}
+        onClick={onOpenRecipe}
+        aria-label={`${hasRecipe ? "Edit" : "Set up"} recipe for ${stage.name}`}
+        title={hasRecipe ? "Recipe enabled" : "Set up a recipe"}
+      >
+        <Zap className="size-3.5" />
+      </Button>
       <Button
         type="button"
         variant="ghost"

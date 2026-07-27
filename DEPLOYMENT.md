@@ -13,16 +13,24 @@ GitHub → Vercel (app) + Supabase (database, auth, file storage).
   the production URL — never hardcode localhost.
 
 ## Environments & secrets
-Two environment variables, set in BOTH places:
+Three environment variables, set in BOTH places:
 
-| Variable | Where to find it |
-|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Project Settings → API |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Project Settings → API |
+| Variable | Where to find it | Exposed to browser? |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Project Settings → API | Yes |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Project Settings → API | Yes (RLS protects data) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API → "service_role" secret | **No — server only** |
 
 - Locally: `.env.local` (gitignored, never committed).
 - Production: Vercel → Project → Settings → Environment Variables.
 - Never in code, chat logs, or the repo.
+- `SUPABASE_SERVICE_ROLE_KEY` powers **guest review links** (`/review/[token]`
+  and `/api/review/*`) — it lets the server look up a guest's token and hand
+  back a short-lived playback/download link without ever giving the guest a
+  real TEMPO account or exposing your anon key's RLS surface. It is never
+  read in any client component or sent to the browser. If this key is
+  missing, guest review links will fail closed (generic "not available")
+  instead of leaking data.
 
 ## Database changes (migrations)
 The Supabase database is production from day one — it holds real music data.

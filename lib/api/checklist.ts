@@ -19,6 +19,27 @@ export async function fetchChecklistItems(
   return data ?? [];
 }
 
+/** Batch checklist fetch across many tracks — used by the release workspace readiness rollup. */
+export async function fetchChecklistItemsForTracks(
+  trackIds: string[]
+): Promise<Map<string, ChecklistItem[]>> {
+  const map = new Map<string, ChecklistItem[]>();
+  if (trackIds.length === 0) return map;
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("checklist_items")
+    .select("*")
+    .in("track_id", trackIds)
+    .order("sort", { ascending: true });
+  if (error) throw error;
+  for (const item of data ?? []) {
+    const list = map.get(item.track_id) ?? [];
+    list.push(item);
+    map.set(item.track_id, list);
+  }
+  return map;
+}
+
 export async function createChecklistItem(
   input: ChecklistItemInsert
 ): Promise<ChecklistItem> {

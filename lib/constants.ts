@@ -1,9 +1,16 @@
 import type {
   AssetKind,
+  CollaboratorRole,
+  DecisionArea,
+  DecisionType,
+  MilestoneType,
   Momentum,
+  ProjectType,
+  ReferenceKind,
   TaskCategory,
   TaskStatus,
   TrackType,
+  WorkspacePreset,
 } from "@/lib/types";
 
 /** Client-side upload cap for versions and assets. */
@@ -69,6 +76,70 @@ export const MOMENTUM_OPTIONS: { value: Momentum; label: string }[] = [
 ];
 
 export const ACTIVE_SPACE_KEY = "tempo.activeSpaceId";
+
+export const MILESTONE_TYPES: { value: MilestoneType; label: string }[] = [
+  { value: "demo", label: "Demo" },
+  { value: "vocal_comp", label: "Vocal comp" },
+  { value: "arrangement_lock", label: "Arrangement lock" },
+  { value: "mix_approved", label: "Mix approved" },
+  { value: "master", label: "Master" },
+  { value: "custom", label: "Custom" },
+];
+
+export const DECISION_TYPES: { value: DecisionType; label: string }[] = [
+  { value: "approved", label: "Approved" },
+  { value: "needs_changes", label: "Needs changes" },
+  { value: "rejected", label: "Rejected" },
+];
+
+export const DECISION_AREAS: { value: DecisionArea; label: string }[] = [
+  { value: "general", label: "General" },
+  { value: "arrangement", label: "Arrangement" },
+  { value: "vocal", label: "Vocal" },
+  { value: "mix", label: "Mix" },
+  { value: "master", label: "Master" },
+  { value: "release", label: "Release" },
+];
+
+export const REFERENCE_KINDS: { value: ReferenceKind; label: string }[] = [
+  { value: "audio", label: "Audio" },
+  { value: "image", label: "Image" },
+  { value: "link", label: "Link" },
+  { value: "note", label: "Note" },
+];
+
+export const PROJECT_TYPES: { value: ProjectType; label: string }[] = [
+  { value: "general", label: "General" },
+  { value: "single", label: "Single" },
+  { value: "ep", label: "EP" },
+  { value: "album", label: "Album" },
+  { value: "edit_pack", label: "Edit pack" },
+];
+
+export const COLLABORATOR_ROLES: { value: CollaboratorRole; label: string; description: string }[] = [
+  { value: "editor", label: "Editor", description: "Edit metadata/workflow, upload, resolve comments" },
+  { value: "uploader", label: "Uploader", description: "Upload versions only" },
+  { value: "commenter", label: "Commenter", description: "Play versions and leave comments" },
+  { value: "viewer", label: "Viewer", description: "Play versions and read-only access" },
+];
+
+export const WORKSPACE_PRESETS: { value: WorkspacePreset; label: string; description: string }[] = [
+  { value: "writing", label: "Writing", description: "Notes and checklist up front, files tucked away" },
+  { value: "production", label: "Production", description: "The balanced default — everything visible" },
+  { value: "feedback", label: "Feedback", description: "Comments and people front and center" },
+  { value: "mix_review", label: "Mix review", description: "Versions and comments dominate" },
+  { value: "release_prep", label: "Release prep", description: "Files, details, and tasks prioritized" },
+  { value: "custom", label: "Custom", description: "Your own module order" },
+];
+
+/** Stage names (case-insensitive) that get an explicit "Add suggested recipe" offer (FEATURE-SPECS §9). */
+export const SUGGESTED_RECIPE_STAGE_NAMES = [
+  "writing",
+  "production",
+  "mixdown",
+  "master",
+  "release prep",
+] as const;
 
 /** Built-in checklist templates seeded on first login. */
 export const DEFAULT_CHECKLIST_TEMPLATES: {

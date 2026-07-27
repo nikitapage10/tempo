@@ -3,6 +3,7 @@
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import * as React from "react";
+import { AlertTriangle, Clock } from "lucide-react";
 import { SignedImage } from "@/components/ui/signed-image";
 import { LfWindow } from "@/components/lf-windows";
 import type { Track } from "@/lib/types";
@@ -18,9 +19,10 @@ type TrackCardProps = {
   track: Track;
   onOpen: (track: Track) => void;
   isDragOverlay?: boolean;
+  compact?: boolean;
 };
 
-export function TrackCard({ track, onOpen, isDragOverlay }: TrackCardProps) {
+export function TrackCard({ track, onOpen, isDragOverlay, compact }: TrackCardProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
       id: track.id,
@@ -52,6 +54,17 @@ export function TrackCard({ track, onOpen, isDragOverlay }: TrackCardProps) {
     new Date(track.deadline + "T23:59:59") < new Date() &&
     track.momentum !== "parked";
 
+  const nextActionOverdue =
+    !!track.next_action?.trim() &&
+    !!track.next_action_due &&
+    new Date(track.next_action_due + "T23:59:59") < new Date();
+
+  const topSignal = track.blocked_reason?.trim()
+    ? { Icon: AlertTriangle, label: "Blocked" }
+    : nextActionOverdue
+      ? { Icon: Clock, label: "Next move overdue" }
+      : null;
+
   const showEdge = hovered && !isDragging && !isDragOverlay;
 
   return (
@@ -73,7 +86,8 @@ export function TrackCard({ track, onOpen, isDragOverlay }: TrackCardProps) {
       />
       <div
         className={cn(
-          "relative rounded-[9px] border border-line bg-bg-1 p-3",
+          "relative rounded-[9px] border border-line bg-bg-1",
+          compact ? "p-2" : "p-3",
           isDragOverlay && "ring-1 ring-ice/60"
         )}
       >
@@ -113,14 +127,21 @@ export function TrackCard({ track, onOpen, isDragOverlay }: TrackCardProps) {
                   {track.title}
                 </h3>
               </button>
-              <span
-                className={cn(
-                  "mt-1 size-2 shrink-0 rounded-full",
-                  momentumDotClass(track.momentum)
-                )}
-                title={track.momentum}
-                aria-label={`Momentum: ${track.momentum}`}
-              />
+              <span className="mt-0.5 flex shrink-0 items-center gap-1">
+                {topSignal ? (
+                  <span title={topSignal.label} aria-label={topSignal.label}>
+                    <topSignal.Icon className="size-3 text-warn" aria-hidden />
+                  </span>
+                ) : null}
+                <span
+                  className={cn(
+                    "size-2 rounded-full",
+                    momentumDotClass(track.momentum)
+                  )}
+                  title={track.momentum}
+                  aria-label={`Momentum: ${track.momentum}`}
+                />
+              </span>
             </div>
 
             <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
@@ -139,10 +160,22 @@ export function TrackCard({ track, onOpen, isDragOverlay }: TrackCardProps) {
               ) : null}
             </div>
 
+            {track.next_action?.trim() ? (
+              <p
+                className={cn(
+                  "mt-1.5 truncate text-[11px]",
+                  nextActionOverdue ? "text-warn" : "text-text-lo"
+                )}
+              >
+                <span className="text-text-lo/70">Next: </span>
+                {track.next_action}
+              </p>
+            ) : null}
+
             {deadlineLabel ? (
               <p
                 className={cn(
-                  "mt-1.5 font-mono text-[11px]",
+                  "mt-1 font-mono text-[11px]",
                   overdue ? "text-warn" : "text-text-lo"
                 )}
               >

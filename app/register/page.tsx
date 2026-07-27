@@ -1,16 +1,30 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { IntroMoment } from "@/components/intro-moment";
 import { FlareLine } from "@/components/flare-line";
 import { LfWindow } from "@/components/lf-windows";
 
+function isSafeRedirect(path: string | null): path is string {
+  return !!path && path.startsWith("/") && !path.startsWith("//");
+}
+
 export default function RegisterPage() {
+  return (
+    <Suspense fallback={null}>
+      <RegisterForm />
+    </Suspense>
+  );
+}
+
+function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -63,7 +77,7 @@ export default function RegisterPage() {
       return;
     }
 
-    router.replace("/");
+    router.replace(isSafeRedirect(redirectTo) ? redirectTo : "/");
     router.refresh();
   }
 
@@ -158,7 +172,14 @@ export default function RegisterPage() {
 
             <p className="mt-4 text-center text-xs text-text-lo">
               Already have an account?{" "}
-              <Link href="/login" className="text-ice hover:underline">
+              <Link
+                href={
+                  isSafeRedirect(redirectTo)
+                    ? `/login?redirect=${encodeURIComponent(redirectTo)}`
+                    : "/login"
+                }
+                className="text-ice hover:underline"
+              >
                 Sign in
               </Link>
             </p>
