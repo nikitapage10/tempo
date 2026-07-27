@@ -26,6 +26,21 @@ Added tokens (`app/globals.css`):
 Added utilities: `.panel`, `.panel-quiet`, `.well`, `.lift`, `.glow-ice`,
 `.glow-amber`, `.label-mono`, `.stat-value`, `.scrim-reveal`, `.scrim-center`.
 
+Also added: `.spotlight` / `<SpotlightCard>` (`components/ui/spotlight-card.tsx`)
+— a cursor-tracked highlight for clickable surfaces. Default tone is `ramp`,
+which cross-fades ice → white → amber with pointer X (one shared listener via
+`useSpotlightPointer`, not one per card). Applied to every place a track,
+project, or task appears as a clickable row/card — board cards, Tracks rows,
+Today's attention list, project track lists, release track rows, project
+cards, task rows. Don't invent a new hue for it; `tone` accepts the existing
+palette tokens (`ice`/`amber`/`violet`/`ok`/`warn`) for state-driven cases
+(e.g. `warn` when a track is blocked).
+
+Also added: `<Wordmark>` (`components/wordmark.tsx`) — the TEMPO mark as live
+markup (bars run the ice → white → amber ramp with a bloom, hairline
+wide-tracked type), not a raster image. Used in the rail; reuse it anywhere
+else the logo is needed instead of re-implementing.
+
 Rules that changed:
 - **Radius** — 10px card / 8px input / 999px chip still hold. `16px` is now
   allowed for *major* surfaces (page panels, hero, board columns).
@@ -56,10 +71,14 @@ Rules that changed:
 | `--ok` | `#6FD99A` | Success |
 | `--warn` | `#FF7A6B` | Danger / overdue |
 
-### Typography
-- **Space Grotesk** — display, track titles
-- **Inter** — body UI
-- **JetBrains Mono** — BPM, keys, timestamps, version numbers, durations, counts, deadlines
+### Typography (v0.16 — two families, not three)
+- **Space Grotesk** — display, track titles, the wordmark
+- **Inter** — everything else: body UI *and* BPM, keys, timestamps, version
+  numbers, durations, counts, deadlines. JetBrains Mono was dropped at the
+  user's request (three fonts read as inconsistent); `font-mono` and
+  `.font-data` both resolve to Inter now. Numeric alignment is looser than a
+  true monospace gave — accepted tradeoff, don't "fix" it by bringing a third
+  family back without asking.
 
 ### Rules
 - Dark UI only.

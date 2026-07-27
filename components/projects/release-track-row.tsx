@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { ChevronDown, ChevronUp, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/toast";
@@ -120,7 +121,12 @@ export function ReleaseTrackRow({
   }
 
   return (
-    <li className="rounded-card border border-line bg-bg-2/40">
+    <SpotlightCard
+      as="li"
+      radius={10}
+      size={220}
+      className="rounded-card border border-line bg-bg-2/40"
+    >
       <div className="flex items-center gap-2 px-3 py-2.5">
         <div className="flex flex-col">
           <button
@@ -305,6 +311,6 @@ export function ReleaseTrackRow({
           </div>
         </div>
       ) : null}
-    </li>
+    </SpotlightCard>
   );
 }

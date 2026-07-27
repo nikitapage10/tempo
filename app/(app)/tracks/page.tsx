@@ -7,6 +7,7 @@ import { useActiveSpace } from "@/components/active-space-provider";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { SignedImage } from "@/components/ui/signed-image";
+import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { EmptyShaderPanel } from "@/components/shader-empty";
 import { TrackFormModal } from "@/components/tracks/track-form-modal";
 import { useStages } from "@/hooks/use-stages";
@@ -90,17 +91,23 @@ export default function TracksPage() {
             if (track.bpm != null) meta.push(`${track.bpm} BPM`);
             if (track.musical_key) meta.push(track.musical_key);
             return (
-              <li key={track.id}>
+              <SpotlightCard
+                as="li"
+                key={track.id}
+                tone={track.blocked_reason?.trim() ? "warn" : "ramp"}
+                radius={12}
+                size={240}
+              >
                 <button
                   type="button"
                   onClick={() => router.push(`/track/${track.id}`)}
-                  className="well lift flex w-full items-center gap-3 p-3 text-left"
+                  className="well lift relative flex w-full items-center gap-4 p-4 text-left"
                 >
                   {/* Artwork lives in the private `audio` bucket, so the path
                       must be signed — a raw <img src={path}> never resolves.
                       Gradient stays underneath as the fallback. */}
                   <span
-                    className="relative size-10 shrink-0 overflow-hidden rounded-input border border-line shadow-e1"
+                    className="relative size-14 shrink-0 overflow-hidden rounded-input border border-line shadow-e1"
                     style={{ background: gradientFromTrackId(track.id) }}
                   >
                     <SignedImage
@@ -108,6 +115,7 @@ export default function TracksPage() {
                       className="absolute inset-0 size-full"
                     />
                   </span>
+
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-2">
                       <span className="truncate text-sm font-medium text-text-hi">
@@ -118,9 +126,10 @@ export default function TracksPage() {
                           "size-2 shrink-0 rounded-full",
                           momentumDotClass(track.momentum)
                         )}
+                        title={track.momentum}
                       />
                     </span>
-                    <span className="mt-1 flex flex-wrap items-center gap-1.5">
+                    <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
                       <span
                         className={cn(
                           "rounded-chip px-2 py-0.5 text-[11px]",
@@ -129,18 +138,46 @@ export default function TracksPage() {
                       >
                         {formatTrackType(track.type)}
                       </span>
-                      <span className="text-[11px] text-text-lo">
-                        {stageName(track.stage_id)}
-                      </span>
                       {meta.length > 0 ? (
                         <span className="font-mono text-[11px] text-text-lo">
                           {meta.join(" · ")}
                         </span>
                       ) : null}
                     </span>
+                    {/* The line that makes this list worth scanning: what's
+                        actually next on this track, or why it's stuck. */}
+                    <span className="mt-1.5 block truncate text-[11px]">
+                      {track.blocked_reason?.trim() ? (
+                        <span className="text-warn">
+                          Blocked — {track.blocked_reason}
+                        </span>
+                      ) : track.next_action?.trim() ? (
+                        <span className="text-text-lo">
+                          <span className="text-text-lo/60">Next: </span>
+                          {track.next_action}
+                          {track.next_action_due ? (
+                            <span className="font-mono text-text-lo/60">
+                              {" · "}
+                              {track.next_action_due}
+                            </span>
+                          ) : null}
+                        </span>
+                      ) : (
+                        <span className="text-text-lo/50">No next move set</span>
+                      )}
+                    </span>
+                  </span>
+
+                  {/* Stage as a right-aligned anchor so the eye can run down
+                      the pipeline column instead of hunting mid-row. */}
+                  <span className="hidden shrink-0 text-right sm:block">
+                    <span className="label-mono">Stage</span>
+                    <span className="mt-1 block text-xs text-text-hi">
+                      {stageName(track.stage_id)}
+                    </span>
                   </span>
                 </button>
-              </li>
+              </SpotlightCard>
             );
           })}
         </ul>

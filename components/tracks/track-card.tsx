@@ -6,6 +6,7 @@ import * as React from "react";
 import { AlertTriangle, Clock } from "lucide-react";
 import { SignedImage } from "@/components/ui/signed-image";
 import { LfWindow } from "@/components/lf-windows";
+import { SpotlightCard } from "@/components/ui/spotlight-card";
 import type { Track } from "@/lib/types";
 import {
   formatTrackType,
@@ -20,9 +21,17 @@ type TrackCardProps = {
   onOpen: (track: Track) => void;
   isDragOverlay?: boolean;
   compact?: boolean;
+  /** Sparse board — larger artwork and title so cards carry the column. */
+  roomy?: boolean;
 };
 
-export function TrackCard({ track, onOpen, isDragOverlay, compact }: TrackCardProps) {
+export function TrackCard({
+  track,
+  onOpen,
+  isDragOverlay,
+  compact,
+  roomy,
+}: TrackCardProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
       id: track.id,
@@ -79,25 +88,37 @@ export function TrackCard({ track, onOpen, isDragOverlay, compact }: TrackCardPr
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
+      {/* Shader frame on hover — the card's edge becomes a window onto the
+          lightfield. The spotlight below rides on top of it, it doesn't
+          replace it. */}
       <LfWindow
         enabled={showEdge}
         className="absolute inset-0 rounded-card"
         aria-hidden
       />
+      <SpotlightCard
+        tone={topSignal ? "warn" : "ramp"}
+        radius={10}
+        size={200}
+        className="block h-full"
+      >
       <div
         className={cn(
           "relative rounded-[9px] border border-line",
           "bg-gradient-to-b from-[#17171e] to-bg-1 shadow-e1",
           "transition-shadow duration-hover",
           !isDragOverlay && !isDragging && "hover:shadow-e2",
-          compact ? "p-2" : "p-3",
+          compact ? "p-2" : roomy ? "p-3.5" : "p-3",
           isDragOverlay && "ring-1 ring-ice/60"
         )}
       >
         <div className="flex gap-3">
           <button
             type="button"
-            className="relative size-11 shrink-0 overflow-hidden rounded-input border border-line"
+            className={cn(
+              "relative shrink-0 overflow-hidden rounded-input border border-line",
+              roomy ? "size-16 shadow-e1" : "size-11"
+            )}
             onPointerDown={(e) => e.stopPropagation()}
             onClick={() => onOpen(track)}
             aria-label={`Open ${track.title}`}
@@ -126,7 +147,12 @@ export function TrackCard({ track, onOpen, isDragOverlay, compact }: TrackCardPr
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={() => onOpen(track)}
               >
-                <h3 className="truncate text-sm font-medium text-text-hi hover:text-ice">
+                <h3
+                  className={cn(
+                    "truncate font-medium text-text-hi hover:text-ice",
+                    roomy ? "text-base" : "text-sm"
+                  )}
+                >
                   {track.title}
                 </h3>
               </button>
@@ -188,6 +214,7 @@ export function TrackCard({ track, onOpen, isDragOverlay, compact }: TrackCardPr
           </div>
         </div>
       </div>
+      </SpotlightCard>
     </article>
   );
 }

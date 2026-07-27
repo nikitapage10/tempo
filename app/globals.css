@@ -178,7 +178,8 @@
   }
 
   .font-data {
-    font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+    /* TEMP one-font preview — was var(--font-jetbrains-mono), ui-monospace, monospace; */
+    font-family: var(--font-inter), sans-serif;
   }
 
   /* ---------------------------------------------------------------------
@@ -295,6 +296,149 @@
       rgb(10 10 12 / 0.42) 78%,
       rgb(10 10 12 / 0.3) 100%
     );
+  }
+
+  /* ---------------------------------------------------------------------
+   * Spotlight card (v0.16)
+   *
+   * A cursor-tracked light that rides the border of a selectable surface.
+   * Adapted from a generic glow-card: the original rotated hue across a
+   * 200–300° spread (rainbow), which fights Spectra. Here the hue is pinned
+   * to a token and the moving highlight is a WHITE core — the flare-line
+   * motif (ice → white → amber) rather than a colour wheel.
+   *
+   * Pointer position comes from `--pointer-x/y` set once on <html> by
+   * `useSpotlightPointer`, so N cards cost one listener, not N.
+   * ------------------------------------------------------------------- */
+  /* The travelling hue, fenced to the product ramp.
+   *
+   * The source component swept 200–300° of raw hue, which wanders through
+   * greens and magentas. Instead we cross-fade ice → white → amber using the
+   * pointer's horizontal position:
+   *
+   *   first half   ice  → white   (percentage clamps at 100 past the midpoint)
+   *   second half  white → amber  (percentage clamps at 0 before it)
+   *
+   * color-mix clamps out-of-range percentages, which is what makes the two
+   * halves hand over cleanly at 0.5 without any branching.
+   */
+  :root {
+    --spot-ramp: var(--ice);
+  }
+
+  @supports (color: color-mix(in oklab, red, blue 50%)) {
+    :root {
+      --spot-ramp: color-mix(
+        in oklab,
+        color-mix(
+          in oklab,
+          var(--ice),
+          #ffffff calc(var(--pointer-xp, 0.5) * 200%)
+        ),
+        color-mix(
+          in oklab,
+          #ffffff,
+          var(--amber) calc((var(--pointer-xp, 0.5) * 200%) - 100%)
+        ),
+        calc((var(--pointer-xp, 0.5) * 200%) - 100%)
+      );
+    }
+  }
+
+  .spotlight {
+    --spot-size: 220;
+    --spot-border: 1.5;
+    --spot-radius: 16;
+    --border-size: calc(var(--spot-border) * 1px);
+    --spotlight-size: calc(var(--spot-size) * 1px);
+    position: relative;
+  }
+
+  .spotlight::before,
+  .spotlight::after {
+    pointer-events: none;
+    content: "";
+    position: absolute;
+    inset: calc(var(--border-size) * -1);
+    border: var(--border-size) solid transparent;
+    border-radius: calc(var(--spot-radius) * 1px);
+    /* fixed attachment is what lets viewport pointer coords line up */
+    background-attachment: fixed;
+    background-size:
+      calc(100% + (2 * var(--border-size))) calc(100% + (2 * var(--border-size)));
+    background-repeat: no-repeat;
+    background-position: 50% 50%;
+    mask:
+      linear-gradient(transparent, transparent),
+      linear-gradient(white, white);
+    -webkit-mask:
+      linear-gradient(transparent, transparent),
+      linear-gradient(white, white);
+    mask-clip: padding-box, border-box;
+    -webkit-mask-clip: padding-box, border-box;
+    mask-composite: intersect;
+    -webkit-mask-composite: source-in;
+    opacity: 0;
+    transition: opacity 200ms ease;
+  }
+
+  /* Token-hued halo */
+  .spotlight::before {
+    background-image: radial-gradient(
+      calc(var(--spotlight-size) * 0.75) calc(var(--spotlight-size) * 0.75) at
+        calc(var(--pointer-x, 0) * 1px) calc(var(--pointer-y, 0) * 1px),
+      var(--spot-color, var(--ice)),
+      transparent 100%
+    );
+    filter: brightness(1.5);
+  }
+
+  /* White core — the flare centre */
+  .spotlight::after {
+    background-image: radial-gradient(
+      calc(var(--spotlight-size) * 0.4) calc(var(--spotlight-size) * 0.4) at
+        calc(var(--pointer-x, 0) * 1px) calc(var(--pointer-y, 0) * 1px),
+      rgb(255 255 255 / 0.9),
+      transparent 100%
+    );
+  }
+
+  /* Only light up the surface the pointer is actually over. */
+  .spotlight:hover::before,
+  .spotlight:focus-within::before {
+    opacity: 1;
+  }
+
+  .spotlight:hover::after,
+  .spotlight:focus-within::after {
+    opacity: 0.75;
+  }
+
+  /* Faint interior wash so the card itself reacts, not just its edge. */
+  .spotlight-fill {
+    background-image: radial-gradient(
+      calc(var(--spotlight-size) * 1.1) calc(var(--spotlight-size) * 1.1) at
+        calc(var(--pointer-x, 0) * 1px) calc(var(--pointer-y, 0) * 1px),
+      var(--spot-color, var(--ice)),
+      transparent 70%
+    );
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    opacity: 0;
+    transition: opacity 200ms ease;
+  }
+
+  .spotlight:hover .spotlight-fill,
+  .spotlight:focus-within .spotlight-fill {
+    opacity: 0.06;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .spotlight::before,
+    .spotlight::after,
+    .spotlight-fill {
+      transition: none;
+    }
   }
 
   /* Centered variant — copy sits mid-panel, so hold ≥85% black through the

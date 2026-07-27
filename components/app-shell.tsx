@@ -15,9 +15,11 @@ import { SpaceSwitcher } from "@/components/space-switcher";
 import { NotificationCenter } from "@/components/notification-center";
 import { EdgeStrip, IntroMoment } from "@/components/intro-moment";
 import { FlareLine } from "@/components/flare-line";
+import { Wordmark } from "@/components/wordmark";
 import { LfWindow } from "@/components/lf-windows";
 import { APP_VERSION } from "@/lib/version";
 import { cn } from "@/lib/utils";
+import { SlitDivider } from "@/components/ui/slit";
 
 const mainNav = [
   { href: "/", label: "Today", icon: CalendarDays },
@@ -63,15 +65,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               "linear-gradient(to right, transparent 2px, var(--bg-1) 2px)",
           }}
         >
+          {/* The rail's right border is a full-height slit onto the field, so
+              the light is quietly present the whole time you're in the app. */}
+          <LfWindow
+            className="pointer-events-none absolute inset-y-0 right-[-1px] w-px"
+            aria-hidden
+          />
           <div className="px-5 pt-6 pb-4">
             <div className="flex items-center justify-between gap-2">
               <Link
                 href="/"
                 className="rounded-input focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
               >
-                <span className="font-display text-xl font-bold tracking-tight text-text-hi">
-                  TEMPO
-                </span>
+                <Wordmark size={20} />
               </Link>
               <NotificationCenter />
             </div>
@@ -112,7 +118,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             })}
           </nav>
 
-          <div className="border-t border-line px-3 py-4">
+          <SlitDivider />
+          <div className="px-3 py-4">
             <Link
               href="/settings"
               className={cn(
@@ -150,7 +157,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </main>
       </div>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-stretch border-t border-line bg-bg-1 md:hidden">
+      {/* Bottom edge — bookends the top strip so the field frames the app
+          rather than only capping it. Thinner, so it reads as an echo. */}
+      <LfWindow
+        className="hidden h-[6px] w-full shrink-0 md:block"
+        aria-hidden
+      />
+
+      <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-stretch bg-bg-1 md:hidden">
+        <SlitDivider className="absolute inset-x-0 top-0" />
         {mobileNav.map(({ href, label, icon: Icon }) => {
           const active = isActive(pathname, href);
           return (

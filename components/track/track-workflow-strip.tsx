@@ -32,6 +32,7 @@ import type {
   TrackUpdate,
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { SlitDivider } from "@/components/ui/slit";
 
 type TrackWorkflowStripProps = {
   track: Track;
@@ -155,7 +156,9 @@ export function TrackWorkflowStrip({
       </div>
 
       {signals.length > 0 ? (
-        <div className="mt-3 space-y-1.5 border-t border-line pt-3">
+        <>
+          <SlitDivider className="mt-3" />
+          <div className="space-y-1.5 pt-3">
           {visibleSignals.map((s) => (
             <SignalRow key={s.id} signal={s} />
           ))}
@@ -174,7 +177,8 @@ export function TrackWorkflowStrip({
               {expanded ? "Show less" : `Show ${hiddenCount} more`}
             </button>
           ) : null}
-        </div>
+          </div>
+        </>
       ) : null}
 
       {runs.length > 0 ? <RecentRuns trackId={track.id} runs={runs} /> : null}
@@ -225,7 +229,9 @@ function RecentRuns({ trackId, runs }: { trackId: string; runs: StageRecipeRun[]
   }
 
   return (
-    <div className="mt-3 border-t border-line pt-3">
+    <>
+    <SlitDivider className="mt-3" />
+    <div className="pt-3">
       <div className="mb-1.5 flex items-center justify-between">
         <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-text-lo">
           Recent automations
@@ -291,6 +297,7 @@ function RecentRuns({ trackId, runs }: { trackId: string; runs: StageRecipeRun[]
         })}
       </ul>
     </div>
+    </>
   );
 }
 

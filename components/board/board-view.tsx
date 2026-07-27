@@ -12,7 +12,7 @@ import {
   type DragOverEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-import { Plus, Settings2 } from "lucide-react";
+import { Plus, Rows2, Rows3, Settings2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useActiveSpace } from "@/components/active-space-provider";
 import { KanbanColumn } from "@/components/board/kanban-column";
@@ -20,6 +20,7 @@ import { EmptyShaderPanel } from "@/components/shader-empty";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { PageHeader } from "@/components/ui/page-header";
+import { FilterRow } from "@/components/ui/filter-row";
 import { TrackCard } from "@/components/tracks/track-card";
 import { TrackFormModal } from "@/components/tracks/track-form-modal";
 import { StageEditor } from "@/components/stages/stage-editor";
@@ -29,6 +30,7 @@ import { useTrackMutations, useTracks } from "@/hooks/use-tracks";
 import { TRACK_TYPES } from "@/lib/constants";
 import { deriveAttentionSignals } from "@/lib/attention/signals";
 import type { Track, TrackInsert, TrackType } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 export function BoardView() {
   const router = useRouter();
@@ -163,6 +165,13 @@ export function BoardView() {
     await create.mutateAsync(values);
   }
 
+  const filtersActive =
+    typeFilter !== "all" || tagFilter !== "all" || attentionFilter !== "all";
+
+  // With only a couple of tracks on the board, small cards leave the columns
+  // looking hollow. Give them more presence instead of stretching empty space.
+  const roomy = density === "comfortable" && filtered.length > 0 && filtered.length <= 4;
+
   const loading =
     spacesLoading || stagesQuery.isLoading || tracksQuery.isLoading;
   const emptyBoard = !loading && tracks.length === 0;
@@ -174,6 +183,40 @@ export function BoardView() {
         subtitle="Drag tracks across stages. Tap a card to open it."
         actions={
           <>
+            {/* Density is a view control, so it sits with the other view
+                actions rather than among the content filters. */}
+            <div
+              role="group"
+              aria-label="Card density"
+              className="flex items-center gap-0.5 rounded-input border border-line bg-bg-2/60 p-0.5"
+            >
+              {(
+                [
+                  ["comfortable", Rows3, "Comfortable"],
+                  ["compact", Rows2, "Compact"],
+                ] as const
+              ).map(([value, Icon, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={density === value}
+                  title={label}
+                  onClick={() => {
+                    setDensity(value);
+                    localStorage.setItem("tempo.boardDensity", value);
+                  }}
+                  className={cn(
+                    "rounded-[6px] p-1.5 transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
+                    density === value
+                      ? "bg-bg-1 text-ice shadow-e1"
+                      : "text-text-lo hover:text-text-hi"
+                  )}
+                >
+                  <Icon className="size-3.5" strokeWidth={1.75} />
+                  <span className="sr-only">{label}</span>
+                </button>
+              ))}
+            </div>
             <Button
               variant="secondary"
               size="sm"
@@ -194,11 +237,11 @@ export function BoardView() {
           </>
         }
       >
-        <div className="flex flex-col gap-2">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="label-mono mr-1">
-              Type
-            </span>
+        {/* One bordered filter bar with aligned label columns. Density used to
+            live here too, but it's a view setting, not a content filter — it
+            moved up to the header actions. */}
+        <div className="panel-quiet overflow-hidden">
+          <FilterRow label="Type">
             <Chip
               active={typeFilter === "all"}
               onClick={() => setTypeFilter("all")}
@@ -214,12 +257,10 @@ export function BoardView() {
                 {t.label}
               </Chip>
             ))}
-          </div>
+          </FilterRow>
+
           {allTags.length > 0 ? (
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="label-mono mr-1">
-                Tag
-              </span>
+            <FilterRow label="Tag" divider>
               <Chip
                 active={tagFilter === "all"}
                 onClick={() => setTagFilter("all")}
@@ -235,12 +276,28 @@ export function BoardView() {
                   {tag}
                 </Chip>
               ))}
-            </div>
+            </FilterRow>
           ) : null}
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="label-mono mr-1">
-              Attention
-            </span>
+
+          <FilterRow
+            divider
+            label="Show"
+            trailing={
+              filtersActive ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTypeFilter("all");
+                    setTagFilter("all");
+                    setAttentionFilter("all");
+                  }}
+                  className="whitespace-nowrap text-[11px] text-ice transition-colors duration-hover hover:underline"
+                >
+                  Clear filters
+                </button>
+              ) : null
+            }
+          >
             {(
               [
                 ["all", "All"],
@@ -257,28 +314,7 @@ export function BoardView() {
                 {label}
               </Chip>
             ))}
-            <span className="label-mono ml-2 mr-1">
-              Density
-            </span>
-            <Chip
-              active={density === "comfortable"}
-              onClick={() => {
-                setDensity("comfortable");
-                localStorage.setItem("tempo.boardDensity", "comfortable");
-              }}
-            >
-              Comfortable
-            </Chip>
-            <Chip
-              active={density === "compact"}
-              onClick={() => {
-                setDensity("compact");
-                localStorage.setItem("tempo.boardDensity", "compact");
-              }}
-            >
-              Compact
-            </Chip>
-          </div>
+          </FilterRow>
         </div>
       </PageHeader>
 
@@ -323,6 +359,7 @@ export function BoardView() {
                 isOver={overStageId === stage.id}
                 onOpenTrack={(t) => router.push(`/track/${t.id}`)}
                 compact={density === "compact"}
+                roomy={roomy}
                 dragging={!!activeDrag}
                 allowCollapse={filtered.length > 0}
               />
@@ -333,6 +370,7 @@ export function BoardView() {
               <TrackCard
                 track={activeDrag}
                 onOpen={() => {}}
+                roomy={roomy}
                 isDragOverlay
               />
             ) : null}
@@ -381,3 +419,4 @@ function EmptyBoard({
     />
   );
 }
+

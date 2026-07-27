@@ -5,6 +5,7 @@ import { LayoutGrid, Check, RotateCcw, Save, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { LayoutTemplate, WorkspacePreset } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { SlitDivider } from "@/components/ui/slit";
 
 const PRESET_OPTIONS: { value: WorkspacePreset; label: string }[] = [
   { value: "writing", label: "Writing" },
@@ -120,7 +121,8 @@ export function LayoutToolbar({
         </div>
       </div>
 
-      <div className="mt-4 border-t border-line/70 pt-3">
+      <SlitDivider className="mt-4" />
+      <div className="pt-3">
         <p className="label-mono mb-2">Start from a preset</p>
         <div className="flex flex-wrap gap-1.5">
           {PRESET_OPTIONS.filter((o) => o.value !== "custom" || preset === "custom").map(
@@ -157,7 +159,9 @@ export function LayoutToolbar({
       </div>
 
       {onSaveTemplate ? (
-        <div className="mt-3 border-t border-line/70 pt-3">
+        <>
+          <SlitDivider className="mt-3" />
+          <div className="pt-3">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <p className="label-mono">Your templates</p>
             {templates.length === 0 && !naming ? (
@@ -245,7 +249,8 @@ export function LayoutToolbar({
               </button>
             )}
           </div>
-        </div>
+          </div>
+        </>
       ) : null}
     </div>
   );

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
+import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +19,23 @@ import { useProjectMutations, useProjects } from "@/hooks/use-projects";
 import { formatShortDate } from "@/lib/format";
 import { PROJECT_TYPES } from "@/lib/constants";
 import type { ProjectType } from "@/lib/types";
+import { cn } from "@/lib/utils";
+
+function ProjectStat({ value, label }: { value: number; label: string }) {
+  return (
+    <div>
+      <p
+        className={cn(
+          "font-mono text-xl tabular-nums leading-none",
+          value > 0 ? "text-text-hi" : "text-text-lo/50"
+        )}
+      >
+        {value}
+      </p>
+      <p className="label-mono mt-1.5">{label}</p>
+    </div>
+  );
+}
 
 export default function ProjectsPage() {
   const router = useRouter();
@@ -93,18 +111,22 @@ export default function ProjectsPage() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((p) => (
-            <Link
+            <SpotlightCard
               key={p.id}
-              href={`/projects/${p.id}`}
-              className="panel lift overflow-hidden"
+              tone={p.project_type === "general" ? "ice" : "amber"}
+              className="min-h-[188px]"
             >
-              <div className="p-5 pb-4">
-                <div className="flex items-center gap-1.5">
-                  <h2 className="font-display text-base font-semibold text-text-hi">
+              <Link
+                href={`/projects/${p.id}`}
+                className="panel lift flex h-full min-h-[188px] flex-col overflow-hidden"
+              >
+              <div className="relative flex flex-1 flex-col p-5">
+                <div className="flex items-start gap-1.5">
+                  <h2 className="min-w-0 flex-1 font-display text-base font-semibold text-text-hi">
                     {p.name}
                   </h2>
                   {p.project_type !== "general" ? (
-                    <span className="rounded-chip border border-amber/30 bg-amber/10 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-amber">
+                    <span className="shrink-0 rounded-chip border border-amber/30 bg-amber/10 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-amber">
                       {PROJECT_TYPES.find((t) => t.value === p.project_type)
                         ?.label ?? p.project_type}
                     </span>
@@ -115,23 +137,51 @@ export default function ProjectsPage() {
                     Due {formatShortDate(p.deadline + "T12:00:00")}
                   </p>
                 ) : null}
-                <div className="mt-3 flex flex-wrap gap-3 font-mono text-[11px] text-text-lo">
-                  <span>{p.track_count} tracks</span>
-                  <span>{p.task_count} tasks</span>
-                  <span>
-                    {p.checklist_pct == null
-                      ? "— checklist"
-                      : `${p.checklist_pct}% checklist`}
-                  </span>
+
+                {/* Counts as figures rather than a run-on line — the card has
+                    room, and a number you can read at a glance is worth more. */}
+                <div className="mt-4 flex gap-6">
+                  <ProjectStat value={p.track_count} label="Tracks" />
+                  <ProjectStat value={p.task_count} label="Tasks" />
+                </div>
+
+                <div className="mt-auto pt-4">
+                  {p.checklist_pct != null ? (
+                    <>
+                      <div className="mb-1.5 flex items-baseline justify-between">
+                        <span className="label-mono">Checklist</span>
+                        <span className="font-mono text-[11px] tabular-nums text-text-hi">
+                          {p.checklist_pct}%
+                        </span>
+                      </div>
+                      <FlareLine variant="partial" pct={p.checklist_pct} />
+                    </>
+                  ) : (
+                    <p className="text-[11px] text-text-lo/70">
+                      {p.track_count === 0
+                        ? "No tracks attached yet"
+                        : "No checklist items yet"}
+                    </p>
+                  )}
                 </div>
               </div>
-              {p.checklist_pct != null ? (
-                <div className="px-5 pb-5">
-                  <FlareLine variant="partial" pct={p.checklist_pct} />
-                </div>
-              ) : null}
-            </Link>
+              </Link>
+            </SpotlightCard>
           ))}
+
+          {/* Ghost tile — keeps a sparse grid looking composed and puts the
+              next action where the eye already is. */}
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="lift flex min-h-[188px] flex-col items-center justify-center gap-2 rounded-panel border border-dashed border-line text-text-lo hover:text-ice"
+          >
+            <Plus className="size-5" />
+            <span className="text-sm">New project</span>
+            <span className="max-w-[22ch] text-center text-[11px] text-text-lo/70">
+              An EP, an edit pack, a campaign
+            </span>
+          </button>
         </div>
       )}
 

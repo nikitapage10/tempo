@@ -5,6 +5,10 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { Chip } from "@/components/ui/chip";
+import { FilterRow } from "@/components/ui/filter-row";
+import { FlareLine } from "@/components/flare-line";
+import { SlitDivider } from "@/components/ui/slit";
+import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -150,6 +154,7 @@ export default function TasksPage() {
       <form onSubmit={handleQuickAdd} className="panel p-5">
         <div className="flex flex-col gap-2 sm:flex-row">
           <Input
+            id="task-title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Add a task…"
@@ -250,39 +255,59 @@ export default function TasksPage() {
         ) : null}
       </form>
 
-      <div className="flex flex-wrap gap-2">
-        <Chip
-          active={categoryFilter === "all"}
-          onClick={() => setCategoryFilter("all")}
-        >
-          All categories
-        </Chip>
-        {TASK_CATEGORIES.map((c) => (
+      {/* Same aligned filter bar as the Board, so the two pages feel related. */}
+      <div className="panel-quiet overflow-hidden">
+        <FilterRow label="Type">
           <Chip
-            key={c.value}
-            active={categoryFilter === c.value}
-            onClick={() => setCategoryFilter(c.value)}
+            active={categoryFilter === "all"}
+            onClick={() => setCategoryFilter("all")}
           >
-            {c.label}
+            All
           </Chip>
-        ))}
-      </div>
-      <div className="flex flex-wrap gap-2">
-        <Chip
-          active={statusFilter === "all"}
-          onClick={() => setStatusFilter("all")}
+          {TASK_CATEGORIES.map((c) => (
+            <Chip
+              key={c.value}
+              active={categoryFilter === c.value}
+              onClick={() => setCategoryFilter(c.value)}
+            >
+              {c.label}
+            </Chip>
+          ))}
+        </FilterRow>
+        <FilterRow
+          divider
+          label="Show"
+          trailing={
+            categoryFilter !== "all" || statusFilter !== "all" ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setCategoryFilter("all");
+                  setStatusFilter("all");
+                }}
+                className="whitespace-nowrap text-[11px] text-ice transition-colors duration-hover hover:underline"
+              >
+                Clear filters
+              </button>
+            ) : null
+          }
         >
-          All statuses
-        </Chip>
-        {TASK_STATUSES.map((s) => (
           <Chip
-            key={s.value}
-            active={statusFilter === s.value}
-            onClick={() => setStatusFilter(s.value)}
+            active={statusFilter === "all"}
+            onClick={() => setStatusFilter("all")}
           >
-            {s.label}
+            All
           </Chip>
-        ))}
+          {TASK_STATUSES.map((s) => (
+            <Chip
+              key={s.value}
+              active={statusFilter === s.value}
+              onClick={() => setStatusFilter(s.value)}
+            >
+              {s.label}
+            </Chip>
+          ))}
+        </FilterRow>
       </div>
 
       {isLoading ? (
@@ -291,21 +316,38 @@ export default function TasksPage() {
           <div className="h-14 animate-pulse rounded-card bg-bg-1" />
         </div>
       ) : (
-        <div className="space-y-6">
+        // Buckets as columns — the week reads at a glance and the page uses
+        // its width instead of one narrow stack down the middle.
+        <div className="grid gap-3 sm:grid-cols-2 lg:min-h-[248px] lg:grid-cols-4">
           {(["overdue", "today", "week", "later"] as Bucket[]).map(
             (bucket) => {
               const list = grouped[bucket];
-              if (!list.length) return null;
+              const urgent = bucket === "overdue" && list.length > 0;
               return (
-                <section key={bucket}>
-                  <h2
-                    className={cn(
-                      "mb-2 font-mono text-[11px] uppercase tracking-[0.08em]",
-                      bucket === "overdue" ? "text-warn" : "text-text-lo"
-                    )}
-                  >
-                    {BUCKET_LABELS[bucket]}
-                    <span className="ml-2 text-text-lo/70">{list.length}</span>
+                <section
+                  key={bucket}
+                  className={cn(
+                    "flex flex-col p-4",
+                    urgent ? "panel border-warn/40" : "panel-quiet"
+                  )}
+                >
+                  <h2 className="mb-3 flex items-center gap-2">
+                    <span
+                      className={cn("label-mono", urgent && "text-warn")}
+                    >
+                      {BUCKET_LABELS[bucket]}
+                    </span>
+                    {list.length > 0 ? (
+                      <span
+                        className={cn(
+                          "font-mono text-[11px] tabular-nums",
+                          urgent ? "text-warn" : "text-text-lo/70"
+                        )}
+                      >
+                        {list.length}
+                      </span>
+                    ) : null}
+                    <SlitDivider className="flex-1" />
                   </h2>
                   <ul className="space-y-2">
                     {list.map((task) => (
@@ -360,11 +402,16 @@ export default function TasksPage() {
                       />
                     ))}
                   </ul>
+                  {list.length === 0 ? <BucketEmpty bucket={bucket} /> : null}
                 </section>
               );
             }
           )}
+        </div>
+      )}
 
+      {!isLoading ? (
+        <div>
           {grouped.done.length > 0 && statusFilter !== "todo" ? (
             <section>
               <h2 className="mb-2 font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
@@ -402,13 +449,46 @@ export default function TasksPage() {
             </section>
           ) : null}
 
-          {!filtered.length ? (
-            <p className="rounded-card border border-dashed border-line px-4 py-10 text-center text-sm text-text-lo">
-              No tasks match these filters. Add one above.
+          {!filtered.length &&
+          (categoryFilter !== "all" || statusFilter !== "all") ? (
+            <p className="well mt-4 px-4 py-6 text-center text-sm text-text-lo">
+              No tasks match these filters.
             </p>
           ) : null}
         </div>
-      )}
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * A calm invitation rather than blank space. Only the "today" column offers an
+ * action — four identical buttons would be the busywork we're avoiding.
+ */
+function BucketEmpty({ bucket }: { bucket: Bucket }) {
+  const copy: Record<Bucket, string> = {
+    overdue: "Nothing overdue.",
+    today: "Nothing due today.",
+    week: "Clear for the rest of the week.",
+    later: "Nothing parked for later.",
+  };
+
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center gap-2 py-6 text-center">
+      {/* A tick of the lightfield instead of dead space above the copy. */}
+      <FlareLine variant="tick" className="mb-1 !w-10 opacity-70" />
+      <p className="text-[11px] leading-relaxed text-text-lo/70">
+        {copy[bucket]}
+      </p>
+      {bucket === "today" ? (
+        <button
+          type="button"
+          onClick={() => document.getElementById("task-title")?.focus()}
+          className="text-[11px] text-ice transition-colors duration-hover hover:underline"
+        >
+          Add a task
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -436,7 +516,13 @@ function TaskRow({
     task.category;
 
   return (
-    <li className="flex items-start gap-3 rounded-card border border-line bg-bg-1 px-3 py-2.5">
+    <SpotlightCard
+      as="li"
+      tone={overdue ? "warn" : task.status === "done" ? "ok" : "ice"}
+      radius={10}
+      size={180}
+      className="flex items-start gap-3 rounded-card border border-line bg-bg-1 px-3 py-2.5"
+    >
       <input
         type="checkbox"
         checked={task.status === "done"}
@@ -529,6 +615,6 @@ function TaskRow({
           Delete
         </button>
       )}
-    </li>
+    </SpotlightCard>
   );
 }

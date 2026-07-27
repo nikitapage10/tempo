@@ -3,6 +3,7 @@
 import * as React from "react";
 import { moduleLabel, type ModuleId } from "@/lib/workspace-presets";
 import { cn } from "@/lib/utils";
+import { SlitDivider } from "@/components/ui/slit";
 
 /**
  * Renders a slot holding more than one module as a tabbed group — the result
@@ -36,8 +37,9 @@ export function ModuleTabs({
       <div
         role="tablist"
         aria-label="Grouped tools"
-        className="flex flex-wrap gap-1 border-b border-line/70 bg-bg-0/40 p-1.5"
+        className="relative flex flex-wrap gap-1 bg-bg-0/40 p-1.5"
       >
+        <SlitDivider className="absolute inset-x-0 bottom-0" />
         {present.map((id) => {
           const selected = id === active;
           const badge = badges?.[id];

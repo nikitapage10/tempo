@@ -21,6 +21,7 @@ import { useTracks } from "@/hooks/use-tracks";
 import { formatShortDate } from "@/lib/format";
 import { gradientFromTrackId } from "@/lib/track-style";
 import { SignedImage } from "@/components/ui/signed-image";
+import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { PROJECT_TYPES, TASK_CATEGORIES } from "@/lib/constants";
 import { ReleaseWorkspace } from "@/components/projects/release-workspace";
 import type { ProjectType } from "@/lib/types";
@@ -234,8 +235,11 @@ export default function ProjectDetailPage() {
             </li>
           ) : (
             tracks.map((t) => (
-              <li
+              <SpotlightCard
+                as="li"
                 key={t.id}
+                radius={8}
+                size={200}
                 className="flex items-center gap-3 rounded-input border border-line bg-bg-2/40 px-2.5 py-2"
               >
                 <div
@@ -273,7 +277,7 @@ export default function ProjectDetailPage() {
                 >
                   Detach
                 </button>
-              </li>
+              </SpotlightCard>
             ))
           )}
         </ul>

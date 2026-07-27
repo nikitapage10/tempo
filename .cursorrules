@@ -39,8 +39,13 @@ Fixed (do not change without asking):
    --line #26262E,
    --text-hi #F2F0EB, --text-lo #8B8B96, --ice #7FB4FF, --amber #FFB56B,
    --violet #9D8CFF, --ok #6FD99A, --warn #FF7A6B).
-- Fonts: Space Grotesk (display), Inter (body), JetBrains Mono (ALL musical/
-  technical data: BPM, keys, timestamps, version numbers, durations, counts).
+- Fonts (v0.16 — two-family system): Space Grotesk (display: titles, the
+  wordmark) and Inter (everything else — body copy AND all musical/technical
+  data: BPM, keys, timestamps, version numbers, durations, counts). JetBrains
+  Mono was dropped; do not reintroduce a third typeface without asking — the
+  user explicitly asked to go from three fonts down to two because inconsistent
+  weight/tracking on font-display was reading as "too many fonts." Tailwind's
+  `font-mono` and the `.font-data` utility both resolve to Inter now.
 - Ice = interactive (buttons, links, focus). Amber = status/emphasis
   ("current" markers, momentum, flare-line centers). Never both as CTAs together.
 - Radius: 10px cards, 8px inputs, 999px chips; 16px (--radius-panel) for major

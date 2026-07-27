@@ -17,6 +17,8 @@ type KanbanColumnProps = {
   isOver: boolean;
   onOpenTrack: (track: Track) => void;
   compact?: boolean;
+  /** Sparse board — render cards with more presence. */
+  roomy?: boolean;
   /** A card is currently being dragged — expand every stage so all are droppable. */
   dragging?: boolean;
   /** False when nothing is on the board at all, so we don't collapse every column to a rail. */
@@ -30,6 +32,7 @@ export function KanbanColumn({
   isOver,
   onOpenTrack,
   compact,
+  roomy,
   dragging,
   allowCollapse = true,
 }: KanbanColumnProps) {
@@ -50,7 +53,7 @@ export function KanbanColumn({
     <section
       ref={setNodeRef}
       className={cn(
-        "flex flex-col overflow-hidden rounded-panel border border-line",
+        "relative flex flex-col overflow-hidden rounded-panel border border-line",
         "bg-gradient-to-b from-[#141419] to-[#0e0e12] shadow-e2",
         "transition-[flex-grow,flex-basis,border-color,box-shadow] duration-300 ease-out motion-reduce:transition-none",
         // Stacked full-width below lg; sized columns from lg up.
@@ -64,19 +67,32 @@ export function KanbanColumn({
         tracks.length === 1 ? "track" : "tracks"
       }`}
     >
-      {/* Stage hue strip — the only place the column carries stage color. */}
-      <LfWindow className="relative h-[3px] w-full shrink-0">
-        <div
-          className="absolute inset-0 opacity-[0.45] mix-blend-overlay"
-          style={{ backgroundColor: hue }}
-          aria-hidden
-        />
-      </LfWindow>
+      {/* Stage hue wash. Stages run ice → white → amber across the pipeline,
+          so the board reads cold-to-warm left to right instead of as seven
+          identical dark boxes. Kept very low alpha — identity, not decoration. */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-40"
+        style={{
+          background: `linear-gradient(180deg, ${hue}14 0%, ${hue}05 45%, transparent 100%)`,
+        }}
+      />
 
       {collapsed ? (
         /* Collapsed: a single-line bar when stacked, a slim vertical rail
            (~44px) when columns sit side by side. */
-        <div className="flex flex-1 items-center gap-2 px-3.5 py-2.5 lg:flex-col lg:gap-3 lg:px-0 lg:py-3">
+        <div className="relative flex flex-1 items-center gap-2 px-3.5 py-2.5 lg:flex-col lg:gap-3 lg:px-0 lg:py-3">
+          {/* Slit as a short rounded tick — a full-bleed bar reads as a broken
+              edge against the panel's corner radius. */}
+          <LfWindow
+            className="relative hidden h-[2px] w-4 shrink-0 overflow-hidden rounded-full lg:block"
+            aria-hidden
+          >
+            <span
+              className="absolute inset-0 opacity-70 mix-blend-overlay"
+              style={{ backgroundColor: hue }}
+            />
+          </LfWindow>
           <span className="order-1 font-display text-xs font-medium tracking-tight text-text-lo/70 lg:order-2 lg:[text-orientation:mixed] lg:[writing-mode:vertical-rl]">
             {stage.name}
           </span>
@@ -86,7 +102,7 @@ export function KanbanColumn({
         </div>
       ) : (
         <>
-          <header className="px-3.5 pt-3.5 pb-3">
+          <header className="relative px-3.5 pt-3.5 pb-3">
             <div className="flex items-center gap-2">
               <h2 className="truncate font-display text-sm font-semibold tracking-tight text-text-hi">
                 {stage.name}
@@ -100,12 +116,23 @@ export function KanbanColumn({
                 {tracks.length}
               </span>
             </div>
-            <div className="mt-2.5 h-px bg-line/70" />
+            {/* The divider *is* the design element now: a rounded lightfield
+                slit tinted by stage hue, inset by the header padding so it
+                never collides with the panel's corner radius. */}
+            <LfWindow
+              className="relative mt-3 h-[2px] w-full overflow-hidden rounded-full"
+              aria-hidden
+            >
+              <span
+                className="absolute inset-0 opacity-60 mix-blend-overlay"
+                style={{ backgroundColor: hue }}
+              />
+            </LfWindow>
           </header>
 
           <div
             className={cn(
-              "flex flex-1 flex-col gap-2 px-2.5 pb-3",
+              "relative flex flex-1 flex-col gap-2 px-2.5 pb-3",
               isOver && "bg-ice/[0.03]"
             )}
           >
@@ -133,6 +160,7 @@ export function KanbanColumn({
                   track={track}
                   onOpen={onOpenTrack}
                   compact={compact}
+                  roomy={roomy}
                 />
               ))
             )}

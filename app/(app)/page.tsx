@@ -39,6 +39,8 @@ import {
   sortTracksByAttention,
 } from "@/lib/attention/signals";
 import { useQuery } from "@tanstack/react-query";
+import { SlitDivider } from "@/components/ui/slit";
+import { SpotlightCard } from "@/components/ui/spotlight-card";
 
 function greetingForHour(h: number): string {
   if (h < 12) return "Good morning";
@@ -246,7 +248,9 @@ export default function TodayPage() {
               </ul>
             )}
             {waiting.length > 0 || review.length > 0 ? (
-              <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 border-t border-line/70 pt-3">
+              <>
+                <SlitDivider className="mt-4" />
+                <div className="flex flex-wrap gap-x-4 gap-y-1 pt-3">
                 {waiting.length > 0 ? (
                   <span className="label-mono">
                     Waiting / blocked{" "}
@@ -258,7 +262,8 @@ export default function TodayPage() {
                     Review <span className="text-amber">{review.length}</span>
                   </span>
                 ) : null}
-              </div>
+                </div>
+              </>
             ) : null}
           </section>
 
@@ -532,7 +537,9 @@ function SectionHeader({ label, count }: { label: string; count?: number }) {
           {count}
         </span>
       ) : null}
-      <div className="h-px flex-1 bg-line/70" />
+      {/* The rule running out from a section label is a slit onto the field —
+          a hint of the light rather than a flat grey line. */}
+      <LfWindow className="h-px flex-1 opacity-80" aria-hidden />
     </div>
   );
 }
@@ -628,8 +635,14 @@ function InMotionRow({
   });
 
   return (
-    <li className="well lift px-3 py-2.5">
-      <div className="flex items-center gap-3">
+    <SpotlightCard
+      as="li"
+      tone={track.blocked_reason?.trim() ? "warn" : "ramp"}
+      radius={12}
+      size={220}
+      className="well lift px-3 py-2.5"
+    >
+      <div className="relative flex items-center gap-3">
         <Link
           href={actionHref ?? `/track/${track.id}`}
           className="flex min-w-0 flex-1 items-center gap-3"
@@ -666,6 +679,6 @@ function InMotionRow({
           </Link>
         ) : null}
       </div>
-    </li>
+    </SpotlightCard>
   );
 }
