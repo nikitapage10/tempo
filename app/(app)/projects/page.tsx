@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -63,20 +64,16 @@ export default function ProjectsPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="font-display text-xl font-semibold tracking-tight text-text-hi">
-            Projects
-          </h1>
-          <p className="mt-1 text-sm text-text-lo">
-            Containers for EPs, edit packs, and campaigns.
-          </p>
-        </div>
-        <Button type="button" onClick={() => setOpen(true)}>
-          <Plus className="size-4" />
-          New project
-        </Button>
-      </div>
+      <PageHeader
+        title="Projects"
+        subtitle="Containers for EPs, edit packs, and campaigns."
+        actions={
+          <Button type="button" onClick={() => setOpen(true)}>
+            <Plus className="size-4" />
+            New project
+          </Button>
+        }
+      />
 
       {isLoading ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -99,9 +96,9 @@ export default function ProjectsPage() {
             <Link
               key={p.id}
               href={`/projects/${p.id}`}
-              className="overflow-hidden rounded-card border border-line transition-colors duration-hover hover:border-ice/40"
+              className="panel lift overflow-hidden"
             >
-              <div className="bg-bg-1 p-4 pb-3">
+              <div className="p-5 pb-4">
                 <div className="flex items-center gap-1.5">
                   <h2 className="font-display text-base font-semibold text-text-hi">
                     {p.name}
@@ -129,7 +126,7 @@ export default function ProjectsPage() {
                 </div>
               </div>
               {p.checklist_pct != null ? (
-                <div className="px-4 pb-4">
+                <div className="px-5 pb-5">
                   <FlareLine variant="partial" pct={p.checklist_pct} />
                 </div>
               ) : null}

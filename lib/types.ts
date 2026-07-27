@@ -444,6 +444,29 @@ export type WorkspacePreference = {
   hidden_modules: string[];
   default_panel: string | null;
   compact_mode: boolean;
+  /**
+   * Two-column module layout (migration 012). Null on rows saved before it.
+   * Each column holds slots; a slot with several ids renders as a tab group.
+   */
+  module_layout: {
+    left: string[][];
+    right: string[][];
+    leftPct?: number;
+  } | null;
+  updated_at: string;
+};
+
+/** A user-saved track-workspace arrangement (migration 013). */
+export type LayoutTemplate = {
+  id: string;
+  user_id: string;
+  name: string;
+  layout: {
+    left: string[][];
+    right: string[][];
+    leftPct?: number;
+  };
+  created_at: string;
   updated_at: string;
 };
 

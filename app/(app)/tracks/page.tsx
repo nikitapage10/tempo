@@ -5,6 +5,8 @@ import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useActiveSpace } from "@/components/active-space-provider";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
+import { SignedImage } from "@/components/ui/signed-image";
 import { EmptyShaderPanel } from "@/components/shader-empty";
 import { TrackFormModal } from "@/components/tracks/track-form-modal";
 import { useStages } from "@/hooks/use-stages";
@@ -46,24 +48,20 @@ export default function TracksPage() {
 
   return (
     <div>
-      <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-display text-xl font-semibold tracking-tight text-text-hi">
-            Tracks
-          </h1>
-          <p className="mt-1 text-sm text-text-lo">
-            Everything in {activeSpace?.name ?? "this space"}.
-          </p>
-        </div>
-        <Button
-          size="sm"
-          disabled={!activeSpaceId || stages.length === 0}
-          onClick={() => setModalOpen(true)}
-        >
-          <Plus className="size-3.5" />
-          Track
-        </Button>
-      </header>
+      <PageHeader
+        title="Tracks"
+        subtitle={`Everything in ${activeSpace?.name ?? "this space"}.`}
+        actions={
+          <Button
+            size="sm"
+            disabled={!activeSpaceId || stages.length === 0}
+            onClick={() => setModalOpen(true)}
+          >
+            <Plus className="size-3.5" />
+            Track
+          </Button>
+        }
+      />
 
       {loading ? (
         <div className="space-y-2">
@@ -96,24 +94,19 @@ export default function TracksPage() {
                 <button
                   type="button"
                   onClick={() => router.push(`/track/${track.id}`)}
-                  className="flex w-full items-center gap-3 rounded-card border border-line bg-bg-1 p-3 text-left transition-colors duration-hover hover:border-ice/30"
+                  className="well lift flex w-full items-center gap-3 p-3 text-left"
                 >
+                  {/* Artwork lives in the private `audio` bucket, so the path
+                      must be signed — a raw <img src={path}> never resolves.
+                      Gradient stays underneath as the fallback. */}
                   <span
-                    className="size-10 shrink-0 overflow-hidden rounded-input border border-line"
-                    style={
-                      track.artwork_url
-                        ? undefined
-                        : { background: gradientFromTrackId(track.id) }
-                    }
+                    className="relative size-10 shrink-0 overflow-hidden rounded-input border border-line shadow-e1"
+                    style={{ background: gradientFromTrackId(track.id) }}
                   >
-                    {track.artwork_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={track.artwork_url}
-                        alt=""
-                        className="size-full object-cover"
-                      />
-                    ) : null}
+                    <SignedImage
+                      path={track.artwork_url}
+                      className="absolute inset-0 size-full"
+                    />
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-2">

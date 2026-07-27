@@ -23,18 +23,20 @@ export function EmptyShaderPanel({
   return (
     <LfWindow
       className={cn(
-        "relative h-[300px] overflow-hidden rounded-card border border-line",
+        "relative h-[300px] overflow-hidden rounded-panel border border-line shadow-e2",
         className
       )}
     >
-      <div className="lf-window-scrim absolute inset-0" aria-hidden />
+      <div className="scrim-center absolute inset-0" aria-hidden />
       <div className="relative flex h-full flex-col items-center justify-center px-6 text-center">
         <FlareLine variant="tick" className="mb-5 !w-20" />
-        <h2 className="font-display text-lg font-semibold text-text-hi">
+        <h2 className="font-display text-xl font-semibold tracking-tight text-text-hi">
           {title}
         </h2>
-        <p className="mt-2 max-w-sm text-sm text-text-lo">{copy}</p>
-        {action ? <div className="mt-5">{action}</div> : null}
+        <p className="mt-2 max-w-sm text-sm leading-relaxed text-text-lo">
+          {copy}
+        </p>
+        {action ? <div className="mt-6">{action}</div> : null}
       </div>
     </LfWindow>
   );

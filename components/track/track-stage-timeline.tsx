@@ -73,7 +73,7 @@ export function TrackStageTimeline({
   if (isError) {
     return (
       <div
-        className="rounded-card border border-line bg-bg-1 px-4 py-3"
+        className="panel px-5 py-4"
         role="alert"
       >
         <p className="text-sm text-warn">
@@ -96,7 +96,7 @@ export function TrackStageTimeline({
   return (
     <nav
       aria-label="Track stage"
-      className="overflow-x-auto rounded-card border border-line bg-bg-1 px-3 py-3 sm:px-4"
+      className="panel overflow-x-auto px-4 py-3.5 sm:px-5"
     >
       <div
         role="group"

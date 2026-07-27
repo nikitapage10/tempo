@@ -3,30 +3,29 @@ import type * as React from "react";
 type TrackWorkspaceShellProps = {
   header: React.ReactNode;
   timeline: React.ReactNode;
-  primary: React.ReactNode;
-  panel: React.ReactNode;
+  /** Toolbar row (preset picker, edit-layout toggle). */
+  toolbar?: React.ReactNode;
+  /** The modular two-column body — see `ModularWorkspace`. */
+  content: React.ReactNode;
 };
 
 /**
- * Track workspace regions (V2 §3): ambient header, stage timeline, a
- * dominant primary column (player, versions, workflow strip, sessions),
- * and a work panel that goes sticky on desktop. Mobile stacks everything
- * in document order — header → timeline → primary → panel.
+ * Track workspace regions (V2 §3). Identity header and stage timeline are
+ * fixed — they're how you know which track you're on. Everything below is
+ * modular and arranged by the musician (`ModularWorkspace`).
  */
 export function TrackWorkspaceShell({
   header,
   timeline,
-  primary,
-  panel,
+  toolbar,
+  content,
 }: TrackWorkspaceShellProps) {
   return (
     <div className="space-y-4">
       {header}
       {timeline}
-      <div className="grid gap-4 lg:grid-cols-3 lg:items-start">
-        <div className="space-y-4 lg:col-span-2">{primary}</div>
-        <div>{panel}</div>
-      </div>
+      {toolbar}
+      {content}
     </div>
   );
 }

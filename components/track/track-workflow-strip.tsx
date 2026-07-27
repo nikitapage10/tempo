@@ -81,7 +81,7 @@ export function TrackWorkflowStrip({
   const hiddenCount = signals.length - visibleSignals.length;
 
   return (
-    <section className="rounded-card border border-line bg-bg-1 p-4">
+    <section className="panel p-5">
       <div className="mb-3 flex items-center justify-between gap-2">
         <h2 className="font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
           Workflow

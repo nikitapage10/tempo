@@ -3,6 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import { Chip } from "@/components/ui/chip";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -141,19 +142,12 @@ export default function TasksPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="font-display text-xl font-semibold tracking-tight text-text-hi">
-          Tasks
-        </h1>
-        <p className="mt-1 text-sm text-text-lo">
-          Actionable stuff outside a single track — pitching, social, admin.
-        </p>
-      </div>
+      <PageHeader
+        title="Tasks"
+        subtitle="Actionable stuff outside a single track — pitching, social, admin."
+      />
 
-      <form
-        onSubmit={handleQuickAdd}
-        className="rounded-card border border-line bg-bg-1 p-4"
-      >
+      <form onSubmit={handleQuickAdd} className="panel p-5">
         <div className="flex flex-col gap-2 sm:flex-row">
           <Input
             value={title}

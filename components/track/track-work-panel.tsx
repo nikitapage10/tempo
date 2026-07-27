@@ -142,7 +142,9 @@ export function TrackWorkPanel({
       <div
         role="tablist"
         aria-label="Track tools"
-        className="flex gap-1 overflow-x-auto rounded-input border border-line bg-bg-2/60 p-1"
+        // Wraps rather than scrolls — with 8 tools, horizontal scroll hid
+        // Details/People/Activity entirely until you dragged the bar.
+        className="flex flex-wrap gap-1 rounded-input border border-line bg-bg-2/60 p-1"
       >
         {tabs.map((tab, i) => (
           <button
@@ -159,10 +161,10 @@ export function TrackWorkPanel({
             onClick={() => selectTab(tab.id)}
             onKeyDown={(e) => handleKeyDown(e, i)}
             className={cn(
-              "flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-input px-3 py-1.5 text-xs font-medium transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
+              "flex items-center gap-1.5 whitespace-nowrap rounded-input px-3 py-1.5 text-xs font-medium transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
               active === tab.id
-                ? "bg-bg-1 text-ice"
-                : "text-text-lo hover:text-text-hi"
+                ? "bg-bg-1 text-ice shadow-e1"
+                : "text-text-lo hover:bg-bg-1/50 hover:text-text-hi"
             )}
           >
             {tab.label}

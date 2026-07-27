@@ -20,6 +20,25 @@
     /* Top Spectra lightfield strip — visible animated sliver */
     --edge-strip-h: 14px;
 
+    /* --- Depth layer (v0.13) ---------------------------------------------
+     * Spectra shipped with flat fills and no elevation, which read as an
+     * "admin stack" of equal-weight boxes. These extend the ramp upward and
+     * give surfaces a lit top edge + cast shadow. Hues are unchanged.
+     */
+    --bg-3: #1f1f27;
+
+    /* Lit top edge — the 1px highlight that sells depth on dark UI */
+    --edge-hi: rgb(255 255 255 / 0.055);
+    --edge-hi-strong: rgb(255 255 255 / 0.09);
+
+    /* Elevation */
+    --shadow-1: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow-2: 0 4px 16px -2px rgb(0 0 0 / 0.5), 0 2px 6px -2px rgb(0 0 0 / 0.4);
+    --shadow-3: 0 16px 48px -12px rgb(0 0 0 / 0.7), 0 4px 12px -4px rgb(0 0 0 / 0.5);
+
+    /* Larger radius for major surfaces; card/input/chip stay as spec'd */
+    --radius-panel: 16px;
+
     /* shadcn mapped to Spectra */
     --background: 240 10% 4%;
     --foreground: 40 20% 94%;
@@ -160,5 +179,145 @@
 
   .font-data {
     font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+  }
+
+  /* ---------------------------------------------------------------------
+   * Surfaces (v0.13)
+   * `.panel` replaces the repeated `rounded-card border border-line bg-bg-1`
+   * pattern. Gradient fill + lit top edge + cast shadow, so stacked regions
+   * read as layers instead of equal-weight boxes.
+   * ------------------------------------------------------------------- */
+  .panel {
+    position: relative;
+    border-radius: var(--radius-panel);
+    background: linear-gradient(180deg, #16161d 0%, var(--bg-1) 100%);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-2);
+  }
+
+  /* Lit top edge. Inset so it hugs the radius. */
+  .panel::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    border-radius: var(--radius-panel) var(--radius-panel) 0 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      var(--edge-hi-strong) 25%,
+      var(--edge-hi-strong) 75%,
+      transparent 100%
+    );
+    pointer-events: none;
+  }
+
+  /* Quieter sibling — for secondary regions that shouldn't compete. */
+  .panel-quiet {
+    position: relative;
+    border-radius: var(--radius-panel);
+    background: rgb(18 18 22 / 0.6);
+    border: 1px solid rgb(38 38 46 / 0.7);
+    box-shadow: var(--shadow-1);
+  }
+
+  /* Inset well — for lists/rows sitting inside a panel. */
+  .well {
+    border-radius: 12px;
+    background: rgb(10 10 12 / 0.45);
+    border: 1px solid rgb(38 38 46 / 0.6);
+  }
+
+  /* Interactive row lift. Transform-free so it can't cause layout shift. */
+  .lift {
+    transition:
+      background-color 150ms ease,
+      border-color 150ms ease,
+      box-shadow 150ms ease;
+  }
+
+  .lift:hover {
+    background-color: var(--bg-2);
+    border-color: rgb(127 180 255 / 0.22);
+    box-shadow: var(--shadow-2);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lift {
+      transition: none;
+    }
+  }
+
+  /* Accent glows — emphasis without adding a new hue. */
+  .glow-ice {
+    box-shadow:
+      var(--shadow-2),
+      0 0 0 1px rgb(127 180 255 / 0.18),
+      0 0 32px -8px rgb(127 180 255 / 0.35);
+  }
+
+  .glow-amber {
+    box-shadow:
+      var(--shadow-2),
+      0 0 0 1px rgb(255 181 107 / 0.18),
+      0 0 32px -8px rgb(255 181 107 / 0.3);
+  }
+
+  /* Section label — mono, uppercase, tracked. Replaces ad-hoc h2 styling. */
+  .label-mono {
+    font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+    font-size: 11px;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-lo);
+  }
+
+  /* Big glanceable numerals. Mono per spec — data is always mono. */
+  .stat-value {
+    font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+    font-size: 34px;
+    line-height: 1;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Hero scrim: opaque where copy sits, clearing to the right so the
+   * lightfield is actually visible. Left band stays ≥85% black per the
+   * legibility rule in .cursorrules. */
+  .scrim-reveal {
+    background: linear-gradient(
+      100deg,
+      rgb(10 10 12 / 0.96) 0%,
+      rgb(10 10 12 / 0.93) 38%,
+      rgb(10 10 12 / 0.72) 58%,
+      rgb(10 10 12 / 0.42) 78%,
+      rgb(10 10 12 / 0.3) 100%
+    );
+  }
+
+  /* Centered variant — copy sits mid-panel, so hold ≥85% black through the
+   * middle and let the field come through at the edges. */
+  .scrim-center {
+    background: radial-gradient(
+      ellipse 68% 78% at 50% 50%,
+      rgb(10 10 12 / 0.95) 0%,
+      rgb(10 10 12 / 0.92) 42%,
+      rgb(10 10 12 / 0.6) 72%,
+      rgb(10 10 12 / 0.34) 100%
+    );
+  }
+
+  /* Vertical companion for short/wide heroes on mobile. */
+  @media (max-width: 640px) {
+    .scrim-reveal {
+      background: linear-gradient(
+        170deg,
+        rgb(10 10 12 / 0.95) 0%,
+        rgb(10 10 12 / 0.9) 55%,
+        rgb(10 10 12 / 0.55) 100%
+      );
+    }
   }
 }

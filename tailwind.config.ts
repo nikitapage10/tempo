@@ -14,6 +14,7 @@ const config: Config = {
           0: "var(--bg-0)",
           1: "var(--bg-1)",
           2: "var(--bg-2)",
+          3: "var(--bg-3)",
         },
         line: "var(--line)",
         "text-hi": "var(--text-hi)",
@@ -64,6 +65,7 @@ const config: Config = {
         card: "10px",
         input: "8px",
         chip: "999px",
+        panel: "var(--radius-panel)",
       },
       fontFamily: {
         display: ["var(--font-space-grotesk)", "sans-serif"],
@@ -72,6 +74,9 @@ const config: Config = {
       },
       boxShadow: {
         raise: "0 8px 24px rgba(0, 0, 0, 0.4)",
+        e1: "var(--shadow-1)",
+        e2: "var(--shadow-2)",
+        e3: "var(--shadow-3)",
       },
       transitionDuration: {
         hover: "150ms",

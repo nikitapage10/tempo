@@ -127,69 +127,76 @@ export default function TodayPage() {
     <div className="space-y-5">
       <ActiveSessionBanner />
 
-      {/* Today hero window — knockout type lands in Step 6 */}
-      <LfWindow className="relative min-h-[140px] overflow-hidden rounded-card border border-line">
-        <div className="lf-window-scrim absolute inset-0" aria-hidden />
-        <div className="relative px-5 py-6 sm:px-6 sm:py-7">
-          <p className="font-display text-xl font-semibold tracking-tight text-text-hi sm:text-2xl">
-            {greetingForHour(now.getHours())}
-          </p>
-          <p className="mt-1 text-sm text-text-lo">{dateLabel}</p>
-          <p className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo sm:text-xs">
-            <span className="text-amber">{activeTracks.length}</span>
-            <span>active</span>
-            <FlareLine variant="tick" />
-            <span className="text-amber">{statsQuery.data?.due ?? "—"}</span>
-            <span>due</span>
-            <FlareLine variant="tick" />
-            <span className="text-amber">
-              {statsQuery.data?.sessions ?? "—"}
-            </span>
-            <span>sessions</span>
-          </p>
+      {/* Today hero — one tall surface carrying greeting, stats and actions.
+          Scrim clears toward the right so the lightfield is actually visible. */}
+      <LfWindow className="relative overflow-hidden rounded-panel border border-line shadow-e3">
+        <div className="scrim-reveal absolute inset-0" aria-hidden />
+        <div className="relative flex flex-col gap-6 px-6 py-7 sm:px-8 sm:py-9">
+          <div>
+            <h1 className="font-display text-3xl font-semibold tracking-tight text-text-hi sm:text-[40px] sm:leading-[1.05]">
+              {greetingForHour(now.getHours())}
+            </h1>
+            <p className="mt-1.5 text-sm text-text-lo">{dateLabel}</p>
+          </div>
+
+          <div className="flex flex-wrap items-start gap-x-10 gap-y-5">
+            <Stat value={activeTracks.length} label="Active" tone="amber" />
+            <Stat value={statsQuery.data?.due} label="Due" />
+            <Stat value={statsQuery.data?.sessions} label="Sessions" />
+          </div>
+
           {weeklyLabel ? (
-            <p className="mt-2 text-xs text-text-lo">{weeklyLabel}</p>
+            <p className="-mt-1 text-xs text-text-lo">{weeklyLabel}</p>
           ) : null}
+
+          <div>
+            <FlareLine className="mb-4 max-w-[420px] opacity-60" />
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => setTrackModalOpen(true)}
+              >
+                <Plus className="size-3.5" />
+                Track
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() => setTaskOpen(true)}
+              >
+                <Plus className="size-3.5" />
+                Task
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  setSessionTrackId(activeTracks[0]?.id ?? tracks[0]?.id ?? "");
+                  setSessionOpen(true);
+                }}
+              >
+                Log session
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  setFocusPickTrackId(
+                    activeTracks[0]?.id ?? tracks[0]?.id ?? ""
+                  );
+                  setFocusPickerOpen(true);
+                }}
+              >
+                Start focus
+              </Button>
+            </div>
+          </div>
         </div>
       </LfWindow>
-
-      <div className="flex flex-wrap gap-2">
-        <Button type="button" size="sm" onClick={() => setTrackModalOpen(true)}>
-          <Plus className="size-3.5" />
-          Track
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="secondary"
-          onClick={() => setTaskOpen(true)}
-        >
-          <Plus className="size-3.5" />
-          Task
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="secondary"
-          onClick={() => {
-            setSessionTrackId(activeTracks[0]?.id ?? tracks[0]?.id ?? "");
-            setSessionOpen(true);
-          }}
-        >
-          Log session
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="secondary"
-          onClick={() => {
-            setFocusPickTrackId(activeTracks[0]?.id ?? tracks[0]?.id ?? "");
-            setFocusPickerOpen(true);
-          }}
-        >
-          Start focus
-        </Button>
-      </div>
 
       {empty ? (
         <EmptyShaderPanel
@@ -197,17 +204,73 @@ export default function TodayPage() {
           copy="Add a track, a task, or log a session."
         />
       ) : (
-        <div className="grid gap-4 lg:grid-cols-2">
-          <section className="rounded-card border border-line bg-bg-1 p-4">
-            <h2 className="mb-3 font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
-              Tasks due
-            </h2>
+        <div className="grid gap-4 lg:grid-cols-5">
+          {/* Primary: what the musician should act on. */}
+          <section className="panel p-5 lg:col-span-3">
+            <SectionHeader label="Needs attention" count={prioritized.length} />
+            {tracksQuery.isLoading ? (
+              <div className="h-20 animate-pulse rounded-card bg-bg-2" />
+            ) : prioritized.length === 0 ? (
+              <QuietEmpty>
+                No active tracks in {activeSpace?.name ?? "this space"}. Mark
+                momentum Active on a track to see it here.
+              </QuietEmpty>
+            ) : (
+              <ul className="space-y-2">
+                {prioritized.map(({ track }) => {
+                  const signals = deriveAttentionSignals({ track });
+                  const top = signals[0];
+                  return (
+                    <InMotionRow
+                      key={track.id}
+                      track={track}
+                      stageName={
+                        stages.find((s) => s.id === track.stage_id)?.name
+                      }
+                      reason={top?.explanation}
+                      actionHref={
+                        top?.id === "unresolved-feedback"
+                          ? `/track/${track.id}?panel=comments`
+                          : `/track/${track.id}`
+                      }
+                      actionLabel={
+                        top?.id === "unresolved-feedback"
+                          ? "Open comments"
+                          : top?.id === "no-next-move"
+                            ? "Set next move"
+                            : "Open"
+                      }
+                    />
+                  );
+                })}
+              </ul>
+            )}
+            {waiting.length > 0 || review.length > 0 ? (
+              <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 border-t border-line/70 pt-3">
+                {waiting.length > 0 ? (
+                  <span className="label-mono">
+                    Waiting / blocked{" "}
+                    <span className="text-amber">{waiting.length}</span>
+                  </span>
+                ) : null}
+                {review.length > 0 ? (
+                  <span className="label-mono">
+                    Review <span className="text-amber">{review.length}</span>
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
+          </section>
+
+          {/* Secondary: quieter surface so it doesn't compete. */}
+          <section className="panel-quiet p-5 lg:col-span-2">
+            <SectionHeader label="Tasks due" count={tasksDue.length} />
             {tasksQuery.isLoading ? (
               <div className="h-20 animate-pulse rounded-card bg-bg-2" />
             ) : tasksDue.length === 0 ? (
-              <p className="text-sm text-text-lo">Nothing due this week.</p>
+              <QuietEmpty>Nothing due this week.</QuietEmpty>
             ) : (
-              <ul className="space-y-2">
+              <ul className="space-y-1">
                 {tasksDue.map((task) => (
                   <TodayTaskRow
                     key={task.id}
@@ -233,62 +296,6 @@ export default function TodayPage() {
                 ))}
               </ul>
             )}
-          </section>
-
-          <section className="rounded-card border border-line bg-bg-1 p-4">
-            <h2 className="mb-3 font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
-              Needs attention
-            </h2>
-            {tracksQuery.isLoading ? (
-              <div className="h-20 animate-pulse rounded-card bg-bg-2" />
-            ) : prioritized.length === 0 ? (
-              <p className="text-sm text-text-lo">
-                No active tracks in{" "}
-                {activeSpace?.name ?? "this space"}. Mark momentum Active on a
-                track to see it here.
-              </p>
-            ) : (
-              <ul className="space-y-2">
-                {prioritized.map(({ track }) => {
-                  const signals = deriveAttentionSignals({ track });
-                  const top = signals[0];
-                  return (
-                  <InMotionRow
-                    key={track.id}
-                    track={track}
-                    stageName={
-                      stages.find((s) => s.id === track.stage_id)?.name
-                    }
-                    reason={top?.explanation}
-                    actionHref={
-                      top?.id === "unresolved-feedback"
-                        ? `/track/${track.id}?panel=comments`
-                        : top?.id === "no-next-move" || top?.id === "next-overdue"
-                          ? `/track/${track.id}`
-                          : `/track/${track.id}`
-                    }
-                    actionLabel={
-                      top?.id === "unresolved-feedback"
-                        ? "Open comments"
-                        : top?.id === "no-next-move"
-                          ? "Set next move"
-                          : "Open"
-                    }
-                  />
-                  );
-                })}
-              </ul>
-            )}
-            {waiting.length > 0 ? (
-              <p className="mt-3 text-[11px] text-text-lo">
-                Waiting / blocked: {waiting.length}
-              </p>
-            ) : null}
-            {review.length > 0 ? (
-              <p className="text-[11px] text-text-lo">
-                Review: {review.length}
-              </p>
-            ) : null}
           </section>
         </div>
       )}
@@ -486,6 +493,58 @@ function formatHoursMinutes(totalSec: number): string {
   return `${h}h ${m}m`;
 }
 
+/** Big glanceable numeral + label. Mono per spec — all data is mono. */
+function Stat({
+  value,
+  label,
+  tone,
+}: {
+  value: number | undefined;
+  label: string;
+  tone?: "amber";
+}) {
+  return (
+    <div>
+      <p
+        className={cn(
+          "stat-value",
+          // Zeros and pending values recede; only real counts earn full weight.
+          value === undefined || value === 0
+            ? "text-text-lo/50"
+            : tone === "amber"
+              ? "text-amber"
+              : "text-text-hi"
+        )}
+      >
+        {value ?? "—"}
+      </p>
+      <p className="label-mono mt-2">{label}</p>
+    </div>
+  );
+}
+
+function SectionHeader({ label, count }: { label: string; count?: number }) {
+  return (
+    <div className="mb-4 flex items-center gap-3">
+      <h2 className="label-mono">{label}</h2>
+      {count !== undefined && count > 0 ? (
+        <span className="font-mono text-[11px] tabular-nums text-text-lo/70">
+          {count}
+        </span>
+      ) : null}
+      <div className="h-px flex-1 bg-line/70" />
+    </div>
+  );
+}
+
+function QuietEmpty({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="well px-4 py-8 text-center">
+      <p className="mx-auto max-w-[38ch] text-sm text-text-lo">{children}</p>
+    </div>
+  );
+}
+
 function TodayTaskRow({
   task,
   today,
@@ -500,7 +559,7 @@ function TodayTaskRow({
     TASK_CATEGORIES.find((c) => c.value === task.category)?.label ??
     task.category;
   return (
-    <li className="flex items-start gap-2.5">
+    <li className="lift flex items-start gap-2.5 rounded-input border border-transparent px-2 py-2">
       <input
         type="checkbox"
         checked={task.status === "done"}
@@ -569,14 +628,14 @@ function InMotionRow({
   });
 
   return (
-    <li className="rounded-input border border-line bg-bg-2/40 px-2.5 py-2">
+    <li className="well lift px-3 py-2.5">
       <div className="flex items-center gap-3">
         <Link
           href={actionHref ?? `/track/${track.id}`}
-          className="flex min-w-0 flex-1 items-center gap-3 transition-colors duration-hover hover:opacity-90"
+          className="flex min-w-0 flex-1 items-center gap-3"
         >
           <div
-            className="relative size-9 shrink-0 overflow-hidden rounded-input border border-line"
+            className="relative size-11 shrink-0 overflow-hidden rounded-input border border-line shadow-e1"
             style={{ background: gradientFromTrackId(track.id) }}
           >
             <SignedImage

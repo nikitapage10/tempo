@@ -19,6 +19,7 @@ import { KanbanColumn } from "@/components/board/kanban-column";
 import { EmptyShaderPanel } from "@/components/shader-empty";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
+import { PageHeader } from "@/components/ui/page-header";
 import { TrackCard } from "@/components/tracks/track-card";
 import { TrackFormModal } from "@/components/tracks/track-form-modal";
 import { StageEditor } from "@/components/stages/stage-editor";
@@ -168,17 +169,11 @@ export function BoardView() {
 
   return (
     <div className="flex h-full flex-col">
-      <header className="mb-5 flex flex-col gap-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="font-display text-xl font-semibold tracking-tight text-text-hi">
-              {activeSpace?.name ?? "Board"}
-            </h1>
-            <p className="mt-1 text-sm text-text-lo">
-              Drag tracks across stages. Tap a card to open it.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
+      <PageHeader
+        title={activeSpace?.name ?? "Board"}
+        subtitle="Drag tracks across stages. Tap a card to open it."
+        actions={
+          <>
             <Button
               variant="secondary"
               size="sm"
@@ -196,12 +191,12 @@ export function BoardView() {
               <Plus className="size-3.5" />
               Track
             </Button>
-          </div>
-        </div>
-
+          </>
+        }
+      >
         <div className="flex flex-col gap-2">
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="mr-1 font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+            <span className="label-mono mr-1">
               Type
             </span>
             <Chip
@@ -222,7 +217,7 @@ export function BoardView() {
           </div>
           {allTags.length > 0 ? (
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="mr-1 font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+              <span className="label-mono mr-1">
                 Tag
               </span>
               <Chip
@@ -243,7 +238,7 @@ export function BoardView() {
             </div>
           ) : null}
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="mr-1 font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+            <span className="label-mono mr-1">
               Attention
             </span>
             {(
@@ -262,7 +257,7 @@ export function BoardView() {
                 {label}
               </Chip>
             ))}
-            <span className="ml-2 mr-1 font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+            <span className="label-mono ml-2 mr-1">
               Density
             </span>
             <Chip
@@ -285,7 +280,7 @@ export function BoardView() {
             </Chip>
           </div>
         </div>
-      </header>
+      </PageHeader>
 
       {loading ? (
         <div className="flex gap-3 overflow-hidden">
@@ -313,7 +308,12 @@ export function BoardView() {
             setOverStageId(null);
           }}
         >
-          <div className="flex gap-3 overflow-x-auto pb-4">
+          {/* Columns share the available width instead of scrolling off-screen.
+              Empty stages collapse to slim rails so the pipeline stays visible
+              at a glance; a drag expands everything so any stage is droppable. */}
+          {/* Below lg the stages stack vertically — columns would be too narrow
+              to read, and vertical scrolling beats horizontal on touch. */}
+          <div className="flex flex-col gap-2 pb-4 lg:flex-row lg:items-stretch lg:overflow-x-auto">
             {stages.map((stage) => (
               <KanbanColumn
                 key={stage.id}
@@ -323,6 +323,8 @@ export function BoardView() {
                 isOver={overStageId === stage.id}
                 onOpenTrack={(t) => router.push(`/track/${t.id}`)}
                 compact={density === "compact"}
+                dragging={!!activeDrag}
+                allowCollapse={filtered.length > 0}
               />
             ))}
           </div>

@@ -6,7 +6,40 @@
 
 ---
 
-## 1. Preserved Spectra foundation (non-negotiable)
+## 0. v0.13 depth layer — what changed
+
+Spectra shipped with flat fills, 1px outlines and no elevation. Every region
+carried equal visual weight, which read as an "admin stack" (the problem §2
+names for the track page — it applied app-wide). v0.13 extends the system
+rather than replacing it. **Hues, fonts, the ice/amber split and the flare
+motif are unchanged.**
+
+Added tokens (`app/globals.css`):
+
+| Token | Value | Role |
+|-------|-------|------|
+| `--bg-3` | `#1f1f27` | Highest surface (count chips, raised fills) |
+| `--edge-hi` / `--edge-hi-strong` | `rgb(255 255 255 / .055` / `.09)` | Lit top edge on panels |
+| `--shadow-1/2/3` | see file | Elevation ramp |
+| `--radius-panel` | `16px` | Major surfaces only |
+
+Added utilities: `.panel`, `.panel-quiet`, `.well`, `.lift`, `.glow-ice`,
+`.glow-amber`, `.label-mono`, `.stat-value`, `.scrim-reveal`, `.scrim-center`.
+
+Rules that changed:
+- **Radius** — 10px card / 8px input / 999px chip still hold. `16px` is now
+  allowed for *major* surfaces (page panels, hero, board columns).
+- **Elevation** — shadows are now permitted and expected. Previously none.
+- **Nesting** — do not put `.panel` inside `.panel`; the shadows compound.
+  Use `.well` for rows/lists inside a panel.
+- **Scrims** — body copy still needs ≥85% black over a lightfield window, but
+  the scrim may be a *gradient* that clears where no copy sits
+  (`.scrim-reveal` for left-aligned, `.scrim-center` for centred). This is how
+  the shader became visible again without hurting contrast.
+
+---
+
+## 1. Preserved Spectra foundation
 
 ### Tokens
 | Token | Value | Role |

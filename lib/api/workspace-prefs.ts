@@ -6,7 +6,13 @@ function normalizePreference(row: WorkspacePreference): WorkspacePreference {
     ...row,
     module_order: row.module_order ?? [],
     hidden_modules: row.hidden_modules ?? [],
+    module_layout: row.module_layout ?? null,
   };
+}
+
+/** True when the failure is just migration 012 not being applied yet. */
+function isMissingLayoutColumn(error: { message?: string } | null): boolean {
+  return /module_layout/i.test(error?.message ?? "");
 }
 
 export type PreferenceScope = {
@@ -94,6 +100,11 @@ export type SavePreferenceInput = PreferenceScope & {
   hiddenModules?: string[];
   defaultPanel?: string | null;
   compactMode?: boolean;
+  moduleLayout?: {
+    left: string[][];
+    right: string[][];
+    leftPct?: number;
+  } | null;
 };
 
 /**
@@ -131,30 +142,48 @@ export async function savePreference(
         ? input.defaultPanel
         : existing?.default_panel ?? null,
     compact_mode: input.compactMode ?? existing?.compact_mode ?? false,
+    module_layout:
+      input.moduleLayout !== undefined
+        ? input.moduleLayout
+        : existing?.module_layout ?? null,
     updated_at: new Date().toISOString(),
   };
 
-  if (existing) {
-    const { data, error } = await supabase
+  // Migration 012 may not be applied yet. Retry without the new column rather
+  // than losing the rest of the save, and tell the caller what to run.
+  async function write(payload: Record<string, unknown>) {
+    if (existing) {
+      return supabase
+        .from("user_track_workspace_preferences")
+        .update(payload)
+        .eq("id", existing.id)
+        .select()
+        .single();
+    }
+    return supabase
       .from("user_track_workspace_preferences")
-      .update(fields)
-      .eq("id", existing.id)
+      .insert({
+        user_id: userData.user!.id,
+        track_id: scope.trackId,
+        stage_id: scope.stageId,
+        ...payload,
+      })
       .select()
       .single();
-    if (error) throw error;
-    return normalizePreference(data);
   }
 
-  const { data, error } = await supabase
-    .from("user_track_workspace_preferences")
-    .insert({
-      user_id: userData.user.id,
-      track_id: scope.trackId,
-      stage_id: scope.stageId,
-      ...fields,
-    })
-    .select()
-    .single();
+  let { data, error } = await write(fields);
+
+  if (error && isMissingLayoutColumn(error)) {
+    const { module_layout: _omitted, ...withoutLayout } = fields;
+    ({ data, error } = await write(withoutLayout));
+    if (!error) {
+      throw new Error(
+        "Layout couldn’t be saved — run migration 012 in Supabase, then try again."
+      );
+    }
+  }
+
   if (error) throw error;
   return normalizePreference(data);
 }

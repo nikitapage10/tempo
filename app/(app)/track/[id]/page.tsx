@@ -2,8 +2,9 @@
 
 import * as React from "react";
 import { Suspense } from "react";
-import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useActiveSpace } from "@/components/active-space-provider";
+import { useToast } from "@/components/ui/toast";
 import { ActiveSessionBanner } from "@/components/track/active-session-banner";
 import { ActivityPanel } from "@/components/track/activity-panel";
 import { AssetsPanel } from "@/components/track/assets-panel";
@@ -18,15 +19,15 @@ import { TrackDetails } from "@/components/track/track-details";
 import { TrackNotes } from "@/components/track/track-notes";
 import { TrackStageTimeline } from "@/components/track/track-stage-timeline";
 import { TrackWorkflowStrip } from "@/components/track/track-workflow-strip";
-import { TrackWorkPanel } from "@/components/track/track-work-panel";
 import { TrackWorkspaceShell } from "@/components/track/track-workspace-shell";
+import { ModularWorkspace } from "@/components/track/modular-workspace";
+import { LayoutToolbar } from "@/components/track/layout-toolbar";
 import {
   VersionPlayer,
   type VersionPlayerHandle,
   type WaveformMarker,
 } from "@/components/track/version-player";
 import { VersionTimeline } from "@/components/track/version-timeline";
-import { WorkspaceCustomizeButton } from "@/components/track/workspace-customize";
 import { useCollaborators, useTrackPermissions } from "@/hooks/use-collaborators";
 import { useComments, useUnresolvedCommentCount } from "@/hooks/use-comments";
 import { useStagesWithRecipes } from "@/hooks/use-recipes";
@@ -38,13 +39,24 @@ import {
   useVersionCount,
 } from "@/hooks/use-tracks";
 import { useVersions } from "@/hooks/use-versions";
-import { useResolvedPreference } from "@/hooks/use-workspace-prefs";
+import {
+  useResolvedPreference,
+  useWorkspacePrefMutations,
+} from "@/hooks/use-workspace-prefs";
+import {
+  useLayoutTemplateMutations,
+  useLayoutTemplates,
+} from "@/hooks/use-layout-templates";
 import {
   ALWAYS_VISIBLE_WITH_VERSIONS,
+  DEFAULT_LAYOUT,
+  PRESET_DEFAULTS,
   effectivePresetShape,
+  layoutFromStored,
   type ModuleId,
+  type ModuleLayout,
 } from "@/lib/workspace-presets";
-import type { TrackUpdate } from "@/lib/types";
+import type { TrackUpdate, WorkspacePreset } from "@/lib/types";
 
 export default function TrackDetailPage() {
   return (
@@ -58,8 +70,6 @@ function TrackDetailContent() {
   const params = useParams<{ id: string }>();
   const trackId = params.id;
   const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
   const { setActiveSpaceId } = useActiveSpace();
 
   const trackQuery = useTrack(trackId);
@@ -95,6 +105,19 @@ function TrackDetailContent() {
   >(null);
   const [playerTime, setPlayerTime] = React.useState(0);
   const playerRef = React.useRef<VersionPlayerHandle>(null);
+
+  // Layout editing. The draft is local until saved, so an abandoned edit
+  // never touches the stored preference.
+  const [editing, setEditing] = React.useState(false);
+  const [draftLayout, setDraftLayout] = React.useState<ModuleLayout>(
+    DEFAULT_LAYOUT
+  );
+  const [draftPreset, setDraftPreset] =
+    React.useState<WorkspacePreset>("production");
+  const { save: savePref } = useWorkspacePrefMutations();
+  const templatesQuery = useLayoutTemplates();
+  const templateMutations = useLayoutTemplateMutations();
+  const { toast } = useToast();
 
   // Marker-only fetch scoped to the loaded waveform's version (FEATURE-SPECS §4).
   const markerCommentsQuery = useComments(trackId, selectedVersionId ?? "all");
@@ -137,11 +160,13 @@ function TrackDetailContent() {
     [selectedVersionId]
   );
 
-  const openCommentsTab = React.useCallback(() => {
-    const nextParams = new URLSearchParams(searchParams.toString());
-    nextParams.set("panel", "comments");
-    router.replace(`${pathname}?${nextParams.toString()}`, { scroll: false });
-  }, [pathname, router, searchParams]);
+  // Comments is a module now rather than a tab, so "add comment here" scrolls
+  // to wherever the musician has placed it instead of switching a panel.
+  const scrollToComments = React.useCallback(() => {
+    document
+      .getElementById("module-comments")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
 
   const markers: WaveformMarker[] = React.useMemo(() => {
     if (!selectedVersionId) return [];
@@ -163,6 +188,30 @@ function TrackDetailContent() {
   async function onPatch(patch: TrackUpdate) {
     if (!track) return;
     await update.mutateAsync({ id: track.id, patch });
+  }
+
+  function beginEditing() {
+    setDraftLayout(layout.layout);
+    setDraftPreset(prefQuery.data?.preset ?? "production");
+    setEditing(true);
+  }
+
+  async function persistLayout(next: ModuleLayout, preset?: WorkspacePreset) {
+    await savePref.mutateAsync({
+      trackId,
+      preset: preset ?? prefQuery.data?.preset ?? "custom",
+      moduleLayout: next,
+    });
+  }
+
+  async function handleSaveLayout() {
+    try {
+      await persistLayout(draftLayout, draftPreset);
+      setEditing(false);
+      toast("Layout saved", "ok");
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Couldn’t save layout.");
+    }
   }
 
   if (trackQuery.isLoading) {
@@ -188,6 +237,101 @@ function TrackDetailContent() {
 
   const stages = stagesQuery.data ?? [];
   const versions = versionsQuery.data ?? [];
+
+  // Every movable section of the workspace, keyed by module id. A null entry
+  // (no permission, nothing to show) is skipped by ModularWorkspace.
+  const moduleNodes: Partial<Record<ModuleId, React.ReactNode>> = {
+    player: (
+      <VersionPlayer
+        ref={playerRef}
+        trackId={track.id}
+        versions={versions}
+        selectedId={selectedVersionId}
+        onSelect={setSelectedVersionId}
+        markers={markers}
+        onMarkerClick={(id) => {
+          const marker = markers.find((m) => m.id === id);
+          if (marker && selectedVersionId) {
+            handleRequestSeek(selectedVersionId, marker.timestampSec);
+          }
+        }}
+        onAddCommentClick={(seconds) => {
+          setPrefillTimestamp(seconds);
+          scrollToComments();
+        }}
+        onTimeUpdate={setPlayerTime}
+      />
+    ),
+    versions: (
+      <VersionTimeline
+        trackId={track.id}
+        playingId={selectedVersionId}
+        onPlay={setSelectedVersionId}
+        canUpload={permissions.canUpload}
+        canManage={permissions.canSetCurrentOrPin}
+      />
+    ),
+    workflow: (
+      <TrackWorkflowStrip
+        track={track}
+        onPatch={onPatch}
+        unresolvedCommentCount={unresolvedCommentsQuery.data ?? 0}
+      />
+    ),
+    guestLinks: permissions.isOwner ? (
+      <GuestLinksPanel
+        trackId={track.id}
+        versions={versions}
+        selectedVersionId={selectedVersionId}
+      />
+    ) : null,
+    sessionLog: <SessionLog trackId={track.id} />,
+    work: <TrackChecklist trackId={track.id} />,
+    files: <AssetsPanel trackId={track.id} />,
+    notes: <TrackNotes notes={track.notes} onPatch={onPatch} />,
+    comments: (
+      <div id="module-comments">
+        <CommentsPanel
+          trackId={track.id}
+          versions={versions}
+          selectedVersionId={selectedVersionId}
+          ownerUserId={track.user_id}
+          onRequestSeek={handleRequestSeek}
+          currentTimeSec={playerTime}
+          prefillTimestampSec={prefillTimestamp}
+          onPrefillConsumed={() => setPrefillTimestamp(null)}
+        />
+      </div>
+    ),
+    references: <ReferencesPanel trackId={track.id} />,
+    people: (
+      <PeoplePanel
+        trackId={track.id}
+        ownerUserId={track.user_id}
+        isOwner={permissions.isOwner}
+      />
+    ),
+    activity: <ActivityPanel trackId={track.id} />,
+    details: (
+      <div className="space-y-4">
+        <TrackDetails
+          track={track}
+          onPatch={onPatch}
+          readOnly={!permissions.canEditMetadata}
+        />
+        {permissions.canDeleteTrack ? (
+          <div className="panel flex justify-end p-4">
+            <DeleteTrackButton
+              onDelete={async () => {
+                await remove.mutateAsync(track.id);
+                router.push("/board");
+              }}
+            />
+          </div>
+        ) : null}
+      </div>
+    ),
+  };
 
   return (
     <>
@@ -221,122 +365,88 @@ function TrackDetailContent() {
           recipeStageIds={recipeStageIds}
         />
       }
-      primary={
-        <div className={layout.compactMode ? "space-y-3" : "space-y-4"}>
-          <div className="flex justify-end">
-            <WorkspaceCustomizeButton
-              trackId={track.id}
-              stageId={track.stage_id}
-              hasVersions={versions.length > 0}
-            />
-          </div>
+      toolbar={
+        <>
           <ActiveSessionBanner excludeTrackId={track.id} />
-          <VersionPlayer
-            ref={playerRef}
-            trackId={track.id}
-            versions={versions}
-            selectedId={selectedVersionId}
-            onSelect={setSelectedVersionId}
-            markers={markers}
-            onMarkerClick={(id) => {
-              const marker = markers.find((m) => m.id === id);
-              if (marker && selectedVersionId) {
-                handleRequestSeek(selectedVersionId, marker.timestampSec);
+          <LayoutToolbar
+            editing={editing}
+            preset={draftPreset}
+            saving={savePref.isPending}
+            onEdit={beginEditing}
+            onCancel={() => setEditing(false)}
+            onSave={() => void handleSaveLayout()}
+            onReset={() => {
+              setDraftLayout(PRESET_DEFAULTS.production.layout);
+              setDraftPreset("production");
+            }}
+            onApplyPreset={(p) => {
+              setDraftLayout(PRESET_DEFAULTS[p].layout);
+              setDraftPreset(p);
+            }}
+            templates={templatesQuery.data ?? []}
+            onApplyTemplate={(t) => {
+              setDraftLayout(layoutFromStored(t.layout));
+              setDraftPreset("custom");
+            }}
+            onSaveTemplate={async (name) => {
+              try {
+                await templateMutations.create.mutateAsync({
+                  name,
+                  layout: draftLayout,
+                });
+                toast(`Saved “${name}”`, "ok");
+              } catch (err) {
+                toast(
+                  err instanceof Error
+                    ? err.message
+                    : "Couldn’t save that template."
+                );
               }
             }}
-            onAddCommentClick={(seconds) => {
-              setPrefillTimestamp(seconds);
-              openCommentsTab();
+            onDeleteTemplate={async (t) => {
+              try {
+                await templateMutations.remove.mutateAsync(t.id);
+                toast(`Deleted “${t.name}”`, "ok");
+              } catch (err) {
+                toast(
+                  err instanceof Error
+                    ? err.message
+                    : "Couldn’t delete that template."
+                );
+              }
             }}
-            onTimeUpdate={setPlayerTime}
           />
-          {orderedModules(layout.moduleOrder, layout.hiddenModules, versions.length > 0).map(
-            (mod) => {
-              if (mod === "versions") {
-                return (
-                  <VersionTimeline
-                    key={mod}
-                    trackId={track.id}
-                    playingId={selectedVersionId}
-                    onPlay={setSelectedVersionId}
-                    canUpload={permissions.canUpload}
-                    canManage={permissions.canSetCurrentOrPin}
-                  />
-                );
-              }
-              if (mod === "guestLinks") {
-                return permissions.isOwner ? (
-                  <GuestLinksPanel
-                    key={mod}
-                    trackId={track.id}
-                    versions={versions}
-                    selectedVersionId={selectedVersionId}
-                  />
-                ) : null;
-              }
-              if (mod === "workflow") {
-                return (
-                  <TrackWorkflowStrip
-                    key={mod}
-                    track={track}
-                    onPatch={onPatch}
-                    unresolvedCommentCount={unresolvedCommentsQuery.data ?? 0}
-                  />
-                );
-              }
-              return <SessionLog key={mod} trackId={track.id} />;
-            }
-          )}
-        </div>
+        </>
       }
-      panel={
-        <TrackWorkPanel
-          defaultTab={layout.defaultPanel}
-          work={<TrackChecklist trackId={track.id} />}
-          files={<AssetsPanel trackId={track.id} />}
-          notes={<TrackNotes notes={track.notes} onPatch={onPatch} />}
-          comments={
-            <CommentsPanel
-              trackId={track.id}
-              versions={versions}
-              selectedVersionId={selectedVersionId}
-              ownerUserId={track.user_id}
-              onRequestSeek={handleRequestSeek}
-              currentTimeSec={playerTime}
-              prefillTimestampSec={prefillTimestamp}
-              onPrefillConsumed={() => setPrefillTimestamp(null)}
-            />
+      content={
+        <ModularWorkspace
+          layout={editing ? draftLayout : layout.layout}
+          modules={moduleNodes}
+          editing={editing}
+          onChange={(next) => {
+            if (editing) {
+              setDraftLayout(next);
+              setDraftPreset("custom");
+            } else {
+              // Only the splitter can fire this outside edit mode; persist the
+              // new width straight away so it survives a reload.
+              persistLayout(next).catch((err) =>
+                toast(
+                  err instanceof Error
+                    ? err.message
+                    : "Couldn’t save column width."
+                )
+              );
+            }
+          }}
+          lockedModule={
+            versions.length > 0 ? ALWAYS_VISIBLE_WITH_VERSIONS : null
           }
-          commentsCount={unresolvedCommentsQuery.data ?? 0}
-          references={<ReferencesPanel trackId={track.id} />}
-          people={
-            <PeoplePanel
-              trackId={track.id}
-              ownerUserId={track.user_id}
-              isOwner={permissions.isOwner}
-            />
-          }
-          peopleCount={activeCollaboratorCount}
-          activity={<ActivityPanel trackId={track.id} />}
-          details={
-            <div className="space-y-4">
-              <TrackDetails
-                track={track}
-                onPatch={onPatch}
-                readOnly={!permissions.canEditMetadata}
-              />
-              {permissions.canDeleteTrack ? (
-                <div className="flex justify-end rounded-card border border-line bg-bg-1 p-4">
-                  <DeleteTrackButton
-                    onDelete={async () => {
-                      await remove.mutateAsync(track.id);
-                      router.push("/board");
-                    }}
-                  />
-                </div>
-              ) : null}
-            </div>
-          }
+          badges={{
+            comments: unresolvedCommentsQuery.data ?? 0,
+            people: activeCollaboratorCount,
+          }}
+          compact={layout.compactMode}
         />
       }
     />
@@ -345,16 +455,6 @@ function TrackDetailContent() {
   );
 }
 
-function orderedModules(
-  order: ModuleId[],
-  hidden: ModuleId[],
-  hasVersions: boolean
-): ModuleId[] {
-  return order.filter((id) => {
-    if (hasVersions && id === ALWAYS_VISIBLE_WITH_VERSIONS) return true;
-    return !hidden.includes(id);
-  });
-}
 
 function TrackWorkspaceSkeleton() {
   return (

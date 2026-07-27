@@ -86,7 +86,10 @@ export function TrackCard({ track, onOpen, isDragOverlay, compact }: TrackCardPr
       />
       <div
         className={cn(
-          "relative rounded-[9px] border border-line bg-bg-1",
+          "relative rounded-[9px] border border-line",
+          "bg-gradient-to-b from-[#17171e] to-bg-1 shadow-e1",
+          "transition-shadow duration-hover",
+          !isDragOverlay && !isDragging && "hover:shadow-e2",
           compact ? "p-2" : "p-3",
           isDragOverlay && "ring-1 ring-ice/60"
         )}

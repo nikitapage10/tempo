@@ -2,6 +2,16 @@
 
 Plain-English history of what changed in TEMPO, newest first.
 
+## 2026-07-27
+
+- Added (v0.14.0): the track page is now yours to arrange. Everything on it — the player, versions, workflow, guest links, session log, checklist, comments, files, notes, references, people, activity and details — is a module you can move. Hit "Edit layout", drag modules between the left and right columns, and hide anything you don't want. Drop one module straight onto another and they combine into a tabbed panel, so related tools share one space instead of stacking up. Drag the divider between the columns to set how wide each side is. Presets (Writing, Production, Feedback, Mix review, Release prep) each set up a focused arrangement rather than showing everything at once, and anything a preset leaves out is one click away. Your arrangement is saved per track and is yours alone — collaborators keep their own.
+- Under the hood: run migration `012` in Supabase before using this. Until you do, the track page falls back to the standard layout and your changes won't stick.
+- Fixed (v0.14.0): the track tools no longer sit in a cramped tab strip that hid Details, People and Activity behind a horizontal scrollbar.
+
+- Changed (v0.13.0): a visual overhaul. TEMPO now has depth — surfaces are layered and lit rather than flat outlines, so the important things on a screen actually look important. The Today greeting is a proper hero: your active / due / session counts are large and readable at a glance, the quick actions live inside it, and the animated light field is finally visible behind it instead of hidden under a black cover. Every page opens with a bigger title and the signature flare line. Empty states and the board's drop zones look like places something goes, instead of a sentence sitting in a box.
+- Changed (v0.13.0): the board no longer scrolls sideways. Stages share the width of your screen, and any stage with nothing in it shrinks to a slim labelled strip so the whole pipeline stays visible at once — start dragging and every stage opens back up so you can drop anywhere. On a phone or narrow window the stages stack vertically instead.
+- Fixed (v0.13.0): artwork now shows up on the Tracks list. It was being loaded with a plain link to private storage, which never resolves, so every cover came up blank; tracks without artwork still show their colour instead.
+
 ## 2026-07-26
 
 - Fixed (v0.12.2): collaboration features now explain themselves instead of breaking. If the database isn't set up for collaboration yet, the People panel loads empty rather than erroring, and trying to invite someone tells you to run the migrations first. Invite links that can't be opened because the server is missing its access key now show a clear "unavailable" message instead of failing silently.

@@ -1,20 +1,87 @@
 import type { WorkPanelTabId } from "@/components/track/track-work-panel";
 import type { WorkspacePreset } from "@/lib/types";
 
-/** Primary-column sections a musician can reorder/hide (FEATURE-SPECS §15). */
-export type ModuleId = "versions" | "workflow" | "guestLinks" | "sessionLog";
+/**
+ * Every movable section of the track workspace (FEATURE-SPECS §15).
+ *
+ * Before v0.13.1 only the four primary-column sections were movable and the
+ * eight tools were locked into a sidebar tab bar. Now all of them are modules
+ * that can live in either column, in any order.
+ */
+export type ModuleId =
+  // primary sections
+  | "player"
+  | "versions"
+  | "workflow"
+  | "guestLinks"
+  | "sessionLog"
+  // tools (previously sidebar-only tabs)
+  | "work"
+  | "files"
+  | "notes"
+  | "comments"
+  | "references"
+  | "people"
+  | "activity"
+  | "details";
 
 export const MODULE_DEFS: { id: ModuleId; label: string }[] = [
-  { id: "versions", label: "Versions & waveform" },
+  { id: "player", label: "Player & waveform" },
+  { id: "versions", label: "Versions" },
   { id: "workflow", label: "Workflow (Now / Next / Blocked / Target)" },
   { id: "guestLinks", label: "Guest review links" },
   { id: "sessionLog", label: "Session log" },
+  { id: "work", label: "Checklist" },
+  { id: "comments", label: "Comments" },
+  { id: "files", label: "Files" },
+  { id: "notes", label: "Notes" },
+  { id: "references", label: "References" },
+  { id: "people", label: "People" },
+  { id: "activity", label: "Activity" },
+  { id: "details", label: "Details" },
 ];
 
 export const ALL_MODULE_IDS: ModuleId[] = MODULE_DEFS.map((m) => m.id);
 
-/** Waveform/versions can never be hidden once a track has versions — FEATURE-SPECS §15.5. */
-export const ALWAYS_VISIBLE_WITH_VERSIONS: ModuleId = "versions";
+export function moduleLabel(id: ModuleId): string {
+  return MODULE_DEFS.find((m) => m.id === id)?.label ?? id;
+}
+
+/** The waveform can never be hidden once a track has versions — FEATURE-SPECS §15.5. */
+export const ALWAYS_VISIBLE_WITH_VERSIONS: ModuleId = "player";
+
+export type ColumnId = "left" | "right";
+
+/**
+ * One position in a column. A slot holding several modules renders them as a
+ * tabbed group — that's what dropping one module onto another produces.
+ */
+export type ModuleSlot = ModuleId[];
+
+export type ModuleLayout = {
+  left: ModuleSlot[];
+  right: ModuleSlot[];
+  /** Left column width as a percentage of the row. Clamped to LEFT_PCT_MIN..MAX. */
+  leftPct?: number;
+};
+
+/** A slot's stable identity for drag-and-drop — its first module. */
+export function slotId(slot: ModuleSlot): ModuleId {
+  return slot[0];
+}
+
+export function flattenLayout(layout: ModuleLayout): ModuleId[] {
+  return [...layout.left, ...layout.right].flat();
+}
+
+export const LEFT_PCT_MIN = 30;
+export const LEFT_PCT_MAX = 78;
+export const LEFT_PCT_DEFAULT = 60;
+
+export function clampLeftPct(value: number | undefined): number {
+  if (typeof value !== "number" || Number.isNaN(value)) return LEFT_PCT_DEFAULT;
+  return Math.min(LEFT_PCT_MAX, Math.max(LEFT_PCT_MIN, Math.round(value)));
+}
 
 export type PanelTabOption = { value: WorkPanelTabId; label: string };
 
@@ -30,88 +97,192 @@ export const DEFAULT_PANEL_OPTIONS: PanelTabOption[] = [
 ];
 
 export type PresetShape = {
-  moduleOrder: ModuleId[];
-  hiddenModules: ModuleId[];
-  defaultPanel: WorkPanelTabId;
+  layout: ModuleLayout;
   compactMode: boolean;
 };
 
 /**
- * Built-in defaults per preset (FEATURE-SPECS §15). "production" is the
- * fallback used when a musician has never customized anything at all —
- * precedence is track > stage > global > this built-in default.
+ * Built-in layouts per preset.
+ *
+ * Each preset is a *focused* set, not a complete one — showing all 13 modules
+ * turns one column into a dumping ground. Anything a preset leaves out stays
+ * one click away in the "Hidden" tray of the layout editor, so nothing becomes
+ * unreachable; it's just out of the way for that mode of working.
  */
 export const PRESET_DEFAULTS: Record<WorkspacePreset, PresetShape> = {
+  /** Capture ideas — notes sit beside the audio, admin stays grouped away. */
   writing: {
-    moduleOrder: ["workflow", "sessionLog", "versions", "guestLinks"],
-    hiddenModules: ["guestLinks"],
-    defaultPanel: "notes",
+    layout: {
+      left: [["player"], ["notes"]],
+      right: [["workflow"], ["work", "references", "sessionLog"]],
+      leftPct: 58,
+    },
     compactMode: false,
   },
+
+  /** Daily work — the listening surface leads; tools share one tabbed panel. */
   production: {
-    moduleOrder: ["versions", "workflow", "guestLinks", "sessionLog"],
-    hiddenModules: [],
-    defaultPanel: "work",
+    layout: {
+      left: [["player"], ["versions"]],
+      right: [["workflow"], ["work", "comments", "sessionLog"]],
+      leftPct: 60,
+    },
     compactMode: false,
   },
+
+  /** Respond to notes — comments get full height next to the waveform. */
   feedback: {
-    moduleOrder: ["versions", "workflow", "guestLinks", "sessionLog"],
-    hiddenModules: ["sessionLog"],
-    defaultPanel: "comments",
+    layout: {
+      left: [["player"], ["comments"]],
+      right: [["work"], ["guestLinks", "people", "activity"]],
+      leftPct: 64,
+    },
     compactMode: false,
   },
+
+  /** Compare bounces — versions dominate, everything else is one tab away. */
   mix_review: {
-    moduleOrder: ["versions", "guestLinks", "workflow", "sessionLog"],
-    hiddenModules: ["sessionLog"],
-    defaultPanel: "comments",
+    layout: {
+      left: [["player"], ["versions"]],
+      right: [["comments", "references"], ["work"]],
+      leftPct: 66,
+    },
     compactMode: false,
   },
+
+  /** Ship it — metadata and assets take over from the workbench. */
   release_prep: {
-    moduleOrder: ["workflow", "versions", "guestLinks", "sessionLog"],
-    hiddenModules: [],
-    defaultPanel: "files",
+    layout: {
+      left: [["player"], ["files"]],
+      right: [["details", "people"], ["workflow", "work"]],
+      leftPct: 55,
+    },
     compactMode: false,
   },
+
+  /** Placeholder for "the musician arranged it themselves". */
   custom: {
-    moduleOrder: ["versions", "workflow", "guestLinks", "sessionLog"],
-    hiddenModules: [],
-    defaultPanel: "work",
+    layout: {
+      left: [["player"], ["versions"]],
+      right: [["workflow"], ["work", "comments", "sessionLog"]],
+      leftPct: 60,
+    },
     compactMode: false,
   },
 };
 
-function isModuleId(value: string): value is ModuleId {
-  return (ALL_MODULE_IDS as string[]).includes(value);
+export const DEFAULT_LAYOUT: ModuleLayout = PRESET_DEFAULTS.production.layout;
+
+function isModuleId(value: unknown): value is ModuleId {
+  return typeof value === "string" && (ALL_MODULE_IDS as string[]).includes(value);
 }
 
-function isPanelTabId(value: string): value is WorkPanelTabId {
-  return DEFAULT_PANEL_OPTIONS.some((o) => o.value === value);
+/** Strips unknown/duplicate ids so a hand-edited or stale row can't break render. */
+function sanitizeLayout(raw: unknown): ModuleLayout | null {
+  if (!raw || typeof raw !== "object") return null;
+  const obj = raw as Record<string, unknown>;
+  if (!Array.isArray(obj.left) && !Array.isArray(obj.right)) return null;
+
+  // Accepts both shapes: the flat ["player","versions"] written before tab
+  // groups existed, and the current [["player"],["work","comments"]].
+  const seen = new Set<ModuleId>();
+  const take = (arr: unknown): ModuleSlot[] => {
+    if (!Array.isArray(arr)) return [];
+    const out: ModuleSlot[] = [];
+    for (const entry of arr) {
+      const members = (Array.isArray(entry) ? entry : [entry]).filter(
+        (v): v is ModuleId => isModuleId(v) && !seen.has(v)
+      );
+      for (const m of members) seen.add(m);
+      if (members.length > 0) out.push(members);
+    }
+    return out;
+  };
+
+  return {
+    left: take(obj.left),
+    right: take(obj.right),
+    leftPct: clampLeftPct(
+      typeof obj.leftPct === "number" ? obj.leftPct : undefined
+    ),
+  };
 }
 
-/** Resolves a stored preference (or none) into a concrete, safe-to-render shape. */
-export function effectivePresetShape(pref: {
-  preset: WorkspacePreset;
+/**
+ * Legacy bridge: rows written before migration 012 only described the four
+ * old primary modules plus a default sidebar tab. Reconstruct an equivalent
+ * two-column layout so nobody's saved preference is silently discarded.
+ */
+function layoutFromLegacy(pref: {
   module_order: string[];
   hidden_modules: string[];
   default_panel: string | null;
-  compact_mode: boolean;
-} | null): PresetShape {
-  const fallback = PRESET_DEFAULTS.production;
-  if (!pref) return fallback;
+}): ModuleLayout {
+  const legacyPrimary: ModuleId[] = ["versions", "workflow", "guestLinks", "sessionLog"];
+  const hidden = new Set(pref.hidden_modules);
 
-  const storedOrder = pref.module_order.filter(isModuleId);
-  const moduleOrder =
-    storedOrder.length > 0
-      ? [...storedOrder, ...ALL_MODULE_IDS.filter((id) => !storedOrder.includes(id))]
-      : fallback.moduleOrder;
+  const ordered = pref.module_order.filter(
+    (id): id is ModuleId => isModuleId(id) && legacyPrimary.includes(id)
+  );
+  const left: ModuleSlot[] = [
+    "player" as ModuleId,
+    ...ordered.filter((id) => !hidden.has(id)),
+    ...legacyPrimary.filter((id) => !ordered.includes(id) && !hidden.has(id)),
+  ].map((id) => [id]);
 
-  return {
-    moduleOrder,
-    hiddenModules: pref.hidden_modules.filter(isModuleId),
-    defaultPanel:
-      pref.default_panel && isPanelTabId(pref.default_panel)
-        ? pref.default_panel
-        : fallback.defaultPanel,
-    compactMode: pref.compact_mode,
-  };
+  // The old sidebar was itself a tab bar over these eight tools, so the exact
+  // equivalent is one grouped slot — the musician sees what they had before,
+  // and their chosen default tab leads.
+  const tools: ModuleId[] = [
+    "work",
+    "comments",
+    "files",
+    "notes",
+    "references",
+    "people",
+    "activity",
+    "details",
+  ];
+  const preferred = isModuleId(pref.default_panel) ? pref.default_panel : null;
+  const grouped =
+    preferred && tools.includes(preferred)
+      ? [preferred, ...tools.filter((t) => t !== preferred)]
+      : tools;
+
+  return { left, right: [grouped] };
+}
+
+/** Resolves a stored preference (or none) into a concrete, safe-to-render shape. */
+export function effectivePresetShape(
+  pref:
+    | {
+        preset: WorkspacePreset;
+        module_order: string[];
+        hidden_modules: string[];
+        default_panel: string | null;
+        compact_mode: boolean;
+        module_layout?: unknown;
+      }
+    | null
+): PresetShape {
+  if (!pref) return PRESET_DEFAULTS.production;
+
+  const stored = sanitizeLayout(pref.module_layout);
+  const layout = stored ?? layoutFromLegacy(pref);
+
+  return { layout, compactMode: pref.compact_mode };
+}
+
+/**
+ * Turns an arbitrary stored blob (a saved template, a hand-edited row) into a
+ * layout that is safe to render — unknown ids dropped, duplicates removed.
+ */
+export function layoutFromStored(raw: unknown): ModuleLayout {
+  return sanitizeLayout(raw) ?? DEFAULT_LAYOUT;
+}
+
+/** Modules placed in neither column — available to add back. */
+export function hiddenModules(layout: ModuleLayout): ModuleId[] {
+  const placed = new Set<ModuleId>(flattenLayout(layout));
+  return ALL_MODULE_IDS.filter((id) => !placed.has(id));
 }

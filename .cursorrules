@@ -26,16 +26,26 @@ today — never treat roadmap specs as shipped product.
 
 Do not add other dependencies without asking. No Redux, no Prisma, no CSS-in-JS.
 
-## Design system (from spec §5) — non-negotiable
+## Design system (from spec §5)
+
+The identity below is fixed. The *depth layer* added in v0.13 (elevation,
+larger panel radius, gradient surfaces, gradient scrims) is an extension —
+see `DESIGN-SYSTEM-V2.md` §0 for the added tokens and utilities, and prefer
+`.panel` / `.panel-quiet` / `.well` over hand-rolling card chrome.
+
+Fixed (do not change without asking):
 - Dark UI only. Use the CSS variables defined in `app/globals.css`
-  (--bg-0 #0A0A0C, --bg-1 #121216, --bg-2 #1A1A21, --line #26262E,
+  (--bg-0 #0A0A0C, --bg-1 #121216, --bg-2 #1A1A21, --bg-3 #1F1F27,
+   --line #26262E,
    --text-hi #F2F0EB, --text-lo #8B8B96, --ice #7FB4FF, --amber #FFB56B,
    --violet #9D8CFF, --ok #6FD99A, --warn #FF7A6B).
 - Fonts: Space Grotesk (display), Inter (body), JetBrains Mono (ALL musical/
   technical data: BPM, keys, timestamps, version numbers, durations, counts).
 - Ice = interactive (buttons, links, focus). Amber = status/emphasis
   ("current" markers, momentum, flare-line centers). Never both as CTAs together.
-- Radius: 10px cards, 8px inputs, 999px chips. 1px --line borders.
+- Radius: 10px cards, 8px inputs, 999px chips; 16px (--radius-panel) for major
+  surfaces only. 1px --line borders. Elevation via --shadow-1/2/3 is allowed;
+  never nest .panel inside .panel (shadows compound) — use .well for inner rows.
 - Signature motif: .flare-line (1px horizontal gradient
   transparent → ice → white → amber → transparent) for dividers/active markers.
 - Respect prefers-reduced-motion everywhere; shader components must pause
