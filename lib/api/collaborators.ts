@@ -11,7 +11,13 @@ export async function listCollaborators(
     .select("*")
     .eq("track_id", trackId)
     .order("created_at", { ascending: false });
-  if (error) throw error;
+  if (error) {
+    // Before migration 009, treat as empty so the People panel still loads.
+    if (/track_collaborators|schema cache|does not exist/i.test(error.message)) {
+      return [];
+    }
+    throw new Error(error.message);
+  }
   return data ?? [];
 }
 
@@ -61,7 +67,16 @@ export async function invite(
     })
     .select()
     .single();
-  if (error) throw error;
+  if (error) {
+    const msg = error.message || "Couldn’t create that invite — try again.";
+    // Common before migrations 001–011 are applied in Supabase.
+    if (/track_collaborators|schema cache|does not exist/i.test(msg)) {
+      throw new Error(
+        "Collaboration isn’t set up in the database yet — run migrations 001–011 in Supabase (or paste migrations/_run_all_001_to_011.sql), then try again."
+      );
+    }
+    throw new Error(msg);
+  }
 
   return { collaborator: data, rawToken };
 }

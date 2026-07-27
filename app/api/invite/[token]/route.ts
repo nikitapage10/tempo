@@ -18,6 +18,18 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: { token: string } }
 ) {
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return NextResponse.json(
+      {
+        error:
+          process.env.NODE_ENV === "development"
+            ? "Server is missing SUPABASE_SERVICE_ROLE_KEY. Add it to .env.local from Supabase → Project Settings → API → service_role, then restart npm run dev."
+            : INVITE_UNAVAILABLE_MESSAGE,
+      },
+      { status: 503, headers: noStoreHeaders() }
+    );
+  }
+
   const ctx = await resolveInvite(params.token);
   if (!ctx) {
     return NextResponse.json(

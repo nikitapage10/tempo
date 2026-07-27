@@ -39,7 +39,12 @@ export async function resolveInvite(
   let admin;
   try {
     admin = createAdminClient();
-  } catch {
+  } catch (err) {
+    // Fail closed for guests, but make the cause obvious in local/server logs.
+    console.error(
+      "[tempo] invite lookup failed — SUPABASE_SERVICE_ROLE_KEY missing or invalid:",
+      err instanceof Error ? err.message : err
+    );
     return null;
   }
 
