@@ -28,7 +28,15 @@ export default function LoginPage() {
 
     if (signInError) {
       setStatus("error");
-      setError(signInError.message);
+      const raw = signInError.message;
+      const lower = raw.toLowerCase();
+      if (lower.includes("rate limit") || lower.includes("too many")) {
+        setError(
+          "Too many sign-in emails just now — wait a few minutes (or up to an hour), then try again. Check your inbox for an earlier link first."
+        );
+      } else {
+        setError(raw);
+      }
       return;
     }
 
