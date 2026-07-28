@@ -81,7 +81,7 @@ async function writeUsage(
 async function callModel(
   model: string,
   input: string,
-  effort: "minimal" | "low",
+  effort: "none" | "low",
 ): Promise<{ text: string; inputTokens: number; cachedTokens: number }> {
   const client = createOpenAIClient();
   const response = await client.responses.create({
@@ -107,18 +107,45 @@ async function callModel(
       }
     | undefined;
 
+  const text = extractOutputText(response);
+
   console.info(
-    "[assistant] model=%s input_tokens=%s cached_tokens=%s",
+    "[assistant] model=%s effort=%s input_tokens=%s cached_tokens=%s out_len=%s",
     response.model || model,
+    effort,
     usage?.input_tokens ?? "?",
     usage?.input_tokens_details?.cached_tokens ?? "?",
+    text.length,
   );
 
   return {
-    text: response.output_text ?? "",
+    text,
     inputTokens: usage?.input_tokens ?? 0,
     cachedTokens: usage?.input_tokens_details?.cached_tokens ?? 0,
   };
+}
+
+/** Prefer output_text; fall back to walking output items if the SDK left it blank. */
+function extractOutputText(response: {
+  output_text?: string;
+  output?: Array<{
+    type?: string;
+    content?: Array<{ type?: string; text?: string }>;
+  }>;
+}): string {
+  if (typeof response.output_text === "string" && response.output_text.trim()) {
+    return response.output_text;
+  }
+  const parts: string[] = [];
+  for (const item of response.output ?? []) {
+    if (item.type !== "message") continue;
+    for (const block of item.content ?? []) {
+      if (block.type === "output_text" && typeof block.text === "string") {
+        parts.push(block.text);
+      }
+    }
+  }
+  return parts.join("");
 }
 
 function parseRaw(text: string): unknown {
@@ -226,10 +253,28 @@ export async function POST(req: NextRequest) {
   const input = buildInput(snapshotText, history, message);
 
   try {
-    const cheap = await callModel(ASSISTANT_MODEL, input, "minimal");
+    // "none" is the cheap/latency path on 5.6; "minimal" is not reliably
+    // accepted on Luna and was returning empty failures to the panel.
+    let cheap: Awaited<ReturnType<typeof callModel>>;
+    try {
+      cheap = await callModel(ASSISTANT_MODEL, input, "none");
+    } catch (firstErr) {
+      console.error(
+        "[assistant] luna/none failed, retrying terra/low:",
+        firstErr instanceof Error ? firstErr.message : firstErr,
+      );
+      cheap = await callModel(ASSISTANT_DEEP_MODEL, input, "low");
+    }
     let parsed = parseRaw(cheap.text);
     let validated = validateAssistantOutput(parsed, refs);
     let escalated = false;
+
+    if (!validated.reply.trim()) {
+      console.error(
+        "[assistant] empty reply after validate; raw=",
+        cheap.text.slice(0, 300),
+      );
+    }
 
     const shouldEscalate =
       validated.needsDeeperThinking &&
@@ -264,6 +309,10 @@ export async function POST(req: NextRequest) {
       escalated,
     });
   } catch (err) {
+    console.error(
+      "[assistant] turn failed:",
+      err instanceof Error ? err.message : err,
+    );
     friendlyAIError(err);
     await writeUsage(supabase, user.id, {
       messages: usage.messages + 1,

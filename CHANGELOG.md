@@ -4,6 +4,7 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-28
 
+- Fixed (v0.25.2): the floating assistant was failing on ordinary questions (like how many songs you have) and only saying it couldn't answer — it should reply properly again.
 - Fixed (v0.25.1): Today's drifting cover strip no longer runs out and jumps back — it loops continuously.
 - Added (v0.25.0): a floating **assistant** in the bottom-right of every main screen — tap the TEMPO mark (or press Cmd/Ctrl+/) to ask how something works or what's going on in your catalog. It can propose a small change (add a task, mark one done, set a deadline, open a screen); nothing is written until you confirm. Hidden on Focus and Import so those stay distraction-free.
   - Under the hood: **run migration `016` in Supabase** before relying on the daily ask limits. Without it the assistant still answers, but usage tracking won't stick across servers.
