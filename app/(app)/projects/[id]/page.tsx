@@ -19,8 +19,7 @@ import {
 import { useTaskMutations, useTasks } from "@/hooks/use-tasks";
 import { useTracks } from "@/hooks/use-tracks";
 import { formatShortDate } from "@/lib/format";
-import { gradientFromTrackId } from "@/lib/track-style";
-import { SignedImage } from "@/components/ui/signed-image";
+import { SpectraCoverArt } from "@/components/spectra/spectra-cover-art";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { PROJECT_TYPES, TASK_CATEGORIES } from "@/lib/constants";
 import { ReleaseWorkspace } from "@/components/projects/release-workspace";
@@ -242,13 +241,12 @@ export default function ProjectDetailPage() {
                 size={200}
                 className="flex items-center gap-3 rounded-input border border-line bg-bg-2/40 px-2.5 py-2"
               >
-                <div
-                  className="relative size-8 shrink-0 overflow-hidden rounded-input border border-line"
-                  style={{ background: gradientFromTrackId(t.id) }}
-                >
-                  <SignedImage
-                    path={t.artwork_url}
-                    className="absolute inset-0 size-full"
+                <div className="relative size-8 shrink-0 overflow-hidden rounded-input border border-line">
+                  <SpectraCoverArt
+                    trackId={t.id}
+                    title={t.title}
+                    artworkUrl={t.artwork_url}
+                    animate={false}
                   />
                 </div>
                 <Link

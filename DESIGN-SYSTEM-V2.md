@@ -2,6 +2,8 @@
 
 *Living document. Extends Spectra from `tempo-design-spec.md` §5 and `app/globals.css`. Does not replace the original tokens — it defines the redesigned track workspace and related patterns.*
 
+**Related:** `SPECTRA-TITLE-LANGUAGE.md` — design-first mapping from track titles to vertical Spectra light slits (temporary cover art, reusable score).
+
 **Implementation status:** Prompt 1 shipped (v0.7.0) — workspace shell, ambient header, stage timeline, sticky work panel. Prompt 2 workflow strip + attention signals also shipped in this pass (pending migration 001 confirmation). Comments (Prompt 3) not started.
 
 ---

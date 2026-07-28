@@ -8,6 +8,7 @@ them in addition to the design spec before building any feature:
 - `TECHNICAL-ARCHITECTURE.md` — client/server boundaries, query keys, routes
 - `DATA-MODEL.md` — current vs proposed schema (additive migrations only)
 - `DESIGN-SYSTEM-V2.md` — track workspace layout and interaction hierarchy
+- `SPECTRA-TITLE-LANGUAGE.md` — title → Spectra light-slit visual language (placeholder covers)
 - `IMPLEMENTATION-PLAN.md` — work-package order, migration gates, verification
 - `SECURITY-AND-PERMISSIONS.md` — threat model and role matrix
 - `TESTING-STRATEGY.md` — manual regression and future automation notes

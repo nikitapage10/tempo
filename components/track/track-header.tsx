@@ -4,13 +4,12 @@ import * as React from "react";
 import Link from "next/link";
 import { ArrowLeft, ImagePlus } from "lucide-react";
 import { FlareLine } from "@/components/flare-line";
-import { SignedImage } from "@/components/ui/signed-image";
+import { SpectraCoverArt } from "@/components/spectra/spectra-cover-art";
 import { useToast } from "@/components/ui/toast";
 import { useAssetMutations } from "@/hooks/use-assets";
 import { MOMENTUM_OPTIONS } from "@/lib/constants";
 import {
   formatTrackType,
-  gradientFromTrackId,
   momentumDotClass,
 } from "@/lib/track-style";
 import type { Momentum, Stage, Track, TrackUpdate } from "@/lib/types";
@@ -101,14 +100,15 @@ export function TrackHeader({
           <button
             type="button"
             className="group relative size-20 overflow-hidden rounded-input border border-line focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice sm:size-24"
-            style={{ background: gradientFromTrackId(track.id) }}
             aria-label="Upload cover art"
             disabled={coverBusy}
             onClick={() => coverInputRef.current?.click()}
           >
-            <SignedImage
-              path={track.artwork_url}
-              className="absolute inset-0 size-full"
+            <SpectraCoverArt
+              trackId={track.id}
+              title={track.title}
+              artworkUrl={track.artwork_url}
+              animate={false}
             />
             <span className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-bg-0/70 opacity-0 transition-opacity duration-hover group-hover:opacity-100 group-focus-visible:opacity-100">
               <ImagePlus className="size-5 text-ice" />

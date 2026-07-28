@@ -9,15 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/toast";
 import { PageHeader } from "@/components/ui/page-header";
-import { SignedImage } from "@/components/ui/signed-image";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { EmptyShaderPanel } from "@/components/shader-empty";
+import { SpectraCoverArt } from "@/components/spectra/spectra-cover-art";
 import { TrackFormModal } from "@/components/tracks/track-form-modal";
 import { useStages } from "@/hooks/use-stages";
 import { useTrackMutations, useTracks } from "@/hooks/use-tracks";
 import {
   formatTrackType,
-  gradientFromTrackId,
   momentumDotClass,
   typeChipClass,
 } from "@/lib/track-style";
@@ -218,16 +217,12 @@ export default function TracksPage() {
                     </span>
                   ) : null}
 
-                  {/* Artwork lives in the private `audio` bucket, so the path
-                      must be signed — a raw <img src={path}> never resolves.
-                      Gradient stays underneath as the fallback. */}
-                  <span
-                    className="relative size-14 shrink-0 overflow-hidden rounded-input border border-line shadow-e1"
-                    style={{ background: gradientFromTrackId(track.id) }}
-                  >
-                    <SignedImage
-                      path={track.artwork_url}
-                      className="absolute inset-0 size-full"
+                  <span className="relative size-14 shrink-0 overflow-hidden rounded-input border border-line shadow-e1">
+                    <SpectraCoverArt
+                      trackId={track.id}
+                      title={track.title}
+                      artworkUrl={track.artwork_url}
+                      animate={false}
                     />
                   </span>
 

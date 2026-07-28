@@ -8,9 +8,11 @@ restated so they are always in context.
 
 `cursorrules.txt` is a superseded snapshot. Ignore it.
 
-## REQUIRED on every change — not optional
+## REQUIRED before every push — not optional
 
-Every change request (feature, fix, behavior, or design) must include:
+These don't need to happen after each individual change — do them once,
+covering everything since the last push (once per push, in practice once per
+day of work), not per commit:
 
 1. **Version bump.** `APP_VERSION` in `lib/version.ts` and `version` in
    `package.json` must both be bumped, and must match each other.
@@ -19,17 +21,20 @@ Every change request (feature, fix, behavior, or design) must include:
 
 2. **CHANGELOG.md.** A plain-English entry under a `## YYYY-MM-DD` heading, in
    "Added / Changed / Removed / Fixed: <what it means for the user>" form,
-   mentioning the new version. Written for a musician, not a developer — no file
-   paths or component names. Add an "Under the hood" line only when the user
-   must act (e.g. run a migration).
+   mentioning the new version, covering everything since the last push. Written
+   for a musician, not a developer — no file paths or component names. Add an
+   "Under the hood" line only when the user must act (e.g. run a migration).
 
 3. **PRODUCT.md** — update when the product's feature set actually changed.
    It describes TEMPO as it exists today, never the roadmap.
 
-A pre-push hook (`.claude/hooks/check-release-rules.sh`) blocks `git push` when
-1 or 2 are missing. Tooling-only commits with no app-facing change opt out by
-putting `[skip-release-check]` in the commit message — every commit being pushed
-needs the marker, not just one.
+A pre-push hook (`.claude/hooks/check-release-rules.sh`) enforces this at
+`git push` time by checking the *whole range* of commits since the last push,
+not each commit individually — so commit freely while working, and only do the
+version bump / CHANGELOG / PRODUCT.md pass once, right before pushing.
+Tooling-only pushes with no app-facing change opt out by putting
+`[skip-release-check]` in the commit message — every commit in the push needs
+the marker, not just one.
 
 ## Other things that bite
 

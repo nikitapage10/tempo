@@ -4,6 +4,31 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-28
 
+- Changed (v0.24.5): Spectra cover backgrounds are back to the quiet studio-light set (cool rim, warm floor, white haze, side leaks, gray mist, corner glow).
+- Changed (v0.24.4): another Spectra cover background option — quiet “print” textures (cool/warm scanlines, soft inset frame, diagonal hairlines, flare whisper, grain) instead of the studio-light set.
+- Changed (v0.24.3): Spectra cover backgrounds are quieter now — soft studio lighting (cool rim, warm floor, white haze, side leaks, gray mist, corner glow) instead of the loud color panels.
+- Fixed (v0.24.2): Spectra cover backgrounds were invisible (a blur layer was covering them). They’re painted inline now and should read clearly — ice wash, amber wash, diagonal split, band stack, corner blocks, or a white well — behind the slits.
+- Changed (v0.24.1): Spectra placeholder covers now show up wherever a track’s artwork would — Tracks list, Board cards, track header, project track rows, and Today’s attention list — not only the Today strip. Backgrounds are also much more obvious (ice panel, amber panel, diagonal split, band stack, corners, white well).
+- Changed (v0.24.0): temporary cover slits sit in a mid length range (not too tall or short), and each track gets a more distinct Spectra **background** (ice bloom, amber pool, diagonal split, horizons, corners, or a soft striped well) so covers are easier to tell apart without changing the title language itself.
+- Changed (v0.23.9): temporary covers are denser again, and the Spectra art palette is ice / white / amber / gray only — no purple.
+- Changed (v0.23.8): temporary covers are sharper (less blur), the horizontal flare line is gone, and each track uses a stronger layout/color mode so they look more distinct from each other.
+- Changed (v0.23.7): temporary covers have more distinction per track — different silhouettes, spacing, height waves, and background bias so they don’t all look the same.
+- Changed (v0.23.6): temporary covers keep the light brightest in the middle (quieter at the sides and on each slit’s ends), with a quiet ice→amber Spectra background under the lines.
+- Changed (v0.23.5): temporary covers are vertical again — soft vertical Spectra slits from the title language, with a light blur (not the heavy glow, not the hard chrome look).
+- Changed (v0.23.4): temporary covers try another Spectra look entirely — stacked horizontal “aurora” ribbons from the title language (soft blur, slow drift), instead of vertical columns.
+- Changed (v0.23.3): temporary covers try a different Spectra look — sharper vertical columns, ice/amber chromatic split, a thin flare line, and much less soft glow.
+- Changed (v0.23.2): temporary Spectra covers glow softer now — blurred bloom behind the slits, a light prismatic haze, and a fade at the edges so they feel closer to TEMPO's light field.
+- Changed (v0.23.1): temporary Spectra covers have more line variety again — common letters sit at medium weight, thick is for accents, and overall slits are a bit slimmer.
+- Changed (v0.23.0): temporary Spectra covers are denser — short titles repeat more, featuring / parenthetical text is part of the art again, and common letters (including vowels) draw thicker slits so the field doesn’t look sparse. Long titles are still capped.
+- Added (v0.22.0): temporary covers are now shaped by the **Spectra Title Language** — each track's title quietly drives the color, length, weight, and seat of the vertical light slits (featuring credits left out of the art; numbers count like letters). Design-first, not a puzzle to decode. Same language can be reused elsewhere later.
+- Changed (v0.21.7): temporary covers now look like TEMPO's Spectra field — vertical ice/white/amber light slits on black, each track getting its own pattern so they don't all match.
+- Changed (v0.21.6): Today's cover strip and the temporary Spectra sleeves drift slower and smoother — the laggy blur on moving bands is gone.
+- Changed (v0.21.5): temporary covers match TEMPO's Spectra look — soft rectangular blurred light bands that drift, instead of circles or a big letter.
+- Changed (v0.21.4): temporary covers for tracks without art are abstract Spectra sleeves now (glow, rings, flare) — no big letter.
+- Changed (v0.21.3): tracks without cover art still show up in Today's drifting strip — each gets a temporary TEMPO-styled cover (glow + title) until you upload real art.
+- Changed (v0.21.2): Today's cover strip drifts slower, the covers are larger, and they sit faded until you hover one.
+- Changed (v0.21.1): the cover strip on Today is label-free — just the drifting artwork as a design piece.
+- Added (v0.21.0): **Today ends with a slow-moving strip of your track covers** — two rows drifting opposite ways. Tap any cover to open that track. Tracks without art still show their usual colour gradient. If you prefer reduced motion, the strip sits still and you can scroll it yourself.
 - Fixed (v0.20.1): when you import a song whose title includes a featuring credit — like "Midnight (feat. Lena)" — TEMPO keeps that in the title instead of stripping it out.
 - Changed (v0.20.0): **the sign-in and create-account screens now show the TEMPO wordmark instead of plain text**, and the light field on the right sits inside its own large rounded window rather than fading across the whole page — the left side is now a plain, solid panel.
 - Added (v0.20.0): **creating a new account now needs an invite code.** Anyone without one sees a "Request an invite" link that emails you directly. Existing accounts are unaffected — this only gates new sign-ups through the form.

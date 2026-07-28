@@ -4,13 +4,12 @@ import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import * as React from "react";
 import { AlertTriangle, Clock } from "lucide-react";
-import { SignedImage } from "@/components/ui/signed-image";
 import { LfWindow } from "@/components/lf-windows";
+import { SpectraCoverArt } from "@/components/spectra/spectra-cover-art";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import type { Track } from "@/lib/types";
 import {
   formatTrackType,
-  gradientFromTrackId,
   momentumDotClass,
   typeChipClass,
 } from "@/lib/track-style";
@@ -123,13 +122,11 @@ export function TrackCard({
             onClick={() => onOpen(track)}
             aria-label={`Open ${track.title}`}
           >
-            <span
-              className="absolute inset-0 block size-full"
-              style={{ background: gradientFromTrackId(track.id) }}
-            />
-            <SignedImage
-              path={track.artwork_url}
-              className="absolute inset-0 size-full"
+            <SpectraCoverArt
+              trackId={track.id}
+              title={track.title}
+              artworkUrl={track.artwork_url}
+              animate={false}
             />
           </button>
 

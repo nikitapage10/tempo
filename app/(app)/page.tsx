@@ -7,11 +7,11 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { SignedImage } from "@/components/ui/signed-image";
 import { useToast } from "@/components/ui/toast";
 import { EmptyShaderPanel } from "@/components/shader-empty";
 import { FlareLine } from "@/components/flare-line";
 import { LfWindow } from "@/components/lf-windows";
+import { SpectraCoverArt } from "@/components/spectra/spectra-cover-art";
 import { ActiveSessionBanner } from "@/components/track/active-session-banner";
 import { StartFocusDialog } from "@/components/track/start-focus-dialog";
 import { TrackFormModal } from "@/components/tracks/track-form-modal";
@@ -31,7 +31,6 @@ import {
   startOfLocalDay,
 } from "@/lib/format";
 import { TASK_CATEGORIES } from "@/lib/constants";
-import { gradientFromTrackId } from "@/lib/track-style";
 import type { Task, Track, TrackInsert } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import {
@@ -41,6 +40,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { SlitDivider } from "@/components/ui/slit";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
+import { TrackCoverSlider } from "@/components/today/track-cover-slider";
 
 function greetingForHour(h: number): string {
   if (h < 12) return "Good morning";
@@ -309,6 +309,10 @@ export default function TodayPage() {
           </section>
         </div>
       )}
+
+      {tracks.length > 0 ? (
+        <TrackCoverSlider tracks={tracks} className="pt-2" />
+      ) : null}
 
       {activeSpaceId ? (
         <TrackFormModal
@@ -654,11 +658,12 @@ function InMotionRow({
         >
           <div
             className="relative size-11 shrink-0 overflow-hidden rounded-input border border-line shadow-e1"
-            style={{ background: gradientFromTrackId(track.id) }}
           >
-            <SignedImage
-              path={track.artwork_url}
-              className="absolute inset-0 size-full"
+            <SpectraCoverArt
+              trackId={track.id}
+              title={track.title}
+              artworkUrl={track.artwork_url}
+              animate={false}
             />
           </div>
           <div className="min-w-0 flex-1">
