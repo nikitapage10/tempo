@@ -200,7 +200,7 @@ function RegisterForm() {
               className="h-10 w-full rounded-input border border-line bg-bg-2 px-3 text-sm text-text-hi placeholder:text-text-lo/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
             />
             <p className="mt-1.5 text-xs text-text-lo">
-              Don't have one?{" "}
+              Don’t have one?{" "}
               <a href={INVITE_MAILTO} className="text-ice hover:underline">
                 Request an invite
               </a>
