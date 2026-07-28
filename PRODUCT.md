@@ -16,7 +16,9 @@ Three kinds of things sit at the center of TEMPO: **tracks** (a musical work wit
 
 ## Current feature set
 
-**Sign-in.** You open the live site, go to sign-in, and enter your email and password — or use Create account if you don’t have one yet. (Magic-link email sign-in is off for now so testing isn’t blocked by Supabase’s free email limits.) If “Confirm email” is still on in Supabase, turn it off under Authentication → Providers → Email so new accounts can sign in immediately. You can sign out from Settings. On first load of a session you may see a short Spectra light intro behind the TEMPO wordmark (skipped if you prefer reduced motion).
+**Sign-in.** You open the live site and land on a two-column sign-in screen: the TEMPO wordmark and form on the left (a plain, solid panel), a large rounded window showing the animated Spectra light field on the right. You can sign in with email and password, or tap “Continue with Google”, “Continue with Microsoft”, or “Continue with Apple” (each provider has to be enabled in Supabase before it works). The password field has a show/hide toggle. On first load of a session you may see a short Spectra light intro behind the TEMPO wordmark (skipped if you prefer reduced motion). You can sign out from Settings.
+
+**Creating an account.** Create account is one link away from sign-in and uses the same layout, but making a new account needs an invite code — anyone who doesn't have one sees a "Request an invite" link that emails you directly. The provider sign-in buttons aren't offered on this screen, since only the coded form can be gated.
 
 **App shell.** Once signed in you land on **Today** — unless you've just created your account, in which case TEMPO opens **Bring your music in** first (see below). Desktop has a left rail (Today, Board, Tracks, Projects, Tasks, plus Settings) and a short animated light strip along the top (wide enough to see the Spectra motion); phone uses a bottom tab bar (Today, Board, Tasks, plus Add). Under Settings in the rail, the current app version is shown in small mono type.
 

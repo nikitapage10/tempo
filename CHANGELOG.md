@@ -2,6 +2,13 @@
 
 Plain-English history of what changed in TEMPO, newest first.
 
+## 2026-07-28
+
+- Changed (v0.20.0): **the sign-in and create-account screens now show the TEMPO wordmark instead of plain text**, and the light field on the right sits inside its own large rounded window rather than fading across the whole page — the left side is now a plain, solid panel.
+- Added (v0.20.0): **creating a new account now needs an invite code.** Anyone without one sees a "Request an invite" link that emails you directly. Existing accounts are unaffected — this only gates new sign-ups through the form.
+  - Under the hood: set `INVITE_CODE` in `.env.local` and in Vercel's environment variables to whatever code you want to hand out — signups are closed until it's set. Signing up via Google/Microsoft/Apple has been removed from the create-account screen for now, since those can't be gated by the code; they still work from the sign-in screen for people who already have an account.
+- Changed (v0.19.0): **the sign-in and create-account screens are now two-column on desktop.** The left side has the form; the right side is the animated Spectra light field — no extra imagery, just the thing that already makes TEMPO feel like TEMPO. Both pages also now have "Continue with Google", "Continue with Microsoft", and "Continue with Apple" buttons below the email/password form, so you can sign in with your existing account from any of those providers (each one needs to be turned on in Supabase before it goes live). The password field now has a show/hide toggle.
+
 ## 2026-07-27
 
 - Fixed (v0.18.3): importing a batch of new singles no longer wraps each one in its own project. Projects are for real groupings now — an EP, an album, an edit pack, or a campaign — so a handful of unrelated new songs come in as plain tracks with no project attached. Say you're working on an EP or album (or the material clearly names one with several tracks under it) and TEMPO still groups them the way it did before.

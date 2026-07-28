@@ -3,11 +3,12 @@
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { IntroMoment } from "@/components/intro-moment";
-import { FlareLine } from "@/components/flare-line";
-import { LfWindow } from "@/components/lf-windows";
+import { Wordmark } from "@/components/wordmark";
+import { AuthShell } from "@/components/auth/auth-shell";
+import { OAuthButtons } from "@/components/auth/oauth-buttons";
 
 function isSafeRedirect(path: string | null): path is string {
   return !!path && path.startsWith("/") && !path.startsWith("//");
@@ -27,6 +28,7 @@ function LoginForm() {
   const redirectTo = searchParams.get("redirect");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
 
@@ -46,12 +48,10 @@ function LoginForm() {
       const raw = signInError.message;
       const lower = raw.toLowerCase();
       if (lower.includes("invalid login") || lower.includes("invalid credentials")) {
-        setError(
-          "Wrong email or password. Create an account from Sign in → Create one, or set a password in Supabase → Authentication → Users."
-        );
+        setError("Wrong email or password.");
       } else if (lower.includes("email not confirmed")) {
         setError(
-          "Email confirmation is still on in Supabase. Turn off “Confirm email” under Authentication → Providers → Email, or confirm the user in the dashboard."
+          "Email confirmation is still on in Supabase — turn off “Confirm email” under Authentication → Providers → Email."
         );
       } else {
         setError(`${raw} — try again.`);
@@ -64,29 +64,20 @@ function LoginForm() {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col" data-lf-chrome>
-      <IntroMoment />
-      <LfWindow className="edge-strip lf-window" aria-hidden />
+    <AuthShell>
+      <div className="flex flex-col gap-8">
+        <div>
+          <h1>
+            <Wordmark size={32} />
+          </h1>
+          <p className="mt-4 text-sm text-text-lo">Sign in to your studio.</p>
+        </div>
 
-      <div className="flex flex-1 items-center justify-center px-6 py-16">
-        <div className="w-full max-w-sm">
-          <div className="mb-10 text-center">
-            <h1 className="font-display text-[28px] font-bold tracking-tight text-text-hi">
-              TEMPO
-            </h1>
-            <FlareLine className="mx-auto mt-3 max-w-[120px]" />
-            <p className="mt-4 text-text-lo">
-              Sign in with email and password.
-            </p>
-          </div>
-
-          <form
-            onSubmit={handleSubmit}
-            className="rounded-card border border-line bg-bg-1 p-6 shadow-raise"
-          >
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div>
             <label
               htmlFor="email"
-              className="mb-2 block font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo"
+              className="mb-1.5 block font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo"
             >
               Email
             </label>
@@ -98,58 +89,74 @@ function LoginForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@studio.com"
-              className="h-10 w-full rounded-input border border-line bg-bg-2 px-3 text-text-hi placeholder:text-text-lo/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+              className="h-10 w-full rounded-input border border-line bg-bg-2 px-3 text-sm text-text-hi placeholder:text-text-lo/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
             />
+          </div>
 
+          <div>
             <label
               htmlFor="password"
-              className="mb-2 mt-4 block font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo"
+              className="mb-1.5 block font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo"
             >
               Password
             </label>
-            <input
-              id="password"
-              type="password"
-              required
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="h-10 w-full rounded-input border border-line bg-bg-2 px-3 text-text-hi placeholder:text-text-lo/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
-            />
-
-            {error && (
-              <p className="mt-3 text-sm text-warn" role="alert">
-                {error}
-              </p>
-            )}
-
-            <Button
-              type="submit"
-              className="mt-5 w-full"
-              disabled={
-                status === "loading" || !email.trim() || password.length < 1
-              }
-            >
-              {status === "loading" ? "Signing in…" : "Sign in"}
-            </Button>
-
-            <p className="mt-4 text-center text-xs text-text-lo">
-              No account yet?{" "}
-              <Link
-                href={
-                  isSafeRedirect(redirectTo)
-                    ? `/register?redirect=${encodeURIComponent(redirectTo)}`
-                    : "/register"
-                }
-                className="text-ice hover:underline"
+            <div className="relative">
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                required
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="h-10 w-full rounded-input border border-line bg-bg-2 px-3 pr-10 text-sm text-text-hi placeholder:text-text-lo/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute inset-y-0 right-3 flex items-center text-text-lo transition-colors hover:text-text-hi"
+                aria-label={showPassword ? "Hide password" : "Show password"}
               >
-                Create one
-              </Link>
+                {showPassword ? (
+                  <EyeOff className="size-4" />
+                ) : (
+                  <Eye className="size-4" />
+                )}
+              </button>
+            </div>
+          </div>
+
+          {error && (
+            <p className="text-sm text-warn" role="alert">
+              {error}
             </p>
-          </form>
-        </div>
+          )}
+
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={status === "loading" || !email.trim() || password.length < 1}
+          >
+            {status === "loading" ? "Signing in…" : "Sign in"}
+          </Button>
+
+          <p className="text-center text-xs text-text-lo">
+            No account?{" "}
+            <Link
+              href={
+                isSafeRedirect(redirectTo)
+                  ? `/register?redirect=${encodeURIComponent(redirectTo)}`
+                  : "/register"
+              }
+              className="text-ice hover:underline"
+            >
+              Create one
+            </Link>
+          </p>
+        </form>
+
+        <OAuthButtons next={isSafeRedirect(redirectTo) ? redirectTo : "/"} />
       </div>
-    </div>
+    </AuthShell>
   );
 }

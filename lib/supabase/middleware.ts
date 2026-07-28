@@ -69,7 +69,17 @@ export async function updateSession(request: NextRequest) {
     path === "/api/invite" ||
     path.startsWith("/api/invite/");
 
-  if (!user && !isAuthRoute && !isGuestReviewRoute && !isInviteRoute) {
+  // The account-creation invite-code check runs before anyone has a
+  // session — it has to be reachable from the (public) /register form.
+  const isInviteCodeCheckRoute = path === "/api/auth/verify-invite";
+
+  if (
+    !user &&
+    !isAuthRoute &&
+    !isGuestReviewRoute &&
+    !isInviteRoute &&
+    !isInviteCodeCheckRoute
+  ) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/login";
     return NextResponse.redirect(redirectUrl);

@@ -3,11 +3,17 @@
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { IntroMoment } from "@/components/intro-moment";
-import { FlareLine } from "@/components/flare-line";
-import { LfWindow } from "@/components/lf-windows";
+import { Wordmark } from "@/components/wordmark";
+import { AuthShell } from "@/components/auth/auth-shell";
+
+const INVITE_MAILTO =
+  "mailto:connect@nikita.page?subject=" +
+  encodeURIComponent("TEMPO invite request") +
+  "&body=" +
+  encodeURIComponent("Hi, I'd like an invite code to try TEMPO.\n\n");
 
 function isSafeRedirect(path: string | null): path is string {
   return !!path && path.startsWith("/") && !path.startsWith("//");
@@ -28,6 +34,8 @@ function RegisterForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
 
@@ -40,11 +48,24 @@ function RegisterForm() {
       return;
     }
     if (password !== confirm) {
-      setError("Passwords don’t match.");
+      setError("Passwords don't match.");
       return;
     }
 
     setStatus("loading");
+
+    const inviteRes = await fetch("/api/auth/verify-invite", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: inviteCode }),
+    });
+    if (!inviteRes.ok) {
+      setStatus("error");
+      const body = await inviteRes.json().catch(() => null);
+      setError(body?.error ?? "That invite code isn’t valid.");
+      return;
+    }
+
     const supabase = createClient();
     const { data, error: signUpError } = await supabase.auth.signUp({
       email: email.trim(),
@@ -55,20 +76,15 @@ function RegisterForm() {
       setStatus("error");
       const lower = signUpError.message.toLowerCase();
       if (lower.includes("already") || lower.includes("registered")) {
-        setError(
-          "That email already has an account — go to Sign in, or reset the password in Supabase → Authentication → Users."
-        );
+        setError("That email already has an account — go to Sign in, or reset in Supabase → Authentication → Users.");
       } else if (lower.includes("rate limit")) {
-        setError(
-          "Supabase is rate-limiting sign-ups right now — wait a bit, or create the user in the Supabase dashboard."
-        );
+        setError("Supabase is rate-limiting sign-ups right now — wait a bit, or create the user in the Supabase dashboard.");
       } else {
         setError(`${signUpError.message} — try again.`);
       }
       return;
     }
 
-    // If email confirmation is required, session may be null.
     if (!data.session) {
       setStatus("error");
       setError(
@@ -77,34 +93,25 @@ function RegisterForm() {
       return;
     }
 
-    // A brand-new account has an empty catalog — start them in Import Studio
-    // rather than on an empty Today. An explicit redirect still wins.
     router.replace(isSafeRedirect(redirectTo) ? redirectTo : "/import");
     router.refresh();
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col" data-lf-chrome>
-      <IntroMoment />
-      <LfWindow className="edge-strip lf-window" aria-hidden />
+    <AuthShell>
+      <div className="flex flex-col gap-8">
+        <div>
+          <h1>
+            <Wordmark size={32} />
+          </h1>
+          <p className="mt-4 text-sm text-text-lo">Create your account.</p>
+        </div>
 
-      <div className="flex flex-1 items-center justify-center px-6 py-16">
-        <div className="w-full max-w-sm">
-          <div className="mb-10 text-center">
-            <h1 className="font-display text-[28px] font-bold tracking-tight text-text-hi">
-              TEMPO
-            </h1>
-            <FlareLine className="mx-auto mt-3 max-w-[120px]" />
-            <p className="mt-4 text-text-lo">Create an account.</p>
-          </div>
-
-          <form
-            onSubmit={handleSubmit}
-            className="rounded-card border border-line bg-bg-1 p-6 shadow-raise"
-          >
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div>
             <label
               htmlFor="email"
-              className="mb-2 block font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo"
+              className="mb-1.5 block font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo"
             >
               Email
             </label>
@@ -116,29 +123,47 @@ function RegisterForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@studio.com"
-              className="h-10 w-full rounded-input border border-line bg-bg-2 px-3 text-text-hi placeholder:text-text-lo/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+              className="h-10 w-full rounded-input border border-line bg-bg-2 px-3 text-sm text-text-hi placeholder:text-text-lo/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
             />
+          </div>
 
+          <div>
             <label
               htmlFor="password"
-              className="mb-2 mt-4 block font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo"
+              className="mb-1.5 block font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo"
             >
               Password
             </label>
-            <input
-              id="password"
-              type="password"
-              required
-              autoComplete="new-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="At least 6 characters"
-              className="h-10 w-full rounded-input border border-line bg-bg-2 px-3 text-text-hi placeholder:text-text-lo/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
-            />
+            <div className="relative">
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                required
+                autoComplete="new-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="At least 6 characters"
+                className="h-10 w-full rounded-input border border-line bg-bg-2 px-3 pr-10 text-sm text-text-hi placeholder:text-text-lo/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute inset-y-0 right-3 flex items-center text-text-lo transition-colors hover:text-text-hi"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? (
+                  <EyeOff className="size-4" />
+                ) : (
+                  <Eye className="size-4" />
+                )}
+              </button>
+            </div>
+          </div>
 
+          <div>
             <label
               htmlFor="confirm"
-              className="mb-2 mt-4 block font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo"
+              className="mb-1.5 block font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo"
             >
               Confirm password
             </label>
@@ -150,44 +175,74 @@ function RegisterForm() {
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               placeholder="Repeat password"
-              className="h-10 w-full rounded-input border border-line bg-bg-2 px-3 text-text-hi placeholder:text-text-lo/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+              className="h-10 w-full rounded-input border border-line bg-bg-2 px-3 text-sm text-text-hi placeholder:text-text-lo/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
             />
+          </div>
 
-            {error && (
-              <p className="mt-3 text-sm text-warn" role="alert">
-                {error}
-              </p>
-            )}
-
-            <Button
-              type="submit"
-              className="mt-5 w-full"
-              disabled={
-                status === "loading" ||
-                !email.trim() ||
-                password.length < 1 ||
-                confirm.length < 1
-              }
+          <div>
+            <label
+              htmlFor="invite"
+              className="mb-1.5 block font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo"
             >
-              {status === "loading" ? "Creating…" : "Create account"}
-            </Button>
-
-            <p className="mt-4 text-center text-xs text-text-lo">
-              Already have an account?{" "}
-              <Link
-                href={
-                  isSafeRedirect(redirectTo)
-                    ? `/login?redirect=${encodeURIComponent(redirectTo)}`
-                    : "/login"
-                }
-                className="text-ice hover:underline"
-              >
-                Sign in
-              </Link>
+              Invite code
+            </label>
+            <input
+              id="invite"
+              type="text"
+              required
+              autoComplete="off"
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
+              value={inviteCode}
+              onChange={(e) => setInviteCode(e.target.value)}
+              placeholder="Enter your invite code"
+              className="h-10 w-full rounded-input border border-line bg-bg-2 px-3 text-sm text-text-hi placeholder:text-text-lo/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+            />
+            <p className="mt-1.5 text-xs text-text-lo">
+              Don't have one?{" "}
+              <a href={INVITE_MAILTO} className="text-ice hover:underline">
+                Request an invite
+              </a>
+              .
             </p>
-          </form>
-        </div>
+          </div>
+
+          {error && (
+            <p className="text-sm text-warn" role="alert">
+              {error}
+            </p>
+          )}
+
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={
+              status === "loading" ||
+              !email.trim() ||
+              password.length < 1 ||
+              confirm.length < 1 ||
+              !inviteCode.trim()
+            }
+          >
+            {status === "loading" ? "Creating…" : "Create account"}
+          </Button>
+
+          <p className="text-center text-xs text-text-lo">
+            Already have an account?{" "}
+            <Link
+              href={
+                isSafeRedirect(redirectTo)
+                  ? `/login?redirect=${encodeURIComponent(redirectTo)}`
+                  : "/login"
+              }
+              className="text-ice hover:underline"
+            >
+              Sign in
+            </Link>
+          </p>
+        </form>
       </div>
-    </div>
+    </AuthShell>
   );
 }
