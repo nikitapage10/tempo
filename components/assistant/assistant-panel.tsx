@@ -1,10 +1,19 @@
 "use client";
 
 import * as React from "react";
-import { Send, X } from "lucide-react";
+import { FileText, Paperclip, Send, X } from "lucide-react";
 import { Bubble, Dot } from "@/components/ui/chat-bubble";
 import { AssistantActionCard } from "@/components/assistant/assistant-action-card";
 import { AssistantEmpty } from "@/components/assistant/assistant-empty";
+import { VoiceInput } from "@/components/import/voice-input";
+import { useToast } from "@/components/ui/toast";
+import { transcribeAssistantVoice } from "@/lib/api/assistant";
+import {
+  ASSISTANT_ATTACH_ACCEPT,
+  ASSISTANT_MAX_ATTACHMENTS,
+  fileToAssistantAttachment,
+  type AssistantAttachment,
+} from "@/lib/assistant/attachments";
 import { MAX_MESSAGE_CHARS } from "@/lib/assistant/types";
 import type { ProposedAction, Turn } from "@/lib/assistant/types";
 import { cn } from "@/lib/utils";
@@ -14,7 +23,7 @@ type Props = {
   turns: Turn[];
   thinking: boolean;
   onClose: () => void;
-  onSend: (text: string) => void;
+  onSend: (text: string, attachments?: AssistantAttachment[]) => void;
   onConfirmAction: (turnId: string, action: ProposedAction) => void | Promise<void>;
   onDismissAction: (turnId: string) => void;
   panelRef: React.Ref<HTMLDivElement>;
@@ -30,10 +39,15 @@ export function AssistantPanel({
   onDismissAction,
   panelRef,
 }: Props) {
+  const { toast } = useToast();
   const [text, setText] = React.useState("");
+  const [attachments, setAttachments] = React.useState<AssistantAttachment[]>([]);
   const [acting, setActing] = React.useState(false);
+  const [transcribing, setTranscribing] = React.useState(false);
   const textRef = React.useRef<HTMLTextAreaElement>(null);
+  const fileRef = React.useRef<HTMLInputElement>(null);
   const endRef = React.useRef<HTMLDivElement>(null);
+  const dictationBaseRef = React.useRef("");
 
   React.useEffect(() => {
     if (!open) return;
@@ -47,7 +61,8 @@ export function AssistantPanel({
 
   if (!open) return null;
 
-  const disabled = thinking || acting;
+  const disabled = thinking || acting || transcribing;
+  const canSend = Boolean(text.trim() || attachments.length > 0);
   const showCounter = text.length > 800;
 
   async function handleConfirm(turnId: string, action: ProposedAction) {
@@ -61,9 +76,49 @@ export function AssistantPanel({
 
   function handleSend(value?: string) {
     const msg = (value ?? text).trim();
-    if (!msg || disabled) return;
-    setText("");
-    void onSend(msg);
+    const files = value != null ? [] : attachments;
+    if ((!msg && files.length === 0) || disabled) return;
+    if (value == null) {
+      setText("");
+      setAttachments([]);
+    }
+    void onSend(msg, files);
+  }
+
+  async function handleFiles(list: FileList | null) {
+    const files = Array.from(list ?? []);
+    if (!files.length) return;
+    const room = ASSISTANT_MAX_ATTACHMENTS - attachments.length;
+    if (room <= 0) {
+      toast(`You can attach up to ${ASSISTANT_MAX_ATTACHMENTS} files.`, "info");
+      return;
+    }
+    const next: AssistantAttachment[] = [...attachments];
+    for (const file of files.slice(0, room)) {
+      try {
+        next.push(await fileToAssistantAttachment(file));
+      } catch (err) {
+        toast(err instanceof Error ? err.message : "Couldn't add that file.");
+      }
+    }
+    setAttachments(next);
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
+  async function handleVoiceRecording(file: File) {
+    setTranscribing(true);
+    try {
+      const spoken = await transcribeAssistantVoice(file);
+      setText((prev) => {
+        const base = prev.trim();
+        const merged = base ? `${base} ${spoken}` : spoken;
+        return merged.slice(0, MAX_MESSAGE_CHARS);
+      });
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Couldn't hear that recording.");
+    } finally {
+      setTranscribing(false);
+    }
   }
 
   const latestSuggestions =
@@ -73,7 +128,6 @@ export function AssistantPanel({
 
   return (
     <>
-      {/* Mobile backdrop */}
       <button
         type="button"
         aria-label="Close assistant"
@@ -89,9 +143,7 @@ export function AssistantPanel({
         className={cn(
           "fixed z-[90] flex flex-col overflow-hidden border border-line bg-gradient-to-b from-bg-1 to-bg-0 shadow-e3",
           "animate-in fade-in slide-in-from-bottom-2 duration-200 motion-reduce:animate-none",
-          // Mobile bottom sheet
           "inset-x-0 bottom-0 h-[85dvh] rounded-t-panel",
-          // Desktop floating panel
           "md:inset-x-auto md:bottom-[5.5rem] md:right-5 md:h-[min(70vh,34rem)] md:w-[min(100vw-2.5rem,25rem)] md:rounded-panel",
         )}
       >
@@ -122,6 +174,19 @@ export function AssistantPanel({
                       <p className="whitespace-pre-wrap text-sm text-text-hi">
                         {turn.text}
                       </p>
+                      {turn.attachmentNames && turn.attachmentNames.length > 0 ? (
+                        <ul className="mt-2 space-y-1">
+                          {turn.attachmentNames.map((name) => (
+                            <li
+                              key={name}
+                              className="flex items-center gap-1.5 text-xs text-text-lo"
+                            >
+                              <FileText className="size-3 shrink-0" />
+                              <span className="truncate">{name}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
                     </Bubble>
                   );
                 }
@@ -181,7 +246,51 @@ export function AssistantPanel({
         </div>
 
         <div className="border-t border-line px-3 py-3">
-          <div className="flex items-end gap-2 rounded-card border border-line bg-bg-2 p-2 shadow-e2 transition-colors duration-hover focus-within:border-ice/50">
+          {attachments.length > 0 ? (
+            <div className="mb-2 flex flex-wrap gap-1.5">
+              {attachments.map((att, i) => (
+                <span
+                  key={`${att.name}-${i}`}
+                  className="inline-flex max-w-full items-center gap-1 rounded-chip border border-line bg-bg-1 px-2 py-0.5 text-[11px] text-text-lo"
+                >
+                  <FileText className="size-3 shrink-0" />
+                  <span className="truncate">{att.name}</span>
+                  <button
+                    type="button"
+                    aria-label={`Remove ${att.name}`}
+                    disabled={disabled}
+                    className="rounded-input p-0.5 hover:text-text-hi"
+                    onClick={() =>
+                      setAttachments((prev) => prev.filter((_, j) => j !== i))
+                    }
+                  >
+                    <X className="size-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          ) : null}
+
+          <div className="flex items-end gap-1 rounded-card border border-line bg-bg-2 p-2 shadow-e2 transition-colors duration-hover focus-within:border-ice/50">
+            <input
+              ref={fileRef}
+              type="file"
+              accept={ASSISTANT_ATTACH_ACCEPT}
+              multiple
+              className="hidden"
+              onChange={(e) => void handleFiles(e.target.files)}
+            />
+            <button
+              type="button"
+              aria-label="Attach files"
+              title="Attach a screenshot, PDF, or text file"
+              disabled={disabled || attachments.length >= ASSISTANT_MAX_ATTACHMENTS}
+              onClick={() => fileRef.current?.click()}
+              className="rounded-input p-2 text-text-lo transition-colors duration-hover hover:text-ice focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice disabled:opacity-40"
+            >
+              <Paperclip className="size-4" />
+            </button>
+
             <textarea
               ref={textRef}
               value={text}
@@ -198,14 +307,28 @@ export function AssistantPanel({
               placeholder="Ask about TEMPO or your catalog…"
               className="max-h-28 min-h-[2.25rem] flex-1 resize-none bg-transparent py-2 text-sm text-text-hi placeholder:text-text-lo focus-visible:outline-none"
             />
+
+            <VoiceInput
+              disabled={disabled}
+              onStart={() => {
+                dictationBaseRef.current = text.trim();
+              }}
+              onTranscript={(spoken) => {
+                const base = dictationBaseRef.current;
+                const merged = base ? `${base} ${spoken}` : spoken;
+                setText(merged.slice(0, MAX_MESSAGE_CHARS));
+              }}
+              onRecorded={(file) => void handleVoiceRecording(file)}
+            />
+
             <button
               type="button"
               aria-label="Send"
-              disabled={disabled || !text.trim()}
+              disabled={disabled || !canSend}
               onClick={() => handleSend()}
               className={cn(
                 "rounded-input p-2 transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
-                text.trim()
+                canSend
                   ? "text-ice hover:text-text-hi"
                   : "text-text-lo opacity-40",
               )}
@@ -215,7 +338,7 @@ export function AssistantPanel({
           </div>
           <div className="mt-2 flex items-start justify-between gap-2">
             <p className="text-[11px] leading-relaxed text-text-lo">
-              What you type here is sent to an AI service.
+              What you type or attach here is sent to an AI service.
             </p>
             {showCounter ? (
               <span className="shrink-0 font-mono text-[11px] text-text-lo">

@@ -2,6 +2,7 @@
  * Client fetch wrapper for the floating assistant.
  */
 
+import type { AssistantAttachment } from "@/lib/assistant/attachments";
 import type {
   AssistantReply,
   HistoryMessage,
@@ -15,6 +16,7 @@ export type AssistantRequest = {
   escalationsUsed: number;
   /** Helps the snapshot label the active space; optional. */
   activeSpaceId?: string | null;
+  attachments?: AssistantAttachment[];
 };
 
 export type AssistantResponse = AssistantReply & {
@@ -68,4 +70,25 @@ export async function askAssistant(
     refs: (data?.refs as RefMap) ?? {},
     escalated: data?.escalated === true,
   };
+}
+
+/** Recorded voice-memo fallback when live Web Speech isn't available. */
+export async function transcribeAssistantVoice(file: File): Promise<string> {
+  const body = new FormData();
+  body.append("file", file);
+  const res = await fetch("/api/assistant/transcribe", {
+    method: "POST",
+    body,
+  });
+  const data = (await res.json().catch(() => null)) as {
+    text?: string;
+    error?: string;
+  } | null;
+  if (!res.ok) {
+    throw new Error(data?.error || "Couldn't hear that recording.");
+  }
+  if (!data?.text?.trim()) {
+    throw new Error("Couldn't hear that recording.");
+  }
+  return data.text.trim();
 }

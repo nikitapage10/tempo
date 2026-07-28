@@ -55,6 +55,8 @@ export type Turn = {
   id: string;
   role: "artist" | "tempo";
   text: string;
+  /** Labels for files the artist attached this turn. */
+  attachmentNames?: string[];
   action?: ProposedAction | null;
   /** After confirm / dismiss — card becomes inert. */
   actionStatus?: "pending" | "done" | "dismissed" | "failed";

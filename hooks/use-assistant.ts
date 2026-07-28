@@ -4,6 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { askAssistant } from "@/lib/api/assistant";
+import type { AssistantAttachment } from "@/lib/assistant/attachments";
 import { executeProposedAction } from "@/lib/assistant/actions";
 import type { ProposedAction, RefMap, Turn } from "@/lib/assistant/types";
 import { MAX_MESSAGE_CHARS } from "@/lib/assistant/types";
@@ -45,14 +46,21 @@ export function useAssistant() {
   }, []);
 
   const send = React.useCallback(
-    async (raw: string) => {
+    async (raw: string, attachments: AssistantAttachment[] = []) => {
       const message = raw.trim().slice(0, MAX_MESSAGE_CHARS);
-      if (!message || thinking) return;
+      if ((!message && attachments.length === 0) || thinking) return;
+
+      const displayText =
+        message ||
+        (attachments.length === 1
+          ? `Attached ${attachments[0]!.name}`
+          : `Attached ${attachments.length} files`);
 
       const artistTurn: Turn = {
         id: crypto.randomUUID(),
         role: "artist",
-        text: message,
+        text: displayText,
+        attachmentNames: attachments.map((a) => a.name),
       };
       setTurns((prev) => [...prev, artistTurn]);
       setThinking(true);
@@ -64,9 +72,10 @@ export function useAssistant() {
 
         const res = await askAssistant({
           message,
-          history: history.slice(0, -1), // prior only — message is separate
+          history: history.slice(0, -1),
           escalationsUsed,
           activeSpaceId,
+          attachments,
         });
 
         if (res.escalated) {
