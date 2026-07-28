@@ -4,6 +4,8 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-27
 
+- Fixed (v0.18.2): TEMPO was asking two or three unrelated questions at once during the import conversation — a multiple-choice one followed by a couple of open-ended ones, all stacked in a single message. It now asks one thing at a time, picks whichever question matters most first (like whether a batch of tracks belongs to one project, before asking about any single track's stage), and waits for your answer before moving to the next.
+
 - Fixed (v0.18.1): earlier in the import conversation, replying to one of TEMPO's questions made the question disappear — the thread looked like a pile of your own messages rather than a back-and-forth. It's a proper conversation now: TEMPO's questions stay on screen next to whatever you answered.
 - Added (v0.18.1): **talking to TEMPO now works like dictation, not a recording.** In Chrome, Edge, and Safari, tap the mic and your words appear in the message box live, as you speak — so you can fix a mangled song title before it's sent, instead of finding out afterward. Browsers without that support (Firefox) fall back to the previous record-and-transcribe behaviour.
 

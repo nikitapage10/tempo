@@ -6,7 +6,9 @@
  * them "I've got an EP and some edits" and they needed to build you a workspace.
  *
  * Deliberately separate from synthesize-plan.ts: this runs often and must stay
- * cheap and fast, so it returns a couple of short questions and nothing else.
+ * cheap and fast, so it returns at most one short question and nothing else —
+ * one topic at a time is what makes it read as a conversation rather than a
+ * form dumped on the artist in one go.
  */
 
 import { IMPORT_MODEL, createOpenAIClient } from "@/lib/ai/openai";
@@ -34,6 +36,9 @@ const FOLLOWUP_SCHEMA: Record<string, unknown> = {
     },
     questions: {
       type: "array",
+      maxItems: 1,
+      description:
+        "Zero or one question. Never more — a real conversation asks one thing at a time, not a list.",
       items: {
         type: "object",
         additionalProperties: false,
@@ -66,15 +71,27 @@ Rules:
 - Start by saying what you actually found, in the observation field, concretely. If they
   sent a screenshot of a folder, say how many songs you can see and name a few.
   This is how they know you read it rather than ignored it.
-- Ask AT MOST 3 questions. Fewer is better. One good question beats three vague ones.
-- Ask about what would most change the workspace. Missing song titles matter far
-  more than a missing BPM.
+- Ask ONE question. Never a list of questions on different topics — that reads
+  as a form, not a conversation. A real conversation asks one thing, waits for
+  the answer, then asks the next.
+  - The only exception: the same question repeated once per track ("for each
+    track, what stage is it at") is still ONE question, because it's one topic
+    applied across a set — that's fine.
+  - "Are these one project or separate?" and "what stage is each one at" are
+    TWO different topics. Ask whichever matters more first; the other can wait
+    for the next turn.
+- Pick the single question that would most change the resulting workspace.
+  Whether several tracks form one project beats an individual track's stage,
+  which beats a BPM. Never ask for BPM or key unless they've shown they care
+  about tracking those.
 - Never ask something they already told you.
-- Never ask for a BPM or key unless they've shown they care about tracking those.
-- Prefer concrete, specific questions: "You mentioned six edits — what are they
-  called?" beats "Can you tell me more about your edits?"
-- Give one-tap options only when the answer really is a closed set.
-- Write like a person in a studio, not a form. Short sentences. No bullet lists.
+- Prefer a closed question with one-tap options over an open one whenever the
+  answer is genuinely a small set — it's faster for them to tap than to type.
+  "You mentioned six edits — what are they called?" is open-ended and fine
+  when there's no closed set to offer.
+- Write like a person in a studio, not a form. One short question. No bullet
+  lists, no "also" tacked onto the end.
+- If there's truly nothing left worth asking, return zero questions.
 - Set enoughToProceed true once you could draft something useful, even if you'd
   still like more. Only set it false when what you have is too thin to make a
   workspace from — for example a couple of song titles and nothing else.`;
@@ -126,7 +143,10 @@ export async function askFollowups(
       return { question, options };
     })
     .filter((q): q is Followup => q !== null)
-    .slice(0, 3);
+    // One question per turn, enforced here regardless of what the model
+    // returns — a batch of questions is exactly the "form, not a conversation"
+    // problem this is meant to avoid.
+    .slice(0, 1);
 
   return {
     observation: typeof parsed.observation === "string" ? parsed.observation.trim() : "",
