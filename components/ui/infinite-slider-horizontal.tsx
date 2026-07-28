@@ -1,9 +1,8 @@
 "use client";
 
+import * as React from "react";
+import { useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { useMotionValue, animate, motion, useReducedMotion } from "framer-motion";
-import { useState, useEffect } from "react";
-import useMeasure from "react-use-measure";
 
 type InfiniteSliderProps = {
   children: React.ReactNode;
@@ -15,6 +14,10 @@ type InfiniteSliderProps = {
   className?: string;
 };
 
+/**
+ * Seamless infinite marquee. Two identical halves; CSS translates by exactly
+ * -50% so the loop has no visible seam (unlike a JS measure → jump reset).
+ */
 export function InfiniteSlider({
   children,
   gap = 16,
@@ -25,83 +28,25 @@ export function InfiniteSlider({
   className,
 }: InfiniteSliderProps) {
   const reduceMotion = useReducedMotion();
-  const [currentDuration, setCurrentDuration] = useState(duration);
-  const [ref, { width, height }] = useMeasure();
-  const translation = useMotionValue(0);
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const [key, setKey] = useState(0);
+  const trackRef = React.useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (reduceMotion) {
-      translation.set(0);
-      return;
+  const setPlaybackRate = React.useCallback((rate: number) => {
+    const el = trackRef.current;
+    if (!el) return;
+    for (const anim of el.getAnimations()) {
+      anim.playbackRate = rate;
     }
-
-    let controls: ReturnType<typeof animate> | undefined;
-    const size = direction === "horizontal" ? width : height;
-    if (!size) return;
-
-    const contentSize = size + gap;
-    const from = reverse ? -contentSize / 2 : 0;
-    const to = reverse ? 0 : -contentSize / 2;
-
-    if (isTransitioning) {
-      controls = animate(translation, [translation.get(), to], {
-        ease: "linear",
-        duration:
-          currentDuration * Math.abs((translation.get() - to) / contentSize),
-        onComplete: () => {
-          setIsTransitioning(false);
-          setKey((prevKey) => prevKey + 1);
-        },
-      });
-    } else {
-      controls = animate(translation, [from, to], {
-        ease: "linear",
-        duration: currentDuration,
-        repeat: Infinity,
-        repeatType: "loop",
-        repeatDelay: 0,
-        onRepeat: () => {
-          translation.set(from);
-        },
-      });
-    }
-
-    return () => controls?.stop();
-  }, [
-    key,
-    translation,
-    currentDuration,
-    width,
-    height,
-    gap,
-    isTransitioning,
-    direction,
-    reverse,
-    reduceMotion,
-  ]);
-
-  const hoverProps =
-    durationOnHover && !reduceMotion
-      ? {
-          onHoverStart: () => {
-            setIsTransitioning(true);
-            setCurrentDuration(durationOnHover);
-          },
-          onHoverEnd: () => {
-            setIsTransitioning(true);
-            setCurrentDuration(duration);
-          },
-        }
-      : {};
+  }, []);
 
   if (reduceMotion) {
     return (
       <div
         className={cn(
-          "overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
-          className
+          direction === "horizontal"
+            ? "overflow-x-auto overflow-y-hidden"
+            : "overflow-y-auto overflow-x-hidden",
+          "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+          className,
         )}
       >
         <div
@@ -117,23 +62,58 @@ export function InfiniteSlider({
     );
   }
 
+  const horizontal = direction === "horizontal";
+  // Each half carries a trailing gap so -50% of the outer strip equals
+  // (content + gap) — the true visual period — with no leftover seam.
+  const halfStyle: React.CSSProperties = horizontal
+    ? { gap: `${gap}px`, paddingInlineEnd: `${gap}px` }
+    : { gap: `${gap}px`, paddingBlockEnd: `${gap}px` };
+
+  const hoverRate =
+    durationOnHover && durationOnHover > 0 ? duration / durationOnHover : null;
+
   return (
     <div className={cn("overflow-hidden", className)}>
-      <motion.div
-        className="flex w-max"
-        style={{
-          ...(direction === "horizontal"
-            ? { x: translation }
-            : { y: translation }),
-          gap: `${gap}px`,
-          flexDirection: direction === "horizontal" ? "row" : "column",
-        }}
-        ref={ref}
-        {...hoverProps}
+      <div
+        ref={trackRef}
+        className={cn(
+          "flex w-max will-change-transform",
+          horizontal ? "flex-row" : "flex-col",
+          reverse
+            ? horizontal
+              ? "animate-infinite-slider-x-reverse"
+              : "animate-infinite-slider-y-reverse"
+            : horizontal
+              ? "animate-infinite-slider-x"
+              : "animate-infinite-slider-y",
+          "motion-reduce:animate-none",
+        )}
+        style={
+          {
+            "--infinite-slider-duration": `${duration}s`,
+          } as React.CSSProperties
+        }
+        onMouseEnter={
+          hoverRate != null ? () => setPlaybackRate(hoverRate) : undefined
+        }
+        onMouseLeave={
+          hoverRate != null ? () => setPlaybackRate(1) : undefined
+        }
       >
-        {children}
-        {children}
-      </motion.div>
+        <div
+          className={cn("flex shrink-0", horizontal ? "flex-row" : "flex-col")}
+          style={halfStyle}
+        >
+          {children}
+        </div>
+        <div
+          className={cn("flex shrink-0", horizontal ? "flex-row" : "flex-col")}
+          style={halfStyle}
+          aria-hidden
+        >
+          {children}
+        </div>
+      </div>
     </div>
   );
 }

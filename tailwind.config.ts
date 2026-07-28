@@ -85,6 +85,26 @@ const config: Config = {
         hover: "150ms",
         drawer: "250ms",
       },
+      keyframes: {
+        "infinite-slider-x": {
+          from: { transform: "translate3d(0, 0, 0)" },
+          to: { transform: "translate3d(-50%, 0, 0)" },
+        },
+        "infinite-slider-y": {
+          from: { transform: "translate3d(0, 0, 0)" },
+          to: { transform: "translate3d(0, -50%, 0)" },
+        },
+      },
+      animation: {
+        "infinite-slider-x":
+          "infinite-slider-x var(--infinite-slider-duration, 40s) linear infinite",
+        "infinite-slider-x-reverse":
+          "infinite-slider-x var(--infinite-slider-duration, 40s) linear infinite reverse",
+        "infinite-slider-y":
+          "infinite-slider-y var(--infinite-slider-duration, 40s) linear infinite",
+        "infinite-slider-y-reverse":
+          "infinite-slider-y var(--infinite-slider-duration, 40s) linear infinite reverse",
+      },
     },
   },
   plugins: [require("tailwindcss-animate")],

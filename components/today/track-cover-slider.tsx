@@ -18,12 +18,15 @@ type TrackCoverSliderProps = {
 export function TrackCoverSlider({ tracks, className }: TrackCoverSliderProps) {
   if (tracks.length === 0) return null;
 
+  // Enough tiles that one marquee half outruns a wide desktop viewport —
+  // otherwise the strip looks like it runs out before the seamless loop.
+  const MIN_TILES = 12;
   const tiles =
-    tracks.length >= 6
+    tracks.length >= MIN_TILES
       ? tracks
       : Array.from(
-          { length: Math.ceil(6 / tracks.length) },
-          () => tracks
+          { length: Math.ceil(MIN_TILES / tracks.length) },
+          () => tracks,
         ).flat();
 
   return (
