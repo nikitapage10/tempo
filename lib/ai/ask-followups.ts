@@ -64,8 +64,15 @@ missing, like a person who has to build the workspace would.
 TEMPO tracks: song titles, whether something is an original / remix / edit / collab /
 bootleg, what stage each one is at (idea, writing, production, mixdown, master,
 release prep, released), whether it's actively moving, BPM and key, deadlines,
-what the next move is, who they're waiting on, what's blocking it, which songs
-group into an EP / album / single / edit pack, release dates, and any to-dos.
+what the next move is, who they're waiting on, what's blocking it, release dates,
+and any to-dos.
+
+Projects only exist for genuine groupings — an EP, an album, a pack of several
+edits/remixes, or a non-music campaign. A standalone new song is just a track, not
+a project, unless the artist has actually said it belongs to a release with other
+tracks. Don't assume several new songs belong together just because they arrived
+together — if it's ambiguous, that's a good question to ask, but don't default to
+grouping them.
 
 Rules:
 - Start by saying what you actually found, in the observation field, concretely. If they

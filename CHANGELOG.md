@@ -4,6 +4,8 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-27
 
+- Fixed (v0.18.3): importing a batch of new singles no longer wraps each one in its own project. Projects are for real groupings now — an EP, an album, an edit pack, or a campaign — so a handful of unrelated new songs come in as plain tracks with no project attached. Say you're working on an EP or album (or the material clearly names one with several tracks under it) and TEMPO still groups them the way it did before.
+
 - Fixed (v0.18.2): TEMPO was asking two or three unrelated questions at once during the import conversation — a multiple-choice one followed by a couple of open-ended ones, all stacked in a single message. It now asks one thing at a time, picks whichever question matters most first (like whether a batch of tracks belongs to one project, before asking about any single track's stage), and waits for your answer before moving to the next.
 
 - Fixed (v0.18.1): earlier in the import conversation, replying to one of TEMPO's questions made the question disappear — the thread looked like a pile of your own messages rather than a back-and-forth. It's a proper conversation now: TEMPO's questions stay on screen next to whatever you answered.
