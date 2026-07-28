@@ -4,6 +4,8 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-28
 
+- Changed (v0.24.7): Spectra cover **backgrounds** use an even broader hush palette (coral, sky, sand, orchid, aqua, berry, honey, and more) and soft tri-hue blends — slits stay ice / white / amber / gray.
+- Changed (v0.24.6): Spectra cover **backgrounds** are softer and use a wider hush palette (teal, rose, lilac, mint, peach, and more) — the slits themselves stay ice / white / amber / gray.
 - Changed (v0.24.5): Spectra cover backgrounds are back to the quiet studio-light set (cool rim, warm floor, white haze, side leaks, gray mist, corner glow).
 - Changed (v0.24.4): another Spectra cover background option — quiet “print” textures (cool/warm scanlines, soft inset frame, diagonal hairlines, flare whisper, grain) instead of the studio-light set.
 - Changed (v0.24.3): Spectra cover backgrounds are quieter now — soft studio lighting (cool rim, warm floor, white haze, side leaks, gray mist, corner glow) instead of the loud color panels.

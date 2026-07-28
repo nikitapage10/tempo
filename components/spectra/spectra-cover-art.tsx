@@ -136,71 +136,95 @@ function SpectraPlaceholder({
   );
 }
 
-/** Six quiet Spectra grounds — atmospheric studio light (ice/amber/white/gray). */
+/**
+ * Soft atmospheric grounds — broad hush palette for distinction.
+ * Slits stay ice/white/amber/gray; grounds use a wider spectrum.
+ * Gradients fall off slowly so nothing reads as a hard color block.
+ */
 function backdropBackground(
   style: number,
   angle: number,
-  bias: "ice" | "amber" | "white" | "balanced"
+  _bias: "ice" | "amber" | "white" | "balanced"
 ): string {
-  const ice = "127, 180, 255";
-  const amber = "255, 181, 107";
-  const white = "242, 240, 235";
-  const gray = "139, 139, 150";
+  // Broad hush accents (RGB triples) — many soft hues for track distinction
+  const palette = [
+    "127, 180, 255", // ice
+    "255, 181, 107", // amber
+    "120, 200, 190", // teal
+    "220, 150, 170", // rose
+    "170, 160, 220", // lilac
+    "150, 200, 160", // mint
+    "230, 190, 140", // peach
+    "140, 160, 210", // soft indigo
+    "255, 140, 160", // coral
+    "100, 190, 220", // sky
+    "200, 170, 120", // sand
+    "180, 130, 200", // orchid
+    "90, 210, 180", // aqua
+    "240, 160, 120", // apricot
+    "130, 150, 255", // periwinkle
+    "190, 210, 140", // chartreuse hush
+    "210, 120, 150", // berry
+    "110, 170, 200", // steel blue
+    "255, 200, 120", // honey
+    "160, 200, 220", // powder
+  ] as const;
+
+  const a = palette[style % palette.length];
+  const b = palette[(style * 5 + 7) % palette.length];
+  const c = palette[(style * 11 + 3) % palette.length];
+  const base = "#0a0a0c";
 
   switch (style % 6) {
     case 0:
-      // Cool chamber — ice rim light from above
+      // Soft wash from above (primary + whisper of secondary)
       return `
-        radial-gradient(ellipse 120% 55% at 50% -10%, rgba(${ice},0.35), transparent 55%),
-        linear-gradient(180deg, #10141c 0%, #0a0a0c 55%)
+        radial-gradient(ellipse 140% 90% at 50% -20%, rgba(${a},0.3), rgba(${b},0.1) 38%, transparent 74%),
+        linear-gradient(180deg, #0e1016 0%, ${base} 70%)
       `;
     case 1:
-      // Warm chamber — amber floor light
+      // Soft wash from below
       return `
-        radial-gradient(ellipse 110% 60% at 50% 110%, rgba(${amber},0.38), transparent 55%),
-        linear-gradient(0deg, #14110c 0%, #0a0a0c 55%)
+        radial-gradient(ellipse 130% 95% at 50% 120%, rgba(${a},0.32), rgba(${c},0.1) 40%, transparent 76%),
+        linear-gradient(0deg, #12100e 0%, ${base} 70%)
       `;
     case 2:
-      // Soft white well — center haze
+      // Gentle center haze (tri-blend)
       return `
-        radial-gradient(ellipse 70% 55% at 50% 45%, rgba(${white},0.22), transparent 65%),
-        linear-gradient(${angle}deg, #0c0c10, #0a0a0c 50%, #0e0e12)
+        radial-gradient(ellipse 90% 75% at 48% 44%, rgba(${a},0.22), rgba(${b},0.1) 40%, rgba(${c},0.06) 58%, transparent 72%),
+        linear-gradient(${angle}deg, #0c0c11, ${base} 55%, #0d0d12)
       `;
     case 3:
-      // Side leak — ice left, amber right (thin, studio-door light)
+      // Soft dual side breath
       return `
-        linear-gradient(90deg, rgba(${ice},0.32) 0%, transparent 28%, transparent 72%, rgba(${amber},0.28) 100%),
-        #0a0a0c
+        radial-gradient(ellipse 70% 100% at 0% 50%, rgba(${a},0.28), transparent 60%),
+        radial-gradient(ellipse 70% 100% at 100% 50%, rgba(${b},0.26), transparent 60%),
+        ${base}
       `;
     case 4:
-      // Gray mist band through the middle
+      // Soft mid band (very gradual, two–three hues)
       return `
-        linear-gradient(180deg, #0a0a0c 0%, #0a0a0c 30%, rgba(${gray},0.28) 48%, rgba(${gray},0.12) 56%, #0a0a0c 72%, #0a0a0c 100%),
-        #0a0a0c
+        linear-gradient(
+          180deg,
+          ${base} 0%,
+          ${base} 20%,
+          rgba(${a},0.05) 34%,
+          rgba(${a},0.22) 46%,
+          rgba(${b},0.14) 54%,
+          rgba(${c},0.08) 62%,
+          rgba(${c},0.03) 70%,
+          ${base} 84%,
+          ${base} 100%
+        )
       `;
-    default: {
-      // Bias-tinted hush — one soft corner glow matching track bias
-      const a =
-        bias === "amber"
-          ? amber
-          : bias === "white"
-            ? white
-            : bias === "ice"
-              ? ice
-              : gray;
-      const pos =
-        bias === "amber"
-          ? "85% 80%"
-          : bias === "white"
-            ? "50% 30%"
-            : bias === "ice"
-              ? "15% 25%"
-              : "70% 20%";
+    default:
+      // Soft corner glow + distant counter-wash + faint third mote
       return `
-        radial-gradient(circle at ${pos}, rgba(${a},0.4), transparent 42%),
-        linear-gradient(180deg, #0b0b0f, #0a0a0c)
+        radial-gradient(ellipse 90% 80% at 12% 18%, rgba(${a},0.34), rgba(${a},0.1) 36%, transparent 64%),
+        radial-gradient(ellipse 80% 70% at 88% 82%, rgba(${b},0.24), transparent 56%),
+        radial-gradient(ellipse 50% 40% at 55% 48%, rgba(${c},0.1), transparent 50%),
+        linear-gradient(180deg, #0b0b10, ${base})
       `;
-    }
   }
 }
 
