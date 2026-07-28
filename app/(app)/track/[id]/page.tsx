@@ -2,6 +2,9 @@
 
 import * as React from "react";
 import { Suspense } from "react";
+import { Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useParams, useRouter } from "next/navigation";
 import { useActiveSpace } from "@/components/active-space-provider";
 import { useToast } from "@/components/ui/toast";
@@ -22,6 +25,7 @@ import { TrackWorkflowStrip } from "@/components/track/track-workflow-strip";
 import { TrackWorkspaceShell } from "@/components/track/track-workspace-shell";
 import { ModularWorkspace } from "@/components/track/modular-workspace";
 import { LayoutToolbar } from "@/components/track/layout-toolbar";
+import { TrackEditMenu } from "@/components/track/track-edit-menu";
 import {
   VersionPlayer,
   type VersionPlayerHandle,
@@ -109,6 +113,7 @@ function TrackDetailContent() {
   // Layout editing. The draft is local until saved, so an abandoned edit
   // never touches the stored preference.
   const [editing, setEditing] = React.useState(false);
+  const [confirmDeleteTrack, setConfirmDeleteTrack] = React.useState(false);
   const [draftLayout, setDraftLayout] = React.useState<ModuleLayout>(
     DEFAULT_LAYOUT
   );
@@ -312,24 +317,15 @@ function TrackDetailContent() {
       />
     ),
     activity: <ActivityPanel trackId={track.id} />,
+    // Delete deliberately does NOT live here — Details is an optional module and
+    // most layouts hide it, which left the only way to delete a track buried.
+    // It sits in the always-visible toolbar instead.
     details: (
-      <div className="space-y-4">
-        <TrackDetails
-          track={track}
-          onPatch={onPatch}
-          readOnly={!permissions.canEditMetadata}
-        />
-        {permissions.canDeleteTrack ? (
-          <div className="panel flex justify-end p-4">
-            <DeleteTrackButton
-              onDelete={async () => {
-                await remove.mutateAsync(track.id);
-                router.push("/board");
-              }}
-            />
-          </div>
-        ) : null}
-      </div>
+      <TrackDetails
+        track={track}
+        onPatch={onPatch}
+        readOnly={!permissions.canEditMetadata}
+      />
     ),
   };
 
@@ -347,6 +343,31 @@ function TrackDetailContent() {
               trackTitle: track.title,
               fromStageId: track.stage_id,
             })
+          }
+          actions={
+            editing ? null : (
+              <TrackEditMenu
+                onEditLayout={beginEditing}
+                extras={
+                  permissions.canDeleteTrack
+                    ? ({ closeMenu }) => (
+                        <button
+                          type="button"
+                          role="menuitem"
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-warn transition-colors duration-hover hover:bg-bg-3 focus-visible:bg-bg-3 focus-visible:outline-none"
+                          onClick={() => {
+                            closeMenu();
+                            setConfirmDeleteTrack(true);
+                          }}
+                        >
+                          <Trash2 className="size-3.5" />
+                          Delete track
+                        </button>
+                      )
+                    : undefined
+                }
+              />
+            )
           }
         />
       }
@@ -451,6 +472,43 @@ function TrackDetailContent() {
       }
     />
     {stageTransitionDialog}
+
+    {/* Deleting takes the bounces and feedback with it — name what's going. */}
+    <Dialog open={confirmDeleteTrack} onOpenChange={setConfirmDeleteTrack}>
+      <DialogContent
+        title={`Delete “${track.title}”?`}
+        description="Its bounces, comments, checklists, and session history go too. This can't be undone."
+        onClose={() => setConfirmDeleteTrack(false)}
+      >
+        <div className="mt-4 flex justify-end gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={remove.isPending}
+            onClick={() => setConfirmDeleteTrack(false)}
+          >
+            Keep it
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            disabled={remove.isPending}
+            onClick={async () => {
+              try {
+                await remove.mutateAsync(track.id);
+                router.push("/board");
+              } catch (err) {
+                toast(
+                  err instanceof Error ? err.message : "Couldn’t delete that track."
+                );
+              }
+            }}
+          >
+            {remove.isPending ? "Deleting…" : "Delete track"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
     </>
   );
 }

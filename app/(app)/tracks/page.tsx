@@ -1,10 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { Plus } from "lucide-react";
+import { Plus, Trash2, X } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useActiveSpace } from "@/components/active-space-provider";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { useToast } from "@/components/ui/toast";
 import { PageHeader } from "@/components/ui/page-header";
 import { SignedImage } from "@/components/ui/signed-image";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
@@ -27,7 +30,8 @@ export default function TracksPage() {
     useActiveSpace();
   const stagesQuery = useStages(activeSpaceId);
   const tracksQuery = useTracks(activeSpaceId);
-  const { create } = useTrackMutations(activeSpaceId);
+  const { create, remove } = useTrackMutations(activeSpaceId);
+  const { toast } = useToast();
 
   const stages = React.useMemo(
     () => stagesQuery.data ?? [],
@@ -41,11 +45,59 @@ export default function TracksPage() {
 
   const [modalOpen, setModalOpen] = React.useState(false);
 
+  // Multi-select is off until asked for — clicking a row should open a track,
+  // not arm a destructive action.
+  const [selecting, setSelecting] = React.useState(false);
+  const [selected, setSelected] = React.useState<Set<string>>(new Set());
+  const [confirmDelete, setConfirmDelete] = React.useState(false);
+  const [deleting, setDeleting] = React.useState(false);
+
   async function handleSubmit(values: TrackInsert & { id?: string }) {
     await create.mutateAsync(values);
   }
 
+  function toggleSelected(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function exitSelecting() {
+    setSelecting(false);
+    setSelected(new Set());
+  }
+
+  async function handleDeleteSelected() {
+    const ids = Array.from(selected);
+    setDeleting(true);
+
+    // Deleted one at a time so a single failure doesn't take the rest with it,
+    // and the artist is told exactly how far it got.
+    let failed = 0;
+    for (const id of ids) {
+      try {
+        await remove.mutateAsync(id);
+      } catch {
+        failed += 1;
+      }
+    }
+
+    setDeleting(false);
+    setConfirmDelete(false);
+    exitSelecting();
+
+    if (failed === 0) {
+      toast(`Deleted ${ids.length} track${ids.length === 1 ? "" : "s"}.`, "ok");
+    } else {
+      toast(`Deleted ${ids.length - failed} of ${ids.length}. ${failed} couldn’t be removed.`);
+    }
+  }
+
   const loading = spacesLoading || tracksQuery.isLoading;
+  const selectedTracks = tracks.filter((t) => selected.has(t.id));
 
   return (
     <div>
@@ -53,14 +105,42 @@ export default function TracksPage() {
         title="Tracks"
         subtitle={`Everything in ${activeSpace?.name ?? "this space"}.`}
         actions={
-          <Button
-            size="sm"
-            disabled={!activeSpaceId || stages.length === 0}
-            onClick={() => setModalOpen(true)}
-          >
-            <Plus className="size-3.5" />
-            Track
-          </Button>
+          selecting ? (
+            <>
+              <span className="font-data text-xs text-text-lo">
+                {selected.size} selected
+              </span>
+              <Button
+                size="sm"
+                variant="destructive"
+                disabled={selected.size === 0}
+                onClick={() => setConfirmDelete(true)}
+              >
+                <Trash2 className="size-3.5" />
+                Delete
+              </Button>
+              <Button size="sm" variant="ghost" onClick={exitSelecting}>
+                <X className="size-3.5" />
+                Done
+              </Button>
+            </>
+          ) : (
+            <>
+              {tracks.length > 0 ? (
+                <Button size="sm" variant="ghost" onClick={() => setSelecting(true)}>
+                  Select
+                </Button>
+              ) : null}
+              <Button
+                size="sm"
+                disabled={!activeSpaceId || stages.length === 0}
+                onClick={() => setModalOpen(true)}
+              >
+                <Plus className="size-3.5" />
+                Track
+              </Button>
+            </>
+          )
         }
       />
 
@@ -76,12 +156,17 @@ export default function TracksPage() {
       ) : tracks.length === 0 ? (
         <EmptyShaderPanel
           title="No tracks yet"
-          copy="Start a track and park it on the board."
+          copy="Start a track and park it on the board — or bring in the catalog you already have."
           action={
-            <Button onClick={() => setModalOpen(true)}>
-              <Plus className="size-3.5" />
-              Start a track
-            </Button>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <Button onClick={() => setModalOpen(true)}>
+                <Plus className="size-3.5" />
+                Start a track
+              </Button>
+              <Button variant="secondary" asChild>
+                <Link href="/import">Bring your music in</Link>
+              </Button>
+            </div>
           }
         />
       ) : (
@@ -100,9 +185,39 @@ export default function TracksPage() {
               >
                 <button
                   type="button"
-                  onClick={() => router.push(`/track/${track.id}`)}
-                  className="well lift relative flex w-full items-center gap-4 p-4 text-left"
+                  aria-pressed={selecting ? selected.has(track.id) : undefined}
+                  onClick={() =>
+                    selecting ? toggleSelected(track.id) : router.push(`/track/${track.id}`)
+                  }
+                  className={cn(
+                    "well lift relative flex w-full items-center gap-4 p-4 text-left",
+                    selecting && selected.has(track.id) && "!border-ice/40 !bg-ice/5",
+                  )}
                 >
+                  {selecting ? (
+                    <span
+                      aria-hidden
+                      className={cn(
+                        "flex size-4 shrink-0 items-center justify-center rounded-[4px] border transition-colors duration-hover",
+                        selected.has(track.id)
+                          ? "border-ice bg-ice text-bg-0"
+                          : "border-line bg-bg-0",
+                      )}
+                    >
+                      {selected.has(track.id) ? (
+                        <svg viewBox="0 0 12 12" className="size-3" fill="none">
+                          <path
+                            d="M2.5 6.5l2.5 2.5 4.5-5"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      ) : null}
+                    </span>
+                  ) : null}
+
                   {/* Artwork lives in the private `audio` bucket, so the path
                       must be signed — a raw <img src={path}> never resolves.
                       Gradient stays underneath as the fallback. */}
@@ -192,6 +307,45 @@ export default function TracksPage() {
           onSubmit={handleSubmit}
         />
       ) : null}
+
+      {/* Deleting a track takes its bounces and feedback with it, so say so
+          plainly and name what's going before asking them to confirm. */}
+      <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <DialogContent
+          title={`Delete ${selected.size} track${selected.size === 1 ? "" : "s"}?`}
+          description="Their bounces, comments, checklists, and session history go too. This can't be undone."
+          onClose={() => setConfirmDelete(false)}
+        >
+          <ul className="mt-3 max-h-48 space-y-1 overflow-y-auto">
+            {selectedTracks.map((track) => (
+              <li key={track.id} className="well truncate px-3 py-1.5 text-xs text-text-hi">
+                {track.title}
+              </li>
+            ))}
+          </ul>
+
+          <div className="mt-4 flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={deleting}
+              onClick={() => setConfirmDelete(false)}
+            >
+              Keep them
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={deleting}
+              onClick={() => void handleDeleteSelected()}
+            >
+              {deleting
+                ? "Deleting…"
+                : `Delete ${selected.size} track${selected.size === 1 ? "" : "s"}`}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

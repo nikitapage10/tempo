@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dropzone } from "@/components/ui/dropzone";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -98,13 +99,11 @@ export function VersionTimeline({
   }, [activity]);
 
   const [changelog, setChangelog] = React.useState("");
-  const [dragging, setDragging] = React.useState(false);
   const [progress, setProgress] = React.useState<number | null>(null);
   const [phase, setPhase] = React.useState<"converting" | "uploading" | null>(
     null
   );
   const [error, setError] = React.useState<string | null>(null);
-  const inputRef = React.useRef<HTMLInputElement>(null);
 
   const [compareIds, setCompareIds] = React.useState<string[]>([]);
   const [abOpen, setAbOpen] = React.useState(false);
@@ -219,25 +218,14 @@ export function VersionTimeline({
       </div>
 
       {canUpload ? (
-      <div
-        className={cn(
-          "rounded-card border border-dashed p-4 transition-colors duration-hover",
-          dragging
-            ? "border-ice bg-ice/5"
-            : "border-line bg-bg-2/40 hover:border-ice/50"
-        )}
-        onDragEnter={(e) => {
-          e.preventDefault();
-          setDragging(true);
-        }}
-        onDragOver={(e) => e.preventDefault()}
-        onDragLeave={() => setDragging(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setDragging(false);
-          void handleFiles(e.dataTransfer.files);
-        }}
+      <Dropzone
+        className="p-4"
+        accept={AUDIO_ACCEPT}
+        disabled={progress != null}
+        onFiles={(files) => void handleFiles(files)}
       >
+        {({ open }) => (
+        <>
         <p className="text-sm text-text-hi">Upload a bounce</p>
         <p className="mt-1 text-xs text-text-lo">
           mp3 / wav / aiff / m4a · up to 200 MB · keeps the latest 2 unpinned
@@ -259,7 +247,7 @@ export function VersionTimeline({
             type="button"
             size="sm"
             disabled={progress != null}
-            onClick={() => inputRef.current?.click()}
+            onClick={open}
           >
             {progress != null
               ? phase === "converting"
@@ -267,16 +255,6 @@ export function VersionTimeline({
                 : `Uploading ${progress}%`
               : "Upload new version"}
           </Button>
-          <input
-            ref={inputRef}
-            type="file"
-            accept={AUDIO_ACCEPT}
-            className="hidden"
-            onChange={(e) => {
-              void handleFiles(e.target.files);
-              e.target.value = "";
-            }}
-          />
           {progress != null ? (
             <div className="h-1.5 w-32 overflow-hidden rounded-full bg-bg-0">
               <div
@@ -291,7 +269,9 @@ export function VersionTimeline({
             {error}
           </p>
         ) : null}
-      </div>
+        </>
+        )}
+      </Dropzone>
       ) : null}
 
       {compareIds.length > 0 ? (

@@ -77,7 +77,9 @@ function RegisterForm() {
       return;
     }
 
-    router.replace(isSafeRedirect(redirectTo) ? redirectTo : "/");
+    // A brand-new account has an empty catalog — start them in Import Studio
+    // rather than on an empty Today. An explicit redirect still wins.
+    router.replace(isSafeRedirect(redirectTo) ? redirectTo : "/import");
     router.refresh();
   }
 

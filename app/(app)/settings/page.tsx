@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -30,6 +31,19 @@ export default function SettingsPage() {
       </div>
 
       <SpacesManager />
+
+      <section className="rounded-card border border-line bg-bg-1 p-5">
+        <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+          Import
+        </p>
+        <p className="mt-2 text-sm text-text-hi">
+          Drop in a spreadsheet, screenshots, or a voice note and TEMPO will
+          propose what to add. Nothing changes until you approve it.
+        </p>
+        <Button variant="secondary" className="mt-4" asChild>
+          <Link href="/import">Import more music</Link>
+        </Button>
+      </section>
 
       <section className="rounded-card border border-line bg-bg-1 p-5">
         <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">

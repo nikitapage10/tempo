@@ -15,6 +15,12 @@ type TrackAmbientHeaderProps = {
   showStageDropdown?: boolean;
   /** Routes stage changes through the recipe-aware transition helper instead of a plain patch. */
   onStageChange?: (stageId: string) => void;
+  /**
+   * Track-level controls (the Edit menu), pinned to the header's bottom-right.
+   * Sits inside the header rather than in its own row so it costs no vertical
+   * space of its own.
+   */
+  actions?: React.ReactNode;
 };
 
 /**
@@ -29,6 +35,7 @@ export function TrackAmbientHeader({
   onPatch,
   showStageDropdown = false,
   onStageChange,
+  actions,
 }: TrackAmbientHeaderProps) {
   const [tint, setTint] = React.useState<string | null>(null);
 
@@ -57,6 +64,9 @@ export function TrackAmbientHeader({
   }, [track.artwork_url, track.id]);
 
   return (
+    // The actions sit outside the clipped header below, otherwise the Edit
+    // menu gets cut off by its overflow-hidden.
+    <div className="relative">
     <header className="relative overflow-hidden rounded-card border border-line bg-bg-1">
       <div
         aria-hidden
@@ -80,5 +90,9 @@ export function TrackAmbientHeader({
         />
       </div>
     </header>
+    {actions ? (
+      <div className="absolute bottom-3 right-3 z-30">{actions}</div>
+    ) : null}
+    </div>
   );
 }

@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Download, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dropzone } from "@/components/ui/dropzone";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/toast";
 import { useAssetMutations, useAssets } from "@/hooks/use-assets";
@@ -32,9 +33,7 @@ export function AssetsPanel({ trackId }: AssetsPanelProps) {
 
   const [kind, setKind] = React.useState<AssetKind>("stem");
   const [progress, setProgress] = React.useState<number | null>(null);
-  const [dragging, setDragging] = React.useState(false);
   const [confirmId, setConfirmId] = React.useState<string | null>(null);
-  const inputRef = React.useRef<HTMLInputElement>(null);
 
   const grouped = React.useMemo(() => {
     const map = new Map<AssetKind, Asset[]>();
@@ -98,23 +97,18 @@ export function AssetsPanel({ trackId }: AssetsPanelProps) {
         Stems & assets
       </h2>
 
-      <div
-        className={cn(
-          "rounded-card border border-dashed p-3 transition-colors duration-hover",
-          dragging ? "border-ice bg-ice/5" : "border-line bg-bg-2/40"
-        )}
-        onDragEnter={(e) => {
-          e.preventDefault();
-          setDragging(true);
-        }}
-        onDragOver={(e) => e.preventDefault()}
-        onDragLeave={() => setDragging(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setDragging(false);
-          void handleFiles(e.dataTransfer.files);
-        }}
+      <Dropzone
+        className="p-3"
+        accept={
+          kind === "artwork"
+            ? "image/png,image/jpeg,image/webp,image/gif,.png,.jpg,.jpeg,.webp,.gif"
+            : undefined
+        }
+        disabled={progress != null}
+        onFiles={(files) => void handleFiles(files)}
       >
+        {({ open }) => (
+        <>
         <div className="flex flex-wrap items-end gap-2">
           <div className="min-w-[8rem] flex-1">
             <Label htmlFor={`asset-kind-${trackId}`}>Kind</Label>
@@ -136,29 +130,17 @@ export function AssetsPanel({ trackId }: AssetsPanelProps) {
             type="button"
             size="sm"
             disabled={progress != null}
-            onClick={() => inputRef.current?.click()}
+            onClick={open}
           >
             {progress != null ? `${progress}%` : "Upload"}
           </Button>
-          <input
-            ref={inputRef}
-            type="file"
-            accept={
-              kind === "artwork"
-                ? "image/png,image/jpeg,image/webp,image/gif,.png,.jpg,.jpeg,.webp,.gif"
-                : undefined
-            }
-            className="hidden"
-            onChange={(e) => {
-              void handleFiles(e.target.files);
-              e.target.value = "";
-            }}
-          />
         </div>
         <p className="mt-2 text-[11px] text-text-lo">
           Drop a file here. Artwork uploads set the track cover.
         </p>
-      </div>
+        </>
+        )}
+      </Dropzone>
 
       <div className="mt-4 space-y-4">
         {isLoading ? (

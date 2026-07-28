@@ -24,6 +24,14 @@ export const AUDIO_ACCEPT =
 
 export const AUDIO_EXTENSIONS = [".mp3", ".wav", ".aiff", ".aif", ".m4a"] as const;
 
+/**
+ * What Import Studio accepts. Lives here rather than next to the parsers in
+ * lib/ai/extract-sources.ts so the intake screen can import it without dragging
+ * exceljs, mammoth and node:stream into the browser bundle. Keep the two in step.
+ */
+export const IMPORT_DOCUMENT_ACCEPT = ".csv,.xlsx,.xlsm,.pdf,.docx,.txt,.md,.json,.rtf";
+export const IMPORT_IMAGE_ACCEPT = ".png,.jpg,.jpeg,.webp,.gif,.heic,image/*";
+
 export const ASSET_KINDS: { value: AssetKind; label: string }[] = [
   { value: "stem", label: "Stem" },
   { value: "midi", label: "MIDI" },

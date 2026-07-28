@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { ChevronDown } from "lucide-react";
+import Link from "next/link";
+import { ChevronDown, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -410,7 +411,16 @@ export function TrackFormModal({
                 </div>
               )
             ) : (
-              <span />
+              // Adding one track at a time is the slow way in when you've got a
+              // whole catalog sitting in a folder somewhere.
+              <Link
+                href="/import"
+                onClick={() => onOpenChange(false)}
+                className="inline-flex items-center gap-1.5 text-xs text-text-lo underline-offset-4 transition-colors duration-hover hover:text-ice hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+              >
+                <Sparkles className="size-3.5" />
+                Got a lot to add? Import them all
+              </Link>
             )}
             <div className="ml-auto flex gap-2">
               <Button

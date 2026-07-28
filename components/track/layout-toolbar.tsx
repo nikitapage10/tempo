@@ -62,20 +62,9 @@ export function LayoutToolbar({
     }
   }
   if (!editing) {
-    return (
-      <div className="flex justify-end">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="gap-1.5 text-xs text-text-lo"
-          onClick={onEdit}
-        >
-          <LayoutGrid className="size-3.5" />
-          Edit layout
-        </Button>
-      </div>
-    );
+    // Nothing to show when not editing — the Edit menu lives in the track
+    // header now, so this no longer costs a row of blank space above the modules.
+    return null;
   }
 
   return (

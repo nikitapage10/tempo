@@ -203,7 +203,12 @@ export default function TodayPage() {
       {empty ? (
         <EmptyShaderPanel
           title="Today is clear"
-          copy="Add a track, a task, or log a session."
+          copy="Add a track, a task, or log a session — or bring your existing catalog in and TEMPO will organise it with you."
+          action={
+            <Button asChild>
+              <Link href="/import">Bring your music in</Link>
+            </Button>
+          }
         />
       ) : (
         <div className="grid gap-4 lg:grid-cols-5">

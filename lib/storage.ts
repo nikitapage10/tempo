@@ -5,6 +5,7 @@
  * Paths:
  *   tracks/{track_id}/versions/{version_id}/{filename}
  *   tracks/{track_id}/assets/{asset_id}/{filename}
+ *   imports/{import_id}/{source_id}/{filename}   (Import Studio source material)
  *
  * Playback/download uses signed URLs with 1-hour expiry.
  * Bucket `audio` is private — never make it public.
@@ -27,6 +28,20 @@ export function buildStoragePath(params: {
   const folder = kind === "version" ? "versions" : "assets";
   const safe = sanitizeFilename(filename);
   return `tracks/${trackId}/${folder}/${entityId}/${safe}`;
+}
+
+/**
+ * Import Studio source material. Lives in the same private bucket, under its own
+ * prefix, and is deleted once the import is committed or cancelled — it's raw
+ * material the artist handed over, not part of their catalog.
+ */
+export function buildImportSourcePath(params: {
+  importId: string;
+  sourceId: string;
+  filename: string;
+}): string {
+  const { importId, sourceId, filename } = params;
+  return `imports/${importId}/${sourceId}/${sanitizeFilename(filename)}`;
 }
 
 export function sanitizeFilename(name: string): string {
