@@ -20,6 +20,10 @@ export type ActionKind =
   | "set_track_momentum"
   | "set_track_deadline"
   | "set_track_next_action"
+  | "set_track_bpm"
+  | "set_track_key"
+  | "set_track_genre"
+  | "set_track_title"
   | "navigate";
 
 export type ProposedAction = {
@@ -34,6 +38,8 @@ export type ProposedAction = {
   dueDate: string | null;
   momentum: string | null;
   projectType: string | null;
+  /** BPM for set_track_bpm (40–300). */
+  bpm: number | null;
   href: string | null;
 };
 

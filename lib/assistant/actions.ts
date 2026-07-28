@@ -40,6 +40,10 @@ const ALLOWED = new Set<ProposedAction["kind"]>([
   "set_track_momentum",
   "set_track_deadline",
   "set_track_next_action",
+  "set_track_bpm",
+  "set_track_key",
+  "set_track_genre",
+  "set_track_title",
   "navigate",
 ]);
 
@@ -181,6 +185,50 @@ export async function executeProposedAction(
       });
       ctx.onWrote?.();
       return { doneLabel: "Next move set." };
+    }
+
+    case "set_track_bpm": {
+      const entry = action.ref ? ctx.refs[action.ref] : null;
+      if (!entry || entry.type !== "track") {
+        throw new Error("Couldn't find that track.");
+      }
+      if (action.bpm == null) throw new Error("Missing BPM.");
+      await updateTrack(entry.id, { bpm: action.bpm });
+      ctx.onWrote?.();
+      return { doneLabel: `BPM set to ${action.bpm}.` };
+    }
+
+    case "set_track_key": {
+      const entry = action.ref ? ctx.refs[action.ref] : null;
+      if (!entry || entry.type !== "track") {
+        throw new Error("Couldn't find that track.");
+      }
+      if (!action.title) throw new Error("Missing key.");
+      await updateTrack(entry.id, { musical_key: action.title });
+      ctx.onWrote?.();
+      return { doneLabel: `Key set to ${action.title}.` };
+    }
+
+    case "set_track_genre": {
+      const entry = action.ref ? ctx.refs[action.ref] : null;
+      if (!entry || entry.type !== "track") {
+        throw new Error("Couldn't find that track.");
+      }
+      if (!action.title) throw new Error("Missing genre.");
+      await updateTrack(entry.id, { genre: action.title });
+      ctx.onWrote?.();
+      return { doneLabel: `Genre set to ${action.title}.` };
+    }
+
+    case "set_track_title": {
+      const entry = action.ref ? ctx.refs[action.ref] : null;
+      if (!entry || entry.type !== "track") {
+        throw new Error("Couldn't find that track.");
+      }
+      if (!action.title) throw new Error("Missing title.");
+      await updateTrack(entry.id, { title: action.title });
+      ctx.onWrote?.();
+      return { doneLabel: "Title updated." };
     }
 
     case "navigate": {

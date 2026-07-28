@@ -19,7 +19,8 @@ const TITLE_CAP = 60;
 const ATTENTION_CAP = 5;
 const TASK_CAP = 6;
 const PROJECT_CAP = 6;
-const RECENT_CAP = 8;
+/** Enough catalog rows that a named track is usually findable by ref. */
+const CATALOG_CAP = 40;
 
 function clip(s: string, n = TITLE_CAP): string {
   const t = s.trim();
@@ -76,7 +77,7 @@ export async function buildWorkspaceSnapshot(
     supabase
       .from("tracks")
       .select(
-        "id, title, space_id, stage_id, momentum, deadline, next_action, next_action_due, blocked_reason, waiting_on, stage_entered_at, updated_at",
+        "id, title, space_id, stage_id, momentum, deadline, bpm, musical_key, genre, next_action, next_action_due, blocked_reason, waiting_on, stage_entered_at, updated_at",
       )
       .eq("user_id", userId)
       .order("updated_at", { ascending: false })
@@ -219,6 +220,7 @@ export async function buildWorkspaceSnapshot(
       if (track.next_action?.trim()) {
         bits.push(`next action: "${clip(track.next_action, 50)}"`);
       }
+      if (track.bpm != null) bits.push(`${track.bpm} bpm`);
       lines.push(bits.join(" — "));
     }
   }
@@ -294,30 +296,33 @@ export async function buildWorkspaceSnapshot(
     }
   }
 
-  // --- Recently touched (skip ones already listed as k1.. under attention) ---
+  // --- Catalog tracks (refs for editing by name) ---
   const attentionIds = new Set(topAttention.map((a) => a.track.id));
-  const recent = tracks
+  const catalog = tracks
     .filter((tr) => !attentionIds.has(tr.id))
-    .slice(0, RECENT_CAP);
+    .slice(0, CATALOG_CAP);
 
-  // Continue k numbering after attention refs
   let kNext = topAttention.length;
-  if (recent.length) {
-    lines.push("", "## Recently touched tracks");
-    for (const track of recent) {
+  if (catalog.length) {
+    lines.push("", "## Catalog tracks");
+    for (const track of catalog) {
       kNext += 1;
       const ref = `k${kNext}`;
       refs[ref] = { type: "track", id: track.id, spaceId: track.space_id };
       const stage = track.stage_id
         ? stageNameById.get(track.stage_id) ?? "?"
         : "?";
-      lines.push(
-        `[${ref}] "${clip(track.title)}" — ${stage} — ${track.momentum}`,
-      );
+      const meta = [
+        stage,
+        track.momentum,
+        track.bpm != null ? `${track.bpm} bpm` : null,
+        track.musical_key ? clip(String(track.musical_key), 12) : null,
+      ]
+        .filter(Boolean)
+        .join(" — ");
+      lines.push(`[${ref}] "${clip(track.title)}" — ${meta}`);
     }
   }
-
-  // Also register attention tracks that weren't in recent — already done above.
 
   return { text: lines.join("\n"), refs };
 }

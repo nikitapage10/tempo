@@ -4,6 +4,7 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-28
 
+- Changed (v0.28.0): the assistant can now propose track edits too — BPM, key, genre, and title — with the same confirm tap before anything changes.
 - Added (v0.27.0): the floating assistant now has a mic and a paperclip like Import — talk in (live dictation, or record-and-transcribe), and attach screenshots, PDFs, or text files with your question.
 - Changed (v0.26.0): the floating assistant can propose more real workspace moves now — including moving a track to another stage, setting a next move, setting a task due date, and adding a project — still only after you tap to confirm, and it still won't delete anything.
 - Fixed (v0.25.4): the notifications panel was sitting behind Today and other page content — it now opens in front.

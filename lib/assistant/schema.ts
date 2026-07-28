@@ -25,6 +25,7 @@ export const ASSISTANT_REPLY_SCHEMA: Record<string, unknown> = {
     "actionDueDate",
     "actionMomentum",
     "actionProjectType",
+    "actionBpm",
     "actionHref",
     "suggestions",
     "needsDeeperThinking",
@@ -47,6 +48,10 @@ export const ASSISTANT_REPLY_SCHEMA: Record<string, unknown> = {
         "set_track_momentum",
         "set_track_deadline",
         "set_track_next_action",
+        "set_track_bpm",
+        "set_track_key",
+        "set_track_genre",
+        "set_track_title",
         "navigate",
       ],
     },
@@ -62,6 +67,7 @@ export const ASSISTANT_REPLY_SCHEMA: Record<string, unknown> = {
     actionDueDate: { type: ["string", "null"] },
     actionMomentum: { type: ["string", "null"] },
     actionProjectType: { type: ["string", "null"] },
+    actionBpm: { type: ["number", "null"] },
     actionHref: { type: ["string", "null"] },
     suggestions: {
       type: "array",
@@ -82,6 +88,10 @@ const ACTION_KINDS = new Set<ActionKind>([
   "set_track_momentum",
   "set_track_deadline",
   "set_track_next_action",
+  "set_track_bpm",
+  "set_track_key",
+  "set_track_genre",
+  "set_track_title",
   "navigate",
 ]);
 
@@ -95,6 +105,8 @@ const HREF_RE =
 const MAX_REPLY = 700;
 const MAX_LABEL = 40;
 const MAX_YEARS_OUT = 5;
+const MIN_BPM = 40;
+const MAX_BPM = 300;
 
 function asString(v: unknown): string | null {
   if (typeof v !== "string") return null;
@@ -111,6 +123,13 @@ function validIsoDate(s: string | null): string | null {
   max.setUTCFullYear(max.getUTCFullYear() + MAX_YEARS_OUT);
   if (d.getTime() > max.getTime()) return null;
   return s;
+}
+
+function validBpm(v: unknown): number | null {
+  if (typeof v !== "number" || !Number.isFinite(v)) return null;
+  const n = Math.round(v);
+  if (n < MIN_BPM || n > MAX_BPM) return null;
+  return n;
 }
 
 export type ValidatedAssistantOutput = {
@@ -160,19 +179,27 @@ export function validateAssistantOutput(
   const dueDate = validIsoDate(asString(obj.actionDueDate));
   const momentum = asString(obj.actionMomentum);
   const projectType = asString(obj.actionProjectType);
+  const bpm = validBpm(obj.actionBpm);
   const href = asString(obj.actionHref);
 
   const drop = () =>
     ({ reply, action: null, suggestions, needsDeeperThinking }) as const;
 
-  // Existing-row actions need a real ref from this turn's snapshot.
+  const trackKinds: ActionKind[] = [
+    "set_track_momentum",
+    "set_track_deadline",
+    "set_track_next_action",
+    "move_track_stage",
+    "set_track_bpm",
+    "set_track_key",
+    "set_track_genre",
+    "set_track_title",
+  ];
+
   if (
     (kind === "complete_task" ||
       kind === "set_task_due_date" ||
-      kind === "set_track_momentum" ||
-      kind === "set_track_deadline" ||
-      kind === "set_track_next_action" ||
-      kind === "move_track_stage") &&
+      trackKinds.includes(kind)) &&
     (!ref || !refs[ref])
   ) {
     return drop();
@@ -185,13 +212,7 @@ export function validateAssistantOutput(
     return drop();
   }
 
-  if (
-    (kind === "set_track_momentum" ||
-      kind === "set_track_deadline" ||
-      kind === "set_track_next_action" ||
-      kind === "move_track_stage") &&
-    refs[ref!]?.type !== "track"
-  ) {
+  if (trackKinds.includes(kind) && refs[ref!]?.type !== "track") {
     return drop();
   }
 
@@ -208,6 +229,19 @@ export function validateAssistantOutput(
   }
 
   if (kind === "set_track_next_action" && !title) {
+    return drop();
+  }
+
+  if (kind === "set_track_bpm" && bpm == null) {
+    return drop();
+  }
+
+  if (
+    (kind === "set_track_key" ||
+      kind === "set_track_genre" ||
+      kind === "set_track_title") &&
+    !title
+  ) {
     return drop();
   }
 
@@ -266,6 +300,7 @@ export function validateAssistantOutput(
     dueDate,
     momentum,
     projectType: kind === "create_project" ? projectType || "general" : null,
+    bpm: kind === "set_track_bpm" ? bpm : null,
     href:
       kind === "navigate"
         ? href

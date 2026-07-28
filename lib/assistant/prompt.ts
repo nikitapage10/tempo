@@ -77,6 +77,10 @@ Allowed actionKind values:
 - set_track_deadline — actionRef track (k…); actionDueDate required.
 - set_track_next_action — actionRef track (k…); actionTitle is the next move
   text; optional actionDueDate for when it's due.
+- set_track_bpm — actionRef track (k…); actionBpm required (number, e.g. 174).
+- set_track_key — actionRef track (k…); actionTitle is the musical key (e.g. "Am").
+- set_track_genre — actionRef track (k…); actionTitle is the genre.
+- set_track_title — actionRef track (k…); actionTitle is the new track title.
 - navigate — actionHref an in-app path, or actionRef to open a track/project.
 
 Never propose delete, revoke, discard, or anything that permanently removes data.
