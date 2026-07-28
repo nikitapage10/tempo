@@ -11,6 +11,7 @@ import {
   Settings,
   Plus,
 } from "lucide-react";
+import { AssistantRoot } from "@/components/assistant/assistant-root";
 import { SpaceSwitcher } from "@/components/space-switcher";
 import { NotificationCenter } from "@/components/notification-center";
 import { EdgeStrip, IntroMoment } from "@/components/intro-moment";
@@ -200,6 +201,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           Add
         </button>
       </nav>
+
+      <AssistantRoot />
     </div>
   );
 }

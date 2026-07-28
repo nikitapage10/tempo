@@ -4,6 +4,8 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-28
 
+- Added (v0.25.0): a floating **assistant** in the bottom-right of every main screen — tap the TEMPO mark (or press Cmd/Ctrl+/) to ask how something works or what's going on in your catalog. It can propose a small change (add a task, mark one done, set a deadline, open a screen); nothing is written until you confirm. Hidden on Focus and Import so those stay distraction-free.
+  - Under the hood: **run migration `016` in Supabase** before relying on the daily ask limits. Without it the assistant still answers, but usage tracking won't stick across servers.
 - Changed (v0.24.7): Spectra cover **backgrounds** use an even broader hush palette (coral, sky, sand, orchid, aqua, berry, honey, and more) and soft tri-hue blends — slits stay ice / white / amber / gray.
 - Changed (v0.24.6): Spectra cover **backgrounds** are softer and use a wider hush palette (teal, rose, lilac, mint, peach, and more) — the slits themselves stay ice / white / amber / gray.
 - Changed (v0.24.5): Spectra cover backgrounds are back to the quiet studio-light set (cool rim, warm floor, white haze, side leaks, gray mist, corner glow).

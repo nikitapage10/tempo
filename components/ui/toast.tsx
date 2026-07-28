@@ -52,7 +52,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={{ toast }}>
       {children}
       <div
-        className="pointer-events-none fixed bottom-20 right-4 z-[200] flex w-[min(100%-2rem,22rem)] flex-col gap-2 md:bottom-6"
+        className="pointer-events-none fixed bottom-[8.5rem] right-4 z-[200] flex w-[min(100%-2rem,22rem)] flex-col gap-2 md:bottom-[5.5rem]"
         aria-live="polite"
       >
         {toasts.map((t) => (

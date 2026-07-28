@@ -4,6 +4,7 @@ import * as React from "react";
 import { FileText, Image as ImageIcon, Mic, Paperclip, Send, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dropzone } from "@/components/ui/dropzone";
+import { Bubble, Dot } from "@/components/ui/chat-bubble";
 import { useToast } from "@/components/ui/toast";
 import { VoiceInput } from "@/components/import/voice-input";
 import { IMPORT_DOCUMENT_ACCEPT, IMPORT_IMAGE_ACCEPT } from "@/lib/constants";
@@ -414,53 +415,6 @@ export function IntakeCanvas({
         </>
       )}
     </Dropzone>
-  );
-}
-
-/** Typing indicator dot. Respects reduced motion via the animate-pulse utility. */
-function Dot({ delay }: { delay: string }) {
-  return (
-    <span
-      className="size-1.5 animate-pulse rounded-full bg-text-lo"
-      style={{ animationDelay: delay }}
-    />
-  );
-}
-
-/** One message in the transcript. */
-function Bubble({
-  from,
-  children,
-}: {
-  from: "tempo" | "artist";
-  children: React.ReactNode;
-}) {
-  const isArtist = from === "artist";
-
-  if (isArtist) {
-    return (
-      <div className="flex justify-end">
-        <div className="max-w-[85%] rounded-card rounded-br-sm border border-ice/30 bg-gradient-to-br from-ice/15 to-ice/5 px-4 py-3 shadow-e1">
-          {children}
-        </div>
-      </div>
-    );
-  }
-
-  // TEMPO speaks with the app's own light beside it, so the two voices are
-  // distinguishable at a glance rather than by alignment alone.
-  return (
-    <div className="flex gap-3">
-      <span
-        aria-hidden
-        className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full border border-line bg-bg-2 shadow-e1"
-      >
-        <span className="block size-3 rounded-full bg-gradient-to-br from-ice via-white to-amber" />
-      </span>
-      <div className="min-w-0 max-w-[85%] rounded-card rounded-tl-sm border border-line bg-bg-2/80 px-4 py-3 shadow-e1">
-        {children}
-      </div>
-    </div>
   );
 }
 

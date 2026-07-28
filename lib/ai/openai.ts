@@ -20,6 +20,20 @@ import OpenAI from "openai";
  */
 export const IMPORT_MODEL = process.env.OPENAI_IMPORT_MODEL || "gpt-5.6-terra";
 
+/**
+ * The floating assistant answers many short questions per session, so it runs
+ * on the cheap end of the 5.6 family. Luna handles "how do I share a bounce"
+ * and "what's overdue" from a prefilled snapshot without breaking a sweat.
+ */
+export const ASSISTANT_MODEL = process.env.OPENAI_ASSISTANT_MODEL || "gpt-5.6-luna";
+
+/** Only for turns Luna itself flags as beyond it. Capped per conversation. */
+export const ASSISTANT_DEEP_MODEL =
+  process.env.OPENAI_ASSISTANT_DEEP_MODEL || "gpt-5.6-terra";
+
+export const ASSISTANT_DAILY_MESSAGES = 60;
+export const ASSISTANT_DAILY_ESCALATIONS = 10;
+
 /** Voice memos. 25 MB cap per request on this endpoint. */
 export const TRANSCRIBE_MODEL = process.env.OPENAI_TRANSCRIBE_MODEL || "gpt-4o-transcribe";
 
