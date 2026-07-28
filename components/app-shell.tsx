@@ -60,7 +60,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="flex flex-1">
         {/* Left 2px gutter stays transparent so active-nav windows can punch through */}
         <aside
-          className="sticky top-[var(--edge-strip-h)] hidden h-[calc(100vh-var(--edge-strip-h))] w-[220px] shrink-0 flex-col border-r border-line md:flex"
+          className="sticky top-[var(--edge-strip-h)] z-30 hidden h-[calc(100vh-var(--edge-strip-h))] w-[220px] shrink-0 flex-col border-r border-line md:flex"
           style={{
             background:
               "linear-gradient(to right, transparent 2px, var(--bg-1) 2px)",
