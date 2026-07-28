@@ -79,8 +79,11 @@ Rules:
 - Strongly prefer slotting tracks into the artist's EXISTING spaces. Only propose a new
   space when the material clearly describes a body of work that fits neither.
 - stageName must exactly match a stage that exists in the space you assign the track to.
-- Never guess songwriting credit or ownership. Names that appear as "feat." or
-  "with" go in collaborators as a note, nothing more.
+- Keep track titles exactly as they appear in the source — including "(feat. …)",
+  "(ft. …)", "(with …)", and similar. Do not strip those from the title.
+- Never guess songwriting credit or ownership. Names that appear as "feat." /
+  "ft." / "with" may ALSO be listed in collaborators as a note, but that is in
+  addition to keeping them in the title — never instead of it.
 - When several filenames look like the same song at different points (v7, FINAL,
   FINAL2, "mix", "master"), treat them as ONE track and raise a question rather
   than creating several tracks.

@@ -122,6 +122,7 @@ async function extractImage(bytes: Buffer, mimeType: string | null): Promise<Ext
             text:
               "This is a screenshot or photo from a musician who is importing their catalog into a music project manager. " +
               "Transcribe everything readable — file names, folder names, song titles, dates, BPMs, keys, statuses, checklists, notes. " +
+              "Keep song titles exactly as written, including any (feat. …) / (ft. …) / (with …) part. " +
               "Preserve folder structure and grouping as indented text. " +
               "Do not interpret, summarise, or invent anything that isn't visible. " +
               "If the image contains nothing relevant to music projects, say exactly: NO_RELEVANT_CONTENT",
@@ -155,7 +156,8 @@ async function extractPdf(bytes: Buffer, label: string | null): Promise<ExtractR
             type: "input_text",
             text:
               "Transcribe everything in this document that relates to a musician's catalog — song titles, release dates, " +
-              "collaborators, statuses, tasks, credits, metadata. Preserve tables as rows. Do not summarise or invent.",
+              "collaborators, statuses, tasks, credits, metadata. Preserve tables as rows. " +
+              "Keep song titles exactly as written, including any (feat. …) / (ft. …) / (with …) part. Do not summarise or invent.",
           },
           {
             type: "input_file",

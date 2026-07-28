@@ -4,6 +4,7 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-28
 
+- Fixed (v0.20.1): when you import a song whose title includes a featuring credit — like "Midnight (feat. Lena)" — TEMPO keeps that in the title instead of stripping it out.
 - Changed (v0.20.0): **the sign-in and create-account screens now show the TEMPO wordmark instead of plain text**, and the light field on the right sits inside its own large rounded window rather than fading across the whole page — the left side is now a plain, solid panel.
 - Added (v0.20.0): **creating a new account now needs an invite code.** Anyone without one sees a "Request an invite" link that emails you directly. Existing accounts are unaffected — this only gates new sign-ups through the form.
   - Under the hood: set `INVITE_CODE` in `.env.local` and in Vercel's environment variables to whatever code you want to hand out — signups are closed until it's set. Signing up via Google/Microsoft/Apple has been removed from the create-account screen for now, since those can't be gated by the code; they still work from the sign-in screen for people who already have an account.

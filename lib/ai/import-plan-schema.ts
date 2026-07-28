@@ -205,7 +205,11 @@ export const IMPORT_PLAN_SCHEMA: Record<string, unknown> = {
         ],
         properties: {
           ref: { type: "string" },
-          title: { type: "string" },
+          title: {
+            type: "string",
+            description:
+              "Exact title as it appears in the source, including any (feat. …) / (ft. …) / (with …) suffix. Do not strip featuring credits from the title.",
+          },
           spaceRef: { type: "string" },
           projectRef: nullableString,
           type: {
@@ -248,7 +252,7 @@ export const IMPORT_PLAN_SCHEMA: Record<string, unknown> = {
             type: "array",
             items: { type: "string" },
             description:
-              "Names mentioned as featuring/collaborating. Recorded as notes only — never guess songwriting credit or ownership.",
+              "Names mentioned as featuring/collaborating. Recorded as notes only — never guess songwriting credit or ownership. Do not remove these names from the title when they appear there as (feat. …).",
           },
           confidence: { type: "string", enum: CONFIDENCE_ENUM },
           sourceIds: { type: "array", items: { type: "string" } },
