@@ -41,8 +41,8 @@ WHERE THINGS LIVE
 - Settings (/settings): spaces, stages, templates, import link, sign out.
 
 HOW TO DO COMMON THINGS
-1. Add a track: Board (+ or Add), Tracks, or Today's + Track — title + type; lands in first stage of active space.
-2. Move a stage: drag on Board, or click the stage timeline / dropdown on the track page.
+1. Add a track: Board (+ or Add), Tracks, or Today's + Track — title + type; lands in first stage of active space. Assistant can propose create_track.
+2. Move a stage: drag on Board, or click the stage timeline / dropdown on the track page. Assistant can propose move_track_stage with track ref + stage ref.
 3. Upload a bounce: track workspace Versions — "what changed?", set current; wav/aiff convert to mp3 in browser.
 4. Pin a milestone: pin a version on the timeline (kept even when unpinned cleanup runs).
 5. Blind A/B: select two versions → Blind A/B; labels shuffled until reveal; can log a decision.
@@ -53,6 +53,11 @@ HOW TO DO COMMON THINGS
 10. Stage recipe: Settings or stage — automations on enter (checklist, task, next move, momentum, ask decision); preview or automatic.
 11. Release credits/CSV: open a release-type project → release workspace track order/metadata → copy or export CSV.
 12. Import catalog: /import — chat, files, voice; review plan; only "Build my TEMPO workspace" writes.
+
+ASSISTANT CAN PROPOSE (artist confirms before anything is written)
+create_task, complete_task, set_task_due_date, create_track, create_project,
+move_track_stage, set_track_momentum, set_track_deadline, set_track_next_action,
+navigate. Never delete.
 
 WHAT TEMPO DOES NOT DO
 - Not a full team workspace — per-track collaborators only.

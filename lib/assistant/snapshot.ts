@@ -112,10 +112,13 @@ export async function buildWorkspaceSnapshot(
 
   const stages = stagesRes.data ?? [];
   const stageNameById = new Map(stages.map((s) => [s.id, s.name]));
-  const stagesBySpace = new Map<string, string[]>();
+  const stagesBySpace = new Map<
+    string,
+    { id: string; name: string; sort: number }[]
+  >();
   for (const stage of stages) {
     const list = stagesBySpace.get(stage.space_id) ?? [];
-    list.push(stage.name);
+    list.push({ id: stage.id, name: stage.name, sort: stage.sort });
     stagesBySpace.set(stage.space_id, list);
   }
 
@@ -123,14 +126,37 @@ export async function buildWorkspaceSnapshot(
     spaces.find((s) => s.id === activeSpaceId) ?? spaces[0] ?? null;
   const others = spaces.filter((s) => s.id !== active?.id);
 
+  // Stage refs (s1…) — every space the artist owns, so moves stay grounded.
+  let s = 0;
+  const formatStages = (spaceId: string): string => {
+    const list = stagesBySpace.get(spaceId) ?? [];
+    if (!list.length) return "(none)";
+    return list
+      .map((stage) => {
+        s += 1;
+        const ref = `s${s}`;
+        refs[ref] = {
+          type: "stage",
+          id: stage.id,
+          spaceId,
+          name: stage.name,
+        };
+        return `[${ref}] ${clip(stage.name, 40)}`;
+      })
+      .join(", ");
+  };
+
   if (active) {
-    const stageNames = stagesBySpace.get(active.id) ?? [];
     lines.push(
-      `Active space: ${clip(active.name)} — stages: ${stageNames.join(", ") || "(none)"}`,
+      `Active space: ${clip(active.name)} — stages: ${formatStages(active.id)}`,
     );
   }
   if (others.length) {
-    lines.push(`Other spaces: ${others.map((s) => clip(s.name)).join(", ")}`);
+    for (const space of others) {
+      lines.push(
+        `Other space: ${clip(space.name)} — stages: ${formatStages(space.id)}`,
+      );
+    }
   }
 
   const openTasks = tasks.length;
@@ -165,7 +191,7 @@ export async function buildWorkspaceSnapshot(
     for (const { track, signals } of topAttention) {
       k += 1;
       const ref = `k${k}`;
-      refs[ref] = { type: "track", id: track.id };
+      refs[ref] = { type: "track", id: track.id, spaceId: track.space_id };
       const stage = track.stage_id
         ? stageNameById.get(track.stage_id) ?? "?"
         : "?";
@@ -281,7 +307,7 @@ export async function buildWorkspaceSnapshot(
     for (const track of recent) {
       kNext += 1;
       const ref = `k${kNext}`;
-      refs[ref] = { type: "track", id: track.id };
+      refs[ref] = { type: "track", id: track.id, spaceId: track.space_id };
       const stage = track.stage_id
         ? stageNameById.get(track.stage_id) ?? "?"
         : "?";

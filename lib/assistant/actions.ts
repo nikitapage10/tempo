@@ -3,13 +3,19 @@
  *
  * The route only returns a proposal. Writes go through existing mutations so
  * RLS and React Query invalidation stay as they already are. Nothing here
- * invents a write endpoint.
+ * invents a write endpoint. Deletion is never an assistant action.
  */
 
-import type { Momentum, TaskCategory, TrackType } from "@/lib/types";
+import type {
+  Momentum,
+  ProjectType,
+  TaskCategory,
+  TrackType,
+} from "@/lib/types";
 import type { ProposedAction, RefMap } from "@/lib/assistant/types";
+import { createProject } from "@/lib/api/projects";
 import { createTask, updateTask } from "@/lib/api/tasks";
-import { createTrack, updateTrack } from "@/lib/api/tracks";
+import { createTrack, moveTrackStage, updateTrack } from "@/lib/api/tracks";
 
 export type ActionContext = {
   refs: RefMap;
@@ -27,9 +33,13 @@ export type ActionResult = {
 const ALLOWED = new Set<ProposedAction["kind"]>([
   "create_task",
   "complete_task",
+  "set_task_due_date",
   "create_track",
+  "create_project",
+  "move_track_stage",
   "set_track_momentum",
   "set_track_deadline",
+  "set_track_next_action",
   "navigate",
 ]);
 
@@ -76,6 +86,17 @@ export async function executeProposedAction(
       return { doneLabel: "Marked done." };
     }
 
+    case "set_task_due_date": {
+      const entry = action.ref ? ctx.refs[action.ref] : null;
+      if (!entry || entry.type !== "task") {
+        throw new Error("Couldn't find that task.");
+      }
+      if (!action.dueDate) throw new Error("Missing due date.");
+      await updateTask(entry.id, { due_date: action.dueDate });
+      ctx.onWrote?.();
+      return { doneLabel: "Due date set." };
+    }
+
     case "create_track": {
       if (!action.title) throw new Error("Missing track title.");
       if (!ctx.activeSpaceId) throw new Error("No active space.");
@@ -87,6 +108,41 @@ export async function executeProposedAction(
       });
       ctx.onWrote?.();
       return { doneLabel: "Added." };
+    }
+
+    case "create_project": {
+      if (!action.title) throw new Error("Missing project name.");
+      await createProject({
+        name: action.title,
+        project_type: (action.projectType as ProjectType) || "general",
+        deadline: action.dueDate,
+        space_id: ctx.activeSpaceId,
+      });
+      ctx.onWrote?.();
+      return { doneLabel: "Added." };
+    }
+
+    case "move_track_stage": {
+      const track = action.ref ? ctx.refs[action.ref] : null;
+      const stage = action.stageRef ? ctx.refs[action.stageRef] : null;
+      if (!track || track.type !== "track") {
+        throw new Error("Couldn't find that track.");
+      }
+      if (!stage || stage.type !== "stage") {
+        throw new Error("Couldn't find that stage.");
+      }
+      if (
+        track.spaceId &&
+        stage.spaceId &&
+        track.spaceId !== stage.spaceId
+      ) {
+        throw new Error("That stage isn't in the same space as the track.");
+      }
+      await moveTrackStage(track.id, stage.id);
+      ctx.onWrote?.();
+      return {
+        doneLabel: stage.name ? `Moved to ${stage.name}.` : "Moved.",
+      };
     }
 
     case "set_track_momentum": {
@@ -111,6 +167,20 @@ export async function executeProposedAction(
       await updateTrack(entry.id, { deadline: action.dueDate });
       ctx.onWrote?.();
       return { doneLabel: "Deadline set." };
+    }
+
+    case "set_track_next_action": {
+      const entry = action.ref ? ctx.refs[action.ref] : null;
+      if (!entry || entry.type !== "track") {
+        throw new Error("Couldn't find that track.");
+      }
+      if (!action.title) throw new Error("Missing next action.");
+      await updateTrack(entry.id, {
+        next_action: action.title,
+        next_action_due: action.dueDate,
+      });
+      ctx.onWrote?.();
+      return { doneLabel: "Next move set." };
     }
 
     case "navigate": {

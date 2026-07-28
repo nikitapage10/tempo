@@ -1,7 +1,11 @@
 /** Short ref → real row. Built server-side; returned with every reply. */
 export type RefEntry = {
-  type: "track" | "task" | "project";
+  type: "track" | "task" | "project" | "stage";
   id: string;
+  /** Present on tracks and stages — used to keep stage moves in-space. */
+  spaceId?: string;
+  /** Present on stages — human label for confirm copy. */
+  name?: string;
 };
 
 export type RefMap = Record<string, RefEntry>;
@@ -9,9 +13,13 @@ export type RefMap = Record<string, RefEntry>;
 export type ActionKind =
   | "create_task"
   | "complete_task"
+  | "set_task_due_date"
   | "create_track"
+  | "create_project"
+  | "move_track_stage"
   | "set_track_momentum"
   | "set_track_deadline"
+  | "set_track_next_action"
   | "navigate";
 
 export type ProposedAction = {
@@ -19,10 +27,13 @@ export type ProposedAction = {
   label: string;
   summary: string;
   ref: string | null;
+  /** Second ref — stage for move_track_stage. */
+  stageRef: string | null;
   title: string | null;
   category: string | null;
   dueDate: string | null;
   momentum: string | null;
+  projectType: string | null;
   href: string | null;
 };
 

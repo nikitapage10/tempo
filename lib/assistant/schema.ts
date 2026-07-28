@@ -1,5 +1,6 @@
 import {
   MOMENTUM_OPTIONS,
+  PROJECT_TYPES,
   TASK_CATEGORIES,
 } from "@/lib/constants";
 import type {
@@ -18,10 +19,12 @@ export const ASSISTANT_REPLY_SCHEMA: Record<string, unknown> = {
     "actionLabel",
     "actionSummary",
     "actionRef",
+    "actionStageRef",
     "actionTitle",
     "actionCategory",
     "actionDueDate",
     "actionMomentum",
+    "actionProjectType",
     "actionHref",
     "suggestions",
     "needsDeeperThinking",
@@ -37,19 +40,28 @@ export const ASSISTANT_REPLY_SCHEMA: Record<string, unknown> = {
         null,
         "create_task",
         "complete_task",
+        "set_task_due_date",
         "create_track",
+        "create_project",
+        "move_track_stage",
         "set_track_momentum",
         "set_track_deadline",
+        "set_track_next_action",
         "navigate",
       ],
     },
     actionLabel: { type: ["string", "null"] },
     actionSummary: { type: ["string", "null"] },
     actionRef: { type: ["string", "null"] },
+    actionStageRef: {
+      type: ["string", "null"],
+      description: "Stage short ref (s1, s2) for move_track_stage.",
+    },
     actionTitle: { type: ["string", "null"] },
     actionCategory: { type: ["string", "null"] },
     actionDueDate: { type: ["string", "null"] },
     actionMomentum: { type: ["string", "null"] },
+    actionProjectType: { type: ["string", "null"] },
     actionHref: { type: ["string", "null"] },
     suggestions: {
       type: "array",
@@ -63,14 +75,19 @@ export const ASSISTANT_REPLY_SCHEMA: Record<string, unknown> = {
 const ACTION_KINDS = new Set<ActionKind>([
   "create_task",
   "complete_task",
+  "set_task_due_date",
   "create_track",
+  "create_project",
+  "move_track_stage",
   "set_track_momentum",
   "set_track_deadline",
+  "set_track_next_action",
   "navigate",
 ]);
 
 const CATEGORIES = new Set(TASK_CATEGORIES.map((c) => c.value));
 const MOMENTA = new Set(MOMENTUM_OPTIONS.map((m) => m.value));
+const PROJECT_TYPE_SET = new Set(PROJECT_TYPES.map((p) => p.value));
 
 const HREF_RE =
   /^\/($|board(\/|$)|tracks(\/|$)|track\/|projects(\/|$)|tasks(\/|$)|import(\/|$)|settings(\/|$))/;
@@ -137,60 +154,104 @@ export function validateAssistantOutput(
   const label = (asString(obj.actionLabel) ?? "Confirm").slice(0, MAX_LABEL);
   const summary = asString(obj.actionSummary) ?? label;
   const ref = asString(obj.actionRef);
+  const stageRef = asString(obj.actionStageRef);
   const title = asString(obj.actionTitle);
   const category = asString(obj.actionCategory);
   const dueDate = validIsoDate(asString(obj.actionDueDate));
   const momentum = asString(obj.actionMomentum);
+  const projectType = asString(obj.actionProjectType);
   const href = asString(obj.actionHref);
 
-  // Ref must exist in the snapshot map when the action targets an existing row.
+  const drop = () =>
+    ({ reply, action: null, suggestions, needsDeeperThinking }) as const;
+
+  // Existing-row actions need a real ref from this turn's snapshot.
   if (
     (kind === "complete_task" ||
+      kind === "set_task_due_date" ||
       kind === "set_track_momentum" ||
-      kind === "set_track_deadline") &&
+      kind === "set_track_deadline" ||
+      kind === "set_track_next_action" ||
+      kind === "move_track_stage") &&
     (!ref || !refs[ref])
   ) {
-    return { reply, action: null, suggestions, needsDeeperThinking };
-  }
-
-  if (kind === "complete_task" && refs[ref!]?.type !== "task") {
-    return { reply, action: null, suggestions, needsDeeperThinking };
+    return drop();
   }
 
   if (
-    (kind === "set_track_momentum" || kind === "set_track_deadline") &&
+    (kind === "complete_task" || kind === "set_task_due_date") &&
+    refs[ref!]?.type !== "task"
+  ) {
+    return drop();
+  }
+
+  if (
+    (kind === "set_track_momentum" ||
+      kind === "set_track_deadline" ||
+      kind === "set_track_next_action" ||
+      kind === "move_track_stage") &&
     refs[ref!]?.type !== "track"
   ) {
-    return { reply, action: null, suggestions, needsDeeperThinking };
+    return drop();
   }
 
   if (kind === "set_track_momentum" && (!momentum || !MOMENTA.has(momentum as never))) {
-    return { reply, action: null, suggestions, needsDeeperThinking };
+    return drop();
   }
 
   if (kind === "set_track_deadline" && !dueDate) {
-    return { reply, action: null, suggestions, needsDeeperThinking };
+    return drop();
+  }
+
+  if (kind === "set_task_due_date" && !dueDate) {
+    return drop();
+  }
+
+  if (kind === "set_track_next_action" && !title) {
+    return drop();
   }
 
   if (kind === "create_task" && !title) {
-    return { reply, action: null, suggestions, needsDeeperThinking };
+    return drop();
   }
 
   if (kind === "create_task" && category && !CATEGORIES.has(category as never)) {
-    return { reply, action: null, suggestions, needsDeeperThinking };
+    return drop();
   }
 
   if (kind === "create_track" && !title) {
-    return { reply, action: null, suggestions, needsDeeperThinking };
+    return drop();
+  }
+
+  if (kind === "create_project" && !title) {
+    return drop();
+  }
+
+  if (
+    kind === "create_project" &&
+    projectType &&
+    !PROJECT_TYPE_SET.has(projectType as never)
+  ) {
+    return drop();
+  }
+
+  if (kind === "move_track_stage") {
+    if (!stageRef || !refs[stageRef] || refs[stageRef].type !== "stage") {
+      return drop();
+    }
+    const trackSpace = refs[ref!]?.spaceId;
+    const stageSpace = refs[stageRef]?.spaceId;
+    if (!trackSpace || !stageSpace || trackSpace !== stageSpace) {
+      return drop();
+    }
   }
 
   if (kind === "navigate") {
     if (!href || !HREF_RE.test(href)) {
-      return { reply, action: null, suggestions, needsDeeperThinking };
+      return drop();
     }
-    // navigate may use a ref to open a specific track/project
     if (ref && !refs[ref]) {
-      return { reply, action: null, suggestions, needsDeeperThinking };
+      return drop();
     }
   }
 
@@ -199,10 +260,12 @@ export function validateAssistantOutput(
     label,
     summary,
     ref,
+    stageRef: kind === "move_track_stage" ? stageRef : null,
     title,
     category,
     dueDate,
     momentum,
+    projectType: kind === "create_project" ? projectType || "general" : null,
     href:
       kind === "navigate"
         ? href

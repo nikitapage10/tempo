@@ -4,6 +4,7 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-28
 
+- Changed (v0.26.0): the floating assistant can propose more real workspace moves now — including moving a track to another stage, setting a next move, setting a task due date, and adding a project — still only after you tap to confirm, and it still won't delete anything.
 - Fixed (v0.25.4): the notifications panel was sitting behind Today and other page content — it now opens in front.
 - Fixed (v0.25.3): the notifications panel was opening off the left edge of the screen — it now opens into the workspace so you can read it.
 - Fixed (v0.25.2): the floating assistant was failing on ordinary questions (like how many songs you have) and only saying it couldn't answer — it should reply properly again.
