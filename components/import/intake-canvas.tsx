@@ -5,7 +5,7 @@ import { FileText, Image as ImageIcon, Mic, Paperclip, Send, Upload, X } from "l
 import { Button } from "@/components/ui/button";
 import { Dropzone } from "@/components/ui/dropzone";
 import { useToast } from "@/components/ui/toast";
-import { VoiceRecorder } from "@/components/import/voice-recorder";
+import { VoiceInput } from "@/components/import/voice-input";
 import { IMPORT_DOCUMENT_ACCEPT, IMPORT_IMAGE_ACCEPT } from "@/lib/constants";
 import { formatFileSize } from "@/lib/format";
 import {
@@ -95,6 +95,9 @@ export function IntakeCanvas({
   const [enough, setEnough] = React.useState(false);
   const endRef = React.useRef<HTMLDivElement>(null);
   const textRef = React.useRef<HTMLTextAreaElement>(null);
+  // What was already typed when dictation started, so speech appends to it
+  // instead of wiping it.
+  const dictationBaseRef = React.useRef("");
 
   // Keep the newest message in view, the way a conversation behaves.
   React.useEffect(() => {
@@ -364,10 +367,16 @@ export function IntakeCanvas({
                   className="max-h-40 min-h-[2.25rem] flex-1 resize-none bg-transparent py-2 text-sm text-text-hi placeholder:text-text-lo focus-visible:outline-none"
                 />
 
-                <VoiceRecorder
-                  compact
-                  onRecorded={(file) => void handleVoice(file)}
+                <VoiceInput
                   disabled={disabled}
+                  onStart={() => {
+                    dictationBaseRef.current = text.trim();
+                  }}
+                  onTranscript={(spoken) => {
+                    const base = dictationBaseRef.current;
+                    setText(base ? `${base} ${spoken}` : spoken);
+                  }}
+                  onRecorded={(file) => void handleVoice(file)}
                 />
 
                 <button
