@@ -117,7 +117,7 @@ async function logStageChange(
       await logActivity({
         trackId,
         eventType: "stage_changed",
-        summary: `${actorLabel ?? "Someone"} took this off the board`,
+        summary: `${actorLabel ?? "Someone"} cleared this track’s stage`,
         entityType: "stage",
         entityId: null,
         actorLabel,

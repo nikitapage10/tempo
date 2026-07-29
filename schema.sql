@@ -5,9 +5,25 @@ create extension if not exists "pgcrypto";
 
 -- ---------- Core containers ----------
 
+create table artists ( -- migration 021
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  name text not null,
+  logo_url text,
+  banner_url text,
+  banner_color text,
+  palette_id text not null default 'spectra',
+  sort int not null default 0,
+  created_at timestamptz not null default now(),
+  constraint artists_name_len check (
+    char_length(trim(name)) >= 1 and char_length(name) <= 60
+  )
+);
+
 create table spaces (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  artist_id uuid not null references artists(id) on delete cascade, -- migration 021
   name text not null,
   sort int not null default 0,
   accent_color text,
@@ -175,6 +191,25 @@ create table feedback (
   received_at timestamptz not null default now()
 );
 
+-- Board sticky notes (migration 020)
+create table if not exists board_notes (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  space_id uuid not null references spaces(id) on delete cascade,
+  stage_id uuid not null references stages(id) on delete cascade,
+  title text not null,
+  body text,
+  sort int not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint board_notes_title_len check (
+    char_length(trim(title)) >= 1 and char_length(title) <= 120
+  )
+);
+
+create index if not exists idx_board_notes_space_stage
+  on board_notes (space_id, stage_id, sort);
+
 -- ---------- Row Level Security (single-user: you can only see your own data) ----------
 
 alter table spaces enable row level security;
@@ -189,7 +224,10 @@ alter table tasks enable row level security;
 alter table sessions enable row level security;
 alter table comments enable row level security;
 alter table feedback enable row level security;
+alter table board_notes enable row level security;
+alter table artists enable row level security; -- migration 021
 
+create policy own_artists on artists for all using (user_id = auth.uid()) with check (user_id = auth.uid()); -- migration 021
 create policy own_spaces on spaces for all using (user_id = auth.uid()) with check (user_id = auth.uid());
 create policy own_projects on projects for all using (user_id = auth.uid()) with check (user_id = auth.uid());
 create policy own_tracks on tracks for all using (user_id = auth.uid()) with check (user_id = auth.uid());
@@ -225,6 +263,10 @@ create policy own_comments on comments for all
 create policy own_feedback on feedback for all
   using (exists (select 1 from tracks t where t.id = track_id and t.user_id = auth.uid()))
   with check (exists (select 1 from tracks t where t.id = track_id and t.user_id = auth.uid()));
+
+create policy own_board_notes on board_notes for all
+  using (user_id = auth.uid())
+  with check (user_id = auth.uid());
 
 -- Storage policies for the private 'audio' bucket
 create policy "own audio read" on storage.objects for select

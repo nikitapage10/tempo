@@ -34,6 +34,8 @@ export type GuestReviewContext = {
     title: string;
     artist_alias: string | null;
     artwork_url: string | null;
+    /** Used only to resolve the owning artist's palette — never returned to the guest. */
+    space_id: string;
   };
   version: {
     id: string;
@@ -89,7 +91,7 @@ export async function resolveGuestLink(
 
   const { data: track, error: trackError } = await admin
     .from("tracks")
-    .select("id, title, artist_alias, artwork_url")
+    .select("id, title, artist_alias, artwork_url, space_id")
     .eq("id", link.track_id)
     .maybeSingle();
   if (trackError || !track) return null;
@@ -118,6 +120,7 @@ export async function resolveGuestLink(
       title: track.title,
       artist_alias: track.artist_alias,
       artwork_url: track.artwork_url,
+      space_id: track.space_id,
     },
     version: {
       id: version.id,

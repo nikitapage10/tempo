@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { ArtistsManager } from "@/components/artists/artists-manager";
 import { SpacesManager } from "@/components/spaces/spaces-manager";
 import { Button } from "@/components/ui/button";
 
@@ -26,9 +27,12 @@ export default function SettingsPage() {
           Settings
         </h1>
         <p className="mt-2 text-text-lo">
-          Manage spaces and your account. Stage editing lives on the board.
+          Manage artists, spaces and your account. Stage editing lives on the
+          board.
         </p>
       </div>
+
+      <ArtistsManager />
 
       <SpacesManager />
 

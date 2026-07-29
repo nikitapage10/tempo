@@ -15,27 +15,35 @@ import {
 import { Plus, Rows2, Rows3, Settings2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useActiveSpace } from "@/components/active-space-provider";
-import { KanbanColumn } from "@/components/board/kanban-column";
 import {
-  OFF_BOARD_DROPPABLE,
-  OffBoardTray,
-} from "@/components/board/off-board-tray";
+  BoardNoteCard,
+  parseNoteDragId,
+} from "@/components/board/board-note-card";
+import { KanbanColumn } from "@/components/board/kanban-column";
+import type { StageAddAction } from "@/components/board/stage-add-menu";
 import { EmptyShaderPanel } from "@/components/shader-empty";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { FilterGroup } from "@/components/ui/filter-row";
 import { HeaderMenu } from "@/components/ui/header-menu";
+import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
 import { TrackCard } from "@/components/tracks/track-card";
 import { TrackFormModal } from "@/components/tracks/track-form-modal";
 import { StageEditor } from "@/components/stages/stage-editor";
+import {
+  useBoardNoteMutations,
+  useBoardNotes,
+} from "@/hooks/use-board-notes";
 import { useStages } from "@/hooks/use-stages";
 import { useStageTransitionController } from "@/hooks/use-stage-transition";
 import { useTrackMutations, useTracks } from "@/hooks/use-tracks";
 import { TRACK_TYPES } from "@/lib/constants";
 import { deriveAttentionSignals } from "@/lib/attention/signals";
-import type { Track, TrackInsert, TrackType } from "@/lib/types";
+import type { BoardNote, Track, TrackInsert, TrackType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type BoardSort = "custom" | "title" | "updated" | "deadline";
@@ -83,6 +91,16 @@ function sortBoardTracks(tracks: Track[], mode: BoardSort): Track[] {
   });
 }
 
+function sortNotes(notes: BoardNote[]): BoardNote[] {
+  return [...notes].sort(
+    (a, b) => a.sort - b.sort || a.title.localeCompare(b.title)
+  );
+}
+
+type ActiveDrag =
+  | { kind: "track"; track: Track }
+  | { kind: "note"; note: BoardNote };
+
 export function BoardView() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -90,7 +108,14 @@ export function BoardView() {
     useActiveSpace();
   const stagesQuery = useStages(activeSpaceId);
   const tracksQuery = useTracks(activeSpaceId);
+  const notesQuery = useBoardNotes(activeSpaceId);
   const { create, moveStage } = useTrackMutations(activeSpaceId);
+  const {
+    create: createNote,
+    update: updateNote,
+    moveStage: moveNoteStage,
+    remove: removeNote,
+  } = useBoardNoteMutations(activeSpaceId);
   const { changeStage, dialog: stageTransitionDialog } =
     useStageTransitionController(activeSpaceId);
   const { toast } = useToast();
@@ -103,6 +128,10 @@ export function BoardView() {
     () => tracksQuery.data ?? [],
     [tracksQuery.data]
   );
+  const notes = React.useMemo(
+    () => notesQuery.data ?? [],
+    [notesQuery.data]
+  );
 
   const [typeFilter, setTypeFilter] = React.useState<TrackType | "all">("all");
   const [tagFilter, setTagFilter] = React.useState<string | "all">("all");
@@ -112,18 +141,31 @@ export function BoardView() {
   const [boardSort, setBoardSort] = React.useState<BoardSort>(readBoardSort);
   const [density, setDensity] = React.useState<"comfortable" | "compact">(() => {
     if (typeof window === "undefined") return "comfortable";
-    return (localStorage.getItem("tempo.boardDensity") as "comfortable" | "compact") || "comfortable";
+    return (
+      (localStorage.getItem("tempo.boardDensity") as
+        | "comfortable"
+        | "compact") || "comfortable"
+    );
   });
   const [trackModalOpen, setTrackModalOpen] = React.useState(false);
+  const [trackModalStageId, setTrackModalStageId] = React.useState<
+    string | null
+  >(null);
   const [stageEditorOpen, setStageEditorOpen] = React.useState(false);
+  const [pickStageId, setPickStageId] = React.useState<string | null>(null);
+  const [noteStageId, setNoteStageId] = React.useState<string | null>(null);
+  const [noteTitle, setNoteTitle] = React.useState("");
+  const [noteBody, setNoteBody] = React.useState("");
+  const [noteSaving, setNoteSaving] = React.useState(false);
 
   React.useEffect(() => {
     if (searchParams.get("new") === "1") {
+      setTrackModalStageId(null);
       setTrackModalOpen(true);
       router.replace("/board", { scroll: false });
     }
   }, [searchParams, router]);
-  const [activeDrag, setActiveDrag] = React.useState<Track | null>(null);
+  const [activeDrag, setActiveDrag] = React.useState<ActiveDrag | null>(null);
   const [overStageId, setOverStageId] = React.useState<string | null>(null);
 
   const allTags = React.useMemo(() => {
@@ -169,15 +211,26 @@ export function BoardView() {
     return map;
   }, [stages, filtered, boardSort]);
 
-  const offBoardTracks = React.useMemo(() => {
+  const notesByStage = React.useMemo(() => {
+    const map = new Map<string, BoardNote[]>();
+    for (const s of stages) map.set(s.id, []);
+    for (const n of notes) {
+      if (map.has(n.stage_id)) map.get(n.stage_id)!.push(n);
+    }
+    for (const [stageId, list] of Array.from(map.entries())) {
+      map.set(stageId, sortNotes(list));
+    }
+    return map;
+  }, [stages, notes]);
+
+  /** Tracks with no stage — only shown in the Existing track… picker. */
+  const unstagedTracks = React.useMemo(() => {
     const stageIds = new Set(stages.map((s) => s.id));
     return sortBoardTracks(
-      filtered.filter((t) => !t.stage_id || !stageIds.has(t.stage_id)),
-      boardSort
+      tracks.filter((t) => !t.stage_id || !stageIds.has(t.stage_id)),
+      "title"
     );
-  }, [filtered, stages, boardSort]);
-
-  const [overOffBoard, setOverOffBoard] = React.useState(false);
+  }, [tracks, stages]);
 
   function setSort(mode: BoardSort) {
     setBoardSort(mode);
@@ -188,63 +241,87 @@ export function BoardView() {
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
   );
 
+  function resolveOverStage(overId: string): string | null {
+    if (stages.some((s) => s.id === overId)) return overId;
+    const noteId = parseNoteDragId(overId);
+    if (noteId) {
+      return notes.find((n) => n.id === noteId)?.stage_id ?? null;
+    }
+    const overTrack = tracks.find((t) => t.id === overId);
+    return overTrack?.stage_id ?? null;
+  }
+
   function handleDragStart(event: DragStartEvent) {
-    const track = tracks.find((t) => t.id === event.active.id);
-    setActiveDrag(track ?? null);
+    const id = String(event.active.id);
+    const noteId = parseNoteDragId(id);
+    if (noteId) {
+      const note = notes.find((n) => n.id === noteId);
+      setActiveDrag(note ? { kind: "note", note } : null);
+      return;
+    }
+    const track = tracks.find((t) => t.id === id);
+    setActiveDrag(track ? { kind: "track", track } : null);
   }
 
   function handleDragOver(event: DragOverEvent) {
     const overId = event.over?.id;
     if (!overId) {
       setOverStageId(null);
-      setOverOffBoard(false);
       return;
     }
-    if (String(overId) === OFF_BOARD_DROPPABLE) {
-      setOverStageId(null);
-      setOverOffBoard(true);
-      return;
-    }
-    setOverOffBoard(false);
-    if (stages.some((s) => s.id === overId)) {
-      setOverStageId(String(overId));
-      return;
-    }
-    const overTrack = tracks.find((t) => t.id === overId);
-    setOverStageId(overTrack?.stage_id ?? null);
+    setOverStageId(resolveOverStage(String(overId)));
   }
 
   function handleDragEnd(event: DragEndEvent) {
+    const drag = activeDrag;
     setActiveDrag(null);
     setOverStageId(null);
-    setOverOffBoard(false);
-    const { active, over } = event;
-    if (!over) return;
+    const { over } = event;
+    if (!over || !drag) return;
 
-    const trackId = String(active.id);
-    const track = tracks.find((t) => t.id === trackId);
-    if (!track) return;
+    const overId = String(over.id);
 
-    if (String(over.id) === OFF_BOARD_DROPPABLE) {
-      if (track.stage_id) void removeFromBoard(track);
+    if (drag.kind === "note") {
+      const targetStageId = resolveOverStage(overId);
+      if (!targetStageId || targetStageId === drag.note.stage_id) return;
+      void moveNoteStage
+        .mutateAsync({
+          id: drag.note.id,
+          stageId: targetStageId,
+        })
+        .catch((err) => {
+          toast(
+            err instanceof Error ? err.message : "Couldn’t move that note."
+          );
+        });
+      return;
+    }
+
+    const track = drag.track;
+
+    // Dropping onto another note — move track to that note's stage.
+    const overNoteId = parseNoteDragId(overId);
+    if (overNoteId) {
+      const overNote = notes.find((n) => n.id === overNoteId);
+      const targetStageId = overNote?.stage_id ?? null;
+      if (!targetStageId || targetStageId === track.stage_id) return;
+      void changeStage(track.id, targetStageId, {
+        trackTitle: track.title,
+        fromStageId: track.stage_id,
+      });
       return;
     }
 
     let targetStageId: string | null = null;
-    if (stages.some((s) => s.id === over.id)) {
-      targetStageId = String(over.id);
+    if (stages.some((s) => s.id === overId)) {
+      targetStageId = overId;
     } else {
-      const overTrack = tracks.find((t) => t.id === over.id);
-      // Dropping onto an off-board card shouldn't assign a stage.
-      if (overTrack && !overTrack.stage_id) {
-        if (track.stage_id) void removeFromBoard(track);
-        return;
-      }
+      const overTrack = tracks.find((t) => t.id === overId);
       targetStageId = overTrack?.stage_id ?? null;
     }
 
     if (!targetStageId || targetStageId === track.stage_id) return;
-    void changeStage(trackId, targetStageId, {
+    void changeStage(track.id, targetStageId, {
       trackTitle: track.title,
       fromStageId: track.stage_id,
     });
@@ -253,11 +330,69 @@ export function BoardView() {
   async function removeFromBoard(track: Track) {
     try {
       await moveStage.mutateAsync({ id: track.id, stageId: null });
-      toast(`“${track.title}” is off the board — still in Tracks.`, "ok");
+      toast(
+        `“${track.title}” removed from the stage — still in Tracks.`,
+        "ok"
+      );
     } catch (err) {
       toast(
-        err instanceof Error ? err.message : "Couldn’t take that off the board."
+        err instanceof Error ? err.message : "Couldn’t remove that from the stage."
       );
+    }
+  }
+
+  function handleStageAdd(stageId: string, action: StageAddAction) {
+    if (action === "existing") {
+      setPickStageId(stageId);
+      return;
+    }
+    if (action === "new") {
+      setTrackModalStageId(stageId);
+      setTrackModalOpen(true);
+      return;
+    }
+    setNoteTitle("");
+    setNoteBody("");
+    setNoteStageId(stageId);
+  }
+
+  async function handlePickExisting(track: Track) {
+    if (!pickStageId) return;
+    const stageId = pickStageId;
+    setPickStageId(null);
+    try {
+      await changeStage(track.id, stageId, {
+        trackTitle: track.title,
+        fromStageId: track.stage_id,
+      });
+    } catch (err) {
+      toast(
+        err instanceof Error ? err.message : "Couldn’t add that to the stage."
+      );
+    }
+  }
+
+  async function handleCreateNote(e: React.FormEvent) {
+    e.preventDefault();
+    if (!noteStageId || !activeSpaceId) return;
+    const title = noteTitle.trim();
+    if (!title) {
+      toast("Give the note a title.");
+      return;
+    }
+    setNoteSaving(true);
+    try {
+      await createNote.mutateAsync({
+        stage_id: noteStageId,
+        title,
+        body: noteBody.trim() || null,
+      });
+      setNoteStageId(null);
+      toast("Note added.", "ok");
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Couldn’t add that note.");
+    } finally {
+      setNoteSaving(false);
     }
   }
 
@@ -268,19 +403,38 @@ export function BoardView() {
   const filtersActive =
     typeFilter !== "all" || tagFilter !== "all" || attentionFilter !== "all";
 
+  const onBoardCount = React.useMemo(() => {
+    let n = 0;
+    for (const t of filtered) {
+      if (t.stage_id && stages.some((s) => s.id === t.stage_id)) n += 1;
+    }
+    return n + notes.length;
+  }, [filtered, stages, notes.length]);
+
   // With only a couple of tracks on the board, small cards leave the columns
   // looking hollow. Give them more presence instead of stretching empty space.
-  const roomy = density === "comfortable" && filtered.length > 0 && filtered.length <= 4;
+  const roomy =
+    density === "comfortable" &&
+    filtered.length > 0 &&
+    filtered.length <= 4;
 
   const loading =
-    spacesLoading || stagesQuery.isLoading || tracksQuery.isLoading;
-  const emptyBoard = !loading && tracks.length === 0;
+    spacesLoading ||
+    stagesQuery.isLoading ||
+    tracksQuery.isLoading ||
+    notesQuery.isLoading;
+  const showColumns = !loading && stages.length > 0;
+
+  const pickStageName =
+    stages.find((s) => s.id === pickStageId)?.name ?? "this stage";
+  const noteStageName =
+    stages.find((s) => s.id === noteStageId)?.name ?? "this stage";
 
   return (
     <div className="flex h-full flex-col">
       <PageHeader
         title={activeSpace?.name ?? "Board"}
-        subtitle="Drag tracks across stages. Take one off the board without deleting it."
+        subtitle="Drag tracks and notes across stages. Remove clears the stage without deleting the track."
         actions={
           <>
             <HeaderMenu
@@ -433,7 +587,10 @@ export function BoardView() {
             </Button>
             <Button
               size="sm"
-              onClick={() => setTrackModalOpen(true)}
+              onClick={() => {
+                setTrackModalStageId(null);
+                setTrackModalOpen(true);
+              }}
               disabled={!activeSpaceId || stages.length === 0}
             >
               <Plus className="size-3.5" />
@@ -452,10 +609,13 @@ export function BoardView() {
             />
           ))}
         </div>
-      ) : emptyBoard ? (
+      ) : !showColumns ? (
         <EmptyBoard
           spaceName={activeSpace?.name ?? "this space"}
-          onAdd={() => setTrackModalOpen(true)}
+          onAdd={() => {
+            setTrackModalStageId(null);
+            setTrackModalOpen(true);
+          }}
         />
       ) : (
         <DndContext
@@ -467,7 +627,6 @@ export function BoardView() {
           onDragCancel={() => {
             setActiveDrag(null);
             setOverStageId(null);
-            setOverOffBoard(false);
           }}
         >
           {/* Columns share the available width instead of scrolling off-screen.
@@ -482,31 +641,57 @@ export function BoardView() {
                 stage={stage}
                 stages={stages}
                 tracks={tracksByStage.get(stage.id) ?? []}
+                notes={notesByStage.get(stage.id) ?? []}
                 isOver={overStageId === stage.id}
                 onOpenTrack={(t) => router.push(`/track/${t.id}`)}
                 onRemoveFromBoard={(t) => void removeFromBoard(t)}
+                onStageAdd={(action) => handleStageAdd(stage.id, action)}
+                onSaveNote={(note, patch) => {
+                  void updateNote
+                    .mutateAsync({ id: note.id, patch })
+                    .catch((err) => {
+                      toast(
+                        err instanceof Error
+                          ? err.message
+                          : "Couldn’t save that note."
+                      );
+                    });
+                }}
+                onDeleteNote={(note) => {
+                  void removeNote.mutateAsync(note.id).then(
+                    () => toast("Note deleted.", "ok"),
+                    (err) =>
+                      toast(
+                        err instanceof Error
+                          ? err.message
+                          : "Couldn’t delete that note."
+                      )
+                  );
+                }}
                 compact={density === "compact"}
                 roomy={roomy}
                 dragging={!!activeDrag}
-                allowCollapse={filtered.length > 0}
+                allowCollapse={onBoardCount > 0 || tracks.length > 0}
               />
             ))}
           </div>
-          <OffBoardTray
-            tracks={offBoardTracks}
-            isOver={overOffBoard}
-            dragging={!!activeDrag}
-            compact={density === "compact"}
-            onOpenTrack={(t) => router.push(`/track/${t.id}`)}
-          />
           <DragOverlay>
-            {activeDrag ? (
+            {activeDrag?.kind === "track" ? (
               <TrackCard
-                track={activeDrag}
+                track={activeDrag.track}
                 onOpen={() => {}}
                 compact={density === "compact"}
                 roomy={roomy}
                 isDragOverlay
+              />
+            ) : null}
+            {activeDrag?.kind === "note" ? (
+              <BoardNoteCard
+                note={activeDrag.note}
+                compact={density === "compact"}
+                isDragOverlay
+                onSave={() => {}}
+                onDelete={() => {}}
               />
             ) : null}
           </DragOverlay>
@@ -517,9 +702,13 @@ export function BoardView() {
         <>
           <TrackFormModal
             open={trackModalOpen}
-            onOpenChange={setTrackModalOpen}
+            onOpenChange={(open) => {
+              setTrackModalOpen(open);
+              if (!open) setTrackModalStageId(null);
+            }}
             spaceId={activeSpaceId}
             stages={stages}
+            defaultStageId={trackModalStageId}
             onSubmit={handleCreate}
           />
           <StageEditor
@@ -530,6 +719,111 @@ export function BoardView() {
           />
         </>
       ) : null}
+
+      <Dialog
+        open={!!pickStageId}
+        onOpenChange={(open) => {
+          if (!open) setPickStageId(null);
+        }}
+      >
+        <DialogContent
+          title={`Add to ${pickStageName}`}
+          description="Pick a track that doesn’t have a stage yet."
+          onClose={() => setPickStageId(null)}
+        >
+          {unstagedTracks.length === 0 ? (
+            <p className="text-sm text-text-lo">
+              No tracks without a stage — start a new track.
+            </p>
+          ) : (
+            <ul className="mt-1 max-h-64 space-y-1 overflow-y-auto">
+              {unstagedTracks.map((track) => (
+                <li key={track.id}>
+                  <button
+                    type="button"
+                    className="well w-full truncate px-3 py-2 text-left text-sm text-text-hi hover:border-ice/40 hover:text-ice"
+                    onClick={() => void handlePickExisting(track)}
+                  >
+                    {track.title}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="mt-4 flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setPickStageId(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                if (!pickStageId) return;
+                const stageId = pickStageId;
+                setPickStageId(null);
+                setTrackModalStageId(stageId);
+                setTrackModalOpen(true);
+              }}
+            >
+              <Plus className="size-3.5" />
+              New track
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!noteStageId}
+        onOpenChange={(open) => {
+          if (!open) setNoteStageId(null);
+        }}
+      >
+        <DialogContent
+          title={`Note in ${noteStageName}`}
+          description="A sticky reminder on the board — not a track."
+          onClose={() => setNoteStageId(null)}
+        >
+          <form onSubmit={(e) => void handleCreateNote(e)} className="mt-2 space-y-3">
+            <label className="block">
+              <span className="label-mono">Title</span>
+              <Input
+                className="mt-1.5"
+                value={noteTitle}
+                onChange={(e) => setNoteTitle(e.target.value)}
+                placeholder="e.g. Need stems from Alex"
+                autoFocus
+              />
+            </label>
+            <label className="block">
+              <span className="label-mono">Details (optional)</span>
+              <Textarea
+                className="mt-1.5"
+                value={noteBody}
+                onChange={(e) => setNoteBody(e.target.value)}
+                rows={3}
+                placeholder="Anything you want to remember here…"
+              />
+            </label>
+            <div className="flex justify-end gap-2 pt-1">
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={noteSaving}
+                onClick={() => setNoteStageId(null)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={noteSaving || !noteTitle.trim()}>
+                {noteSaving ? "Adding…" : "Add note"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {stageTransitionDialog}
     </div>
   );
@@ -544,7 +838,7 @@ function EmptyBoard({
   return (
     <EmptyShaderPanel
       title="Board is empty"
-      copy="Start a track and drag it through the stages."
+      copy="Start a track and drag it through the stages — or add a note from a stage’s +."
       action={
         <Button onClick={onAdd}>
           <Plus className="size-3.5" />
@@ -554,4 +848,3 @@ function EmptyBoard({
     />
   );
 }
-

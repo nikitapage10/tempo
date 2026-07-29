@@ -17,6 +17,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Plus, Trash2 } from "lucide-react";
+import { useActiveArtist } from "@/components/active-artist-provider";
 import {
   useActiveSpace,
   useSpaceMutations,
@@ -30,6 +31,7 @@ import { cn } from "@/lib/utils";
 export function SpacesManager() {
   const { spaces, activeSpaceId, setActiveSpaceId, isLoading } =
     useActiveSpace();
+  const { activeArtistId, activeArtist } = useActiveArtist();
   const { create, rename, remove, reorder, updateFocus } =
     useSpaceMutations();
   const [newName, setNewName] = React.useState("");
@@ -44,13 +46,14 @@ export function SpacesManager() {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    if (!newName.trim()) return;
+    if (!newName.trim() || !activeArtistId) return;
     setBusy(true);
     setError(null);
     try {
       const space = await create.mutateAsync({
         name: newName.trim(),
         sort: spaces.length,
+        artistId: activeArtistId,
         focus: newFocus,
       });
       setNewName("");
@@ -118,12 +121,13 @@ export function SpacesManager() {
   return (
     <section id="spaces" className="scroll-mt-8 rounded-card border border-line bg-bg-1 p-5">
       <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
-        Spaces
+        {activeArtist ? `Spaces — ${activeArtist.name}` : "Spaces"}
       </p>
       <p className="mt-2 text-sm text-text-lo">
         Workspaces like Originals or Edits, each with its own board stages —
         or a non-music space like Social Media, focused on tasks and
-        projects instead of a board.
+        projects instead of a board. These belong to the artist you have
+        selected; switch artists to manage theirs.
       </p>
 
       {isLoading ? (

@@ -23,6 +23,15 @@ type ReviewInfo = {
   allow_comments: boolean;
   allow_download: boolean;
   link_label: string | null;
+  /** Owning artist's resolved palette; absent on older cached responses. */
+  palette?: { ice: string; white: string; amber: string; gray: string };
+};
+
+const DEFAULT_PALETTE = {
+  ice: "#7FB4FF",
+  white: "#F2F0EB",
+  amber: "#FFB56B",
+  gray: "#8B8B96",
 };
 
 type GuestComment = {
@@ -137,6 +146,7 @@ function ReadyView({ token, info }: { token: string; info: ReviewInfo }) {
         <div className="mt-4">
           <GuestWaveform
             token={token}
+            palette={info.palette ?? DEFAULT_PALETTE}
             onTimeUpdate={setCurrentTime}
             onDurationChange={setDuration}
           />
@@ -170,10 +180,12 @@ function ReadyView({ token, info }: { token: string; info: ReviewInfo }) {
 
 function GuestWaveform({
   token,
+  palette,
   onTimeUpdate,
   onDurationChange,
 }: {
   token: string;
+  palette: { ice: string; white: string; amber: string; gray: string };
   onTimeUpdate: (t: number) => void;
   onDurationChange: (d: number) => void;
 }) {
@@ -192,9 +204,9 @@ function GuestWaveform({
 
     const ws = WaveSurfer.create({
       container: containerRef.current,
-      waveColor: "#8B8B96",
-      progressColor: "#7FB4FF",
-      cursorColor: "#FFB56B",
+      waveColor: palette.gray,
+      progressColor: palette.ice,
+      cursorColor: palette.amber,
       barWidth: 2,
       barGap: 1,
       barRadius: 1,

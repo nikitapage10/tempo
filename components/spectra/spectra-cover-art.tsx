@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useActiveArtistPalette } from "@/components/active-artist-provider";
 import { SignedImage } from "@/components/ui/signed-image";
 import {
   layoutSpectraCoverBars,
@@ -77,10 +78,13 @@ function SpectraPlaceholder({
   animate: boolean;
 }) {
   const seed = hashId(trackId) ^ hashId(title.toLowerCase());
+  // The artist's palette colours the slits, so a catalog of un-arted covers
+  // reads as one set. The atmospheric backdrop stays per-track for variety.
+  const hues = useActiveArtistPalette();
   const bars = React.useMemo(() => {
     const glyphs = titleToSpectraScore(title);
-    return layoutSpectraCoverBars(glyphs, seed) as SpectraBar[];
-  }, [title, seed]);
+    return layoutSpectraCoverBars(glyphs, seed, hues) as SpectraBar[];
+  }, [title, seed, hues]);
   const profile = React.useMemo(() => spectraFieldProfile(seed), [seed]);
   const backdrop = (seed >>> 3) % 6;
 

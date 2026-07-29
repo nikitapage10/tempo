@@ -29,18 +29,33 @@ function mix(
   ];
 }
 
-const ICE = hexToRgb("#7FB4FF");
-const WHITE = hexToRgb("#F2F0EB");
-const AMBER = hexToRgb("#FFB56B");
+const ICE = "#7FB4FF";
+const WHITE = "#F2F0EB";
+const AMBER = "#FFB56B";
 
-/** Progress 0 (Idea) → 1 (Released): ice → white → amber. */
-export function stageHueAt(progress: number): string {
+/**
+ * Progress 0 (Idea) → 1 (Released): ice → white → amber.
+ *
+ * `hues` lets the active artist's palette drive the ramp's endpoints; the
+ * shape of the ramp (cold → hot across the pipeline) is unchanged.
+ */
+export function stageHueAt(
+  progress: number,
+  hues: { ice: string; white: string; amber: string } = {
+    ice: ICE,
+    white: WHITE,
+    amber: AMBER,
+  }
+): string {
   const t = Math.max(0, Math.min(1, progress));
+  const ice = hexToRgb(hues.ice);
+  const white = hexToRgb(hues.white);
+  const amber = hexToRgb(hues.amber);
   if (t < 0.5) {
-    const [r, g, b] = mix(ICE, WHITE, t * 2);
+    const [r, g, b] = mix(ice, white, t * 2);
     return rgbToHex(r, g, b);
   }
-  const [r, g, b] = mix(WHITE, AMBER, (t - 0.5) * 2);
+  const [r, g, b] = mix(white, amber, (t - 0.5) * 2);
   return rgbToHex(r, g, b);
 }
 

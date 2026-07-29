@@ -4,9 +4,34 @@ export type Momentum = "active" | "simmering" | "stalled" | "parked";
 
 export type SpaceFocus = "music" | "tasks";
 
+/** Key into ARTIST_PALETTES (lib/artist-theme.ts). "spectra" is the default, unmodified look. */
+export type ArtistPaletteId = string;
+
+export type Artist = {
+  id: string;
+  user_id: string;
+  name: string;
+  logo_url: string | null;
+  banner_url: string | null;
+  banner_color: string | null;
+  palette_id: ArtistPaletteId;
+  sort: number;
+  created_at: string;
+};
+
+export type ArtistUpdate = Partial<{
+  name: string;
+  logo_url: string | null;
+  banner_url: string | null;
+  banner_color: string | null;
+  palette_id: ArtistPaletteId;
+  sort: number;
+}>;
+
 export type Space = {
   id: string;
   user_id: string;
+  artist_id: string;
   name: string;
   sort: number;
   accent_color: string | null;
@@ -91,6 +116,35 @@ export type TrackListPreset = {
   created_at: string;
   updated_at: string;
 };
+
+/** Board-only sticky note — not a track; never listed in Tracks / Today. */
+export type BoardNote = {
+  id: string;
+  user_id: string;
+  space_id: string;
+  stage_id: string;
+  title: string;
+  body: string | null;
+  sort: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type BoardNoteInsert = {
+  space_id: string;
+  stage_id: string;
+  title: string;
+  body?: string | null;
+  sort?: number;
+};
+
+export type BoardNoteUpdate = Partial<{
+  stage_id: string;
+  title: string;
+  body: string | null;
+  sort: number;
+  updated_at: string;
+}>;
 
 export type ChecklistItem = {
   id: string;

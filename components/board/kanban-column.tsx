@@ -1,7 +1,13 @@
 "use client";
 
 import { useDroppable } from "@dnd-kit/core";
-import type { Stage, Track } from "@/lib/types";
+import { useActiveArtistPalette } from "@/components/active-artist-provider";
+import type { BoardNote, Stage, Track } from "@/lib/types";
+import { BoardNoteCard } from "@/components/board/board-note-card";
+import {
+  StageAddMenu,
+  type StageAddAction,
+} from "@/components/board/stage-add-menu";
 import { TrackCard } from "@/components/tracks/track-card";
 import { LfWindow } from "@/components/lf-windows";
 import {
@@ -13,10 +19,17 @@ import { cn } from "@/lib/utils";
 type KanbanColumnProps = {
   stage: Stage;
   tracks: Track[];
+  notes: BoardNote[];
   stages: Stage[];
   isOver: boolean;
   onOpenTrack: (track: Track) => void;
   onRemoveFromBoard?: (track: Track) => void;
+  onStageAdd?: (action: StageAddAction) => void;
+  onSaveNote?: (
+    note: BoardNote,
+    patch: { title: string; body: string | null }
+  ) => void;
+  onDeleteNote?: (note: BoardNote) => void;
   compact?: boolean;
   /** Sparse board — render cards with more presence. */
   roomy?: boolean;
@@ -29,10 +42,14 @@ type KanbanColumnProps = {
 export function KanbanColumn({
   stage,
   tracks,
+  notes,
   stages,
   isOver,
   onOpenTrack,
   onRemoveFromBoard,
+  onStageAdd,
+  onSaveNote,
+  onDeleteNote,
   compact,
   roomy,
   dragging,
@@ -43,13 +60,16 @@ export function KanbanColumn({
     data: { stage },
   });
 
+  const hues = useActiveArtistPalette();
   const progress = stageProgressFromSort(stage.sort, stages);
-  const hue = stageHueAt(progress);
+  const hue = stageHueAt(progress, hues);
+
+  const itemCount = tracks.length + notes.length;
 
   // Empty stages give their width back to stages that actually hold work —
   // this is what keeps the whole pipeline on screen without horizontal scroll.
   const collapsed =
-    allowCollapse && tracks.length === 0 && !dragging && !isOver;
+    allowCollapse && itemCount === 0 && !dragging && !isOver;
 
   return (
     <section
@@ -65,8 +85,8 @@ export function KanbanColumn({
           : "lg:min-w-[164px] lg:shrink lg:grow lg:basis-[280px]",
         isOver && "border-ice/40 glow-ice"
       )}
-      aria-label={`${stage.name}, ${tracks.length} ${
-        tracks.length === 1 ? "track" : "tracks"
+      aria-label={`${stage.name}, ${itemCount} ${
+        itemCount === 1 ? "item" : "items"
       }`}
     >
       {/* Stage hue wash. Stages run ice → white → amber across the pipeline,
@@ -106,17 +126,23 @@ export function KanbanColumn({
         <>
           <header className="relative px-3.5 pt-3.5 pb-3">
             <div className="flex items-center gap-2">
-              <h2 className="truncate font-display text-sm font-semibold tracking-tight text-text-hi">
+              <h2 className="min-w-0 flex-1 truncate font-display text-sm font-semibold tracking-tight text-text-hi">
                 {stage.name}
               </h2>
               <span
                 className={cn(
                   "rounded-chip px-1.5 py-0.5 font-mono text-[10px] tabular-nums",
-                  tracks.length > 0 ? "bg-bg-3 text-text-hi" : "text-text-lo/50"
+                  itemCount > 0 ? "bg-bg-3 text-text-hi" : "text-text-lo/50"
                 )}
               >
-                {tracks.length}
+                {itemCount}
               </span>
+              {onStageAdd ? (
+                <StageAddMenu
+                  stageName={stage.name}
+                  onAction={onStageAdd}
+                />
+              ) : null}
             </div>
             {/* The divider *is* the design element now: a rounded lightfield
                 slit tinted by stage hue, inset by the header padding so it
@@ -139,7 +165,7 @@ export function KanbanColumn({
               isOver && "bg-ice/[0.03]"
             )}
           >
-            {tracks.length === 0 ? (
+            {itemCount === 0 ? (
               <div
                 className={cn(
                   "flex min-h-[112px] flex-1 items-center justify-center rounded-card border border-dashed px-3 text-center transition-colors duration-hover",
@@ -152,21 +178,32 @@ export function KanbanColumn({
                   {isOver ? (
                     <span className="text-ice">Drop to move here</span>
                   ) : (
-                    "Drop a track here"
+                    "Drop a track or note here"
                   )}
                 </p>
               </div>
             ) : (
-              tracks.map((track) => (
-                <TrackCard
-                  key={track.id}
-                  track={track}
-                  onOpen={onOpenTrack}
-                  compact={compact}
-                  roomy={roomy}
-                  onRemoveFromBoard={onRemoveFromBoard}
-                />
-              ))
+              <>
+                {notes.map((note) => (
+                  <BoardNoteCard
+                    key={note.id}
+                    note={note}
+                    compact={compact}
+                    onSave={(patch) => onSaveNote?.(note, patch)}
+                    onDelete={() => onDeleteNote?.(note)}
+                  />
+                ))}
+                {tracks.map((track) => (
+                  <TrackCard
+                    key={track.id}
+                    track={track}
+                    onOpen={onOpenTrack}
+                    compact={compact}
+                    roomy={roomy}
+                    onRemoveFromBoard={onRemoveFromBoard}
+                  />
+                ))}
+              </>
             )}
           </div>
         </>

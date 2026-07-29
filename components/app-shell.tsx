@@ -12,6 +12,7 @@ import {
   Plus,
 } from "lucide-react";
 import { AssistantRoot } from "@/components/assistant/assistant-root";
+import { ArtistSwitcher } from "@/components/artist-switcher";
 import { SpaceSwitcher } from "@/components/space-switcher";
 import { NotificationCenter } from "@/components/notification-center";
 import { EdgeStrip, IntroMoment } from "@/components/intro-moment";
@@ -104,7 +105,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <FlareLine className="mt-3" />
           </div>
 
-          <div className="px-3 pb-4">
+          <div className="flex flex-col gap-1.5 px-3 pb-4">
+            <ArtistSwitcher />
             <SpaceSwitcher />
           </div>
 

@@ -453,9 +453,15 @@ const WEIGHT_SCALE: Record<SpectraWeight, number> = {
   thick: 1.55,
 };
 
+/**
+ * `hues` lets the active artist's palette resolve the hue *names* to different
+ * hex without touching any of the title→score logic above — the motif is the
+ * same, the colour of the light isn't.
+ */
 export function layoutSpectraCoverBars(
   glyphs: SpectraGlyph[],
-  seed = 1
+  seed = 1,
+  hues: Record<SpectraHue, string> = SPECTRA_HUE_HEX
 ): SpectraBarLayout[] {
   if (glyphs.length === 0) return [];
 
@@ -518,7 +524,7 @@ export function layoutSpectraCoverBars(
       y: clamp(y, 2, 92),
       h: clamp(h, 12, 90),
       w: clamp(w, 0.75, 3.8),
-      color: SPECTRA_HUE_HEX[g.hue],
+      color: hues[g.hue],
       opacity: Math.min(0.97, opacity),
       delay: `${-phase}s`,
       duration: `${dur}s`,

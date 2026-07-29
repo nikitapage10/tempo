@@ -5,12 +5,12 @@ import {
   DEFAULT_STAGE_NAMES,
 } from "@/lib/constants";
 
-export async function fetchSpaces(): Promise<Space[]> {
+/** Omit `artistId` only where a cross-artist list is genuinely wanted. */
+export async function fetchSpaces(artistId?: string): Promise<Space[]> {
   const supabase = createClient();
-  const { data, error } = await supabase
-    .from("spaces")
-    .select("*")
-    .order("sort", { ascending: true });
+  let query = supabase.from("spaces").select("*");
+  if (artistId) query = query.eq("artist_id", artistId);
+  const { data, error } = await query.order("sort", { ascending: true });
   if (error) throw error;
   return data ?? [];
 }
@@ -18,12 +18,13 @@ export async function fetchSpaces(): Promise<Space[]> {
 export async function createSpace(
   name: string,
   sort: number,
+  artistId: string,
   focus: SpaceFocus = "music"
 ): Promise<Space> {
   const supabase = createClient();
   const { data: space, error } = await supabase
     .from("spaces")
-    .insert({ name, sort, focus })
+    .insert({ name, sort, focus, artist_id: artistId })
     .select()
     .single();
   if (error) throw error;
@@ -85,14 +86,14 @@ export async function reorderSpaces(
   if (failed?.error) throw failed.error;
 }
 
-/** Seed Originals + Edits & Remixes with default stages when the user has none. */
-export async function ensureDefaultSpaces(): Promise<Space[]> {
-  const existing = await fetchSpaces();
+/** Seed Originals + Edits & Remixes with default stages when this artist has none. */
+export async function ensureDefaultSpaces(artistId: string): Promise<Space[]> {
+  const existing = await fetchSpaces(artistId);
   if (existing.length > 0) return existing;
 
   const created: Space[] = [];
   for (let i = 0; i < DEFAULT_SPACE_NAMES.length; i++) {
-    const space = await createSpace(DEFAULT_SPACE_NAMES[i], i);
+    const space = await createSpace(DEFAULT_SPACE_NAMES[i], i, artistId);
     created.push(space);
   }
   return created;

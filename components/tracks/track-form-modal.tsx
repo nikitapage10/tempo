@@ -73,6 +73,8 @@ type TrackFormModalProps = {
   onOpenChange: (open: boolean) => void;
   spaceId: string;
   stages: Stage[];
+  /** Prefill stage when creating (e.g. from a Board column +). */
+  defaultStageId?: string | null;
   track?: Track | null;
   onSubmit: (values: TrackInsert & { id?: string }) => Promise<void>;
   onDelete?: () => Promise<void>;
@@ -83,12 +85,16 @@ export function TrackFormModal({
   onOpenChange,
   spaceId,
   stages,
+  defaultStageId: defaultStageIdProp,
   track,
   onSubmit,
   onDelete,
 }: TrackFormModalProps) {
   const isEdit = !!track;
-  const defaultStageId = stages[0]?.id ?? "";
+  const defaultStageId =
+    defaultStageIdProp && stages.some((s) => s.id === defaultStageIdProp)
+      ? defaultStageIdProp
+      : (stages[0]?.id ?? "");
   const [values, setValues] = React.useState<TrackFormValues>(() =>
     track ? fromTrack(track) : emptyValues(defaultStageId)
   );
@@ -99,11 +105,11 @@ export function TrackFormModal({
 
   React.useEffect(() => {
     if (!open) return;
-    setValues(track ? fromTrack(track) : emptyValues(stages[0]?.id ?? ""));
+    setValues(track ? fromTrack(track) : emptyValues(defaultStageId));
     setMoreOpen(false);
     setConfirmDelete(false);
     setError(null);
-  }, [open, track, stages]);
+  }, [open, track, stages, defaultStageId]);
 
   function setField<K extends keyof TrackFormValues>(
     key: K,

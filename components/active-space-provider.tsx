@@ -11,6 +11,7 @@ import {
   updateSpaceFocus,
 } from "@/lib/api/spaces";
 import { ensureDefaultTemplates } from "@/lib/api/templates";
+import { useActiveArtist } from "@/components/active-artist-provider";
 import { ACTIVE_SPACE_KEY } from "@/lib/constants";
 import type { Space, SpaceFocus } from "@/lib/types";
 
@@ -45,9 +46,9 @@ function writeStoredSpaceId(id: string) {
   }
 }
 
-async function bootstrapUserDefaults(): Promise<Space[]> {
+async function bootstrapSpacesForArtist(artistId: string): Promise<Space[]> {
   const [spaces] = await Promise.all([
-    ensureDefaultSpaces(),
+    ensureDefaultSpaces(artistId),
     ensureDefaultTemplates(),
   ]);
   return spaces;
@@ -62,16 +63,19 @@ export function ActiveSpaceProvider({
     null
   );
   const [hydrated, setHydrated] = React.useState(false);
+  const { activeArtistId, isLoading: artistLoading } = useActiveArtist();
 
   React.useEffect(() => {
     setActiveSpaceIdState(readStoredSpaceId());
     setHydrated(true);
   }, []);
 
+  // Keyed by artist so switching artists refetches that artist's spaces; the
+  // "still valid" effect below then re-resolves the active space for us.
   const spacesQuery = useQuery({
-    queryKey: ["spaces"],
-    queryFn: bootstrapUserDefaults,
-    enabled: hydrated,
+    queryKey: ["spaces", activeArtistId],
+    queryFn: () => bootstrapSpacesForArtist(activeArtistId!),
+    enabled: hydrated && !artistLoading && !!activeArtistId,
   });
 
   const spaces = React.useMemo(
@@ -103,7 +107,7 @@ export function ActiveSpaceProvider({
     activeSpace,
     activeSpaceId: activeSpace?.id ?? null,
     setActiveSpaceId,
-    isLoading: !hydrated || spacesQuery.isLoading,
+    isLoading: !hydrated || artistLoading || spacesQuery.isLoading,
     isError: spacesQuery.isError,
     error: spacesQuery.error as Error | null,
   };
@@ -128,16 +132,20 @@ export function useSpaceMutations() {
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["spaces"] });
 
+  // artistId stays explicit rather than read from context here, so a future UI
+  // can create a space for a non-active artist.
   const create = useMutation({
     mutationFn: ({
       name,
       sort,
+      artistId,
       focus,
     }: {
       name: string;
       sort: number;
+      artistId: string;
       focus?: SpaceFocus;
-    }) => createSpace(name, sort, focus),
+    }) => createSpace(name, sort, artistId, focus),
     onSuccess: invalidate,
   });
 

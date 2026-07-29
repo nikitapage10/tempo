@@ -88,6 +88,22 @@ Named Tracks-page order snapshots per space.
 
 RLS: `user_id = auth.uid()`.
 
+#### `board_notes` (migration 020)
+Sticky notes that live only on the Board (always assigned to a stage). Not tracks — never listed in Tracks / Today.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid PK | |
+| user_id | uuid → auth.users CASCADE | |
+| space_id | uuid → spaces CASCADE | |
+| stage_id | uuid → stages CASCADE | NOT NULL — notes always on a column |
+| title | text | 1–120 chars |
+| body | text null | optional details |
+| sort | int | default 0 |
+| created_at, updated_at | timestamptz | |
+
+Index: `(space_id, stage_id, sort)`. RLS: `user_id = auth.uid()`.
+
 #### `versions`
 | Column | Type | Notes |
 |--------|------|-------|

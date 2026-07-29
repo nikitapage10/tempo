@@ -3,7 +3,7 @@
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import * as React from "react";
-import { AlertTriangle, Clock, X } from "lucide-react";
+import { AlertTriangle, Clock } from "lucide-react";
 import { LfWindow } from "@/components/lf-windows";
 import { SpectraCoverArt } from "@/components/spectra/spectra-cover-art";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
@@ -23,7 +23,7 @@ type TrackCardProps = {
   compact?: boolean;
   /** Sparse board — larger artwork and title so cards carry the column. */
   roomy?: boolean;
-  /** Take the track off the board without deleting it. */
+  /** Clear the track’s stage without deleting it. */
   onRemoveFromBoard?: (track: Track) => void;
 };
 
@@ -38,7 +38,7 @@ export function TrackCard({
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
       id: track.id,
-      data: { track },
+      data: { track, kind: "track" as const },
       disabled: isDragOverlay,
     });
   const [hovered, setHovered] = React.useState(false);
@@ -82,6 +82,17 @@ export function TrackCard({
   const dragHandleProps = isDragOverlay
     ? {}
     : { ...listeners, ...attributes };
+
+  const showOffBoard =
+    !!onRemoveFromBoard && !isDragOverlay && !!track.stage_id;
+
+  function handleOffBoard(e: React.MouseEvent) {
+    e.stopPropagation();
+    onRemoveFromBoard?.(track);
+  }
+
+  const removeClass =
+    "text-[10px] text-text-lo/25 transition-colors duration-hover hover:text-text-lo/55 focus-visible:text-text-lo/55 focus-visible:outline-none";
 
   return (
     <article
@@ -129,7 +140,7 @@ export function TrackCard({
             >
               {track.title}
             </button>
-            <span className="flex shrink-0 items-center gap-1">
+            <span className="flex shrink-0 items-center gap-1.5">
               {topSignal ? (
                 <span title={topSignal.label} aria-label={topSignal.label}>
                   <topSignal.Icon className="size-2.5 text-warn" aria-hidden />
@@ -143,19 +154,16 @@ export function TrackCard({
                 title={track.momentum}
                 aria-label={`Momentum: ${track.momentum}`}
               />
-              {onRemoveFromBoard && !isDragOverlay && track.stage_id ? (
+              {showOffBoard ? (
                 <button
                   type="button"
-                  title="Take off board"
-                  aria-label={`Take ${track.title} off the board`}
-                  className="rounded p-0.5 text-text-lo/50 hover:bg-bg-3 hover:text-text-hi"
+                  title="Remove from stage"
+                  aria-label={`Remove ${track.title} from its stage`}
+                  className={cn("shrink-0", removeClass)}
                   onPointerDown={(e) => e.stopPropagation()}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onRemoveFromBoard(track);
-                  }}
+                  onClick={handleOffBoard}
                 >
-                  <X className="size-3" />
+                  Remove
                 </button>
               ) : null}
             </span>
@@ -234,21 +242,6 @@ export function TrackCard({
                       title={track.momentum}
                       aria-label={`Momentum: ${track.momentum}`}
                     />
-                    {onRemoveFromBoard && !isDragOverlay && track.stage_id ? (
-                      <button
-                        type="button"
-                        title="Take off board"
-                        aria-label={`Take ${track.title} off the board`}
-                        className="rounded p-0.5 text-text-lo/50 hover:bg-bg-3 hover:text-text-hi"
-                        onPointerDown={(e) => e.stopPropagation()}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onRemoveFromBoard(track);
-                        }}
-                      >
-                        <X className="size-3.5" />
-                      </button>
-                    ) : null}
                   </span>
                 </div>
 
@@ -292,6 +285,21 @@ export function TrackCard({
                 ) : null}
               </div>
             </div>
+
+            {showOffBoard ? (
+              <div className="mt-2 flex justify-end">
+                <button
+                  type="button"
+                  title="Remove from stage"
+                  aria-label={`Remove ${track.title} from its stage`}
+                  className={removeClass}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={handleOffBoard}
+                >
+                  Remove
+                </button>
+              </div>
+            ) : null}
           </div>
         )}
       </SpotlightCard>

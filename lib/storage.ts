@@ -44,6 +44,16 @@ export function buildImportSourcePath(params: {
   return `imports/${importId}/${sourceId}/${sanitizeFilename(filename)}`;
 }
 
+/** Artist logo / banner images — same private bucket, own prefix. */
+export function buildArtistAssetPath(params: {
+  artistId: string;
+  kind: "logo" | "banner";
+  filename: string;
+}): string {
+  const { artistId, kind, filename } = params;
+  return `artists/${artistId}/${kind}/${sanitizeFilename(filename)}`;
+}
+
 export function sanitizeFilename(name: string): string {
   const trimmed = name.trim() || "file";
   const lastDot = trimmed.lastIndexOf(".");

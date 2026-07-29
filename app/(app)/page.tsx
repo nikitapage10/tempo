@@ -15,7 +15,9 @@ import { SpectraCoverArt } from "@/components/spectra/spectra-cover-art";
 import { ActiveSessionBanner } from "@/components/track/active-session-banner";
 import { StartFocusDialog } from "@/components/track/start-focus-dialog";
 import { TrackFormModal } from "@/components/tracks/track-form-modal";
+import { useActiveArtist } from "@/components/active-artist-provider";
 import { useActiveSpace } from "@/components/active-space-provider";
+import { ArtistBanner } from "@/components/artists/artist-banner";
 import { useStages } from "@/hooks/use-stages";
 import { useWeeklyElapsed } from "@/hooks/use-sessions";
 import { useTaskMutations, useTasks } from "@/hooks/use-tasks";
@@ -53,6 +55,7 @@ export default function TodayPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { activeSpaceId, activeSpace } = useActiveSpace();
+  const { activeArtist } = useActiveArtist();
   const tasksFocused = activeSpace?.focus === "tasks";
   const tracksQuery = useTracks(activeSpaceId);
   const stagesQuery = useStages(activeSpaceId);
@@ -143,6 +146,16 @@ export default function TodayPage() {
           Scrim clears toward the right so the lightfield is actually visible. */}
       <LfWindow className="relative overflow-hidden rounded-panel border border-line shadow-e3">
         <div className="scrim-reveal absolute inset-0" aria-hidden />
+        {/* Artist banner sits above the scrim (so it reads) but fades out to
+            the right, leaving the lightfield's reveal window intact. Renders
+            nothing when the artist has no banner set. */}
+        {activeArtist ? (
+          <ArtistBanner
+            artist={activeArtist}
+            fadeRight
+            className="absolute inset-0"
+          />
+        ) : null}
         <div className="relative flex flex-col gap-6 px-6 py-7 sm:px-8 sm:py-9">
           <div>
             <h1 className="font-display text-3xl font-semibold tracking-tight text-text-hi sm:text-[40px] sm:leading-[1.05]">

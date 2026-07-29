@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { resolveArtistHues } from "@/lib/artist-theme";
 import {
   GUEST_LINK_UNAVAILABLE_MESSAGE,
   noStoreHeaders,
@@ -24,6 +25,28 @@ export async function GET(
       { error: GUEST_LINK_UNAVAILABLE_MESSAGE },
       { status: 404, headers: noStoreHeaders() }
     );
+  }
+
+  // The owning artist's palette, so a shared bounce still looks like their
+  // TEMPO. Only the resolved hex ships — no artist name, id, or other field.
+  let hues = resolveArtistHues(null);
+  try {
+    const admin = createAdminClient();
+    const { data: space } = await admin
+      .from("spaces")
+      .select("artist_id")
+      .eq("id", ctx.track.space_id)
+      .maybeSingle();
+    if (space?.artist_id) {
+      const { data: artist } = await admin
+        .from("artists")
+        .select("palette_id")
+        .eq("id", space.artist_id)
+        .maybeSingle();
+      hues = resolveArtistHues(artist?.palette_id ?? null);
+    }
+  } catch {
+    /* default Spectra hues */
   }
 
   let artworkUrl: string | null = null;
@@ -57,6 +80,7 @@ export async function GET(
       allow_comments: ctx.link.allow_comments,
       allow_download: ctx.link.allow_download,
       link_label: ctx.link.label,
+      palette: hues,
     },
     { headers: noStoreHeaders() }
   );

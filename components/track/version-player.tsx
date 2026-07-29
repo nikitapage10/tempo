@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import WaveSurfer from "wavesurfer.js";
+import { useActiveArtistPalette } from "@/components/active-artist-provider";
 import { MessageSquarePlus, Pause, Play } from "lucide-react";
 import { formatDuration } from "@/lib/format";
 import { playbackCoordinator } from "@/lib/playback-coordinator";
@@ -58,6 +59,7 @@ export const VersionPlayer = React.forwardRef<VersionPlayerHandle, VersionPlayer
     const [duration, setDuration] = React.useState(0);
     const [loadError, setLoadError] = React.useState<string | null>(null);
     const { setDuration: persistDuration } = useVersionMutations(trackId);
+    const hues = useActiveArtistPalette();
 
     const selected =
       versions.find((v) => v.id === selectedId) ??
@@ -103,9 +105,9 @@ export const VersionPlayer = React.forwardRef<VersionPlayerHandle, VersionPlayer
 
       const ws = WaveSurfer.create({
         container: containerRef.current,
-        waveColor: "#8B8B96",
-        progressColor: "#7FB4FF",
-        cursorColor: "#FFB56B",
+        waveColor: hues.gray,
+        progressColor: hues.ice,
+        cursorColor: hues.amber,
         barWidth: 2,
         barGap: 1,
         barRadius: 1,
@@ -120,8 +122,8 @@ export const VersionPlayer = React.forwardRef<VersionPlayerHandle, VersionPlayer
         const ctx = canvas.getContext("2d");
         if (ctx) {
           const grad = ctx.createLinearGradient(0, 0, 800, 0);
-          grad.addColorStop(0, "#7FB4FF");
-          grad.addColorStop(1, "#FFB56B");
+          grad.addColorStop(0, hues.ice);
+          grad.addColorStop(1, hues.amber);
           ws.setOptions({ progressColor: grad as unknown as string });
         }
       } catch {
@@ -191,7 +193,7 @@ export const VersionPlayer = React.forwardRef<VersionPlayerHandle, VersionPlayer
         wsRef.current = null;
       };
       // eslint-disable-next-line react-hooks/exhaustive-deps -- reload only when version changes
-    }, [selected?.id, selected?.file_url]);
+    }, [selected?.id, selected?.file_url, hues]);
 
     if (!versions.length) {
       return (
@@ -240,8 +242,7 @@ export const VersionPlayer = React.forwardRef<VersionPlayerHandle, VersionPlayer
               {
                 // Progress tint: ice→amber via mask overlay isn’t native;
                 // use CSS custom property on progress wave if present.
-                ["--wave-progress" as string]:
-                  "linear-gradient(90deg, #7FB4FF, #FFB56B)",
+                ["--wave-progress" as string]: `linear-gradient(90deg, ${hues.ice}, ${hues.amber})`,
               } as React.CSSProperties
             }
           />

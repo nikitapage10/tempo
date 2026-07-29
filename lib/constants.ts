@@ -57,6 +57,10 @@ export const TASK_STATUSES: { value: TaskStatus; label: string }[] = [
   { value: "done", label: "Done" },
 ];
 
+export const DEFAULT_ARTIST_NAME = "My Artist";
+
+export const ACTIVE_ARTIST_KEY = "tempo.activeArtistId";
+
 export const DEFAULT_SPACE_NAMES = ["Originals", "Edits & Remixes"] as const;
 
 export const SPACE_FOCUS_OPTIONS: { value: SpaceFocus; label: string; description: string }[] = [

@@ -2,10 +2,28 @@
 
 Plain-English history of what changed in TEMPO, newest first.
 
+## 2026-07-29
+
+- Added (v0.37.0): TEMPO now works for more than one artist name. Add an **artist** in Settings — each one keeps its own spaces, tracks and projects, and you switch between them from the left rail. Everything you already have moves onto one artist automatically, so nothing changes until you add a second.
+  - Each artist gets its own look: pick one of six **colour palettes**, upload a **logo**, and set a **banner** (your own image, or one of six colours). The banner shows behind the greeting on Today and on the artist's card in Settings.
+  - Your colours carry through the whole app — buttons, the board's stage colours, the covers TEMPO draws for tracks without artwork, and the waveform. A bounce you share by guest link shows that artist's colours too.
+  - Whatever you pick, it still looks like TEMPO: the palettes are a fixed set chosen to stay readable on the dark UI, green still means good and red still means blocked for every artist, and the TEMPO mark itself doesn't change. Leave everything untouched and the app looks exactly as it did.
+  - Under the hood: **run migration `021` in Supabase before this deploys** — the app won't load spaces without it.
+
 ## 2026-07-28
 
+- Changed (v0.36.7): **Remove** on Board cards is quieter again (still always visible, a bit clearer on hover).
+- Changed (v0.36.6): **Remove** on Board cards is muted but always visible (clearer on hover).
+- Changed (v0.36.5): **Remove** on Board cards is a bit easier to see on hover (still hidden until you hover the card).
+- Changed (v0.36.4): **Remove** on Board cards stays invisible until you hover the card, then only faintly.
+- Changed (v0.36.3): **Remove** on Board cards is barely visible until you hover it.
+- Changed (v0.36.2): tracks with no stage stay hidden on the Board — use a stage’s **+ → Existing track…** to place them. The card control is a dark **Remove** (clears the stage, doesn’t delete).
+- Changed (v0.36.1): Board copy talks about **stages** instead of “off/on board.”
+- Added (v0.36.0): each Board stage has a **+** to add an existing track with no stage, start a new track in that stage, or pin a **sticky note** (board-only reminder — not a track). Notes drag between stages; delete removes them.
+  - Under the hood: **run migration `020` in Supabase** so sticky notes can save.
+- Fixed (v0.35.2): after you clear a track’s stage, you can place it again from a stage’s **+ → Existing track…** (or pick a stage on the track page).
 - Fixed (v0.35.1): saving a named track order now tells you clearly if migration `018` still needs running in Supabase (instead of a vague failure).
-- Added (v0.35.0): you can take a track **off the board** without deleting it — use the × on a card, or drag it into the Off board tray. It’s still in Tracks; drag it onto a stage (or pick a stage on the track page) to put it back.
+- Added (v0.35.0): you can clear a track’s stage without deleting it — it stays in Tracks; place it again from a stage’s **+** or the track page.
 - Added (v0.34.0): Tracks has the same Comfortable / Compact density toggle as the Board — Compact is a thin text row (title, momentum, stage), no cover or extra meta.
 - Added (v0.33.0): spaces can now be **tasks-focused** instead of music-focused — pick "Tasks & projects" when creating a space, or flip it later in Settings. A tasks-focused space drops Board and Tracks from the nav and Today, and shows open tasks and project progress instead. Good for something like running social media out of TEMPO alongside your music.
   - Under the hood: **run migration `019` in Supabase.** Tasks are now scoped to their space — existing tasks with no track or project link (and projects with no space) won't show up until you re-add them inside a space.
