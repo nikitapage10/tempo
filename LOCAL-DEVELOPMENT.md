@@ -12,29 +12,43 @@ You do **not** need Docker or a local Postgres for normal work.
 
 ---
 
-## One-time setup
+## One-time setup (Windows)
 
-### 1. Clone the repo
+Your project folder:
 
-```bash
-git clone <your-github-repo-url> tempo
-cd tempo
+`C:\Users\nikit\Documents\TEMPO`
+
+### 1. Open it in Cursor
+
+**File → Open Folder** → pick `C:\Users\nikit\Documents\TEMPO`.
+
+Or in PowerShell / Command Prompt:
+
+```bat
+cd C:\Users\nikit\Documents\TEMPO
 ```
 
-Open that folder in Cursor (File → Open Folder).
+If that folder is empty or not a git clone yet:
+
+```bat
+cd C:\Users\nikit\Documents
+git clone https://github.com/nikitapage10/tempo.git TEMPO
+cd TEMPO
+```
 
 ### 2. Install Node.js
 
-Need Node **18+** (LTS from https://nodejs.org is fine). Check:
+Need Node **18+** (LTS from https://nodejs.org). After installing, open a **new** terminal and check:
 
-```bash
+```bat
 node -v
 npm -v
 ```
 
-### 3. Run the setup script
+### 3. Run setup
 
-```bash
+```bat
+cd C:\Users\nikit\Documents\TEMPO
 npm run setup
 ```
 
@@ -46,7 +60,7 @@ That will:
 
 ### 4. Fill in `.env.local`
 
-Open `.env.local` and paste values from **Supabase → Project Settings → API**:
+In Cursor’s file sidebar, open `.env.local` and paste values from **Supabase → Project Settings → API**:
 
 | Variable | Required? | Notes |
 |---|---|---|
@@ -70,13 +84,15 @@ If you’re pointing at the **existing production** project, skip this — the s
 
 ### 6. Start the app
 
-```bash
+```bat
 npm run dev
 ```
 
 Open http://localhost:3000. Sign in at `/login` (same accounts as that Supabase project).
 
-**Mac shortcut:** double-click `Launch TEMPO.command` in the project folder (installs deps if needed, starts the server, opens the browser).
+**Windows shortcut:** double-click `Launch TEMPO.bat` in `C:\Users\nikit\Documents\TEMPO` (installs deps if needed, starts the server, opens the browser). Keep that window open; Ctrl+C stops it.
+
+**Mac shortcut:** double-click `Launch TEMPO.command`.
 
 ---
 
@@ -87,10 +103,10 @@ Open http://localhost:3000. Sign in at `/login` (same accounts as that Supabase 
 3. `npm run dev` → test at localhost:3000
 4. When happy:
 
-```bash
+```bat
 git add -A
 git commit -m "Short description of the change"
-git push -u origin <your-branch>
+git push -u origin your-branch-name
 ```
 
 5. Open / merge a PR into `main` (or push to `main` if that’s your workflow).

@@ -1,12 +1,12 @@
 {
   "name": "tempo",
-  "version": "0.38.0",
+  "version": "0.38.1",
   "private": true,
   "scripts": {
     "postinstall": "node scripts/copy-ffmpeg.js",
     "predev": "node scripts/copy-ffmpeg.js",
     "prebuild": "node scripts/copy-ffmpeg.js",
-    "setup": "bash scripts/setup-local.sh",
+    "setup": "node scripts/setup-local.js",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
