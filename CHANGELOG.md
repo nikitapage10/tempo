@@ -4,6 +4,7 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-29
 
+- Fixed (v0.38.2): if your `Documents\TEMPO` folder isn’t connected to GitHub yet, the local-development guide now shows how to rename it, clone the real repo, and keep going (fixes “not a git repository” / missing setup script).
 - Changed (v0.38.1): local setup works on Windows too — `npm run setup` no longer needs Bash, and you can double-click **Launch TEMPO.bat** in the project folder (e.g. `Documents\TEMPO`) to start the app. The local-development guide walks through that Windows path.
 - Added (v0.38.0): clearer path to run TEMPO on your own computer for testing — one setup command, a short local-development guide (clone → fill keys → run locally → push → auto-deploy), and a pointer from the start-here doc if you already have the GitHub repo.
 - Added (v0.37.0): TEMPO now works for more than one artist name. Add an **artist** in Settings — each one keeps its own spaces, tracks and projects, and you switch between them from the left rail. Everything you already have moves onto one artist automatically, so nothing changes until you add a second.

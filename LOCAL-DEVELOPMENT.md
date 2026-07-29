@@ -14,26 +14,49 @@ You do **not** need Docker or a local Postgres for normal work.
 
 ## One-time setup (Windows)
 
-Your project folder:
+Your project folder should be a **clone of the GitHub repo**:
 
 `C:\Users\nikit\Documents\TEMPO`
+
+### 0. If you already have a TEMPO folder that isn’t Git
+
+PowerShell errors like `not a git repository` or `Missing script: "setup"` mean that folder is an old/copied kit, not the GitHub repo. Replace it:
+
+```powershell
+cd C:\Users\nikit\Documents
+Rename-Item TEMPO TEMPO-old-backup
+git clone https://github.com/nikitapage10/tempo.git TEMPO
+cd TEMPO
+git checkout cursor/local-dev-setup-7300
+```
+
+(That branch has `npm run setup` and the Windows launcher. After the PR merges to `main`, you can use `git checkout main` instead.)
+
+If anything important was only in the old folder (e.g. an existing `.env.local`), copy it back:
+
+```powershell
+Copy-Item C:\Users\nikit\Documents\TEMPO-old-backup\.env.local C:\Users\nikit\Documents\TEMPO\.env.local -ErrorAction SilentlyContinue
+```
+
+Then continue from step 2 below.
 
 ### 1. Open it in Cursor
 
 **File → Open Folder** → pick `C:\Users\nikit\Documents\TEMPO`.
 
-Or in PowerShell / Command Prompt:
+Or in PowerShell:
 
-```bat
+```powershell
 cd C:\Users\nikit\Documents\TEMPO
 ```
 
-If that folder is empty or not a git clone yet:
+Fresh clone (only if `TEMPO` does **not** already exist):
 
-```bat
+```powershell
 cd C:\Users\nikit\Documents
 git clone https://github.com/nikitapage10/tempo.git TEMPO
 cd TEMPO
+git checkout cursor/local-dev-setup-7300
 ```
 
 ### 2. Install Node.js
