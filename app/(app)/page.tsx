@@ -18,6 +18,7 @@ import { TrackFormModal } from "@/components/tracks/track-form-modal";
 import { useActiveArtist } from "@/components/active-artist-provider";
 import { useActiveSpace } from "@/components/active-space-provider";
 import { ArtistBanner } from "@/components/artists/artist-banner";
+import { SignedImage } from "@/components/ui/signed-image";
 import { useStages } from "@/hooks/use-stages";
 import { useWeeklyElapsed } from "@/hooks/use-sessions";
 import { useTaskMutations, useTasks } from "@/hooks/use-tasks";
@@ -157,11 +158,20 @@ export default function TodayPage() {
           />
         ) : null}
         <div className="relative flex flex-col gap-6 px-6 py-7 sm:px-8 sm:py-9">
-          <div>
-            <h1 className="font-display text-3xl font-semibold tracking-tight text-text-hi sm:text-[40px] sm:leading-[1.05]">
-              {greetingForHour(now.getHours())}
-            </h1>
-            <p className="mt-1.5 text-sm text-text-lo">{dateLabel}</p>
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <h1 className="font-display text-3xl font-semibold tracking-tight text-text-hi sm:text-[40px] sm:leading-[1.05]">
+                {greetingForHour(now.getHours())}
+              </h1>
+              <p className="mt-1.5 text-sm text-text-lo">{dateLabel}</p>
+            </div>
+            {activeArtist?.logo_url ? (
+              <SignedImage
+                path={activeArtist.logo_url}
+                alt={activeArtist.name}
+                className="size-16 shrink-0 rounded-card object-contain sm:size-20"
+              />
+            ) : null}
           </div>
 
           {tasksFocused ? (

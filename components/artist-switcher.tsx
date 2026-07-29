@@ -30,10 +30,8 @@ export function ArtistSwitcher() {
     );
   }
 
-  // One artist and nothing customised yet — don't spend rail space on a
-  // switcher there's nothing to switch to. Settings still manages artists.
-  if (artists.length <= 1 && !activeArtist?.logo_url) return null;
-
+  // Name always stays in the rail (logo lives on Today). Dropdown still
+  // opens with one artist so Manage / New artist are a click away.
   return (
     <div className="relative" ref={ref}>
       <button
@@ -43,15 +41,6 @@ export function ArtistSwitcher() {
         aria-expanded={open}
         aria-haspopup="listbox"
       >
-        {activeArtist ? (
-          <ArtistMark
-            logoUrl={activeArtist.logo_url}
-            paletteId={activeArtist.palette_id}
-            name={activeArtist.name}
-            size={16}
-            className="size-4"
-          />
-        ) : null}
         <span className="truncate font-display text-[13px] tracking-wide">
           {activeArtist?.name ?? "No artist"}
         </span>
