@@ -19,8 +19,8 @@ const TITLE_CAP = 60;
 const ATTENTION_CAP = 5;
 const TASK_CAP = 6;
 const PROJECT_CAP = 6;
-/** Enough catalog rows that a named track is usually findable by ref. */
-const CATALOG_CAP = 40;
+const RECENT_CAP = 12;
+const INDEX_CAP = 40;
 
 function clip(s: string, n = TITLE_CAP): string {
   const t = s.trim();
@@ -77,7 +77,7 @@ export async function buildWorkspaceSnapshot(
     supabase
       .from("tracks")
       .select(
-        "id, title, space_id, stage_id, momentum, deadline, bpm, musical_key, genre, next_action, next_action_due, blocked_reason, waiting_on, stage_entered_at, updated_at",
+        "id, title, space_id, stage_id, momentum, deadline, bpm, musical_key, genre, type, next_action, next_action_due, blocked_reason, waiting_on, stage_entered_at, updated_at",
       )
       .eq("user_id", userId)
       .order("updated_at", { ascending: false })
@@ -220,7 +220,8 @@ export async function buildWorkspaceSnapshot(
       if (track.next_action?.trim()) {
         bits.push(`next action: "${clip(track.next_action, 50)}"`);
       }
-      if (track.bpm != null) bits.push(`${track.bpm} bpm`);
+      if (typeof track.bpm === "number") bits.push(`${track.bpm} bpm`);
+      if (track.musical_key) bits.push(String(track.musical_key));
       lines.push(bits.join(" — "));
     }
   }
@@ -296,31 +297,47 @@ export async function buildWorkspaceSnapshot(
     }
   }
 
-  // --- Catalog tracks (refs for editing by name) ---
-  const attentionIds = new Set(topAttention.map((a) => a.track.id));
-  const catalog = tracks
-    .filter((tr) => !attentionIds.has(tr.id))
-    .slice(0, CATALOG_CAP);
+  // --- Recently touched (skip ones already listed as k1.. under attention) ---
+  const listedIds = new Set(topAttention.map((a) => a.track.id));
+  const recent = tracks
+    .filter((tr) => !listedIds.has(tr.id))
+    .slice(0, RECENT_CAP);
 
+  // Continue k numbering after attention refs
   let kNext = topAttention.length;
-  if (catalog.length) {
-    lines.push("", "## Catalog tracks");
-    for (const track of catalog) {
+  if (recent.length) {
+    lines.push("", "## Recently touched tracks");
+    for (const track of recent) {
       kNext += 1;
       const ref = `k${kNext}`;
+      listedIds.add(track.id);
       refs[ref] = { type: "track", id: track.id, spaceId: track.space_id };
       const stage = track.stage_id
         ? stageNameById.get(track.stage_id) ?? "?"
         : "?";
       const meta = [
-        stage,
-        track.momentum,
-        track.bpm != null ? `${track.bpm} bpm` : null,
-        track.musical_key ? clip(String(track.musical_key), 12) : null,
-      ]
-        .filter(Boolean)
-        .join(" — ");
-      lines.push(`[${ref}] "${clip(track.title)}" — ${meta}`);
+        `[${ref}] "${clip(track.title)}" — ${stage} — ${track.momentum}`,
+      ];
+      if (typeof track.bpm === "number") meta.push(`${track.bpm} bpm`);
+      if (track.musical_key) meta.push(String(track.musical_key));
+      lines.push(meta.join(" — "));
+    }
+  }
+
+  // Compact index so named tracks outside the shortlists still get a ref.
+  const remainder = tracks
+    .filter((tr) => !listedIds.has(tr.id))
+    .slice(0, Math.max(0, INDEX_CAP - listedIds.size));
+  if (remainder.length) {
+    lines.push("", "## More tracks");
+    for (const track of remainder) {
+      kNext += 1;
+      const ref = `k${kNext}`;
+      refs[ref] = { type: "track", id: track.id, spaceId: track.space_id };
+      const bits = [`[${ref}] "${clip(track.title)}"`];
+      if (typeof track.bpm === "number") bits.push(`${track.bpm} bpm`);
+      if (track.musical_key) bits.push(String(track.musical_key));
+      lines.push(bits.join(" — "));
     }
   }
 

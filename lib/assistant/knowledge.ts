@@ -57,8 +57,8 @@ HOW TO DO COMMON THINGS
 ASSISTANT CAN PROPOSE (artist confirms before anything is written)
 create_task, complete_task, set_task_due_date, create_track, create_project,
 move_track_stage, set_track_momentum, set_track_deadline, set_track_next_action,
-set_track_bpm, set_track_key, set_track_genre, set_track_title, navigate.
-Never delete.
+set_track_bpm, set_track_key, set_track_genre, set_track_title, set_track_type,
+set_track_blocked, set_track_waiting, navigate. Never delete.
 
 WHAT TEMPO DOES NOT DO
 - Not a full team workspace — per-track collaborators only.

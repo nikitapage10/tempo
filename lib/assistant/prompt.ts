@@ -77,10 +77,17 @@ Allowed actionKind values:
 - set_track_deadline — actionRef track (k…); actionDueDate required.
 - set_track_next_action — actionRef track (k…); actionTitle is the next move
   text; optional actionDueDate for when it's due.
-- set_track_bpm — actionRef track (k…); actionBpm required (number, e.g. 174).
-- set_track_key — actionRef track (k…); actionTitle is the musical key (e.g. "Am").
-- set_track_genre — actionRef track (k…); actionTitle is the genre.
-- set_track_title — actionRef track (k…); actionTitle is the new track title.
+- set_track_bpm — actionRef track (k…); actionBpm required (integer 40–300).
+  Use this when they ask to change a song's BPM.
+- set_track_key — actionRef track (k…); actionMusicalKey required (e.g. "Am").
+- set_track_genre — actionRef track (k…); actionTitle is the genre text.
+- set_track_title — actionRef track (k…); actionTitle is the new title.
+- set_track_type — actionRef track (k…); actionTrackType required
+  (original/remix/edit/collab/bootleg).
+- set_track_blocked — actionRef track (k…); actionTitle is the blocked reason,
+  or "clear" to remove it.
+- set_track_waiting — actionRef track (k…); actionTitle is who/what they're
+  waiting on, or "clear" to remove it.
 - navigate — actionHref an in-app path, or actionRef to open a track/project.
 
 Never propose delete, revoke, discard, or anything that permanently removes data.

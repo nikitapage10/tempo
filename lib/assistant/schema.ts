@@ -2,6 +2,7 @@ import {
   MOMENTUM_OPTIONS,
   PROJECT_TYPES,
   TASK_CATEGORIES,
+  TRACK_TYPES,
 } from "@/lib/constants";
 import type {
   ActionKind,
@@ -26,6 +27,8 @@ export const ASSISTANT_REPLY_SCHEMA: Record<string, unknown> = {
     "actionMomentum",
     "actionProjectType",
     "actionBpm",
+    "actionMusicalKey",
+    "actionTrackType",
     "actionHref",
     "suggestions",
     "needsDeeperThinking",
@@ -52,6 +55,9 @@ export const ASSISTANT_REPLY_SCHEMA: Record<string, unknown> = {
         "set_track_key",
         "set_track_genre",
         "set_track_title",
+        "set_track_type",
+        "set_track_blocked",
+        "set_track_waiting",
         "navigate",
       ],
     },
@@ -67,7 +73,18 @@ export const ASSISTANT_REPLY_SCHEMA: Record<string, unknown> = {
     actionDueDate: { type: ["string", "null"] },
     actionMomentum: { type: ["string", "null"] },
     actionProjectType: { type: ["string", "null"] },
-    actionBpm: { type: ["number", "null"] },
+    actionBpm: {
+      type: ["number", "null"],
+      description: "Integer BPM for set_track_bpm (40–300).",
+    },
+    actionMusicalKey: {
+      type: ["string", "null"],
+      description: "Musical key for set_track_key, e.g. Am, F# minor.",
+    },
+    actionTrackType: {
+      type: ["string", "null"],
+      description: "Track type for set_track_type.",
+    },
     actionHref: { type: ["string", "null"] },
     suggestions: {
       type: "array",
@@ -92,12 +109,30 @@ const ACTION_KINDS = new Set<ActionKind>([
   "set_track_key",
   "set_track_genre",
   "set_track_title",
+  "set_track_type",
+  "set_track_blocked",
+  "set_track_waiting",
   "navigate",
+]);
+
+const TRACK_EDIT_KINDS = new Set<ActionKind>([
+  "set_track_momentum",
+  "set_track_deadline",
+  "set_track_next_action",
+  "set_track_bpm",
+  "set_track_key",
+  "set_track_genre",
+  "set_track_title",
+  "set_track_type",
+  "set_track_blocked",
+  "set_track_waiting",
+  "move_track_stage",
 ]);
 
 const CATEGORIES = new Set(TASK_CATEGORIES.map((c) => c.value));
 const MOMENTA = new Set(MOMENTUM_OPTIONS.map((m) => m.value));
 const PROJECT_TYPE_SET = new Set(PROJECT_TYPES.map((p) => p.value));
+const TRACK_TYPE_SET = new Set(TRACK_TYPES.map((t) => t.value));
 
 const HREF_RE =
   /^\/($|board(\/|$)|tracks(\/|$)|track\/|projects(\/|$)|tasks(\/|$)|import(\/|$)|settings(\/|$))/;
@@ -105,8 +140,6 @@ const HREF_RE =
 const MAX_REPLY = 700;
 const MAX_LABEL = 40;
 const MAX_YEARS_OUT = 5;
-const MIN_BPM = 40;
-const MAX_BPM = 300;
 
 function asString(v: unknown): string | null {
   if (typeof v !== "string") return null;
@@ -128,7 +161,7 @@ function validIsoDate(s: string | null): string | null {
 function validBpm(v: unknown): number | null {
   if (typeof v !== "number" || !Number.isFinite(v)) return null;
   const n = Math.round(v);
-  if (n < MIN_BPM || n > MAX_BPM) return null;
+  if (n < 40 || n > 300) return null;
   return n;
 }
 
@@ -180,26 +213,17 @@ export function validateAssistantOutput(
   const momentum = asString(obj.actionMomentum);
   const projectType = asString(obj.actionProjectType);
   const bpm = validBpm(obj.actionBpm);
+  const musicalKey = asString(obj.actionMusicalKey);
+  const trackType = asString(obj.actionTrackType);
   const href = asString(obj.actionHref);
 
   const drop = () =>
     ({ reply, action: null, suggestions, needsDeeperThinking }) as const;
 
-  const trackKinds: ActionKind[] = [
-    "set_track_momentum",
-    "set_track_deadline",
-    "set_track_next_action",
-    "move_track_stage",
-    "set_track_bpm",
-    "set_track_key",
-    "set_track_genre",
-    "set_track_title",
-  ];
-
   if (
     (kind === "complete_task" ||
       kind === "set_task_due_date" ||
-      trackKinds.includes(kind)) &&
+      TRACK_EDIT_KINDS.has(kind)) &&
     (!ref || !refs[ref])
   ) {
     return drop();
@@ -212,7 +236,7 @@ export function validateAssistantOutput(
     return drop();
   }
 
-  if (trackKinds.includes(kind) && refs[ref!]?.type !== "track") {
+  if (TRACK_EDIT_KINDS.has(kind) && refs[ref!]?.type !== "track") {
     return drop();
   }
 
@@ -236,12 +260,29 @@ export function validateAssistantOutput(
     return drop();
   }
 
-  if (
-    (kind === "set_track_key" ||
-      kind === "set_track_genre" ||
-      kind === "set_track_title") &&
-    !title
-  ) {
+  if (kind === "set_track_key" && !musicalKey) {
+    return drop();
+  }
+
+  if (kind === "set_track_genre" && !title) {
+    // genre text rides in actionTitle
+    return drop();
+  }
+
+  if (kind === "set_track_title" && !title) {
+    return drop();
+  }
+
+  if (kind === "set_track_type" && (!trackType || !TRACK_TYPE_SET.has(trackType as never))) {
+    return drop();
+  }
+
+  if (kind === "set_track_blocked" && !title) {
+    // blocked_reason in actionTitle; empty string not allowed — use "clear" via a clear phrase
+    return drop();
+  }
+
+  if (kind === "set_track_waiting" && !title) {
     return drop();
   }
 
@@ -301,6 +342,8 @@ export function validateAssistantOutput(
     momentum,
     projectType: kind === "create_project" ? projectType || "general" : null,
     bpm: kind === "set_track_bpm" ? bpm : null,
+    musicalKey: kind === "set_track_key" ? musicalKey : null,
+    trackType: kind === "set_track_type" ? trackType : null,
     href:
       kind === "navigate"
         ? href

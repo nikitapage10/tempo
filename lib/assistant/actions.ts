@@ -44,11 +44,25 @@ const ALLOWED = new Set<ProposedAction["kind"]>([
   "set_track_key",
   "set_track_genre",
   "set_track_title",
+  "set_track_type",
+  "set_track_blocked",
+  "set_track_waiting",
   "navigate",
 ]);
 
 export function isAllowedAction(kind: string): kind is ProposedAction["kind"] {
   return ALLOWED.has(kind as ProposedAction["kind"]);
+}
+
+function requireTrack(
+  action: ProposedAction,
+  ctx: ActionContext,
+): { id: string } {
+  const entry = action.ref ? ctx.refs[action.ref] : null;
+  if (!entry || entry.type !== "track") {
+    throw new Error("Couldn't find that track.");
+  }
+  return entry;
 }
 
 export async function executeProposedAction(
@@ -127,18 +141,16 @@ export async function executeProposedAction(
     }
 
     case "move_track_stage": {
-      const track = action.ref ? ctx.refs[action.ref] : null;
+      const track = requireTrack(action, ctx);
       const stage = action.stageRef ? ctx.refs[action.stageRef] : null;
-      if (!track || track.type !== "track") {
-        throw new Error("Couldn't find that track.");
-      }
       if (!stage || stage.type !== "stage") {
         throw new Error("Couldn't find that stage.");
       }
+      const trackEntry = ctx.refs[action.ref!];
       if (
-        track.spaceId &&
+        trackEntry?.spaceId &&
         stage.spaceId &&
-        track.spaceId !== stage.spaceId
+        trackEntry.spaceId !== stage.spaceId
       ) {
         throw new Error("That stage isn't in the same space as the track.");
       }
@@ -150,12 +162,9 @@ export async function executeProposedAction(
     }
 
     case "set_track_momentum": {
-      const entry = action.ref ? ctx.refs[action.ref] : null;
-      if (!entry || entry.type !== "track") {
-        throw new Error("Couldn't find that track.");
-      }
+      const track = requireTrack(action, ctx);
       if (!action.momentum) throw new Error("Missing momentum.");
-      await updateTrack(entry.id, {
+      await updateTrack(track.id, {
         momentum: action.momentum as Momentum,
       });
       ctx.onWrote?.();
@@ -163,23 +172,17 @@ export async function executeProposedAction(
     }
 
     case "set_track_deadline": {
-      const entry = action.ref ? ctx.refs[action.ref] : null;
-      if (!entry || entry.type !== "track") {
-        throw new Error("Couldn't find that track.");
-      }
+      const track = requireTrack(action, ctx);
       if (!action.dueDate) throw new Error("Missing deadline.");
-      await updateTrack(entry.id, { deadline: action.dueDate });
+      await updateTrack(track.id, { deadline: action.dueDate });
       ctx.onWrote?.();
       return { doneLabel: "Deadline set." };
     }
 
     case "set_track_next_action": {
-      const entry = action.ref ? ctx.refs[action.ref] : null;
-      if (!entry || entry.type !== "track") {
-        throw new Error("Couldn't find that track.");
-      }
+      const track = requireTrack(action, ctx);
       if (!action.title) throw new Error("Missing next action.");
-      await updateTrack(entry.id, {
+      await updateTrack(track.id, {
         next_action: action.title,
         next_action_due: action.dueDate,
       });
@@ -188,47 +191,67 @@ export async function executeProposedAction(
     }
 
     case "set_track_bpm": {
-      const entry = action.ref ? ctx.refs[action.ref] : null;
-      if (!entry || entry.type !== "track") {
-        throw new Error("Couldn't find that track.");
-      }
+      const track = requireTrack(action, ctx);
       if (action.bpm == null) throw new Error("Missing BPM.");
-      await updateTrack(entry.id, { bpm: action.bpm });
+      await updateTrack(track.id, { bpm: action.bpm });
       ctx.onWrote?.();
       return { doneLabel: `BPM set to ${action.bpm}.` };
     }
 
     case "set_track_key": {
-      const entry = action.ref ? ctx.refs[action.ref] : null;
-      if (!entry || entry.type !== "track") {
-        throw new Error("Couldn't find that track.");
-      }
-      if (!action.title) throw new Error("Missing key.");
-      await updateTrack(entry.id, { musical_key: action.title });
+      const track = requireTrack(action, ctx);
+      if (!action.musicalKey) throw new Error("Missing key.");
+      await updateTrack(track.id, { musical_key: action.musicalKey });
       ctx.onWrote?.();
-      return { doneLabel: `Key set to ${action.title}.` };
+      return { doneLabel: `Key set to ${action.musicalKey}.` };
     }
 
     case "set_track_genre": {
-      const entry = action.ref ? ctx.refs[action.ref] : null;
-      if (!entry || entry.type !== "track") {
-        throw new Error("Couldn't find that track.");
-      }
+      const track = requireTrack(action, ctx);
       if (!action.title) throw new Error("Missing genre.");
-      await updateTrack(entry.id, { genre: action.title });
+      await updateTrack(track.id, { genre: action.title });
       ctx.onWrote?.();
-      return { doneLabel: `Genre set to ${action.title}.` };
+      return { doneLabel: "Genre set." };
     }
 
     case "set_track_title": {
-      const entry = action.ref ? ctx.refs[action.ref] : null;
-      if (!entry || entry.type !== "track") {
-        throw new Error("Couldn't find that track.");
-      }
+      const track = requireTrack(action, ctx);
       if (!action.title) throw new Error("Missing title.");
-      await updateTrack(entry.id, { title: action.title });
+      await updateTrack(track.id, { title: action.title });
       ctx.onWrote?.();
       return { doneLabel: "Title updated." };
+    }
+
+    case "set_track_type": {
+      const track = requireTrack(action, ctx);
+      if (!action.trackType) throw new Error("Missing type.");
+      await updateTrack(track.id, {
+        type: action.trackType as TrackType,
+      });
+      ctx.onWrote?.();
+      return { doneLabel: `Type set to ${action.trackType}.` };
+    }
+
+    case "set_track_blocked": {
+      const track = requireTrack(action, ctx);
+      if (!action.title) throw new Error("Missing blocked reason.");
+      const cleared = /^(clear|none|n\/a|-)$/i.test(action.title.trim());
+      await updateTrack(track.id, {
+        blocked_reason: cleared ? null : action.title,
+      });
+      ctx.onWrote?.();
+      return { doneLabel: cleared ? "Blocker cleared." : "Blocker set." };
+    }
+
+    case "set_track_waiting": {
+      const track = requireTrack(action, ctx);
+      if (!action.title) throw new Error("Missing waiting-on.");
+      const cleared = /^(clear|none|n\/a|-)$/i.test(action.title.trim());
+      await updateTrack(track.id, {
+        waiting_on: cleared ? null : action.title,
+      });
+      ctx.onWrote?.();
+      return { doneLabel: cleared ? "Waiting cleared." : "Waiting set." };
     }
 
     case "navigate": {

@@ -24,6 +24,9 @@ export type ActionKind =
   | "set_track_key"
   | "set_track_genre"
   | "set_track_title"
+  | "set_track_type"
+  | "set_track_blocked"
+  | "set_track_waiting"
   | "navigate";
 
 export type ProposedAction = {
@@ -38,8 +41,12 @@ export type ProposedAction = {
   dueDate: string | null;
   momentum: string | null;
   projectType: string | null;
-  /** BPM for set_track_bpm (40–300). */
+  /** BPM integer for set_track_bpm. */
   bpm: number | null;
+  /** Musical key for set_track_key. */
+  musicalKey: string | null;
+  /** Track type enum for set_track_type. */
+  trackType: string | null;
   href: string | null;
 };
 
