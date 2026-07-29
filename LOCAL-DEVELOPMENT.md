@@ -1,0 +1,126 @@
+# Local development — run TEMPO on your machine
+
+Use this when the GitHub repo already exists and you want to **test changes locally**, then push, then deploy. For a brand-new build from the kit, see `START-HERE.md` instead.
+
+## What “local” means here
+
+- The **app** (Next.js) runs on your computer at http://localhost:3000.
+- **Data** (auth, tracks, audio files) still lives in **Supabase** — same pattern as production.
+- Prefer a **separate Supabase project** named something like `tempo-dev` for day-to-day testing so you never risk production music data. Point production Vercel at the live project only.
+
+You do **not** need Docker or a local Postgres for normal work.
+
+---
+
+## One-time setup
+
+### 1. Clone the repo
+
+```bash
+git clone <your-github-repo-url> tempo
+cd tempo
+```
+
+Open that folder in Cursor (File → Open Folder).
+
+### 2. Install Node.js
+
+Need Node **18+** (LTS from https://nodejs.org is fine). Check:
+
+```bash
+node -v
+npm -v
+```
+
+### 3. Run the setup script
+
+```bash
+npm run setup
+```
+
+That will:
+
+1. Copy `.env.local.example` → `.env.local` if you don’t have one yet
+2. Install npm dependencies
+3. Tell you which env values are still blank
+
+### 4. Fill in `.env.local`
+
+Open `.env.local` and paste values from **Supabase → Project Settings → API**:
+
+| Variable | Required? | Notes |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Yes | Project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | `anon` `public` key |
+| `SUPABASE_SERVICE_ROLE_KEY` | For guest review / invites | `service_role` secret — server only |
+| `INVITE_CODE` | To open `/register` | Shared code you invent |
+| `OPENAI_API_KEY` | For Import Studio / AI | Optional until you use those features |
+
+Never commit `.env.local`. Never paste these keys into chat or the repo.
+
+### 5. Database (first time on a *new* Supabase project only)
+
+If this Supabase project is empty:
+
+1. SQL Editor → paste and run `schema.sql`
+2. Storage → New bucket → name `audio` → leave **private**
+3. Run every file in `/migrations` in order (`001` … `021`), or use `_run_all_001_to_011.sql` then run `012`–`021` one by one
+
+If you’re pointing at the **existing production** project, skip this — the schema is already there. Be careful: local writes hit real data.
+
+### 6. Start the app
+
+```bash
+npm run dev
+```
+
+Open http://localhost:3000. Sign in at `/login` (same accounts as that Supabase project).
+
+**Mac shortcut:** double-click `Launch TEMPO.command` in the project folder (installs deps if needed, starts the server, opens the browser).
+
+---
+
+## Daily loop
+
+1. Pull latest: `git pull origin main`
+2. If `package.json` changed: `npm install`
+3. `npm run dev` → test at localhost:3000
+4. When happy:
+
+```bash
+git add -A
+git commit -m "Short description of the change"
+git push -u origin <your-branch>
+```
+
+5. Open / merge a PR into `main` (or push to `main` if that’s your workflow).
+6. **Vercel** auto-deploys `main` to https://tempo-ten-sigma.vercel.app (~1–2 min).
+7. Other branches get preview URLs — use those for risky changes.
+
+Confirm the version under Settings (left rail) matches the CHANGELOG entry you shipped.
+
+---
+
+## Useful commands
+
+| Command | What it does |
+|---|---|
+| `npm run setup` | First-time (or re-) local setup |
+| `npm run dev` | Dev server at localhost:3000 |
+| `npm run build` | Production build (catch TypeScript / Next errors) |
+| `npm run lint` | ESLint |
+| `npm start` | Serve a production build locally (after `build`) |
+
+---
+
+## Deploy checklist
+
+Before relying on a production deploy:
+
+1. Vercel → Project → Settings → Environment Variables has the same keys as `.env.local` (at least URL, anon, service role; plus `INVITE_CODE` / `OPENAI_API_KEY` if you use those features).
+2. Any new numbered file under `/migrations` has been run once in the **production** Supabase SQL editor.
+3. Smoke-test https://tempo-ten-sigma.vercel.app/login after deploy.
+
+Rollback: Vercel → Deployments → previous good deploy → **Promote to Production**.
+
+More detail: `DEPLOYMENT.md`.

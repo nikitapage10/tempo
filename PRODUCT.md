@@ -74,6 +74,6 @@ Every space has a **focus**, set when you create it and changeable anytime in Se
 
 ## How it’s hosted
 
-The live app is at **https://tempo-ten-sigma.vercel.app** (sign-in at `/login`). Pushes to the main branch deploy there automatically. For local work on a Mac, double-click **Launch TEMPO.command** in the project folder — it starts a local server and opens the app in your browser (keep that Terminal window open; Ctrl+C stops it). Local development uses your `.env.local` keys; anything that ships uses the production address for absolute links, not localhost.
+The live app is at **https://tempo-ten-sigma.vercel.app** (sign-in at `/login`). Pushes to the main branch deploy there automatically. To run TEMPO on your own machine for testing: open the project, run the local setup command once (`npm run setup`), put your Supabase keys in the private env file it creates, then start the app (`npm run dev`) and open http://localhost:3000. On a Mac you can also double-click **Launch TEMPO.command** — it starts a local server and opens the browser (keep that Terminal window open; Ctrl+C stops it). Step-by-step details live in the local-development guide in the repo. Local work uses your private keys; anything that ships uses the production address for absolute links, not localhost.
 
 The floating assistant’s product reference lives in the repo’s assistant knowledge file — update that when this document’s feature set changes so the assistant stays accurate.

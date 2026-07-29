@@ -49,6 +49,7 @@ inside `lib/storage.ts` (e.g. Cloudflare R2) — nothing else changes.
 
 ## Routine
 1. Change in Cursor → test at localhost:3000 (`npm run dev`).
+   First-time machine setup: see `LOCAL-DEVELOPMENT.md` (`npm run setup`).
 2. "Commit and push to main" in Cursor chat.
 3. Vercel deploys automatically. Check https://tempo-ten-sigma.vercel.app.
 4. Broke something? Promote the previous deployment, then fix calmly.

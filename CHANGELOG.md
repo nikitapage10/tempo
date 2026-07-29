@@ -4,6 +4,7 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-29
 
+- Added (v0.38.0): clearer path to run TEMPO on your own computer for testing — one setup command, a short local-development guide (clone → fill keys → run locally → push → auto-deploy), and a pointer from the start-here doc if you already have the GitHub repo.
 - Added (v0.37.0): TEMPO now works for more than one artist name. Add an **artist** in Settings — each one keeps its own spaces, tracks and projects, and you switch between them from the left rail. Everything you already have moves onto one artist automatically, so nothing changes until you add a second.
   - Each artist gets its own look: pick one of six **colour palettes**, upload a **logo**, and set a **banner** (your own image, or one of six colours). The banner shows behind the greeting on Today and on the artist's card in Settings.
   - Your colours carry through the whole app — buttons, the board's stage colours, the covers TEMPO draws for tracks without artwork, and the waveform. A bounce you share by guest link shows that artist's colours too.

@@ -2,6 +2,9 @@
 
 Follow these steps in order. No coding knowledge needed for setup — Cursor does the coding.
 
+**Already have the GitHub repo and just want to run it on your computer?**
+Skip this greenfield guide — open **`LOCAL-DEVELOPMENT.md`** instead (clone → `npm run setup` → fill `.env.local` → `npm run dev` → push → Vercel deploys).
+
 ---
 
 ## Part 1: One-time setup (~30 minutes)
