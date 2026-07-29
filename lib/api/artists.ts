@@ -10,7 +10,13 @@ export async function fetchArtists(): Promise<Artist[]> {
     .select("*")
     .order("sort", { ascending: true });
   if (error) throw error;
-  return data ?? [];
+  return (data ?? []).map((row) => ({
+    ...row,
+    emblem_url: row.emblem_url ?? null,
+    ice_color: row.ice_color ?? null,
+    amber_color: row.amber_color ?? null,
+    banner_color_end: row.banner_color_end ?? null,
+  }));
 }
 
 export async function createArtist(name: string, sort: number): Promise<Artist> {
@@ -38,10 +44,6 @@ export async function updateArtist(id: string, patch: ArtistUpdate): Promise<Art
 
 export async function renameArtist(id: string, name: string): Promise<Artist> {
   return updateArtist(id, { name });
-}
-
-export async function updateArtistPalette(id: string, palette_id: string): Promise<Artist> {
-  return updateArtist(id, { palette_id });
 }
 
 /** Counts used for the destructive-delete confirmation (spaces/tracks that go with the artist). */
@@ -86,7 +88,7 @@ export async function reorderArtists(
 
 async function uploadArtistImage(
   artistId: string,
-  kind: "logo" | "banner",
+  kind: "logo" | "emblem" | "banner",
   file: File
 ): Promise<string> {
   const path = buildArtistAssetPath({ artistId, kind, filename: file.name });
@@ -99,11 +101,20 @@ export async function uploadArtistLogo(artist: Artist, file: File): Promise<Arti
   const path = await uploadArtistImage(artist.id, "logo", file);
   const updated = await updateArtist(artist.id, { logo_url: path });
   if (artist.logo_url && artist.logo_url !== path) {
-    try {
-      await deleteFile(artist.logo_url);
-    } catch {
-      /* best-effort */
-    }
+    void deleteFile(artist.logo_url).catch(() => {});
+  }
+  return updated;
+}
+
+/** Square identity mark used in the rail list and Settings chip. */
+export async function uploadArtistEmblem(
+  artist: Artist,
+  file: File
+): Promise<Artist> {
+  const path = await uploadArtistImage(artist.id, "emblem", file);
+  const updated = await updateArtist(artist.id, { emblem_url: path });
+  if (artist.emblem_url && artist.emblem_url !== path) {
+    void deleteFile(artist.emblem_url).catch(() => {});
   }
   return updated;
 }
@@ -114,44 +125,63 @@ export async function uploadArtistBanner(artist: Artist, file: File): Promise<Ar
   const updated = await updateArtist(artist.id, {
     banner_url: path,
     banner_color: null,
+    banner_color_end: null,
   });
   if (artist.banner_url && artist.banner_url !== path) {
-    try {
-      await deleteFile(artist.banner_url);
-    } catch {
-      /* best-effort */
-    }
+    void deleteFile(artist.banner_url).catch(() => {});
   }
   return updated;
 }
 
-/** Sets a flat color banner; clears any image banner. */
+/** Sets a flat color banner (optional second stop = gradient); clears any image. */
 export async function setArtistBannerColor(
   artist: Artist,
-  color: string | null
+  color: string | null,
+  colorEnd: string | null = null
 ): Promise<Artist> {
   const updated = await updateArtist(artist.id, {
     banner_color: color,
+    banner_color_end: color ? colorEnd : null,
     banner_url: null,
   });
   if (artist.banner_url) {
-    try {
-      await deleteFile(artist.banner_url);
-    } catch {
-      /* best-effort */
-    }
+    void deleteFile(artist.banner_url).catch(() => {});
   }
   return updated;
+}
+
+/** Free Cool / Warm accent overrides. Pass nulls to clear back to the palette. */
+export async function setArtistCustomAccent(
+  artist: Artist,
+  colors: { ice: string | null; amber: string | null }
+): Promise<Artist> {
+  return updateArtist(artist.id, {
+    ice_color: colors.ice,
+    amber_color: colors.amber,
+  });
+}
+
+/** Pick a curated palette and clear any free Cool/Warm overrides. */
+export async function updateArtistPalette(id: string, palette_id: string): Promise<Artist> {
+  return updateArtist(id, {
+    palette_id,
+    ice_color: null,
+    amber_color: null,
+  });
 }
 
 export async function clearArtistLogo(artist: Artist): Promise<Artist> {
   const updated = await updateArtist(artist.id, { logo_url: null });
   if (artist.logo_url) {
-    try {
-      await deleteFile(artist.logo_url);
-    } catch {
-      /* best-effort */
-    }
+    void deleteFile(artist.logo_url).catch(() => {});
+  }
+  return updated;
+}
+
+export async function clearArtistEmblem(artist: Artist): Promise<Artist> {
+  const updated = await updateArtist(artist.id, { emblem_url: null });
+  if (artist.emblem_url) {
+    void deleteFile(artist.emblem_url).catch(() => {});
   }
   return updated;
 }

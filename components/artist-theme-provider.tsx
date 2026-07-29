@@ -2,10 +2,12 @@
 
 import * as React from "react";
 import { useActiveArtist } from "@/components/active-artist-provider";
-import { artistThemeCssVars } from "@/lib/artist-theme";
+import { artistThemeCssVars, resolveArtistHues } from "@/lib/artist-theme";
+import { setPaletteFromHues } from "@/lib/lightfield";
 
 /**
- * Applies the active artist's palette as inline custom properties on <html>.
+ * Applies the active artist's palette as inline custom properties on <html>
+ * and pushes the same ice/amber into the root lightfield shader.
  *
  * It has to be <html> rather than a wrapping <div>: Radix dialogs and
  * dropdowns portal to document.body, outside any wrapper, so they'd miss the
@@ -18,16 +20,28 @@ import { artistThemeCssVars } from "@/lib/artist-theme";
 export function ArtistThemeProvider({ children }: { children: React.ReactNode }) {
   const { activeArtist } = useActiveArtist();
   const paletteId = activeArtist?.palette_id;
+  const iceColor = activeArtist?.ice_color;
+  const amberColor = activeArtist?.amber_color;
 
   React.useLayoutEffect(() => {
     const root = document.documentElement;
-    const vars = artistThemeCssVars(paletteId);
+    const overrides = { ice: iceColor, amber: amberColor };
+    const vars = artistThemeCssVars(paletteId, overrides);
     Object.entries(vars).forEach(([key, value]) =>
       root.style.setProperty(key, value)
     );
-    return () =>
+    const id = paletteId ?? "spectra";
+    root.dataset.artistPalette =
+      iceColor || amberColor ? "custom" : id;
+    const hues = resolveArtistHues(paletteId, overrides);
+    setPaletteFromHues(hues, paletteId, {
+      custom: !!(iceColor || amberColor),
+    });
+    return () => {
       Object.keys(vars).forEach((key) => root.style.removeProperty(key));
-  }, [paletteId]);
+      delete root.dataset.artistPalette;
+    };
+  }, [paletteId, iceColor, amberColor]);
 
   return <>{children}</>;
 }

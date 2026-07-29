@@ -99,6 +99,9 @@ function LightfieldCanvas() {
         uIntensity: { value: LIGHTFIELD_DEFAULTS.uIntensity },
         uWarmth: { value: LIGHTFIELD_DEFAULTS.uWarmth },
         uSeed: { value: LIGHTFIELD_DEFAULTS.uSeed },
+        uIce: { value: new THREE.Vector3(...LIGHTFIELD_DEFAULTS.uIce) },
+        uAmber: { value: new THREE.Vector3(...LIGHTFIELD_DEFAULTS.uAmber) },
+        uWhite: { value: new THREE.Vector3(...LIGHTFIELD_DEFAULTS.uWhite) },
       };
 
       material = new THREE.ShaderMaterial({
@@ -141,6 +144,9 @@ function LightfieldCanvas() {
         uniforms.uIntensity.value = u.uIntensity;
         uniforms.uWarmth.value = u.uWarmth;
         uniforms.uSeed.value = u.uSeed;
+        uniforms.uIce.value.set(u.uIce[0], u.uIce[1], u.uIce[2]);
+        uniforms.uAmber.value.set(u.uAmber[0], u.uAmber[1], u.uAmber[2]);
+        uniforms.uWhite.value.set(u.uWhite[0], u.uWhite[1], u.uWhite[2]);
       };
 
       applyUniforms(getLightfieldUniforms());
@@ -213,7 +219,7 @@ function DebugPanel() {
   const override = getDebugOverride();
 
   const slider = (
-    key: keyof LightfieldUniforms,
+    key: "uSpeed" | "uIntensity" | "uWarmth" | "uSeed",
     min: number,
     max: number,
     step: number

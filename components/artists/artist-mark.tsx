@@ -1,7 +1,7 @@
 "use client";
 
 import { SignedImage } from "@/components/ui/signed-image";
-import { getArtistPalette } from "@/lib/artist-theme";
+import { resolveArtistAccent } from "@/lib/artist-theme";
 import { cn } from "@/lib/utils";
 
 /**
@@ -22,28 +22,38 @@ const BARS: { h: number; w: number; o: number }[] = [
 ];
 
 export function ArtistMark({
-  logoUrl,
+  emblemUrl,
   paletteId,
+  iceColor,
+  amberColor,
   name,
   size = 18,
   className,
 }: {
-  logoUrl: string | null;
+  /** Square identity image — falls back to palette bars when null. */
+  emblemUrl: string | null;
   paletteId: string | null | undefined;
+  iceColor?: string | null;
+  amberColor?: string | null;
   name: string;
   size?: number;
   className?: string;
 }) {
-  const palette = getArtistPalette(paletteId);
-  const ramp = `linear-gradient(180deg, ${palette.ice} 0%, #ffffff 50%, ${palette.amber} 100%)`;
+  const { ice, amber } = resolveArtistAccent(paletteId, {
+    ice: iceColor,
+    amber: amberColor,
+  });
+  const ramp = `linear-gradient(180deg, ${ice} 0%, #ffffff 50%, ${amber} 100%)`;
 
-  if (logoUrl) {
+  if (emblemUrl) {
     return (
       <SignedImage
-        path={logoUrl}
+        path={emblemUrl}
         alt={name}
-        className={cn("shrink-0 rounded-[4px] object-cover", className)}
-        // Falls back to the bar mark while the signed URL resolves or if it fails.
+        className={cn(
+          "shrink-0 rounded-[4px] object-cover aspect-square",
+          className
+        )}
         fallback={
           <BarMark ramp={ramp} size={size} className={className} />
         }

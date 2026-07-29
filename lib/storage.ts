@@ -44,10 +44,10 @@ export function buildImportSourcePath(params: {
   return `imports/${importId}/${sourceId}/${sanitizeFilename(filename)}`;
 }
 
-/** Artist logo / banner images — same private bucket, own prefix. */
+/** Artist logo / emblem / banner images — same private bucket, own prefix. */
 export function buildArtistAssetPath(params: {
   artistId: string;
-  kind: "logo" | "banner";
+  kind: "logo" | "emblem" | "banner";
   filename: string;
 }): string {
   const { artistId, kind, filename } = params;

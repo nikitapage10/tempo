@@ -15,7 +15,8 @@ function isAbsoluteSrc(path: string): boolean {
   return (
     path.startsWith("http://") ||
     path.startsWith("https://") ||
-    path.startsWith("data:")
+    path.startsWith("data:") ||
+    path.startsWith("blob:")
   );
 }
 

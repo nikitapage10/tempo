@@ -7,7 +7,7 @@
  */
 
 export const PRODUCT_KNOWLEDGE = `CORE OBJECTS
-- Artist: an artist name/alias the user releases under. Owns spaces (so all tracks/projects/tasks belong to one artist). Has its own accent palette (6 presets), logo, and banner (image or colour). Switch from the rail; manage in Settings. Most users have exactly one.
+- Artist: an artist name/alias the user releases under. Owns spaces (so all tracks/projects/tasks belong to one artist). Has its own accent palette (curated presets including Noir, plus optional custom Cool/Warm colours), logo (wide, Today), emblem (square profile), and banner (image, color, or two-stop gradient). Switch from the rail; manage in Settings. Most users have exactly one.
 - Space: a workspace, either music-focused (its own stage pipeline — Board, Tracks) or tasks-focused (no board — just Tasks and Projects, for non-music work like social media). Default: Originals, Edits & Remixes, both music-focused. Switch from the rail; manage (including focus) in Settings.
 - Stage: where a track sits in the pipeline (Idea, Writing, Production, Mixdown, Master, Release Prep, Released by default). Per-space, reorderable.
 - Track: a musical work. Fields include type, momentum, deadline, next move, blocked/waiting, BPM, key, tags, notes.

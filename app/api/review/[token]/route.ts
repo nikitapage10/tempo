@@ -40,10 +40,13 @@ export async function GET(
     if (space?.artist_id) {
       const { data: artist } = await admin
         .from("artists")
-        .select("palette_id")
+        .select("palette_id, ice_color, amber_color")
         .eq("id", space.artist_id)
         .maybeSingle();
-      hues = resolveArtistHues(artist?.palette_id ?? null);
+      hues = resolveArtistHues(artist?.palette_id ?? null, {
+        ice: artist?.ice_color,
+        amber: artist?.amber_color,
+      });
     }
   } catch {
     /* default Spectra hues */

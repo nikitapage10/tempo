@@ -37,10 +37,21 @@ export function ArtistSwitcher() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2 rounded-input px-2 py-1.5 text-left text-sm text-text-hi transition-colors duration-hover hover:bg-bg-2/60"
+        className="flex w-full items-center gap-2.5 rounded-input px-2 py-1.5 text-left text-sm text-text-hi transition-colors duration-hover hover:bg-bg-2/60"
         aria-expanded={open}
         aria-haspopup="listbox"
       >
+        {activeArtist?.emblem_url ? (
+          <ArtistMark
+            emblemUrl={activeArtist.emblem_url}
+            paletteId={activeArtist.palette_id}
+            iceColor={activeArtist.ice_color}
+            amberColor={activeArtist.amber_color}
+            name={activeArtist.name}
+            size={28}
+            className="size-7"
+          />
+        ) : null}
         <span className="truncate font-display text-[13px] tracking-wide">
           {activeArtist?.name ?? "No artist"}
         </span>
@@ -83,13 +94,17 @@ export function ArtistSwitcher() {
                         selected ? "text-ice opacity-100" : "opacity-0"
                       )}
                     />
-                    <ArtistMark
-                      logoUrl={artist.logo_url}
-                      paletteId={artist.palette_id}
-                      name={artist.name}
-                      size={16}
-                      className="size-4"
-                    />
+                    {artist.emblem_url ? (
+                      <ArtistMark
+                        emblemUrl={artist.emblem_url}
+                        paletteId={artist.palette_id}
+                        iceColor={artist.ice_color}
+                        amberColor={artist.amber_color}
+                        name={artist.name}
+                        size={22}
+                        className="size-[22px]"
+                      />
+                    ) : null}
                     <span className="truncate">{artist.name}</span>
                   </button>
                 </li>

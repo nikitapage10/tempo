@@ -3,12 +3,19 @@
 import * as React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  clearArtistEmblem,
+  clearArtistLogo,
   deleteArtist,
   ensureDefaultArtist,
   fetchArtists,
   renameArtist,
   reorderArtists,
+  setArtistBannerColor,
+  setArtistCustomAccent,
   updateArtistPalette,
+  uploadArtistBanner,
+  uploadArtistEmblem,
+  uploadArtistLogo,
 } from "@/lib/api/artists";
 import { ACTIVE_ARTIST_KEY } from "@/lib/constants";
 import { resolveArtistHues, type ResolvedArtistHues } from "@/lib/artist-theme";
@@ -132,15 +139,28 @@ export function useActiveArtist() {
 export function useActiveArtistPalette(): ResolvedArtistHues {
   const ctx = React.useContext(ActiveArtistContext);
   const paletteId = ctx?.activeArtist?.palette_id;
+  const ice = ctx?.activeArtist?.ice_color;
+  const amber = ctx?.activeArtist?.amber_color;
   // Stable identity per palette — callers put this in useMemo/useEffect deps
   // (the waveform rebuilds on change), so a fresh object each render would thrash.
-  return React.useMemo(() => resolveArtistHues(paletteId), [paletteId]);
+  return React.useMemo(
+    () => resolveArtistHues(paletteId, { ice, amber }),
+    [paletteId, ice, amber]
+  );
 }
 
 export function useArtistMutations() {
   const qc = useQueryClient();
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["artists"] });
+
+  const patchArtist = (updated: Artist) => {
+    qc.setQueryData<Artist[]>(["artists"], (prev) =>
+      prev
+        ? prev.map((a) => (a.id === updated.id ? updated : a))
+        : prev
+    );
+  };
 
   const create = useMutation({
     mutationFn: ({ name, sort }: { name: string; sort: number }) =>
@@ -157,7 +177,63 @@ export function useArtistMutations() {
   const updatePalette = useMutation({
     mutationFn: ({ id, paletteId }: { id: string; paletteId: string }) =>
       updateArtistPalette(id, paletteId),
-    onSuccess: invalidate,
+    onMutate: async ({ id, paletteId }) => {
+      await qc.cancelQueries({ queryKey: ["artists"] });
+      const prev = qc.getQueryData<Artist[]>(["artists"]);
+      if (prev) {
+        qc.setQueryData<Artist[]>(
+          ["artists"],
+          prev.map((a) =>
+            a.id === id
+              ? {
+                  ...a,
+                  palette_id: paletteId,
+                  ice_color: null,
+                  amber_color: null,
+                }
+              : a
+          )
+        );
+      }
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(["artists"], ctx.prev);
+    },
+    onSuccess: (updated) => patchArtist(updated),
+    onSettled: invalidate,
+  });
+
+  const setCustomAccent = useMutation({
+    mutationFn: ({
+      artist,
+      ice,
+      amber,
+    }: {
+      artist: Artist;
+      ice: string;
+      amber: string;
+    }) => setArtistCustomAccent(artist, { ice, amber }),
+    onMutate: async ({ artist, ice, amber }) => {
+      await qc.cancelQueries({ queryKey: ["artists"] });
+      const prev = qc.getQueryData<Artist[]>(["artists"]);
+      if (prev) {
+        qc.setQueryData<Artist[]>(
+          ["artists"],
+          prev.map((a) =>
+            a.id === artist.id
+              ? { ...a, ice_color: ice, amber_color: amber }
+              : a
+          )
+        );
+      }
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(["artists"], ctx.prev);
+    },
+    onSuccess: (updated) => patchArtist(updated),
+    onSettled: invalidate,
   });
 
   const remove = useMutation({
@@ -188,5 +264,192 @@ export function useArtistMutations() {
     onSettled: invalidate,
   });
 
-  return { create, rename, updatePalette, remove, reorder };
+  type ImageMutCtx = { prev?: Artist[]; preview?: string };
+
+  const uploadLogo = useMutation({
+    mutationFn: ({ artist, file }: { artist: Artist; file: File }) =>
+      uploadArtistLogo(artist, file),
+    onMutate: async ({ artist, file }) => {
+      await qc.cancelQueries({ queryKey: ["artists"] });
+      const prev = qc.getQueryData<Artist[]>(["artists"]);
+      const preview = URL.createObjectURL(file);
+      if (prev) {
+        qc.setQueryData<Artist[]>(
+          ["artists"],
+          prev.map((a) =>
+            a.id === artist.id ? { ...a, logo_url: preview } : a
+          )
+        );
+      }
+      return { prev, preview } satisfies ImageMutCtx;
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(["artists"], ctx.prev);
+      if (ctx?.preview) URL.revokeObjectURL(ctx.preview);
+    },
+    onSuccess: (updated, _v, ctx) => {
+      if (ctx?.preview) URL.revokeObjectURL(ctx.preview);
+      patchArtist(updated);
+    },
+    onSettled: invalidate,
+  });
+
+  const uploadBanner = useMutation({
+    mutationFn: ({ artist, file }: { artist: Artist; file: File }) =>
+      uploadArtistBanner(artist, file),
+    onMutate: async ({ artist, file }) => {
+      await qc.cancelQueries({ queryKey: ["artists"] });
+      const prev = qc.getQueryData<Artist[]>(["artists"]);
+      const preview = URL.createObjectURL(file);
+      if (prev) {
+        qc.setQueryData<Artist[]>(
+          ["artists"],
+          prev.map((a) =>
+            a.id === artist.id
+              ? {
+                  ...a,
+                  banner_url: preview,
+                  banner_color: null,
+                  banner_color_end: null,
+                }
+              : a
+          )
+        );
+      }
+      return { prev, preview } satisfies ImageMutCtx;
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(["artists"], ctx.prev);
+      if (ctx?.preview) URL.revokeObjectURL(ctx.preview);
+    },
+    onSuccess: (updated, _v, ctx) => {
+      if (ctx?.preview) URL.revokeObjectURL(ctx.preview);
+      patchArtist(updated);
+    },
+    onSettled: invalidate,
+  });
+
+  const clearLogo = useMutation({
+    mutationFn: (artist: Artist) => clearArtistLogo(artist),
+    onMutate: async (artist) => {
+      await qc.cancelQueries({ queryKey: ["artists"] });
+      const prev = qc.getQueryData<Artist[]>(["artists"]);
+      if (prev) {
+        qc.setQueryData<Artist[]>(
+          ["artists"],
+          prev.map((a) =>
+            a.id === artist.id ? { ...a, logo_url: null } : a
+          )
+        );
+      }
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(["artists"], ctx.prev);
+    },
+    onSuccess: (updated) => patchArtist(updated),
+    onSettled: invalidate,
+  });
+
+  const uploadEmblem = useMutation({
+    mutationFn: ({ artist, file }: { artist: Artist; file: File }) =>
+      uploadArtistEmblem(artist, file),
+    onMutate: async ({ artist, file }) => {
+      await qc.cancelQueries({ queryKey: ["artists"] });
+      const prev = qc.getQueryData<Artist[]>(["artists"]);
+      const preview = URL.createObjectURL(file);
+      if (prev) {
+        qc.setQueryData<Artist[]>(
+          ["artists"],
+          prev.map((a) =>
+            a.id === artist.id ? { ...a, emblem_url: preview } : a
+          )
+        );
+      }
+      return { prev, preview } satisfies ImageMutCtx;
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(["artists"], ctx.prev);
+      if (ctx?.preview) URL.revokeObjectURL(ctx.preview);
+    },
+    onSuccess: (updated, _v, ctx) => {
+      if (ctx?.preview) URL.revokeObjectURL(ctx.preview);
+      patchArtist(updated);
+    },
+    onSettled: invalidate,
+  });
+
+  const clearEmblem = useMutation({
+    mutationFn: (artist: Artist) => clearArtistEmblem(artist),
+    onMutate: async (artist) => {
+      await qc.cancelQueries({ queryKey: ["artists"] });
+      const prev = qc.getQueryData<Artist[]>(["artists"]);
+      if (prev) {
+        qc.setQueryData<Artist[]>(
+          ["artists"],
+          prev.map((a) =>
+            a.id === artist.id ? { ...a, emblem_url: null } : a
+          )
+        );
+      }
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(["artists"], ctx.prev);
+    },
+    onSuccess: (updated) => patchArtist(updated),
+    onSettled: invalidate,
+  });
+
+  const setBannerColor = useMutation({
+    mutationFn: ({
+      artist,
+      color,
+      colorEnd = null,
+    }: {
+      artist: Artist;
+      color: string | null;
+      colorEnd?: string | null;
+    }) => setArtistBannerColor(artist, color, colorEnd),
+    onMutate: async ({ artist, color, colorEnd = null }) => {
+      await qc.cancelQueries({ queryKey: ["artists"] });
+      const prev = qc.getQueryData<Artist[]>(["artists"]);
+      if (prev) {
+        qc.setQueryData<Artist[]>(
+          ["artists"],
+          prev.map((a) =>
+            a.id === artist.id
+              ? {
+                  ...a,
+                  banner_color: color,
+                  banner_color_end: color ? colorEnd : null,
+                  banner_url: null,
+                }
+              : a
+          )
+        );
+      }
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(["artists"], ctx.prev);
+    },
+    onSuccess: (updated) => patchArtist(updated),
+    onSettled: invalidate,
+  });
+
+  return {
+    create,
+    rename,
+    updatePalette,
+    setCustomAccent,
+    remove,
+    reorder,
+    uploadLogo,
+    clearLogo,
+    uploadEmblem,
+    clearEmblem,
+    uploadBanner,
+    setBannerColor,
+  };
 }

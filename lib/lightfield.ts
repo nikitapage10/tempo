@@ -3,13 +3,21 @@
  * One continuous field; the UI opens windows onto it (see spectra-lightfield-v2.md).
  */
 
-import { LIGHTFIELD_DEFAULTS } from "@/lib/shader-glsl";
+import {
+  LIGHTFIELD_DEFAULTS,
+  ORIGINAL_COOL_RGB,
+  ORIGINAL_MID_RGB,
+  ORIGINAL_WARM_RGB,
+} from "@/lib/shader-glsl";
 
 export type LightfieldUniforms = {
   uSpeed: number;
   uIntensity: number;
   uWarmth: number;
   uSeed: number;
+  uIce: [number, number, number];
+  uAmber: [number, number, number];
+  uWhite: [number, number, number];
 };
 
 const EASE_MS = 800;
@@ -25,10 +33,34 @@ function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t;
 }
 
+function lerpRgb(
+  a: [number, number, number],
+  b: [number, number, number],
+  t: number
+): [number, number, number] {
+  return [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
+}
+
+function cloneRgb(rgb: [number, number, number]): [number, number, number] {
+  return [rgb[0], rgb[1], rgb[2]];
+}
+
+function cloneUniforms(u: LightfieldUniforms): LightfieldUniforms {
+  return {
+    uSpeed: u.uSpeed,
+    uIntensity: u.uIntensity,
+    uWarmth: u.uWarmth,
+    uSeed: u.uSeed,
+    uIce: cloneRgb(u.uIce),
+    uAmber: cloneRgb(u.uAmber),
+    uWhite: cloneRgb(u.uWhite),
+  };
+}
+
 type Listener = () => void;
 
-let current: LightfieldUniforms = { ...LIGHTFIELD_DEFAULTS };
-let target: LightfieldUniforms = { ...LIGHTFIELD_DEFAULTS };
+let current: LightfieldUniforms = cloneUniforms(LIGHTFIELD_DEFAULTS);
+let target: LightfieldUniforms = cloneUniforms(LIGHTFIELD_DEFAULTS);
 /** Debug panel hard-overrides (null = follow driver targets). */
 let debugOverride: Partial<LightfieldUniforms> | null = null;
 let introActive = false;
@@ -46,11 +78,11 @@ export function subscribeLightfield(listener: Listener): () => void {
 }
 
 export function getLightfieldUniforms(): LightfieldUniforms {
-  return { ...current };
+  return cloneUniforms(current);
 }
 
 export function getLightfieldTargets(): LightfieldUniforms {
-  return { ...target };
+  return cloneUniforms(target);
 }
 
 export function isLightfieldKillSwitch(): boolean {
@@ -76,6 +108,9 @@ export function tickLightfield(dtMs: number): LightfieldUniforms {
     uIntensity: (debugOverride?.uIntensity ?? target.uIntensity) * sweepBoost,
     uWarmth: debugOverride?.uWarmth ?? target.uWarmth,
     uSeed: debugOverride?.uSeed ?? target.uSeed,
+    uIce: debugOverride?.uIce ?? target.uIce,
+    uAmber: debugOverride?.uAmber ?? target.uAmber,
+    uWhite: debugOverride?.uWhite ?? target.uWhite,
   };
 
   current = {
@@ -83,6 +118,9 @@ export function tickLightfield(dtMs: number): LightfieldUniforms {
     uIntensity: lerp(current.uIntensity, desired.uIntensity, blend),
     uWarmth: lerp(current.uWarmth, desired.uWarmth, blend),
     uSeed: lerp(current.uSeed, desired.uSeed, blend),
+    uIce: lerpRgb(current.uIce, desired.uIce, blend),
+    uAmber: lerpRgb(current.uAmber, desired.uAmber, blend),
+    uWhite: lerpRgb(current.uWhite, desired.uWhite, blend),
   };
 
   return getLightfieldUniforms();
@@ -128,6 +166,50 @@ export function setIntensityFromWeeklyActivity(count: number) {
 
 export function setSeed(seed: number) {
   setTarget({ uSeed: seed });
+}
+
+/**
+ * Artist palette → lightfield line colours.
+ *
+ * Spectra (default) with no custom accents uses the original cool/mid/warm →
+ * B/G/R channel basis so the field is pixel-identical to classic TEMPO.
+ * Other palettes and any custom Cool/Warm remaps onto ice → white → amber.
+ */
+export function setPaletteFromHues(
+  hues: {
+    ice: string;
+    amber: string;
+    white?: string;
+  },
+  paletteId?: string | null,
+  opts?: { custom?: boolean }
+) {
+  const isSpectra =
+    !opts?.custom && (!paletteId || paletteId === "spectra");
+  if (isSpectra) {
+    setTarget({
+      uIce: cloneRgb(ORIGINAL_COOL_RGB),
+      uAmber: cloneRgb(ORIGINAL_WARM_RGB),
+      uWhite: cloneRgb(ORIGINAL_MID_RGB),
+    });
+    return;
+  }
+  setTarget({
+    uIce: hexToRgb01(hues.ice),
+    uAmber: hexToRgb01(hues.amber),
+    uWhite: hexToRgb01(hues.white ?? "#FFFFFF"),
+  });
+}
+
+function hexToRgb01(hex: string): [number, number, number] {
+  const h = hex.replace("#", "");
+  const full =
+    h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+  const n = parseInt(full, 16);
+  if (!Number.isFinite(n)) {
+    return cloneRgb(LIGHTFIELD_DEFAULTS.uIce);
+  }
+  return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
 }
 
 /** Reward pulse: intensity ×2, eases back over 1.2s. No-op under reduced motion. */
@@ -198,8 +280,8 @@ export function averageStageProgress(
 }
 
 export function resetLightfieldDefaults() {
-  target = { ...LIGHTFIELD_DEFAULTS };
-  current = { ...LIGHTFIELD_DEFAULTS };
+  target = cloneUniforms(LIGHTFIELD_DEFAULTS);
+  current = cloneUniforms(LIGHTFIELD_DEFAULTS);
   debugOverride = null;
   sweepBoost = 1;
   sweepUntil = 0;

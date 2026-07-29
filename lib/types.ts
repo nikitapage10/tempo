@@ -11,10 +11,19 @@ export type Artist = {
   id: string;
   user_id: string;
   name: string;
+  /** Wide lockup — Today hero. */
   logo_url: string | null;
+  /** Square identity mark — settings chip, switcher list. */
+  emblem_url: string | null;
   banner_url: string | null;
   banner_color: string | null;
+  /** Optional second stop for a banner color gradient. */
+  banner_color_end: string | null;
   palette_id: ArtistPaletteId;
+  /** Free Cool accent override; null = use palette_id preset. */
+  ice_color: string | null;
+  /** Free Warm accent override; null = use palette_id preset. */
+  amber_color: string | null;
   sort: number;
   created_at: string;
 };
@@ -22,9 +31,13 @@ export type Artist = {
 export type ArtistUpdate = Partial<{
   name: string;
   logo_url: string | null;
+  emblem_url: string | null;
   banner_url: string | null;
   banner_color: string | null;
+  banner_color_end: string | null;
   palette_id: ArtistPaletteId;
+  ice_color: string | null;
+  amber_color: string | null;
   sort: number;
 }>;
 

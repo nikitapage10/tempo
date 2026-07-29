@@ -19,7 +19,10 @@ export function ArtistBanner({
   fadeRight = false,
   children,
 }: {
-  artist: Pick<Artist, "banner_url" | "banner_color" | "name">;
+  artist: Pick<
+    Artist,
+    "banner_url" | "banner_color" | "banner_color_end" | "name"
+  >;
   className?: string;
   /**
    * Fade the whole layer out toward the right. Used on the Today hero, where
@@ -36,6 +39,11 @@ export function ArtistBanner({
   const fadeMask = fadeRight
     ? "linear-gradient(100deg, #000 0%, #000 42%, rgb(0 0 0 / 0.55) 62%, transparent 82%)"
     : undefined;
+
+  const colorWash =
+    artist.banner_color && artist.banner_color_end
+      ? `linear-gradient(125deg, ${artist.banner_color} 0%, ${artist.banner_color_end} 42%, rgb(10 10 12 / 0.65) 72%, var(--bg-0) 100%)`
+      : `linear-gradient(180deg, ${artist.banner_color} 0%, rgb(10 10 12 / 0.65) 70%, var(--bg-0) 100%)`;
 
   return (
     <div
@@ -67,9 +75,7 @@ export function ArtistBanner({
         <div
           aria-hidden
           className="absolute inset-0"
-          style={{
-            background: `linear-gradient(180deg, ${artist.banner_color} 0%, rgb(10 10 12 / 0.65) 70%, var(--bg-0) 100%)`,
-          }}
+          style={{ background: colorWash }}
         />
       )}
       {children ? <div className="relative">{children}</div> : null}

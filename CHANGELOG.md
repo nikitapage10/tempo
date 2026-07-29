@@ -4,6 +4,28 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-29
 
+- Removed (v0.44.3): all special effects on the Today logo — it's just your logo again. Also, if you haven't uploaded an emblem, the artist switcher shows only the name (no placeholder mark).
+- Changed (v0.44.2): the Today logo cutout is a bit more visible — still see-through to the lightfield, just easier to read the letters.
+- Fixed (v0.44.1): the Today logo cutout actually punches through the banner now (the first try used a CSS blend mode browsers don’t support, so the logo still looked solid).
+- Changed (v0.44.0): the Today logo is a cutout — the letter shapes punch through the banner so the moving lightfield shows through them (the line/flare effect is gone).
+- Changed (v0.43.9): the Today logo effect is slow vertical Spectra lines rising through the letters in your Cool / Warm colours — reads more like the lightfield behind it than a quick flare streak.
+- Fixed (v0.43.8): the Today logo flare reads clearly now — it was blending in a way that made it disappear on white logos; the ice → amber streak paints through the letters about every 3 seconds.
+- Fixed (v0.43.7): the Today logo flare actually shows — the sweep loads the image in a way that clips correctly and runs brighter / more often.
+- Changed (v0.43.6): the Today logo loses the soft glow — instead a thin ice → white → amber lens-flare streak sweeps across it (still when reduced motion is on).
+- Changed (v0.43.5): the Today logo gets a soft ice/amber glow that gently breathes (stays still if you prefer reduced motion).
+- Changed (v0.43.4): the Today logo is a bit smaller again.
+- Changed (v0.43.3): the Today logo is anchored flush to the bottom-right of the greeting panel (not floating mid-banner).
+- Changed (v0.43.2): the artist **logo** on Today sits in the bottom-right of the greeting panel, a bit larger.
+- Changed (v0.43.1): the artist **logo** on Today is larger and sits tighter in the top-right corner.
+- Changed (v0.43.0): your **emblem** sits next to the artist name in the left rail; the **logo** is larger and tucked into the top-right on Today (and previewed on the Settings banner). Custom Cool/Warm and custom banner gradients open from a **Custom** button instead of sitting in the row.
+- Added (v0.42.0): artists can have a **logo** (wide lockup, shown larger on Today) and a separate **emblem** (square profile mark in Settings / the artist list). Upload each in Settings.
+  - Under the hood: **run migration `023` in Supabase** so emblems can save. (Migration `022` is still needed for custom colors.)
+- Added (v0.41.0): in Settings you can pick **custom Cool / Warm colors** (opens a colour slider) on top of the presets, and a **custom banner** with an optional second colour for a soft gradient. Choosing a preset clears custom accents again.
+  - Under the hood: **run migration `022` in Supabase** so custom colors can save.
+- Changed (v0.40.0): Settings labels the accent picker **Color** (not Colour). There are more accent palettes — including a black-and-white **Noir** — and more banner color washes to pick from.
+- Fixed (v0.39.2): logo and banner changes in Settings update right away (with a short “Uploading…” / spinner while a file is still going up) instead of sitting still until a later refresh.
+- Fixed (v0.39.1): choosing **Spectra (default)** again restores the original lightfield look — other palettes still tint the field.
+- Changed (v0.39.0): picking an artist **colour palette** in Settings now also re-tints the moving light behind the app (and the still fallback when motion is off) — same ice / amber tones as the rest of the UI.
 - Changed (v0.38.0): your artist **logo** no longer sits next to the name in the left rail — it shows on **Today**, top-right of the greeting, at a comfortable size.
 - Added (v0.37.0): TEMPO now works for more than one artist name. Add an **artist** in Settings — each one keeps its own spaces, tracks and projects, and you switch between them from the left rail. Everything you already have moves onto one artist automatically, so nothing changes until you add a second.
   - Each artist gets its own look: pick one of six **colour palettes**, upload a **logo**, and set a **banner** (your own image, or one of six colours). The banner shows behind the greeting on Today and on the artist's card in Settings.

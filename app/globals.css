@@ -83,13 +83,24 @@
 }
 
 @layer utilities {
-  /* Static prismatic fallback — reduced motion, no WebGL, kill-switch */
+  /* Static prismatic fallback — reduced motion, no WebGL, kill-switch.
+   * Spectra keeps the classic gradient; other palettes tint via --ice/--amber. */
   .flare-static {
     background: linear-gradient(
       120deg,
       var(--bg-0) 0%,
       #1a2233 35%,
       #2a1f14 70%,
+      var(--bg-0) 100%
+    );
+  }
+
+  html[data-artist-palette]:not([data-artist-palette="spectra"]) .flare-static {
+    background: linear-gradient(
+      120deg,
+      var(--bg-0) 0%,
+      color-mix(in oklab, var(--ice) 32%, var(--bg-0)) 35%,
+      color-mix(in oklab, var(--amber) 26%, var(--bg-0)) 70%,
       var(--bg-0) 100%
     );
   }

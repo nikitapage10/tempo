@@ -146,32 +146,31 @@ export default function TodayPage() {
       {/* Today hero — one tall surface carrying greeting, stats and actions.
           Scrim clears toward the right so the lightfield is actually visible. */}
       <LfWindow className="relative overflow-hidden rounded-panel border border-line shadow-e3">
-        <div className="scrim-reveal absolute inset-0" aria-hidden />
-        {/* Artist banner sits above the scrim (so it reads) but fades out to
-            the right, leaving the lightfield's reveal window intact. Renders
-            nothing when the artist has no banner set. */}
-        {activeArtist ? (
-          <ArtistBanner
-            artist={activeArtist}
-            fadeRight
-            className="absolute inset-0"
-          />
+        <div className="absolute inset-0">
+          <div className="scrim-reveal absolute inset-0" aria-hidden />
+          {activeArtist ? (
+            <ArtistBanner
+              artist={activeArtist}
+              fadeRight
+              className="absolute inset-0"
+            />
+          ) : null}
+        </div>
+        {activeArtist?.logo_url ? (
+          <div className="pointer-events-none absolute inset-y-0 right-0 z-[1] flex w-[min(48%,24rem)] items-end justify-end p-2 sm:p-3">
+            <SignedImage
+              path={activeArtist.logo_url}
+              alt={activeArtist.name}
+              className="h-auto max-h-[min(70%,11rem)] w-auto max-w-full object-contain sm:max-h-[13rem]"
+            />
+          </div>
         ) : null}
-        <div className="relative flex flex-col gap-6 px-6 py-7 sm:px-8 sm:py-9">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <h1 className="font-display text-3xl font-semibold tracking-tight text-text-hi sm:text-[40px] sm:leading-[1.05]">
-                {greetingForHour(now.getHours())}
-              </h1>
-              <p className="mt-1.5 text-sm text-text-lo">{dateLabel}</p>
-            </div>
-            {activeArtist?.logo_url ? (
-              <SignedImage
-                path={activeArtist.logo_url}
-                alt={activeArtist.name}
-                className="size-16 shrink-0 rounded-card object-contain sm:size-20"
-              />
-            ) : null}
+        <div className="relative z-[1] flex flex-col gap-6 px-6 py-7 sm:px-8 sm:py-9">
+          <div className="min-w-0">
+            <h1 className="font-display text-3xl font-semibold tracking-tight text-text-hi sm:text-[40px] sm:leading-[1.05]">
+              {greetingForHour(now.getHours())}
+            </h1>
+            <p className="mt-1.5 text-sm text-text-lo">{dateLabel}</p>
           </div>
 
           {tasksFocused ? (
@@ -192,7 +191,11 @@ export default function TodayPage() {
             <p className="-mt-1 text-xs text-text-lo">{weeklyLabel}</p>
           ) : null}
 
-          <div>
+          <div
+            className={cn(
+              activeArtist?.logo_url && "pr-[min(50%,280px)] sm:pr-[360px]"
+            )}
+          >
             <FlareLine className="mb-4 max-w-[420px] opacity-60" />
             <div className="flex flex-wrap gap-2">
               {tasksFocused ? (
