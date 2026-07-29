@@ -1,11 +1,15 @@
 import { createClient } from "@/lib/supabase/client";
 import type { Project, ProjectInsert, ProjectUpdate, ProjectWithStats, Task, Track } from "@/lib/types";
 
-export async function fetchProjects(): Promise<ProjectWithStats[]> {
+export async function fetchProjects(
+  spaceId: string | null
+): Promise<ProjectWithStats[]> {
+  if (!spaceId) return [];
   const supabase = createClient();
   const { data: projects, error } = await supabase
     .from("projects")
     .select("*")
+    .eq("space_id", spaceId)
     .order("created_at", { ascending: false });
   if (error) throw error;
   if (!projects?.length) return [];

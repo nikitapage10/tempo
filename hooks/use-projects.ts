@@ -14,10 +14,11 @@ import {
 } from "@/lib/api/projects";
 import type { ProjectInsert, ProjectUpdate } from "@/lib/types";
 
-export function useProjects() {
+export function useProjects(spaceId: string | null) {
   return useQuery({
-    queryKey: ["projects"],
-    queryFn: fetchProjects,
+    queryKey: ["projects", spaceId],
+    queryFn: () => fetchProjects(spaceId),
+    enabled: !!spaceId,
   });
 }
 

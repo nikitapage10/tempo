@@ -18,11 +18,12 @@ import { EdgeStrip, IntroMoment } from "@/components/intro-moment";
 import { FlareLine } from "@/components/flare-line";
 import { Wordmark } from "@/components/wordmark";
 import { LfWindow } from "@/components/lf-windows";
+import { useActiveSpace } from "@/components/active-space-provider";
 import { APP_VERSION } from "@/lib/version";
 import { cn } from "@/lib/utils";
 import { SlitDivider } from "@/components/ui/slit";
 
-const mainNav = [
+const MUSIC_MAIN_NAV = [
   { href: "/", label: "Today", icon: CalendarDays },
   { href: "/board", label: "Board", icon: Columns3 },
   { href: "/tracks", label: "Tracks", icon: Music2 },
@@ -30,9 +31,23 @@ const mainNav = [
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
 ] as const;
 
-const mobileNav = [
+const MUSIC_MOBILE_NAV = [
   { href: "/", label: "Today", icon: CalendarDays },
   { href: "/board", label: "Board", icon: Columns3 },
+  { href: "/tasks", label: "Tasks", icon: CheckSquare },
+] as const;
+
+// Tasks-focused spaces have no board or stage pipeline, so Board/Tracks
+// drop out and Projects/Tasks take the front seat instead.
+const TASKS_MAIN_NAV = [
+  { href: "/", label: "Today", icon: CalendarDays },
+  { href: "/projects", label: "Projects", icon: FolderKanban },
+  { href: "/tasks", label: "Tasks", icon: CheckSquare },
+] as const;
+
+const TASKS_MOBILE_NAV = [
+  { href: "/", label: "Today", icon: CalendarDays },
+  { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
 ] as const;
 
@@ -46,6 +61,10 @@ const FOCUS_ROUTE = /^\/track\/[^/]+\/focus(\/|$)/;
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { activeSpace } = useActiveSpace();
+  const tasksFocused = activeSpace?.focus === "tasks";
+  const mainNav = tasksFocused ? TASKS_MAIN_NAV : MUSIC_MAIN_NAV;
+  const mobileNav = tasksFocused ? TASKS_MOBILE_NAV : MUSIC_MOBILE_NAV;
 
   if (FOCUS_ROUTE.test(pathname)) {
     // Focus sessions get a distraction-free, full-bleed shell — no rail, no tab bar (FEATURE-SPECS §10).
@@ -192,8 +211,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <button
           type="button"
           className="flex flex-1 flex-col items-center justify-center gap-1 py-2.5 text-[11px] text-text-lo focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ice"
-          aria-label="Add track"
-          onClick={() => router.push("/board?new=1")}
+          aria-label={tasksFocused ? "Add task" : "Add track"}
+          onClick={() =>
+            router.push(tasksFocused ? "/tasks" : "/board?new=1")
+          }
         >
           <span className="flex size-7 items-center justify-center rounded-full bg-ice/15 text-ice">
             <Plus className="size-4" strokeWidth={2} />

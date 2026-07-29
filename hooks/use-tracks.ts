@@ -8,6 +8,7 @@ import {
   fetchTracks,
   fetchVersionCount,
   moveTrackStage,
+  reorderTracks,
   updateTrack,
 } from "@/lib/api/tracks";
 import type { Track, TrackInsert, TrackUpdate } from "@/lib/types";
@@ -83,7 +84,7 @@ export function useTrackMutations(spaceId: string | null) {
   });
 
   const moveStage = useMutation({
-    mutationFn: ({ id, stageId }: { id: string; stageId: string }) =>
+    mutationFn: ({ id, stageId }: { id: string; stageId: string | null }) =>
       moveTrackStage(id, stageId),
     onMutate: async ({ id, stageId }) => {
       await qc.cancelQueries({ queryKey: key });
@@ -106,5 +107,31 @@ export function useTrackMutations(spaceId: string | null) {
     onSettled: invalidateLists,
   });
 
-  return { create, update, remove, moveStage };
+  const reorder = useMutation({
+    mutationFn: (ordered: { id: string; list_sort: number }[]) =>
+      reorderTracks(ordered),
+    onMutate: async (ordered) => {
+      await qc.cancelQueries({ queryKey: key });
+      const prev = qc.getQueryData<Track[]>(key);
+      if (prev) {
+        const sortById = new Map(ordered.map((o) => [o.id, o.list_sort]));
+        const next = prev
+          .map((t) =>
+            sortById.has(t.id) ? { ...t, list_sort: sortById.get(t.id)! } : t
+          )
+          .sort(
+            (a, b) =>
+              a.list_sort - b.list_sort || a.title.localeCompare(b.title)
+          );
+        qc.setQueryData<Track[]>(key, next);
+      }
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(key, ctx.prev);
+    },
+    onSettled: invalidateLists,
+  });
+
+  return { create, update, remove, moveStage, reorder };
 }

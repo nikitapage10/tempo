@@ -102,6 +102,97 @@ export async function uploadFile(
   return { path };
 }
 
+/**
+ * Reuse the same signed URL until near expiry so <img>/audio keep a stable
+ * src and the browser can hit its HTTP cache across soft nav and refreshes.
+ * sessionStorage survives full page reloads in the same tab; memory covers
+ * remounts within the SPA. Refresh ~10 minutes before the 1h token dies.
+ */
+type SignedUrlEntry = { url: string; expiresAt: number };
+
+const SIGNED_URL_REFRESH_BUFFER_MS = 10 * 60 * 1000;
+const SIGNED_URL_SESSION_KEY = "tempo:signed-url-cache:v1";
+
+const signedUrlMemory = new Map<string, SignedUrlEntry>();
+const signedUrlInflight = new Map<string, Promise<string>>();
+
+function signedUrlCacheKey(path: string, expiresInSeconds: number): string {
+  return `${expiresInSeconds}:${path}`;
+}
+
+function readSessionSignedUrls(): Record<string, SignedUrlEntry> {
+  if (typeof sessionStorage === "undefined") return {};
+  try {
+    const raw = sessionStorage.getItem(SIGNED_URL_SESSION_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as Record<string, SignedUrlEntry>;
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeSessionSignedUrl(key: string, entry: SignedUrlEntry): void {
+  if (typeof sessionStorage === "undefined") return;
+  try {
+    const all = readSessionSignedUrls();
+    const now = Date.now();
+    for (const [k, v] of Object.entries(all)) {
+      if (!v || typeof v.expiresAt !== "number" || v.expiresAt <= now) {
+        delete all[k];
+      }
+    }
+    all[key] = entry;
+    sessionStorage.setItem(SIGNED_URL_SESSION_KEY, JSON.stringify(all));
+  } catch {
+    /* quota / private mode — memory cache still works */
+  }
+}
+
+function removeSessionSignedUrl(path: string): void {
+  if (typeof sessionStorage === "undefined") return;
+  try {
+    const all = readSessionSignedUrls();
+    let changed = false;
+    for (const key of Object.keys(all)) {
+      const sep = key.indexOf(":");
+      if (sep >= 0 && key.slice(sep + 1) === path) {
+        delete all[key];
+        changed = true;
+      }
+    }
+    if (changed) {
+      sessionStorage.setItem(SIGNED_URL_SESSION_KEY, JSON.stringify(all));
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+function isFresh(entry: SignedUrlEntry | undefined): entry is SignedUrlEntry {
+  return !!entry && entry.expiresAt - Date.now() > SIGNED_URL_REFRESH_BUFFER_MS;
+}
+
+/** Sync peek for UI that wants to avoid a blank flash while signing. */
+export function peekSignedUrl(
+  path: string,
+  expiresInSeconds = DEFAULT_EXPIRY
+): string | null {
+  if (!path) return null;
+  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+
+  const key = signedUrlCacheKey(path, expiresInSeconds);
+  const mem = signedUrlMemory.get(key);
+  if (isFresh(mem)) return mem.url;
+
+  const session = readSessionSignedUrls()[key];
+  if (isFresh(session)) {
+    signedUrlMemory.set(key, session);
+    return session.url;
+  }
+  return null;
+}
+
 export async function getSignedUrl(
   path: string,
   expiresInSeconds = DEFAULT_EXPIRY
@@ -111,21 +202,57 @@ export async function getSignedUrl(
     return path;
   }
 
-  const supabase = createClient();
-  const { data, error } = await supabase.storage
-    .from(BUCKET)
-    .createSignedUrl(path, expiresInSeconds);
+  const cached = peekSignedUrl(path, expiresInSeconds);
+  if (cached) return cached;
 
-  if (error || !data?.signedUrl) {
-    throw mapStorageError(error?.message ?? "Could not create a download link.");
+  const key = signedUrlCacheKey(path, expiresInSeconds);
+  const inflight = signedUrlInflight.get(key);
+  if (inflight) return inflight;
+
+  const request = (async () => {
+    const supabase = createClient();
+    const { data, error } = await supabase.storage
+      .from(BUCKET)
+      .createSignedUrl(path, expiresInSeconds);
+
+    if (error || !data?.signedUrl) {
+      throw mapStorageError(error?.message ?? "Could not create a download link.");
+    }
+
+    const entry: SignedUrlEntry = {
+      url: data.signedUrl,
+      expiresAt: Date.now() + expiresInSeconds * 1000,
+    };
+    signedUrlMemory.set(key, entry);
+    writeSessionSignedUrl(key, entry);
+    return data.signedUrl;
+  })();
+
+  signedUrlInflight.set(key, request);
+  try {
+    return await request;
+  } finally {
+    signedUrlInflight.delete(key);
   }
-  return data.signedUrl;
+}
+
+/** Drop cached signed URLs for a storage path (call when the file is replaced/removed). */
+export function invalidateSignedUrl(path: string): void {
+  if (!path || path.startsWith("http://") || path.startsWith("https://")) return;
+  for (const key of Array.from(signedUrlMemory.keys())) {
+    const sep = key.indexOf(":");
+    if (sep >= 0 && key.slice(sep + 1) === path) {
+      signedUrlMemory.delete(key);
+    }
+  }
+  removeSessionSignedUrl(path);
 }
 
 export async function deleteFile(path: string): Promise<void> {
   if (!path || path.startsWith("http://") || path.startsWith("https://")) {
     return;
   }
+  invalidateSignedUrl(path);
   const supabase = createClient();
   const { error } = await supabase.storage.from(BUCKET).remove([path]);
   if (error) throw mapStorageError(error.message);

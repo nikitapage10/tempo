@@ -11,6 +11,7 @@ create table spaces (
   name text not null,
   sort int not null default 0,
   accent_color text,
+  focus text not null default 'music' check (focus in ('music', 'tasks')), -- migration 019
   created_at timestamptz not null default now()
 );
 
@@ -135,6 +136,7 @@ create table tasks (
   user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
   track_id uuid references tracks(id) on delete set null,
   project_id uuid references projects(id) on delete set null,
+  space_id uuid references spaces(id) on delete cascade, -- migration 019
   title text not null,
   category text not null default 'other'
     check (category in ('social','outreach','pitching','admin','production','other')),

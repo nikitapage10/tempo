@@ -1,11 +1,13 @@
 import { createClient } from "@/lib/supabase/client";
 import type { Task, TaskInsert, TaskUpdate } from "@/lib/types";
 
-export async function fetchTasks(): Promise<Task[]> {
+export async function fetchTasks(spaceId: string | null): Promise<Task[]> {
+  if (!spaceId) return [];
   const supabase = createClient();
   const { data, error } = await supabase
     .from("tasks")
     .select("*")
+    .eq("space_id", spaceId)
     .order("due_date", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: false });
   if (error) throw error;
@@ -24,6 +26,7 @@ export async function createTask(input: TaskInsert): Promise<Task> {
       notes: input.notes?.trim() || null,
       track_id: input.track_id ?? null,
       project_id: input.project_id ?? null,
+      space_id: input.space_id ?? null,
     })
     .select()
     .single();
@@ -54,7 +57,10 @@ export async function deleteTask(id: string): Promise<void> {
   if (error) throw error;
 }
 
-export async function countTasksDueThisWeek(): Promise<number> {
+export async function countTasksDueThisWeek(
+  spaceId: string | null
+): Promise<number> {
+  if (!spaceId) return 0;
   const supabase = createClient();
   const now = new Date();
   const day = (now.getDay() + 6) % 7;
@@ -70,6 +76,7 @@ export async function countTasksDueThisWeek(): Promise<number> {
   const { count, error } = await supabase
     .from("tasks")
     .select("*", { count: "exact", head: true })
+    .eq("space_id", spaceId)
     .neq("status", "done")
     .gte("due_date", startStr)
     .lt("due_date", endStr);

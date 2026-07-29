@@ -5,7 +5,11 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { Chip } from "@/components/ui/chip";
-import { FilterRow } from "@/components/ui/filter-row";
+import {
+  FilterGroup,
+  FilterSep,
+  FilterToolbar,
+} from "@/components/ui/filter-row";
 import { FlareLine } from "@/components/flare-line";
 import { SlitDivider } from "@/components/ui/slit";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
@@ -46,12 +50,12 @@ const BUCKET_LABELS: Record<Bucket, string> = {
 };
 
 export default function TasksPage() {
-  const { data: tasks = [], isLoading } = useTasks();
-  const { create, update, remove } = useTaskMutations();
   const { toast } = useToast();
   const { activeSpaceId } = useActiveSpace();
+  const { data: tasks = [], isLoading } = useTasks(activeSpaceId);
+  const { create, update, remove } = useTaskMutations(activeSpaceId);
   const tracksQuery = useTracks(activeSpaceId);
-  const projectsQuery = useProjects();
+  const projectsQuery = useProjects(activeSpaceId);
 
   const tracks = React.useMemo(
     () => tracksQuery.data ?? [],
@@ -255,10 +259,10 @@ export default function TasksPage() {
         ) : null}
       </form>
 
-      {/* Same aligned filter bar as the Board, so the two pages feel related. */}
-      <div className="panel-quiet overflow-hidden">
-        <FilterRow label="Type">
+      <FilterToolbar className="mb-4">
+        <FilterGroup label="Type">
           <Chip
+            size="sm"
             active={categoryFilter === "all"}
             onClick={() => setCategoryFilter("all")}
           >
@@ -267,32 +271,18 @@ export default function TasksPage() {
           {TASK_CATEGORIES.map((c) => (
             <Chip
               key={c.value}
+              size="sm"
               active={categoryFilter === c.value}
               onClick={() => setCategoryFilter(c.value)}
             >
               {c.label}
             </Chip>
           ))}
-        </FilterRow>
-        <FilterRow
-          divider
-          label="Show"
-          trailing={
-            categoryFilter !== "all" || statusFilter !== "all" ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setCategoryFilter("all");
-                  setStatusFilter("all");
-                }}
-                className="whitespace-nowrap text-[11px] text-ice transition-colors duration-hover hover:underline"
-              >
-                Clear filters
-              </button>
-            ) : null
-          }
-        >
+        </FilterGroup>
+        <FilterSep />
+        <FilterGroup label="Show">
           <Chip
+            size="sm"
             active={statusFilter === "all"}
             onClick={() => setStatusFilter("all")}
           >
@@ -301,14 +291,27 @@ export default function TasksPage() {
           {TASK_STATUSES.map((s) => (
             <Chip
               key={s.value}
+              size="sm"
               active={statusFilter === s.value}
               onClick={() => setStatusFilter(s.value)}
             >
               {s.label}
             </Chip>
           ))}
-        </FilterRow>
-      </div>
+          {categoryFilter !== "all" || statusFilter !== "all" ? (
+            <button
+              type="button"
+              onClick={() => {
+                setCategoryFilter("all");
+                setStatusFilter("all");
+              }}
+              className="ml-1 text-[11px] text-ice hover:underline"
+            >
+              Clear
+            </button>
+          ) : null}
+        </FilterGroup>
+      </FilterToolbar>
 
       {isLoading ? (
         <div className="space-y-2">

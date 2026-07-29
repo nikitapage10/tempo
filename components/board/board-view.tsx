@@ -16,11 +16,17 @@ import { Plus, Rows2, Rows3, Settings2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useActiveSpace } from "@/components/active-space-provider";
 import { KanbanColumn } from "@/components/board/kanban-column";
+import {
+  OFF_BOARD_DROPPABLE,
+  OffBoardTray,
+} from "@/components/board/off-board-tray";
 import { EmptyShaderPanel } from "@/components/shader-empty";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
+import { FilterGroup } from "@/components/ui/filter-row";
+import { HeaderMenu } from "@/components/ui/header-menu";
 import { PageHeader } from "@/components/ui/page-header";
-import { FilterRow } from "@/components/ui/filter-row";
+import { useToast } from "@/components/ui/toast";
 import { TrackCard } from "@/components/tracks/track-card";
 import { TrackFormModal } from "@/components/tracks/track-form-modal";
 import { StageEditor } from "@/components/stages/stage-editor";
@@ -32,6 +38,51 @@ import { deriveAttentionSignals } from "@/lib/attention/signals";
 import type { Track, TrackInsert, TrackType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
+type BoardSort = "custom" | "title" | "updated" | "deadline";
+
+const BOARD_SORTS: { value: BoardSort; label: string }[] = [
+  { value: "custom", label: "Custom" },
+  { value: "title", label: "Title" },
+  { value: "updated", label: "Updated" },
+  { value: "deadline", label: "Deadline" },
+];
+
+const BOARD_SORT_KEY = "tempo.boardSort";
+
+function readBoardSort(): BoardSort {
+  if (typeof window === "undefined") return "custom";
+  const raw = localStorage.getItem(BOARD_SORT_KEY);
+  if (BOARD_SORTS.some((o) => o.value === raw)) return raw as BoardSort;
+  return "custom";
+}
+
+function sortBoardTracks(tracks: Track[], mode: BoardSort): Track[] {
+  const list = [...tracks];
+  if (mode === "custom") {
+    return list.sort(
+      (a, b) => a.list_sort - b.list_sort || a.title.localeCompare(b.title)
+    );
+  }
+  if (mode === "title") {
+    return list.sort((a, b) => a.title.localeCompare(b.title));
+  }
+  if (mode === "updated") {
+    return list.sort((a, b) =>
+      b.updated_at < a.updated_at ? -1 : b.updated_at > a.updated_at ? 1 : 0
+    );
+  }
+  return list.sort((a, b) => {
+    if (!a.deadline && !b.deadline) return a.title.localeCompare(b.title);
+    if (!a.deadline) return 1;
+    if (!b.deadline) return -1;
+    return a.deadline < b.deadline
+      ? -1
+      : a.deadline > b.deadline
+        ? 1
+        : a.title.localeCompare(b.title);
+  });
+}
+
 export function BoardView() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -39,9 +90,10 @@ export function BoardView() {
     useActiveSpace();
   const stagesQuery = useStages(activeSpaceId);
   const tracksQuery = useTracks(activeSpaceId);
-  const { create } = useTrackMutations(activeSpaceId);
+  const { create, moveStage } = useTrackMutations(activeSpaceId);
   const { changeStage, dialog: stageTransitionDialog } =
     useStageTransitionController(activeSpaceId);
+  const { toast } = useToast();
 
   const stages = React.useMemo(
     () => stagesQuery.data ?? [],
@@ -57,6 +109,7 @@ export function BoardView() {
   const [attentionFilter, setAttentionFilter] = React.useState<
     "all" | "blocked" | "overdue" | "waiting"
   >("all");
+  const [boardSort, setBoardSort] = React.useState<BoardSort>(readBoardSort);
   const [density, setDensity] = React.useState<"comfortable" | "compact">(() => {
     if (typeof window === "undefined") return "comfortable";
     return (localStorage.getItem("tempo.boardDensity") as "comfortable" | "compact") || "comfortable";
@@ -110,8 +163,26 @@ export function BoardView() {
         map.get(t.stage_id)!.push(t);
       }
     }
+    for (const [stageId, list] of Array.from(map.entries())) {
+      map.set(stageId, sortBoardTracks(list, boardSort));
+    }
     return map;
-  }, [stages, filtered]);
+  }, [stages, filtered, boardSort]);
+
+  const offBoardTracks = React.useMemo(() => {
+    const stageIds = new Set(stages.map((s) => s.id));
+    return sortBoardTracks(
+      filtered.filter((t) => !t.stage_id || !stageIds.has(t.stage_id)),
+      boardSort
+    );
+  }, [filtered, stages, boardSort]);
+
+  const [overOffBoard, setOverOffBoard] = React.useState(false);
+
+  function setSort(mode: BoardSort) {
+    setBoardSort(mode);
+    localStorage.setItem(BOARD_SORT_KEY, mode);
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
@@ -126,8 +197,15 @@ export function BoardView() {
     const overId = event.over?.id;
     if (!overId) {
       setOverStageId(null);
+      setOverOffBoard(false);
       return;
     }
+    if (String(overId) === OFF_BOARD_DROPPABLE) {
+      setOverStageId(null);
+      setOverOffBoard(true);
+      return;
+    }
+    setOverOffBoard(false);
     if (stages.some((s) => s.id === overId)) {
       setOverStageId(String(overId));
       return;
@@ -139,6 +217,7 @@ export function BoardView() {
   function handleDragEnd(event: DragEndEvent) {
     setActiveDrag(null);
     setOverStageId(null);
+    setOverOffBoard(false);
     const { active, over } = event;
     if (!over) return;
 
@@ -146,11 +225,21 @@ export function BoardView() {
     const track = tracks.find((t) => t.id === trackId);
     if (!track) return;
 
+    if (String(over.id) === OFF_BOARD_DROPPABLE) {
+      if (track.stage_id) void removeFromBoard(track);
+      return;
+    }
+
     let targetStageId: string | null = null;
     if (stages.some((s) => s.id === over.id)) {
       targetStageId = String(over.id);
     } else {
       const overTrack = tracks.find((t) => t.id === over.id);
+      // Dropping onto an off-board card shouldn't assign a stage.
+      if (overTrack && !overTrack.stage_id) {
+        if (track.stage_id) void removeFromBoard(track);
+        return;
+      }
       targetStageId = overTrack?.stage_id ?? null;
     }
 
@@ -159,6 +248,17 @@ export function BoardView() {
       trackTitle: track.title,
       fromStageId: track.stage_id,
     });
+  }
+
+  async function removeFromBoard(track: Track) {
+    try {
+      await moveStage.mutateAsync({ id: track.id, stageId: null });
+      toast(`“${track.title}” is off the board — still in Tracks.`, "ok");
+    } catch (err) {
+      toast(
+        err instanceof Error ? err.message : "Couldn’t take that off the board."
+      );
+    }
   }
 
   async function handleCreate(values: TrackInsert & { id?: string }) {
@@ -180,11 +280,116 @@ export function BoardView() {
     <div className="flex h-full flex-col">
       <PageHeader
         title={activeSpace?.name ?? "Board"}
-        subtitle="Drag tracks across stages. Tap a card to open it."
+        subtitle="Drag tracks across stages. Take one off the board without deleting it."
         actions={
           <>
-            {/* Density is a view control, so it sits with the other view
-                actions rather than among the content filters. */}
+            <HeaderMenu
+              label="Sort"
+              active={boardSort !== "custom"}
+              summary={
+                boardSort !== "custom"
+                  ? BOARD_SORTS.find((o) => o.value === boardSort)?.label
+                  : null
+              }
+            >
+              <FilterGroup label="Order in columns" stacked>
+                {BOARD_SORTS.map((opt) => (
+                  <Chip
+                    key={opt.value}
+                    size="sm"
+                    active={boardSort === opt.value}
+                    onClick={() => setSort(opt.value)}
+                  >
+                    {opt.label}
+                  </Chip>
+                ))}
+              </FilterGroup>
+            </HeaderMenu>
+
+            <HeaderMenu
+              label="Filter"
+              panelWidth={320}
+              active={filtersActive}
+              summary={
+                filtersActive
+                  ? String(
+                      [
+                        typeFilter !== "all",
+                        tagFilter !== "all",
+                        attentionFilter !== "all",
+                      ].filter(Boolean).length
+                    )
+                  : null
+              }
+              onClear={() => {
+                setTypeFilter("all");
+                setTagFilter("all");
+                setAttentionFilter("all");
+              }}
+            >
+              <FilterGroup label="Type" stacked>
+                <Chip
+                  size="sm"
+                  active={typeFilter === "all"}
+                  onClick={() => setTypeFilter("all")}
+                >
+                  All
+                </Chip>
+                {TRACK_TYPES.map((t) => (
+                  <Chip
+                    key={t.value}
+                    size="sm"
+                    active={typeFilter === t.value}
+                    onClick={() => setTypeFilter(t.value)}
+                  >
+                    {t.label}
+                  </Chip>
+                ))}
+              </FilterGroup>
+
+              {allTags.length > 0 ? (
+                <FilterGroup label="Tag" stacked>
+                  <Chip
+                    size="sm"
+                    active={tagFilter === "all"}
+                    onClick={() => setTagFilter("all")}
+                  >
+                    All
+                  </Chip>
+                  {allTags.map((tag) => (
+                    <Chip
+                      key={tag}
+                      size="sm"
+                      active={tagFilter === tag}
+                      onClick={() => setTagFilter(tag)}
+                    >
+                      {tag}
+                    </Chip>
+                  ))}
+                </FilterGroup>
+              ) : null}
+
+              <FilterGroup label="Show" stacked>
+                {(
+                  [
+                    ["all", "All"],
+                    ["blocked", "Blocked"],
+                    ["waiting", "Waiting"],
+                    ["overdue", "Overdue"],
+                  ] as const
+                ).map(([value, label]) => (
+                  <Chip
+                    key={value}
+                    size="sm"
+                    active={attentionFilter === value}
+                    onClick={() => setAttentionFilter(value)}
+                  >
+                    {label}
+                  </Chip>
+                ))}
+              </FilterGroup>
+            </HeaderMenu>
+
             <div
               role="group"
               aria-label="Card density"
@@ -192,8 +397,8 @@ export function BoardView() {
             >
               {(
                 [
-                  ["comfortable", Rows3, "Comfortable"],
-                  ["compact", Rows2, "Compact"],
+                  ["comfortable", Rows2, "Comfortable"],
+                  ["compact", Rows3, "Compact"],
                 ] as const
               ).map(([value, Icon, label]) => (
                 <button
@@ -236,87 +441,7 @@ export function BoardView() {
             </Button>
           </>
         }
-      >
-        {/* One bordered filter bar with aligned label columns. Density used to
-            live here too, but it's a view setting, not a content filter — it
-            moved up to the header actions. */}
-        <div className="panel-quiet overflow-hidden">
-          <FilterRow label="Type">
-            <Chip
-              active={typeFilter === "all"}
-              onClick={() => setTypeFilter("all")}
-            >
-              All
-            </Chip>
-            {TRACK_TYPES.map((t) => (
-              <Chip
-                key={t.value}
-                active={typeFilter === t.value}
-                onClick={() => setTypeFilter(t.value)}
-              >
-                {t.label}
-              </Chip>
-            ))}
-          </FilterRow>
-
-          {allTags.length > 0 ? (
-            <FilterRow label="Tag" divider>
-              <Chip
-                active={tagFilter === "all"}
-                onClick={() => setTagFilter("all")}
-              >
-                All
-              </Chip>
-              {allTags.map((tag) => (
-                <Chip
-                  key={tag}
-                  active={tagFilter === tag}
-                  onClick={() => setTagFilter(tag)}
-                >
-                  {tag}
-                </Chip>
-              ))}
-            </FilterRow>
-          ) : null}
-
-          <FilterRow
-            divider
-            label="Show"
-            trailing={
-              filtersActive ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setTypeFilter("all");
-                    setTagFilter("all");
-                    setAttentionFilter("all");
-                  }}
-                  className="whitespace-nowrap text-[11px] text-ice transition-colors duration-hover hover:underline"
-                >
-                  Clear filters
-                </button>
-              ) : null
-            }
-          >
-            {(
-              [
-                ["all", "All"],
-                ["blocked", "Blocked"],
-                ["waiting", "Waiting"],
-                ["overdue", "Overdue"],
-              ] as const
-            ).map(([value, label]) => (
-              <Chip
-                key={value}
-                active={attentionFilter === value}
-                onClick={() => setAttentionFilter(value)}
-              >
-                {label}
-              </Chip>
-            ))}
-          </FilterRow>
-        </div>
-      </PageHeader>
+      />
 
       {loading ? (
         <div className="flex gap-3 overflow-hidden">
@@ -342,6 +467,7 @@ export function BoardView() {
           onDragCancel={() => {
             setActiveDrag(null);
             setOverStageId(null);
+            setOverOffBoard(false);
           }}
         >
           {/* Columns share the available width instead of scrolling off-screen.
@@ -349,7 +475,7 @@ export function BoardView() {
               at a glance; a drag expands everything so any stage is droppable. */}
           {/* Below lg the stages stack vertically — columns would be too narrow
               to read, and vertical scrolling beats horizontal on touch. */}
-          <div className="flex flex-col gap-2 pb-4 lg:flex-row lg:items-stretch lg:overflow-x-auto">
+          <div className="flex flex-col gap-2 pb-2 lg:flex-row lg:items-stretch lg:overflow-x-auto">
             {stages.map((stage) => (
               <KanbanColumn
                 key={stage.id}
@@ -358,6 +484,7 @@ export function BoardView() {
                 tracks={tracksByStage.get(stage.id) ?? []}
                 isOver={overStageId === stage.id}
                 onOpenTrack={(t) => router.push(`/track/${t.id}`)}
+                onRemoveFromBoard={(t) => void removeFromBoard(t)}
                 compact={density === "compact"}
                 roomy={roomy}
                 dragging={!!activeDrag}
@@ -365,11 +492,19 @@ export function BoardView() {
               />
             ))}
           </div>
+          <OffBoardTray
+            tracks={offBoardTracks}
+            isOver={overOffBoard}
+            dragging={!!activeDrag}
+            compact={density === "compact"}
+            onOpenTrack={(t) => router.push(`/track/${t.id}`)}
+          />
           <DragOverlay>
             {activeDrag ? (
               <TrackCard
                 track={activeDrag}
                 onOpen={() => {}}
+                compact={density === "compact"}
                 roomy={roomy}
                 isDragOverlay
               />

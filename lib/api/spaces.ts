@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
-import type { Space } from "@/lib/types";
+import type { Space, SpaceFocus } from "@/lib/types";
 import {
   DEFAULT_SPACE_NAMES,
   DEFAULT_STAGE_NAMES,
@@ -15,11 +15,15 @@ export async function fetchSpaces(): Promise<Space[]> {
   return data ?? [];
 }
 
-export async function createSpace(name: string, sort: number): Promise<Space> {
+export async function createSpace(
+  name: string,
+  sort: number,
+  focus: SpaceFocus = "music"
+): Promise<Space> {
   const supabase = createClient();
   const { data: space, error } = await supabase
     .from("spaces")
-    .insert({ name, sort })
+    .insert({ name, sort, focus })
     .select()
     .single();
   if (error) throw error;
@@ -40,6 +44,21 @@ export async function renameSpace(id: string, name: string): Promise<Space> {
   const { data, error } = await supabase
     .from("spaces")
     .update({ name })
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateSpaceFocus(
+  id: string,
+  focus: SpaceFocus
+): Promise<Space> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("spaces")
+    .update({ focus })
     .eq("id", id)
     .select()
     .single();

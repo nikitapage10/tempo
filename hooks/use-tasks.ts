@@ -9,25 +9,27 @@ import {
 } from "@/lib/api/tasks";
 import type { Task, TaskInsert, TaskUpdate } from "@/lib/types";
 
-export function useTasks() {
+export function useTasks(spaceId: string | null) {
   return useQuery({
-    queryKey: ["tasks"],
-    queryFn: fetchTasks,
+    queryKey: ["tasks", spaceId],
+    queryFn: () => fetchTasks(spaceId),
+    enabled: !!spaceId,
   });
 }
 
-export function useTaskMutations() {
+export function useTaskMutations(spaceId: string | null) {
   const qc = useQueryClient();
-  const key = ["tasks"] as const;
+  const key = ["tasks", spaceId] as const;
 
   const invalidate = () => {
-    qc.invalidateQueries({ queryKey: key });
+    qc.invalidateQueries({ queryKey: ["tasks"] });
     qc.invalidateQueries({ queryKey: ["today-stats"] });
     qc.invalidateQueries({ queryKey: ["project-tasks"] });
   };
 
   const create = useMutation({
-    mutationFn: (input: TaskInsert) => createTask(input),
+    mutationFn: (input: TaskInsert) =>
+      createTask({ ...input, space_id: input.space_id ?? spaceId }),
     onSuccess: invalidate,
   });
 

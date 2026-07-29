@@ -69,9 +69,24 @@ RLS: via space ownership. Tracks.stage_id ON DELETE SET NULL.
 | tags | text[] | default `{}` |
 | notes | text null | |
 | artwork_url | text null | storage path |
+| list_sort | int | Tracks page custom order within a space (migration 017) |
 | created_at, updated_at | timestamptz | |
 
-Indexes today: `idx_tracks_space`, `idx_tracks_stage`.
+Indexes today: `idx_tracks_space`, `idx_tracks_stage`, `idx_tracks_space_list_sort`.
+
+#### `track_list_presets` (migration 018)
+Named Tracks-page order snapshots per space.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid PK | |
+| user_id | uuid → auth.users CASCADE | |
+| space_id | uuid → spaces CASCADE | |
+| name | text | 1–60 chars |
+| track_ids | uuid[] | ordered track ids |
+| created_at, updated_at | timestamptz | |
+
+RLS: `user_id = auth.uid()`.
 
 #### `versions`
 | Column | Type | Notes |

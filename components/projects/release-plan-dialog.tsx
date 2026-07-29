@@ -18,6 +18,7 @@ type ReleasePlanDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   projectId: string;
+  spaceId: string | null;
   releaseDate: string | null;
   tracks: { id: string; title: string }[];
   checklistByTrack: Map<string, ChecklistItem[]>;
@@ -34,6 +35,7 @@ export function ReleasePlanDialog({
   open,
   onOpenChange,
   projectId,
+  spaceId,
   releaseDate,
   tracks,
   checklistByTrack,
@@ -42,7 +44,7 @@ export function ReleasePlanDialog({
   const { toast } = useToast();
   const [selected, setSelected] = React.useState<Set<number>>(new Set());
   const [busy, setBusy] = React.useState(false);
-  const { create: createTask } = useTaskMutations();
+  const { create: createTask } = useTaskMutations(spaceId);
 
   const suggestions = React.useMemo(() => {
     if (!open) return [];

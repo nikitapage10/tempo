@@ -3,7 +3,7 @@
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import * as React from "react";
-import { AlertTriangle, Clock } from "lucide-react";
+import { AlertTriangle, Clock, X } from "lucide-react";
 import { LfWindow } from "@/components/lf-windows";
 import { SpectraCoverArt } from "@/components/spectra/spectra-cover-art";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
@@ -19,9 +19,12 @@ type TrackCardProps = {
   track: Track;
   onOpen: (track: Track) => void;
   isDragOverlay?: boolean;
+  /** Board compact density — thin text row, no cover. */
   compact?: boolean;
   /** Sparse board — larger artwork and title so cards carry the column. */
   roomy?: boolean;
+  /** Take the track off the board without deleting it. */
+  onRemoveFromBoard?: (track: Track) => void;
 };
 
 export function TrackCard({
@@ -30,6 +33,7 @@ export function TrackCard({
   isDragOverlay,
   compact,
   roomy,
+  onRemoveFromBoard,
 }: TrackCardProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
@@ -75,6 +79,10 @@ export function TrackCard({
 
   const showEdge = hovered && !isDragging && !isDragOverlay;
 
+  const dragHandleProps = isDragOverlay
+    ? {}
+    : { ...listeners, ...attributes };
+
   return (
     <article
       ref={isDragOverlay ? undefined : setNodeRef}
@@ -98,119 +106,194 @@ export function TrackCard({
       <SpotlightCard
         tone={topSignal ? "warn" : "ramp"}
         radius={10}
-        size={200}
+        size={compact ? 140 : 200}
         className="block h-full"
       >
-      <div
-        className={cn(
-          "relative rounded-[9px] border border-line",
-          "bg-gradient-to-b from-[#17171e] to-bg-1 shadow-e1",
-          "transition-shadow duration-hover",
-          !isDragOverlay && !isDragging && "hover:shadow-e2",
-          compact ? "p-2" : roomy ? "p-3.5" : "p-3",
-          isDragOverlay && "ring-1 ring-ice/60"
-        )}
-      >
-        <div className="flex gap-3">
-          <button
-            type="button"
-            className={cn(
-              "relative shrink-0 overflow-hidden rounded-input border border-line",
-              roomy ? "size-16 shadow-e1" : "size-11"
-            )}
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={() => onOpen(track)}
-            aria-label={`Open ${track.title}`}
-          >
-            <SpectraCoverArt
-              trackId={track.id}
-              title={track.title}
-              artworkUrl={track.artwork_url}
-              animate={false}
-            />
-          </button>
-
+        {compact ? (
           <div
             className={cn(
-              "min-w-0 flex-1",
+              "relative flex items-center gap-2 rounded-[9px] border border-line",
+              "bg-gradient-to-b from-[#17171e] to-bg-1 px-2 py-1 shadow-e1",
+              "transition-shadow duration-hover",
+              !isDragOverlay && !isDragging && "hover:shadow-e2",
+              isDragOverlay && "ring-1 ring-ice/60",
               !isDragOverlay && "cursor-grab active:cursor-grabbing touch-none"
             )}
-            {...(isDragOverlay ? {} : { ...listeners, ...attributes })}
+            {...dragHandleProps}
           >
-            <div className="flex items-start justify-between gap-2">
-              <button
-                type="button"
-                className="min-w-0 text-left"
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={() => onOpen(track)}
-              >
-                <h3
-                  className={cn(
-                    "truncate font-medium text-text-hi hover:text-ice",
-                    roomy ? "text-base" : "text-sm"
-                  )}
-                >
-                  {track.title}
-                </h3>
-              </button>
-              <span className="mt-0.5 flex shrink-0 items-center gap-1">
-                {topSignal ? (
-                  <span title={topSignal.label} aria-label={topSignal.label}>
-                    <topSignal.Icon className="size-3 text-warn" aria-hidden />
-                  </span>
-                ) : null}
-                <span
-                  className={cn(
-                    "size-2 rounded-full",
-                    momentumDotClass(track.momentum)
-                  )}
-                  title={track.momentum}
-                  aria-label={`Momentum: ${track.momentum}`}
-                />
-              </span>
-            </div>
-
-            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-              <span
-                className={cn(
-                  "rounded-chip px-2 py-0.5 text-[11px]",
-                  typeChipClass(track.type)
-                )}
-              >
-                {formatTrackType(track.type)}
-              </span>
-              {metaParts.length > 0 ? (
-                <span className="font-mono text-[11px] text-text-lo">
-                  {metaParts.join(" · ")}
+            <button
+              type="button"
+              className="min-w-0 flex-1 truncate text-left text-xs font-medium text-text-hi hover:text-ice"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={() => onOpen(track)}
+            >
+              {track.title}
+            </button>
+            <span className="flex shrink-0 items-center gap-1">
+              {topSignal ? (
+                <span title={topSignal.label} aria-label={topSignal.label}>
+                  <topSignal.Icon className="size-2.5 text-warn" aria-hidden />
                 </span>
               ) : null}
-            </div>
-
-            {track.next_action?.trim() ? (
-              <p
+              <span
                 className={cn(
-                  "mt-1.5 truncate text-[11px]",
-                  nextActionOverdue ? "text-warn" : "text-text-lo"
+                  "size-1.5 rounded-full",
+                  momentumDotClass(track.momentum)
                 )}
-              >
-                <span className="text-text-lo/70">Next: </span>
-                {track.next_action}
-              </p>
-            ) : null}
-
-            {deadlineLabel ? (
-              <p
-                className={cn(
-                  "mt-1 font-mono text-[11px]",
-                  overdue ? "text-warn" : "text-text-lo"
-                )}
-              >
-                {deadlineLabel}
-              </p>
-            ) : null}
+                title={track.momentum}
+                aria-label={`Momentum: ${track.momentum}`}
+              />
+              {onRemoveFromBoard && !isDragOverlay && track.stage_id ? (
+                <button
+                  type="button"
+                  title="Take off board"
+                  aria-label={`Take ${track.title} off the board`}
+                  className="rounded p-0.5 text-text-lo/50 hover:bg-bg-3 hover:text-text-hi"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRemoveFromBoard(track);
+                  }}
+                >
+                  <X className="size-3" />
+                </button>
+              ) : null}
+            </span>
           </div>
-        </div>
-      </div>
+        ) : (
+          <div
+            className={cn(
+              "relative rounded-[9px] border border-line",
+              "bg-gradient-to-b from-[#17171e] to-bg-1 shadow-e1",
+              "transition-shadow duration-hover",
+              !isDragOverlay && !isDragging && "hover:shadow-e2",
+              roomy ? "p-3.5" : "p-3",
+              isDragOverlay && "ring-1 ring-ice/60"
+            )}
+          >
+            <div className="flex gap-3">
+              <button
+                type="button"
+                className={cn(
+                  "relative shrink-0 overflow-hidden rounded-input border border-line",
+                  roomy ? "size-16 shadow-e1" : "size-11"
+                )}
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={() => onOpen(track)}
+                aria-label={`Open ${track.title}`}
+              >
+                <SpectraCoverArt
+                  trackId={track.id}
+                  title={track.title}
+                  artworkUrl={track.artwork_url}
+                  animate={false}
+                />
+              </button>
+
+              <div
+                className={cn(
+                  "min-w-0 flex-1",
+                  !isDragOverlay &&
+                    "cursor-grab active:cursor-grabbing touch-none"
+                )}
+                {...dragHandleProps}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <button
+                    type="button"
+                    className="min-w-0 text-left"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={() => onOpen(track)}
+                  >
+                    <h3
+                      className={cn(
+                        "truncate font-medium text-text-hi hover:text-ice",
+                        roomy ? "text-base" : "text-sm"
+                      )}
+                    >
+                      {track.title}
+                    </h3>
+                  </button>
+                  <span className="mt-0.5 flex shrink-0 items-center gap-1">
+                    {topSignal ? (
+                      <span
+                        title={topSignal.label}
+                        aria-label={topSignal.label}
+                      >
+                        <topSignal.Icon
+                          className="size-3 text-warn"
+                          aria-hidden
+                        />
+                      </span>
+                    ) : null}
+                    <span
+                      className={cn(
+                        "size-2 rounded-full",
+                        momentumDotClass(track.momentum)
+                      )}
+                      title={track.momentum}
+                      aria-label={`Momentum: ${track.momentum}`}
+                    />
+                    {onRemoveFromBoard && !isDragOverlay && track.stage_id ? (
+                      <button
+                        type="button"
+                        title="Take off board"
+                        aria-label={`Take ${track.title} off the board`}
+                        className="rounded p-0.5 text-text-lo/50 hover:bg-bg-3 hover:text-text-hi"
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRemoveFromBoard(track);
+                        }}
+                      >
+                        <X className="size-3.5" />
+                      </button>
+                    ) : null}
+                  </span>
+                </div>
+
+                <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                  <span
+                    className={cn(
+                      "rounded-chip px-2 py-0.5 text-[11px]",
+                      typeChipClass(track.type)
+                    )}
+                  >
+                    {formatTrackType(track.type)}
+                  </span>
+                  {metaParts.length > 0 ? (
+                    <span className="font-mono text-[11px] text-text-lo">
+                      {metaParts.join(" · ")}
+                    </span>
+                  ) : null}
+                </div>
+
+                {track.next_action?.trim() ? (
+                  <p
+                    className={cn(
+                      "mt-1.5 truncate text-[11px]",
+                      nextActionOverdue ? "text-warn" : "text-text-lo"
+                    )}
+                  >
+                    <span className="text-text-lo/70">Next: </span>
+                    {track.next_action}
+                  </p>
+                ) : null}
+
+                {deadlineLabel ? (
+                  <p
+                    className={cn(
+                      "mt-1 font-mono text-[11px]",
+                      overdue ? "text-warn" : "text-text-lo"
+                    )}
+                  >
+                    {deadlineLabel}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        )}
       </SpotlightCard>
     </article>
   );

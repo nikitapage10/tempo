@@ -4,6 +4,21 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-28
 
+- Fixed (v0.35.1): saving a named track order now tells you clearly if migration `018` still needs running in Supabase (instead of a vague failure).
+- Added (v0.35.0): you can take a track **off the board** without deleting it — use the × on a card, or drag it into the Off board tray. It’s still in Tracks; drag it onto a stage (or pick a stage on the track page) to put it back.
+- Added (v0.34.0): Tracks has the same Comfortable / Compact density toggle as the Board — Compact is a thin text row (title, momentum, stage), no cover or extra meta.
+- Added (v0.33.0): spaces can now be **tasks-focused** instead of music-focused — pick "Tasks & projects" when creating a space, or flip it later in Settings. A tasks-focused space drops Board and Tracks from the nav and Today, and shows open tasks and project progress instead. Good for something like running social media out of TEMPO alongside your music.
+  - Under the hood: **run migration `019` in Supabase.** Tasks are now scoped to their space — existing tasks with no track or project link (and projects with no space) won't show up until you re-add them inside a space.
+- Fixed (v0.32.1): Sort / Filter menus no longer stretch or jump the Tracks (and Board) header — they open as a floating panel, and Filter shows a count instead of a long label.
+- Changed (v0.32.0): Board and Tracks **Sort** and **Filter** live in the header as small menus (no full-width bar when closed). Board can also sort cards inside each column (Custom, title, updated, deadline).
+- Changed (v0.31.1): Board and Tracks filter/sort bars take less room — smaller chips, one compact toolbar, and Filters tuck away until you open them (Tasks got the same denser bar).
+- Added (v0.31.0): on Tracks, **Save order** stores your Custom arrangement under a name and adds it to the Sort row — pick it anytime later. You can also apply a saved order as Custom, overwrite one from Custom, or remove it.
+  - Under the hood: **run migration `018` in Supabase** so named orders can stick. (Migration `017` is still needed for the live Custom drag order.)
+- Added (v0.30.0): on Tracks you can filter (type, stage, tag, blocked/waiting/overdue) and sort (Custom, title, stage, updated, deadline). Custom is the default — drag rows to rearrange, and the order is saved.
+  - Under the hood: **run migration `017` in Supabase** so custom order can stick. Without it, Tracks may fail to load or reorder.
+- Fixed (v0.29.1): Board density icons were swapped — fewer lines is Comfortable, more lines is Compact.
+- Changed (v0.29.0): Board Compact density is now a thin text row — title only (plus a tiny momentum / blocked mark), no cover art or extra meta — so packed columns stay easy to scan.
+- Fixed (v0.28.1): cover art (and other private files) no longer re-download every time you open a page — TEMPO reuses the same download link for about an hour so covers appear instantly when you move around or refresh.
 - Changed (v0.28.0): the assistant can now propose track edits you confirm — BPM, key, genre, title, type, blocked/waiting, and the stage/momentum/deadline/next-move changes it already knew — so asking to set a song to 174 BPM should bring up a confirm button instead of a dead end.
 - Added (v0.27.0): the floating assistant now has a mic and a paperclip like Import — talk in (live dictation, or record-and-transcribe), and attach screenshots, PDFs, or text files with your question.
 - Changed (v0.26.0): the floating assistant can propose more real workspace moves now — including moving a track to another stage, setting a next move, setting a task due date, and adding a project — still only after you tap to confirm, and it still won't delete anything.

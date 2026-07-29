@@ -7,6 +7,7 @@ import type {
   Momentum,
   ProjectType,
   ReferenceKind,
+  SpaceFocus,
   TaskCategory,
   TaskStatus,
   TrackType,
@@ -57,6 +58,11 @@ export const TASK_STATUSES: { value: TaskStatus; label: string }[] = [
 ];
 
 export const DEFAULT_SPACE_NAMES = ["Originals", "Edits & Remixes"] as const;
+
+export const SPACE_FOCUS_OPTIONS: { value: SpaceFocus; label: string; description: string }[] = [
+  { value: "music", label: "Music", description: "Board and stage pipeline for tracks" },
+  { value: "tasks", label: "Tasks & projects", description: "No board — just tasks and projects" },
+];
 
 export const DEFAULT_STAGE_NAMES = [
   "Idea",

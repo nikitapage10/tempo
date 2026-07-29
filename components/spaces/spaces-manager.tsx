@@ -23,14 +23,17 @@ import {
 } from "@/components/active-space-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { Space } from "@/lib/types";
+import { SPACE_FOCUS_OPTIONS } from "@/lib/constants";
+import type { Space, SpaceFocus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export function SpacesManager() {
   const { spaces, activeSpaceId, setActiveSpaceId, isLoading } =
     useActiveSpace();
-  const { create, rename, remove, reorder } = useSpaceMutations();
+  const { create, rename, remove, reorder, updateFocus } =
+    useSpaceMutations();
   const [newName, setNewName] = React.useState("");
+  const [newFocus, setNewFocus] = React.useState<SpaceFocus>("music");
   const [confirmId, setConfirmId] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState(false);
@@ -48,8 +51,10 @@ export function SpacesManager() {
       const space = await create.mutateAsync({
         name: newName.trim(),
         sort: spaces.length,
+        focus: newFocus,
       });
       setNewName("");
+      setNewFocus("music");
       setActiveSpaceId(space.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create space.");
@@ -63,6 +68,16 @@ export function SpacesManager() {
       await rename.mutateAsync({ id, name });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not rename space.");
+    }
+  }
+
+  async function handleFocusChange(id: string, focus: SpaceFocus) {
+    try {
+      await updateFocus.mutateAsync({ id, focus });
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Could not update space."
+      );
     }
   }
 
@@ -106,7 +121,9 @@ export function SpacesManager() {
         Spaces
       </p>
       <p className="mt-2 text-sm text-text-lo">
-        Workspaces like Originals or Edits. Each has its own board stages.
+        Workspaces like Originals or Edits, each with its own board stages —
+        or a non-music space like Social Media, focused on tasks and
+        projects instead of a board.
       </p>
 
       {isLoading ? (
@@ -131,6 +148,7 @@ export function SpacesManager() {
                     confirmDelete={confirmId === space.id}
                     canDelete={spaces.length > 1}
                     onRename={handleRename}
+                    onFocusChange={handleFocusChange}
                     onAskDelete={() => setConfirmId(space.id)}
                     onCancelDelete={() => setConfirmId(null)}
                     onConfirmDelete={() => handleDelete(space.id)}
@@ -141,12 +159,30 @@ export function SpacesManager() {
             </SortableContext>
           </DndContext>
 
-          <form onSubmit={handleCreate} className="mt-4 flex gap-2">
+          <form onSubmit={handleCreate} className="mt-4 flex flex-col gap-2 sm:flex-row">
             <Input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="New space name"
+              className="flex-1"
             />
+            <div className="flex gap-1 rounded-input border border-line bg-bg-2 p-0.5">
+              {SPACE_FOCUS_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setNewFocus(opt.value)}
+                  className={cn(
+                    "rounded-chip px-2.5 py-1 text-xs transition-colors duration-hover",
+                    newFocus === opt.value
+                      ? "bg-ice/15 text-ice"
+                      : "text-text-lo hover:text-text-hi"
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
             <Button type="submit" disabled={busy || !newName.trim()}>
               <Plus className="size-3.5" />
               Add
@@ -166,6 +202,7 @@ function SortableSpaceRow({
   confirmDelete,
   canDelete,
   onRename,
+  onFocusChange,
   onAskDelete,
   onCancelDelete,
   onConfirmDelete,
@@ -176,6 +213,7 @@ function SortableSpaceRow({
   confirmDelete: boolean;
   canDelete: boolean;
   onRename: (id: string, name: string) => void;
+  onFocusChange: (id: string, focus: SpaceFocus) => void;
   onAskDelete: () => void;
   onCancelDelete: () => void;
   onConfirmDelete: () => void;
@@ -243,6 +281,23 @@ function SortableSpaceRow({
         >
           <Trash2 className="size-3.5" />
         </Button>
+      </div>
+      <div className="mt-1.5 flex items-center gap-1 pl-7">
+        {SPACE_FOCUS_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => onFocusChange(space.id, opt.value)}
+            className={cn(
+              "rounded-chip border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide transition-colors duration-hover",
+              space.focus === opt.value
+                ? "border-ice/35 bg-ice/10 text-ice"
+                : "border-transparent text-text-lo hover:text-text-hi"
+            )}
+          >
+            {opt.label}
+          </button>
+        ))}
       </div>
       {confirmDelete ? (
         <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-line px-1 pt-2 pb-1">

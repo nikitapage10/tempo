@@ -16,6 +16,7 @@ type KanbanColumnProps = {
   stages: Stage[];
   isOver: boolean;
   onOpenTrack: (track: Track) => void;
+  onRemoveFromBoard?: (track: Track) => void;
   compact?: boolean;
   /** Sparse board — render cards with more presence. */
   roomy?: boolean;
@@ -31,6 +32,7 @@ export function KanbanColumn({
   stages,
   isOver,
   onOpenTrack,
+  onRemoveFromBoard,
   compact,
   roomy,
   dragging,
@@ -132,7 +134,8 @@ export function KanbanColumn({
 
           <div
             className={cn(
-              "relative flex flex-1 flex-col gap-2 px-2.5 pb-3",
+              "relative flex flex-1 flex-col px-2.5 pb-3",
+              compact ? "gap-1" : "gap-2",
               isOver && "bg-ice/[0.03]"
             )}
           >
@@ -161,6 +164,7 @@ export function KanbanColumn({
                   onOpen={onOpenTrack}
                   compact={compact}
                   roomy={roomy}
+                  onRemoveFromBoard={onRemoveFromBoard}
                 />
               ))
             )}

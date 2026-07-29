@@ -39,9 +39,9 @@ function ProjectStat({ value, label }: { value: number; label: string }) {
 
 export default function ProjectsPage() {
   const router = useRouter();
-  const { data: projects = [], isLoading } = useProjects();
-  const { create } = useProjectMutations();
   const { activeSpaceId } = useActiveSpace();
+  const { data: projects = [], isLoading } = useProjects(activeSpaceId);
+  const { create } = useProjectMutations();
   const { toast } = useToast();
   const [open, setOpen] = React.useState(false);
   const [name, setName] = React.useState("");

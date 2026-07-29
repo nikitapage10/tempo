@@ -8,10 +8,11 @@ import {
   ensureDefaultSpaces,
   renameSpace,
   reorderSpaces,
+  updateSpaceFocus,
 } from "@/lib/api/spaces";
 import { ensureDefaultTemplates } from "@/lib/api/templates";
 import { ACTIVE_SPACE_KEY } from "@/lib/constants";
-import type { Space } from "@/lib/types";
+import type { Space, SpaceFocus } from "@/lib/types";
 
 type ActiveSpaceContextValue = {
   spaces: Space[];
@@ -128,14 +129,27 @@ export function useSpaceMutations() {
   const invalidate = () => qc.invalidateQueries({ queryKey: ["spaces"] });
 
   const create = useMutation({
-    mutationFn: ({ name, sort }: { name: string; sort: number }) =>
-      createSpace(name, sort),
+    mutationFn: ({
+      name,
+      sort,
+      focus,
+    }: {
+      name: string;
+      sort: number;
+      focus?: SpaceFocus;
+    }) => createSpace(name, sort, focus),
     onSuccess: invalidate,
   });
 
   const rename = useMutation({
     mutationFn: ({ id, name }: { id: string; name: string }) =>
       renameSpace(id, name),
+    onSuccess: invalidate,
+  });
+
+  const updateFocus = useMutation({
+    mutationFn: ({ id, focus }: { id: string; focus: SpaceFocus }) =>
+      updateSpaceFocus(id, focus),
     onSuccess: invalidate,
   });
 
@@ -167,5 +181,5 @@ export function useSpaceMutations() {
     onSettled: invalidate,
   });
 
-  return { create, rename, remove, reorder };
+  return { create, rename, remove, reorder, updateFocus };
 }

@@ -2,12 +2,15 @@ export type TrackType = "original" | "remix" | "edit" | "collab" | "bootleg";
 
 export type Momentum = "active" | "simmering" | "stalled" | "parked";
 
+export type SpaceFocus = "music" | "tasks";
+
 export type Space = {
   id: string;
   user_id: string;
   name: string;
   sort: number;
   accent_color: string | null;
+  focus: SpaceFocus;
   created_at: string;
 };
 
@@ -43,6 +46,7 @@ export type Track = {
   blocked_reason: string | null;
   waiting_on: string | null;
   stage_entered_at: string;
+  list_sort: number;
   created_at: string;
   updated_at: string;
 };
@@ -73,8 +77,20 @@ export type TrackUpdate = Partial<
     updated_at?: string;
     artwork_url?: string | null;
     project_id?: string | null;
+    list_sort?: number;
   }
 >;
+
+/** Named snapshot of Tracks-page order within a space (migration 018). */
+export type TrackListPreset = {
+  id: string;
+  user_id: string;
+  space_id: string;
+  name: string;
+  track_ids: string[];
+  created_at: string;
+  updated_at: string;
+};
 
 export type ChecklistItem = {
   id: string;
@@ -208,6 +224,7 @@ export type Task = {
   user_id: string;
   track_id: string | null;
   project_id: string | null;
+  space_id: string | null;
   title: string;
   category: TaskCategory;
   status: TaskStatus;
@@ -224,6 +241,7 @@ export type TaskInsert = {
   notes?: string | null;
   track_id?: string | null;
   project_id?: string | null;
+  space_id?: string | null;
 };
 
 export type TaskUpdate = Partial<

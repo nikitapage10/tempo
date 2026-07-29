@@ -438,6 +438,7 @@ export function ReleaseWorkspace({ project, tracks, tasks, onUpdateTask }: Relea
         open={planOpen}
         onOpenChange={setPlanOpen}
         projectId={project.id}
+        spaceId={project.space_id}
         releaseDate={releaseDetails?.release_date ?? null}
         tracks={tracks.map((t) => ({ id: t.id, title: t.title }))}
         checklistByTrack={checklistByTrack}

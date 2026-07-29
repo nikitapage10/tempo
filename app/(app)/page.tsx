@@ -19,6 +19,7 @@ import { useActiveSpace } from "@/components/active-space-provider";
 import { useStages } from "@/hooks/use-stages";
 import { useWeeklyElapsed } from "@/hooks/use-sessions";
 import { useTaskMutations, useTasks } from "@/hooks/use-tasks";
+import { useProjects } from "@/hooks/use-projects";
 import { useTrackMutations, useTracks } from "@/hooks/use-tracks";
 import { createSession, countSessionsThisWeek } from "@/lib/api/sessions";
 import { countTasksDueThisWeek } from "@/lib/api/tasks";
@@ -31,7 +32,7 @@ import {
   startOfLocalDay,
 } from "@/lib/format";
 import { TASK_CATEGORIES } from "@/lib/constants";
-import type { Task, Track, TrackInsert } from "@/lib/types";
+import type { ProjectWithStats, Task, Track, TrackInsert } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import {
   deriveAttentionSignals,
@@ -52,11 +53,14 @@ export default function TodayPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { activeSpaceId, activeSpace } = useActiveSpace();
+  const tasksFocused = activeSpace?.focus === "tasks";
   const tracksQuery = useTracks(activeSpaceId);
   const stagesQuery = useStages(activeSpaceId);
-  const tasksQuery = useTasks();
+  const tasksQuery = useTasks(activeSpaceId);
+  const projectsQuery = useProjects(activeSpaceId);
   const { create: createTrack } = useTrackMutations(activeSpaceId);
-  const { create: createTask, update: updateTask } = useTaskMutations();
+  const { create: createTask, update: updateTask } =
+    useTaskMutations(activeSpaceId);
 
   const [trackModalOpen, setTrackModalOpen] = React.useState(false);
   const [taskOpen, setTaskOpen] = React.useState(false);
@@ -70,19 +74,21 @@ export default function TodayPage() {
   const weeklyQuery = useWeeklyElapsed();
 
   const statsQuery = useQuery({
-    queryKey: ["today-stats"],
+    queryKey: ["today-stats", activeSpaceId],
     queryFn: async () => {
       const [due, sessions] = await Promise.all([
-        countTasksDueThisWeek(),
+        countTasksDueThisWeek(activeSpaceId),
         countSessionsThisWeek(),
       ]);
       return { due, sessions };
     },
+    enabled: !!activeSpaceId,
   });
 
   const tracks = tracksQuery.data ?? [];
   const stages = stagesQuery.data ?? [];
   const tasks = tasksQuery.data ?? [];
+  const projects = projectsQuery.data ?? [];
   const today = localDateString();
   const weekEnd = localDateString(addDays(startOfLocalDay(), 7));
 
@@ -101,6 +107,8 @@ export default function TodayPage() {
   const tasksDue = tasks
     .filter((t) => t.status !== "done" && t.due_date && t.due_date < weekEnd)
     .sort((a, b) => (a.due_date! < b.due_date! ? -1 : 1));
+  const openTasks = tasks.filter((t) => t.status !== "done");
+  const activeProjects = projects.filter((p) => p.status === "active");
 
   const now = new Date();
   const dateLabel = now.toLocaleDateString(undefined, {
@@ -109,7 +117,9 @@ export default function TodayPage() {
     day: "numeric",
   });
 
-  const empty = !tracksQuery.isLoading && activeTracks.length === 0 && tasksDue.length === 0;
+  const empty = tasksFocused
+    ? !tasksQuery.isLoading && openTasks.length === 0 && projects.length === 0
+    : !tracksQuery.isLoading && activeTracks.length === 0 && tasksDue.length === 0;
 
   async function handleCreateTrack(input: TrackInsert) {
     const track = await createTrack.mutateAsync(input);
@@ -141,60 +151,92 @@ export default function TodayPage() {
             <p className="mt-1.5 text-sm text-text-lo">{dateLabel}</p>
           </div>
 
-          <div className="flex flex-wrap items-start gap-x-10 gap-y-5">
-            <Stat value={activeTracks.length} label="Active" tone="amber" />
-            <Stat value={statsQuery.data?.due} label="Due" />
-            <Stat value={statsQuery.data?.sessions} label="Sessions" />
-          </div>
+          {tasksFocused ? (
+            <div className="flex flex-wrap items-start gap-x-10 gap-y-5">
+              <Stat value={statsQuery.data?.due} label="Due" />
+              <Stat value={openTasks.length} label="Open" tone="amber" />
+              <Stat value={activeProjects.length} label="Projects" />
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-start gap-x-10 gap-y-5">
+              <Stat value={activeTracks.length} label="Active" tone="amber" />
+              <Stat value={statsQuery.data?.due} label="Due" />
+              <Stat value={statsQuery.data?.sessions} label="Sessions" />
+            </div>
+          )}
 
-          {weeklyLabel ? (
+          {!tasksFocused && weeklyLabel ? (
             <p className="-mt-1 text-xs text-text-lo">{weeklyLabel}</p>
           ) : null}
 
           <div>
             <FlareLine className="mb-4 max-w-[420px] opacity-60" />
             <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                size="sm"
-                onClick={() => setTrackModalOpen(true)}
-              >
-                <Plus className="size-3.5" />
-                Track
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="secondary"
-                onClick={() => setTaskOpen(true)}
-              >
-                <Plus className="size-3.5" />
-                Task
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="secondary"
-                onClick={() => {
-                  setSessionTrackId(activeTracks[0]?.id ?? tracks[0]?.id ?? "");
-                  setSessionOpen(true);
-                }}
-              >
-                Log session
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="secondary"
-                onClick={() => {
-                  setFocusPickTrackId(
-                    activeTracks[0]?.id ?? tracks[0]?.id ?? ""
-                  );
-                  setFocusPickerOpen(true);
-                }}
-              >
-                Start focus
-              </Button>
+              {tasksFocused ? (
+                <>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => setTaskOpen(true)}
+                  >
+                    <Plus className="size-3.5" />
+                    Task
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => router.push("/projects")}
+                  >
+                    <Plus className="size-3.5" />
+                    Project
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => setTrackModalOpen(true)}
+                  >
+                    <Plus className="size-3.5" />
+                    Track
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => setTaskOpen(true)}
+                  >
+                    <Plus className="size-3.5" />
+                    Task
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => {
+                      setSessionTrackId(activeTracks[0]?.id ?? tracks[0]?.id ?? "");
+                      setSessionOpen(true);
+                    }}
+                  >
+                    Log session
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => {
+                      setFocusPickTrackId(
+                        activeTracks[0]?.id ?? tracks[0]?.id ?? ""
+                      );
+                      setFocusPickerOpen(true);
+                    }}
+                  >
+                    Start focus
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -203,12 +245,40 @@ export default function TodayPage() {
       {empty ? (
         <EmptyShaderPanel
           title="Today is clear"
-          copy="Add a track, a task, or log a session — or bring your existing catalog in and TEMPO will organise it with you."
-          action={
-            <Button asChild>
-              <Link href="/import">Bring your music in</Link>
-            </Button>
+          copy={
+            tasksFocused
+              ? "Add a task or a project — this space doesn't use tracks."
+              : "Add a track, a task, or log a session — or bring your existing catalog in and TEMPO will organise it with you."
           }
+          action={
+            tasksFocused ? (
+              <Button type="button" onClick={() => setTaskOpen(true)}>
+                Add a task
+              </Button>
+            ) : (
+              <Button asChild>
+                <Link href="/import">Bring your music in</Link>
+              </Button>
+            )
+          }
+        />
+      ) : tasksFocused ? (
+        <TasksFocusPanels
+          tasks={tasks}
+          projects={projects}
+          today={today}
+          tasksLoading={tasksQuery.isLoading}
+          projectsLoading={projectsQuery.isLoading}
+          onToggleTask={async (task) => {
+            try {
+              await updateTask.mutateAsync({
+                id: task.id,
+                patch: { status: task.status === "done" ? "todo" : "done" },
+              });
+            } catch (err) {
+              toast(err instanceof Error ? err.message : "Couldn’t update task.");
+            }
+          }}
         />
       ) : (
         <div className="grid gap-4 lg:grid-cols-5">
@@ -310,7 +380,7 @@ export default function TodayPage() {
         </div>
       )}
 
-      {tracks.length > 0 ? (
+      {!tasksFocused && tracks.length > 0 ? (
         <TrackCoverSlider tracks={tracks} className="pt-2" />
       ) : null}
 
@@ -557,6 +627,88 @@ function QuietEmpty({ children }: { children: React.ReactNode }) {
   return (
     <div className="well px-4 py-8 text-center">
       <p className="mx-auto max-w-[38ch] text-sm text-text-lo">{children}</p>
+    </div>
+  );
+}
+
+/**
+ * The lower section for a tasks-focused space — open tasks in place of
+ * track "Needs attention", project progress in place of the cover slider.
+ */
+function TasksFocusPanels({
+  tasks,
+  projects,
+  today,
+  tasksLoading,
+  projectsLoading,
+  onToggleTask,
+}: {
+  tasks: Task[];
+  projects: ProjectWithStats[];
+  today: string;
+  tasksLoading: boolean;
+  projectsLoading: boolean;
+  onToggleTask: (task: Task) => Promise<void>;
+}) {
+  const openTasks = [...tasks]
+    .filter((t) => t.status !== "done")
+    .sort((a, b) => {
+      if (!a.due_date && !b.due_date) return 0;
+      if (!a.due_date) return 1;
+      if (!b.due_date) return -1;
+      return a.due_date < b.due_date ? -1 : 1;
+    });
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-5">
+      <section className="panel p-5 lg:col-span-3">
+        <SectionHeader label="Open tasks" count={openTasks.length} />
+        {tasksLoading ? (
+          <div className="h-20 animate-pulse rounded-card bg-bg-2" />
+        ) : openTasks.length === 0 ? (
+          <QuietEmpty>Nothing open. Add a task to get started.</QuietEmpty>
+        ) : (
+          <ul className="space-y-1">
+            {openTasks.map((task) => (
+              <TodayTaskRow
+                key={task.id}
+                task={task}
+                today={today}
+                onToggle={() => onToggleTask(task)}
+              />
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="panel-quiet p-5 lg:col-span-2">
+        <SectionHeader label="Projects" count={projects.length} />
+        {projectsLoading ? (
+          <div className="h-20 animate-pulse rounded-card bg-bg-2" />
+        ) : projects.length === 0 ? (
+          <QuietEmpty>No projects yet in this space.</QuietEmpty>
+        ) : (
+          <ul className="space-y-2">
+            {projects.map((project) => (
+              <li key={project.id}>
+                <Link
+                  href={`/projects/${project.id}`}
+                  className="well lift flex items-center justify-between gap-2 rounded-input px-3 py-2.5"
+                >
+                  <span className="min-w-0 flex-1 truncate text-sm text-text-hi">
+                    {project.name}
+                  </span>
+                  <span className="shrink-0 font-mono text-[11px] text-text-lo">
+                    {project.checklist_pct != null
+                      ? `${project.checklist_pct}%`
+                      : `${project.task_count} task${project.task_count === 1 ? "" : "s"}`}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }

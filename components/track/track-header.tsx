@@ -212,12 +212,16 @@ export function TrackHeader({
                   value={track.stage_id ?? ""}
                   onChange={(e) => {
                     const stageId = e.target.value;
-                    if (!stageId) return;
+                    if (!stageId) {
+                      void onPatch({ stage_id: null });
+                      return;
+                    }
                     if (onStageChange) onStageChange(stageId);
                     else void onPatch({ stage_id: stageId });
                   }}
                   className="h-8 rounded-input border border-line bg-bg-2 px-2.5 text-xs text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
                 >
+                  <option value="">Off board</option>
                   {stages.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.name}

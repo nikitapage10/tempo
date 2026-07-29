@@ -8,7 +8,8 @@ export async function fetchTracks(spaceId: string): Promise<Track[]> {
     .from("tracks")
     .select("*")
     .eq("space_id", spaceId)
-    .order("updated_at", { ascending: false });
+    .order("list_sort", { ascending: true })
+    .order("title", { ascending: true });
   if (error) throw error;
   return (data ?? []).map(normalizeTrack);
 }
@@ -34,8 +35,22 @@ export async function fetchVersionCount(trackId: string): Promise<number> {
   return count ?? 0;
 }
 
+async function nextListSort(spaceId: string): Promise<number> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("tracks")
+    .select("list_sort")
+    .eq("space_id", spaceId)
+    .order("list_sort", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return (data?.list_sort ?? -1) + 1;
+}
+
 export async function createTrack(input: TrackInsert): Promise<Track> {
   const supabase = createClient();
+  const listSort = await nextListSort(input.space_id);
   const { data, error } = await supabase
     .from("tracks")
     .insert({
@@ -52,6 +67,7 @@ export async function createTrack(input: TrackInsert): Promise<Track> {
       momentum: input.momentum ?? "active",
       tags: input.tags ?? [],
       notes: input.notes ?? null,
+      list_sort: listSort,
     })
     .select()
     .single();
@@ -80,7 +96,7 @@ export async function updateTrack(
 
 export async function moveTrackStage(
   id: string,
-  stageId: string
+  stageId: string | null
 ): Promise<Track> {
   const track = await updateTrack(id, { stage_id: stageId });
   void logStageChange(id, stageId);
@@ -88,14 +104,32 @@ export async function moveTrackStage(
 }
 
 /** Best-effort activity log — never blocks the stage move itself. */
-async function logStageChange(trackId: string, stageId: string): Promise<void> {
+async function logStageChange(
+  trackId: string,
+  stageId: string | null
+): Promise<void> {
   try {
     const supabase = createClient();
-    const [{ data: userData }, { data: stage }] = await Promise.all([
-      supabase.auth.getUser(),
-      supabase.from("stages").select("name").eq("id", stageId).maybeSingle(),
-    ]);
+    const { data: userData } = await supabase.auth.getUser();
     const actorLabel = userData.user?.email ?? null;
+
+    if (!stageId) {
+      await logActivity({
+        trackId,
+        eventType: "stage_changed",
+        summary: `${actorLabel ?? "Someone"} took this off the board`,
+        entityType: "stage",
+        entityId: null,
+        actorLabel,
+      });
+      return;
+    }
+
+    const { data: stage } = await supabase
+      .from("stages")
+      .select("name")
+      .eq("id", stageId)
+      .maybeSingle();
     await logActivity({
       trackId,
       eventType: "stage_changed",
@@ -115,6 +149,20 @@ export async function deleteTrack(id: string): Promise<void> {
   if (error) throw error;
 }
 
+/** Persist Tracks-page custom order. Does not bump updated_at. */
+export async function reorderTracks(
+  ordered: { id: string; list_sort: number }[]
+): Promise<void> {
+  const supabase = createClient();
+  const results = await Promise.all(
+    ordered.map(({ id, list_sort }) =>
+      supabase.from("tracks").update({ list_sort }).eq("id", id)
+    )
+  );
+  const failed = results.find((r) => r.error);
+  if (failed?.error) throw failed.error;
+}
+
 function normalizeTrack(row: Track): Track {
   return {
     ...row,
@@ -127,5 +175,6 @@ function normalizeTrack(row: Track): Track {
     blocked_reason: row.blocked_reason ?? null,
     waiting_on: row.waiting_on ?? null,
     stage_entered_at: row.stage_entered_at ?? row.created_at,
+    list_sort: typeof row.list_sort === "number" ? row.list_sort : 0,
   };
 }

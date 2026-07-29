@@ -7,7 +7,7 @@
  */
 
 export const PRODUCT_KNOWLEDGE = `CORE OBJECTS
-- Space: a workspace with its own stage pipeline. Default: Originals, Edits & Remixes. Switch from the rail; manage in Settings.
+- Space: a workspace, either music-focused (its own stage pipeline — Board, Tracks) or tasks-focused (no board — just Tasks and Projects, for non-music work like social media). Default: Originals, Edits & Remixes, both music-focused. Switch from the rail; manage (including focus) in Settings.
 - Stage: where a track sits in the pipeline (Idea, Writing, Production, Mixdown, Master, Release Prep, Released by default). Per-space, reorderable.
 - Track: a musical work. Fields include type, momentum, deadline, next move, blocked/waiting, BPM, key, tags, notes.
 - Version: a bounce/upload on a track. At most 2 unpinned kept; pinned milestones stay. version_no and is_current are DB-managed.
@@ -17,6 +17,7 @@ export const PRODUCT_KNOWLEDGE = `CORE OBJECTS
 - Comment: feedback on a bounce, optionally timestamped; can be resolved.
 
 ENUMS (exact values)
+- space focus: music / tasks
 - momentum: active / simmering / stalled / parked
 - track type: original / remix / edit / collab / bootleg
 - task category: social / outreach / pitching / admin / production / other
@@ -30,18 +31,18 @@ MOMENTUM VS STAGE
 - A track can be in Mixing and stalled; stage and momentum are independent. First-timers often confuse them.
 
 WHERE THINGS LIVE
-- Today (/): greeting, due tasks, needs-attention list, quick actions, drifting cover strip.
-- Board (/board): Kanban by stage for the active space; drag to move stages.
-- Tracks (/tracks): list + create/select/delete in the active space.
+- Today (/): greeting, quick actions, and — in a music space — due tasks, needs-attention list, drifting cover strip; in a tasks-focused space — open tasks and project progress instead.
+- Board (/board): Kanban by stage; music-focus spaces only — not shown for tasks-focused spaces. Take a track off the board (× or Off board tray) without deleting — still in Tracks; drag onto a stage to put back.
+- Tracks (/tracks): list + create/select/delete; filter by type/stage/tag/attention; sort Custom (drag) / title / stage / updated / deadline / named saved orders (Save order → Sort chips). Music-focus spaces only.
 - Track workspace (/track/[id]): player, versions, guest links, checklist, comments, files, people, layout modules.
 - Focus (/track/[id]/focus): distraction-free session — timer, waveform, checklist, scratch notes.
-- Projects (/projects): card grid; open one for tracks/tasks; release types get release workspace.
-- Tasks (/tasks): Overdue / Today / This week / Later columns.
+- Projects (/projects): card grid, scoped to the active space; open one for tracks/tasks; release types get release workspace.
+- Tasks (/tasks): Overdue / Today / This week / Later columns, scoped to the active space.
 - Import (/import): conversational catalog intake (also Settings → Import).
-- Settings (/settings): spaces, stages, templates, import link, sign out.
+- Settings (/settings): spaces (name + focus), stages, templates, import link, sign out.
 
 HOW TO DO COMMON THINGS
-1. Add a track: Board (+ or Add), Tracks, or Today's + Track — title + type; lands in first stage of active space. Assistant can propose create_track.
+1. Add a track: Board (+ or Add), Tracks, or Today's + Track — title + type; lands in first stage of active space. Music-focus spaces only. Assistant can propose create_track.
 2. Move a stage: drag on Board, or click the stage timeline / dropdown on the track page. Assistant can propose move_track_stage with track ref + stage ref.
 3. Upload a bounce: track workspace Versions — "what changed?", set current; wav/aiff convert to mp3 in browser.
 4. Pin a milestone: pin a version on the timeline (kept even when unpinned cleanup runs).

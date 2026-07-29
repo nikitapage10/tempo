@@ -73,7 +73,7 @@ export async function buildWorkspaceSnapshot(
   lines.push(`Date: ${date} (${weekday})`);
 
   const [spacesRes, tracksRes, projectsRes, tasksRes] = await Promise.all([
-    supabase.from("spaces").select("id, name, sort").eq("user_id", userId).order("sort"),
+    supabase.from("spaces").select("id, name, sort, focus").eq("user_id", userId).order("sort"),
     supabase
       .from("tracks")
       .select(
@@ -148,14 +148,18 @@ export async function buildWorkspaceSnapshot(
   };
 
   if (active) {
+    const stagesBit =
+      active.focus === "tasks" ? "no board" : `stages: ${formatStages(active.id)}`;
     lines.push(
-      `Active space: ${clip(active.name)} — stages: ${formatStages(active.id)}`,
+      `Active space: ${clip(active.name)} (${active.focus}-focus) — ${stagesBit}`,
     );
   }
   if (others.length) {
     for (const space of others) {
+      const stagesBit =
+        space.focus === "tasks" ? "no board" : `stages: ${formatStages(space.id)}`;
       lines.push(
-        `Other space: ${clip(space.name)} — stages: ${formatStages(space.id)}`,
+        `Other space: ${clip(space.name)} (${space.focus}-focus) — ${stagesBit}`,
       );
     }
   }

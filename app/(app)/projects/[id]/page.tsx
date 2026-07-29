@@ -38,8 +38,8 @@ export default function ProjectDetailPage() {
   const { update, remove, attachTrack, attachTask } = useProjectMutations();
 
   const allTracksQuery = useTracks(activeSpaceId);
-  const allTasksQuery = useTasks();
-  const { update: updateTask } = useTaskMutations();
+  const allTasksQuery = useTasks(activeSpaceId);
+  const { update: updateTask } = useTaskMutations(activeSpaceId);
 
   const project = projectQuery.data;
   const tracks = tracksQuery.data ?? [];
