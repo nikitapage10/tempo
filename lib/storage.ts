@@ -54,6 +54,16 @@ export function buildArtistAssetPath(params: {
   return `artists/${artistId}/${kind}/${sanitizeFilename(filename)}`;
 }
 
+/** Social post image attachments — private bucket, path stored in posts.media. */
+export function buildPostMediaPath(params: {
+  profileId: string;
+  postId: string;
+  filename: string;
+}): string {
+  const { profileId, postId, filename } = params;
+  return `profiles/${profileId}/posts/${postId}/${sanitizeFilename(filename)}`;
+}
+
 export function sanitizeFilename(name: string): string {
   const trimmed = name.trim() || "file";
   const lastDot = trimmed.lastIndexOf(".");

@@ -548,4 +548,35 @@
       );
     }
   }
+
+  /* Social network orbit — ring spin + counter-spin so emblems stay upright.
+   * Speed is controlled by --orbit-speed on the parent (1 = full, ~0.2 = hover). */
+  @keyframes orbit-cw {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @keyframes orbit-ccw {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(-360deg);
+    }
+  }
+  .orbit-spin-cw {
+    animation-name: orbit-cw;
+  }
+  .orbit-spin-ccw {
+    animation-name: orbit-ccw;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .orbit-spin-cw,
+    .orbit-spin-ccw {
+      animation: none !important;
+    }
+  }
 }

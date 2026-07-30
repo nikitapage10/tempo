@@ -1,14 +1,19 @@
 "use client";
 
 import * as React from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { ExternalLink, UserPlus } from "lucide-react";
+import { ExternalLink, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FlareLine } from "@/components/flare-line";
 import { LfWindow } from "@/components/lf-windows";
 import { EmptyShaderPanel } from "@/components/shader-empty";
 import { SignedImage } from "@/components/ui/signed-image";
+import { FollowButton } from "@/components/social/follow-button";
+import { useActiveArtist } from "@/components/active-artist-provider";
+import { useArtistProfile } from "@/hooks/use-artist-profile";
+import { useMessageMutations } from "@/hooks/use-messages";
+import { canDmProfile } from "@/lib/api/messages";
 import { fetchArtistProfileByHandle } from "@/lib/api/artist-profile";
 
 /**
@@ -20,6 +25,11 @@ import { fetchArtistProfileByHandle } from "@/lib/api/artist-profile";
 export default function ArtistProfileByHandlePage() {
   const params = useParams<{ handle: string }>();
   const handle = params.handle;
+  const router = useRouter();
+  const { activeArtist } = useActiveArtist();
+  const { profile: myProfile } = useArtistProfile(activeArtist?.id ?? null);
+  const { startDm } = useMessageMutations(myProfile?.id ?? null);
+  const [dmBusy, setDmBusy] = React.useState(false);
 
   const query = useQuery({
     queryKey: ["artist-profile-by-handle", handle],
@@ -108,10 +118,35 @@ export default function ArtistProfileByHandlePage() {
             ) : null}
           </div>
 
-          <Button type="button" size="sm" variant="secondary" disabled title="Follows land in a later update">
-            <UserPlus className="size-3.5" />
-            Follow
-          </Button>
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <FollowButton
+              myProfileId={myProfile?.id ?? null}
+              targetProfileId={profile.id}
+            />
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              disabled={dmBusy || myProfile?.id === profile.id}
+              onClick={async () => {
+                if (!myProfile?.id) return;
+                setDmBusy(true);
+                try {
+                  const ok = await canDmProfile(profile.id);
+                  if (!ok) throw new Error("They aren't accepting messages from you.");
+                  const id = await startDm.mutateAsync(profile.id);
+                  router.push(`/messages?c=${id}`);
+                } catch (err) {
+                  alert(err instanceof Error ? err.message : "Couldn't start a message.");
+                } finally {
+                  setDmBusy(false);
+                }
+              }}
+            >
+              <MessageSquare className="size-3.5" />
+              Message
+            </Button>
+          </div>
         </div>
 
         <FlareLine className="relative z-[1] mx-6 mb-6 max-w-[420px] opacity-60 sm:mx-8" />

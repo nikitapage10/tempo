@@ -1,10 +1,10 @@
 import { Suspense } from "react";
-import SocialView from "./social-view";
+import MessagesView from "./messages-view";
 
-export default function SocialPage() {
+export default function MessagesPage() {
   return (
     <Suspense fallback={<div className="panel h-48 animate-pulse" />}>
-      <SocialView />
+      <MessagesView />
     </Suspense>
   );
 }

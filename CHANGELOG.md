@@ -4,6 +4,27 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-30
 
+- Added (v0.51.0): **Social** is live — your private network of collaborators,
+  guest reviewers and release credits, searchable and filterable, with a link
+  through to anyone who already has a TEMPO artist profile.
+- Added (v0.51.0): **Follow / unfollow** other TEMPO artists from their
+  profile, with following and follower lists on Social. Blocking someone
+  clears the follow both ways.
+- Added (v0.51.0): a **Discover** search for published artist profiles by
+  name, and a constellation **orbit** at the bottom of Social that draws
+  people from your network (hover a node for who they are and how you know
+  them; click through to their profile or contact card).
+- Added (v0.51.0): a **feed** on Social — post an update (with an optional
+  image or one of your own tracks), @mention someone by their handle, like
+  and comment. Visibility can be followers-only, TEMPO members, or public.
+  Your home feed shows your posts plus posts from people you follow.
+- Added (v0.51.0): **direct messages** — start a thread from someone's
+  profile (respecting their "who can message you" setting), send messages
+  both ways, and see unread counts clear when you open the thread.
+  Messages lives at its own screen, reachable from Social.
+- Under the hood (v0.51.0): migrations 029–031 apply automatically on push —
+  no manual step in the Supabase SQL editor.
+
 - Fixed (v0.50.1): your artist emblem on the Artist profile page was showing
   inside a boxed, opaque background and getting cropped to a square. It now
   shows at its own true shape and transparency, sitting right next to your

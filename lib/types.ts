@@ -107,6 +107,154 @@ export type ArtistProfileUpdate = Partial<{
   accepts_dms: ProfileDmPolicy;
 }>;
 
+/** Private CRM contact — migration 029. Scoped to the owning account only. */
+export type PersonSource =
+  | "manual"
+  | "collaborator"
+  | "guest_review"
+  | "release_credit"
+  | "import";
+
+export type Person = {
+  id: string;
+  user_id: string;
+  display_name: string;
+  linked_profile_id: string | null;
+  linked_user_id: string | null;
+  primary_email: string | null;
+  roles: string[];
+  tags: string[];
+  notes: string | null;
+  avatar_url: string | null;
+  source: PersonSource;
+  is_archived: boolean;
+  last_interaction_at: string | null;
+  created_at: string;
+  updated_at: string;
+  /** Joined when listing for the Social page. */
+  linked_profile?: Pick<
+    ArtistProfile,
+    | "id"
+    | "handle"
+    | "display_name"
+    | "emblem_url"
+    | "palette_id"
+    | "ice_color"
+    | "amber_color"
+    | "visibility"
+  > | null;
+  appearance_count?: number;
+};
+
+export type PersonAppearance = {
+  id: string;
+  user_id: string;
+  person_id: string;
+  source: PersonSource;
+  role: string | null;
+  track_id: string | null;
+  project_id: string | null;
+  guest_link_id: string | null;
+  label: string | null;
+  appeared_at: string;
+  created_at: string;
+};
+
+export type ProfileFollow = {
+  follower_profile_id: string;
+  followee_profile_id: string;
+  created_at: string;
+};
+
+export type PostVisibility = "followers" | "members" | "public";
+
+export type PostAttachmentSnapshot = {
+  track_id: string;
+  title: string;
+  artwork_url: string | null;
+  artist_name: string | null;
+};
+
+export type Post = {
+  id: string;
+  author_profile_id: string;
+  author_user_id: string;
+  body: string;
+  media: string[];
+  track_id: string | null;
+  project_id: string | null;
+  attachment_snapshot: PostAttachmentSnapshot | null;
+  visibility: PostVisibility;
+  reply_to_post_id: string | null;
+  like_count: number;
+  comment_count: number;
+  edited_at: string | null;
+  deleted_at: string | null;
+  created_at: string;
+  updated_at: string;
+  author?: Pick<
+    ArtistProfile,
+    | "id"
+    | "handle"
+    | "display_name"
+    | "emblem_url"
+    | "palette_id"
+    | "ice_color"
+    | "amber_color"
+  > | null;
+  liked_by_me?: boolean;
+};
+
+export type PostComment = {
+  id: string;
+  post_id: string;
+  author_profile_id: string;
+  author_user_id: string;
+  parent_comment_id: string | null;
+  body: string;
+  deleted_at: string | null;
+  created_at: string;
+  updated_at: string;
+  author?: Pick<
+    ArtistProfile,
+    "id" | "handle" | "display_name" | "emblem_url" | "palette_id"
+  > | null;
+};
+
+export type Conversation = {
+  id: string;
+  kind: "direct" | "group";
+  direct_key: string | null;
+  title: string | null;
+  created_by_profile_id: string;
+  last_message_at: string | null;
+  last_message_preview: string | null;
+  created_at: string;
+  /** Other participant(s) for direct threads — filled by the API. */
+  peer?: Pick<
+    ArtistProfile,
+    | "id"
+    | "handle"
+    | "display_name"
+    | "emblem_url"
+    | "palette_id"
+    | "ice_color"
+    | "amber_color"
+  > | null;
+  unread_count?: number;
+};
+
+export type ConversationMessage = {
+  id: string;
+  conversation_id: string;
+  sender_profile_id: string;
+  sender_user_id: string;
+  body: string;
+  media: string[];
+  deleted_at: string | null;
+  created_at: string;
+};
+
 export type Space = {
   id: string;
   user_id: string;

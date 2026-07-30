@@ -14,7 +14,19 @@ import { cn } from "@/lib/utils";
 
 /** Best-effort deep link — panel tab depends on notification type. */
 function notificationHref(n: AppNotification): string {
-  if (!n.track_id) return "/";
+  if (n.link_url) return n.link_url;
+  if (!n.track_id) {
+    if (n.entity_type === "conversation" && n.entity_id) {
+      return `/messages?c=${n.entity_id}`;
+    }
+    if (n.entity_type === "post" && n.entity_id) {
+      return `/social?post=${n.entity_id}`;
+    }
+    if (n.entity_type === "profile" && n.actor_profile_id) {
+      return "/social";
+    }
+    return "/";
+  }
   switch (n.type) {
     case "invite_accepted":
       return `/track/${n.track_id}?panel=people`;

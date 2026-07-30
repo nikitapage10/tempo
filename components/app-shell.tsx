@@ -54,6 +54,8 @@ const TASKS_MAIN_NAV = [
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/artist", label: "Artist", icon: Disc3 },
+  { href: "/social", label: "Social", icon: Orbit },
+  { href: "/stats", label: "Stats", icon: BarChart3 },
 ] as const;
 
 const TASKS_MOBILE_NAV = [
