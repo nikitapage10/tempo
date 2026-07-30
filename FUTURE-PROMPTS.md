@@ -1114,9 +1114,16 @@ After approval, add the approved test foundation, isolated test configuration, f
 
 ---
 
-# Prompt 14 — Social layer, phase 2: people directory, follow graph, and the Social page
+# Prompt 14 — Social layer, phases 2–4: people, follows, the Social page, the orbit, the feed, and messaging
 
 ```text
+Paste this whole prompt in one go. It covers everything left in the social
+layer — three migrations, three feature areas — in one continuous Cursor
+session. Don't stop and wait for a new prompt at any point. Test your own
+work at each checkpoint below (a "Check before continuing" line ends every
+step), fix what fails, and only move to the next step once it actually
+passes. I'm not going to be testing in between — you are.
+
 Context — read before doing anything, in this order:
 - .cursorrules and CLAUDE.md
 - PRODUCT.md and CHANGELOG.md (the entries dated 2026-07-30, versions 0.49.0–0.50.1)
@@ -1134,12 +1141,13 @@ Context — read before doing anything, in this order:
 - components/app-shell.tsx — Artist / Social / Stats are already in the rail;
   app/(app)/social/page.tsx is currently a placeholder ("Social is on its way")
 
-This is phase 2 of the social layer (phase 1 — artist profiles — is already
-shipped). Do not touch artists, artist_profiles, or any table's existing RLS
-policy. Every new table below is additive, in a new migration numbered 029.
+Phase 1 (artist profiles) is already shipped. Do not touch artists,
+artist_profiles, or any table's existing RLS policy. Every table below is
+additive, across three migrations: 029 (people + follows), 030 (feed),
+031 (messaging).
 
-Standing rules established in phase 1 — keep following them:
-- No policy on a table that existed before this migration may be altered.
+Standing rules established in phase 1 — keep following them everywhere below:
+- No policy on a table that existed before this session may be altered.
 - Every social-table policy is `to authenticated`. Anonymous access, if ever
   needed, is a server route with the service-role client, never an anon
   policy — see lib/public-profile-server.ts for the pattern.
@@ -1152,19 +1160,21 @@ Standing rules established in phase 1 — keep following them:
 - Any view over an RLS-protected table must carry `with (security_invoker = on)`
   — a default view runs as its owner and bypasses RLS entirely.
 
-How to run this session: do the whole thing below in one continuous pass —
-don't stop and wait for a new prompt between the migration, the API/hooks
-layer, the Social page, and the orbit component. Work through the numbered
-steps in order, and after each one, check it before moving to the next:
-run `npx tsc --noEmit`, and where the step touches something renderable,
-load it in the browser and look at it yourself rather than assuming it
-works. If a check fails, fix it and re-check — don't carry a known-broken
-step forward into the next one. If you get stuck on the same failure after
-a couple of honest attempts (migration won't apply cleanly, an RLS policy
-you can't get to behave, a rendering bug you can't isolate), stop where you
-are, describe exactly what's broken and what you already tried, and ask me
-what to do before guessing further or pushing anything uncertain. Don't
-push to main until every step's checks pass and `npm run build` is clean.
+How pushes work here: migrations apply automatically when pushed to main
+(.github/workflows/supabase-migrations.yml). You may push more than once
+along the way — e.g. right after each numbered migration file, so it
+actually applies to the real database and you can verify it before building
+the next layer on top of it. Mark those interim pushes
+`[skip-release-check]` in the commit message (no user-facing change yet).
+Do the version bump / CHANGELOG.md / PRODUCT.md pass once, on the final
+push of the session, covering everything — per .cursorrules' release rules.
+If you get stuck on the same failure after a couple of honest attempts
+(a migration won't apply cleanly, an RLS policy you can't get to behave, a
+rendering bug you can't isolate), stop where you are, describe exactly
+what's broken and what you already tried, and ask me before guessing
+further or pushing anything uncertain.
+
+## Phase 2 — People, follows, the Social page, the orbit
 
 Implement, in migrations/029_people_and_follows.sql:
 
@@ -1261,24 +1271,132 @@ Implement, in migrations/029_people_and_follows.sql:
    width (no horizontal overflow), and toggle reduced-motion in devtools
    (rings go static, hover still works).
 
-Do not implement the feed or messaging yet — those are phases 3 and 4.
+## Phase 3 — The feed
 
-Required on every push per .cursorrules: bump APP_VERSION in lib/version.ts
-and version in package.json together (minor bump — this is a real feature),
-add a plain-English CHANGELOG.md entry under today's date noting migration
-029 needs to run (it applies automatically via
-.github/workflows/supabase-migrations.yml on push to main — no manual step),
-and update PRODUCT.md's Social paragraph to describe what actually shipped
-instead of "Social is on its way". Run npx tsc --noEmit and npm run build
-clean before considering this done.
+Implement, in migrations/030_feed.sql:
 
-Return:
-- the exact RLS policies you wrote for people, profile_follows, and
-  profile_blocks, so they can be reviewed against the standing rules above
-- a two-account test plan: what account B should and should not be able to
-  see/do against account A's people, follows, and profile
-- a screenshot-driven walkthrough of the Social page and the orbit's hover
-  behavior
+6. Posts — `posts` (author_profile_id, author_user_id denormalized for
+   ownership checks, body text ≤5000 chars, media jsonb ≤4 entries as
+   storage paths — never public URLs, optional track_id/project_id,
+   visibility followers|members|public, reply_to_post_id, like_count,
+   comment_count, edited_at, deleted_at). Add `post_likes`,
+   `post_comments` (with parent_comment_id for one level of replies), and
+   `post_mentions` (linking a post or comment to a mentioned profile).
+
+   Attachment leak guard — a post linking a track must never let a viewer
+   read `tracks`. Freeze the whitelisted display fields (title, artwork
+   path, artist name) into a `attachment_snapshot jsonb` column at post
+   time; the renderer reads only that snapshot and never joins tracks.
+   `insert_posts`'s `with check` must require
+   `track_id is null or is_track_owner(track_id)` (reuse the migration-009
+   helper) so nobody can attach someone else's track.
+
+   RLS shape: `posts` gets an inline SELECT policy (owner, or a published
+   profile's post that's members/public-visible or from someone the caller
+   follows) so the planner can push the predicate into an index rather than
+   calling a function per row. The child tables (post_likes, post_comments,
+   post_mentions) go through a single `can_view_post(uuid)` security-definer
+   helper instead — inlining the same logic there would nest posts-RLS →
+   profile-RLS → follow-RLS per candidate row on every comment fetch.
+
+   Counters: like_count/comment_count are trigger-maintained columns, not
+   computed on read (a feed page reads them once per row; on-read counting
+   is the N+1 you're avoiding). The triggers must be `security definer` —
+   the liker doesn't own the post, so a plain trigger's UPDATE would be
+   silently filtered to zero rows by the existing update_posts policy and
+   the counter would never move. Everything else (follower counts, unread
+   badges) stays on-read count(*) — no materialized views, they go stale.
+
+   Timeline: a `home_timeline(limit, before)` function, fan-out-on-read
+   (your own posts + posts from profiles you follow, newest first, keyset
+   pagination on created_at, capped at 100). Mark it `security invoker` so
+   posts' own RLS still applies as defense in depth even if this function's
+   logic ever drifts from the policy. Don't build a materialized fan-out
+   table — at this scale it's pure overhead.
+
+   Check before continuing: push the migration, create a couple of posts
+   as two different accounts with different visibility settings, and
+   confirm each account's home_timeline shows exactly what it should —
+   including that a private/followers-only post from someone you don't
+   follow never appears, and that liking/commenting updates the counters
+   without you touching them directly.
+
+7. Feed UI — add a feed column and composer to app/(app)/social/page.tsx
+   (post text + optional single image + optional "attach a track" picker
+   limited to your own tracks), a post detail view, and @mention resolution
+   against artist_profiles.handle in both the composer and rendered posts.
+
+   Check before continuing: post from one account, confirm it shows up for
+   a following account and not for a non-following one when visibility is
+   "followers", like and comment from a second account and watch the
+   counters update, and confirm an @mention renders as a working link.
+
+## Phase 4 — Messaging
+
+Implement, in migrations/031_messaging.sql:
+
+8. Conversations — `conversations` (kind direct|group, `direct_key` unique —
+   the two participant profile ids sorted and joined, so there is exactly
+   one direct thread per pair without partial-unique gymnastics — title for
+   group only, created_by_profile_id, last_message_at, last_message_preview),
+   `conversation_participants` (conversation_id, profile_id, user_id
+   denormalized, role member|admin, last_read_at — read state lives here,
+   NOT per message, muted, left_at, joined_at), and `messages`
+   (sender_profile_id, sender_user_id, body, media jsonb, deleted_at).
+
+   Hard requirement, not an optimization: the obvious
+   `conversation_participants` policy ("readable if you're a participant")
+   queries conversation_participants from within its own policy, and
+   Postgres raises `42P17 infinite recursion detected in policy`. It must
+   go through a security-definer `is_conversation_participant(uuid)`
+   helper — there is no way around this one.
+
+   Add `can_dm_profile(uuid)` (security definer) enforcing
+   artist_profiles.accepts_dms and blocks — it reads the `profile_connections`
+   view (from migration 029) from inside a definer function, where RLS on
+   profile_follows is bypassed by design; note in a comment that
+   profile_connections must therefore never gain a column carrying private
+   data, since any definer function can read it unfiltered.
+
+   Opening a DM is two inserts with a uniqueness race on direct_key, so wrap
+   it in a `start_direct_conversation(from_profile, to_profile)`
+   security-definer RPC, callable by `authenticated`, that re-checks
+   `owns_profile(from_profile) and can_dm_profile(to_profile)` as its first
+   statement, then `insert ... on conflict (direct_key) do nothing`.
+
+   Check before continuing: as two accounts, start a DM, send messages both
+   directions, confirm unread counts move correctly and clear on opening
+   the thread, confirm a third account can't read the conversation or its
+   messages at all (test with a direct PostgREST select, not just the UI),
+   and confirm accepts_dms = 'nobody' actually blocks a new DM request.
+
+9. Messaging UI — a thread list and thread view (new /messages route, or a
+   tab on /social — your call, match the existing nav patterns in
+   components/app-shell.tsx), composer, and an unread badge wired through
+   the existing notifications tray (extended in migration 028).
+
+   Check before continuing: full round-trip between two accounts — start a
+   thread, send several messages, confirm the badge updates, leave and
+   return to confirm read state persisted.
+
+Final wrap-up, once all of the above passes:
+
+Required per .cursorrules: bump APP_VERSION in lib/version.ts and version
+in package.json together (minor bump — this is a substantial feature,
+still 0.x), add plain-English CHANGELOG.md entries under today's date for
+each of the three phases (mention that migrations 029–031 apply
+automatically on push, no manual step), and rewrite PRODUCT.md's Social
+paragraph to describe what actually shipped — replacing "Social is on its
+way" entirely. Run npx tsc --noEmit and npm run build clean.
+
+Return, at the very end:
+- the exact RLS policies you wrote for every new table across all three
+  migrations, so they can be reviewed against the standing rules above
+- a two-account test plan covering people, follows, blocks, feed
+  visibility, and the DM permission matrix — what account B should and
+  should not be able to see or do against account A's data
+- a screenshot-driven walkthrough of the Social page, the orbit's hover
+  behavior, a feed post round-trip, and a messaging round-trip
 ```
 
 ---
