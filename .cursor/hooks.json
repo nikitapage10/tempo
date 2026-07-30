@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": ".cursor/hooks/pull-on-start.sh",
+        "timeout": 30
+      },
+      {
+        "command": ".cursor/hooks/ensure-dev-server.sh",
+        "timeout": 15
+      }
+    ]
+  }
+}
