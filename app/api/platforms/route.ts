@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import {
   fetchSpotifyArtist,
+  fetchSpotifyCatalog,
   searchSpotifyArtists,
   parseSpotifyArtistId,
 } from "@/lib/platforms/spotify";
@@ -32,7 +33,8 @@ function fail(message: string, status = 400) {
  *   search   { platform, query }            → candidates for linking
  *   resolve  { platform, input }            → turn a URL/id into a platform id
  *   refresh  { artistId, platform }         → fetch + upsert today's snapshot
- *   catalog  { artistId }                   → Apple catalog (no snapshot; no stats exist)
+ *   catalog  { artistId, platform }         → Apple/Spotify releases (no snapshot;
+ *                                             neither exposes any metric to an app)
  */
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
@@ -91,62 +93,41 @@ export async function POST(req: NextRequest) {
         const artistId = String(body.artistId ?? "");
         const platform = String(body.platform ?? "");
         if (!artistId) return fail("Missing artist.");
-        if (platform !== "spotify" && platform !== "soundcloud") {
-          return fail("Only Spotify and SoundCloud expose numbers to track.");
+        // SoundCloud is the only platform still handing an app real numbers.
+        if (platform !== "soundcloud") {
+          return fail(
+            "Only SoundCloud still publishes numbers to apps — Spotify and Apple Music are catalog only."
+          );
         }
 
         // RLS scopes this to the caller's own artists.
         const { data: artist, error } = await supabase
           .from("artists")
-          .select("id, spotify_artist_id, soundcloud_user_id")
+          .select("id, soundcloud_user_id")
           .eq("id", artistId)
           .maybeSingle();
         if (error) throw error;
         if (!artist) return fail("Artist not found.", 404);
 
-        const linkedId =
-          platform === "spotify"
-            ? artist.spotify_artist_id
-            : artist.soundcloud_user_id;
+        const linkedId = artist.soundcloud_user_id;
         if (!linkedId) {
           return fail(`This artist isn't linked to ${platform} yet.`);
         }
 
-        const snapshot =
-          platform === "spotify"
-            ? await (async () => {
-                const s = await fetchSpotifyArtist(linkedId);
-                return {
-                  followers: s.followers,
-                  popularity: s.popularity,
-                  plays: null,
-                  likes: null,
-                  reposts: null,
-                  track_count: null,
-                  detail: {
-                    name: s.name,
-                    genres: s.genres,
-                    imageUrl: s.imageUrl,
-                    topTracks: s.topTracks,
-                  },
-                };
-              })()
-            : await (async () => {
-                const s = await fetchSoundCloudArtist(linkedId);
-                return {
-                  followers: s.followers,
-                  popularity: null,
-                  plays: s.plays,
-                  likes: s.likes,
-                  reposts: s.reposts,
-                  track_count: s.trackCount,
-                  detail: {
-                    name: s.username,
-                    avatarUrl: s.avatarUrl,
-                    tracks: s.tracks,
-                  },
-                };
-              })();
+        const s = await fetchSoundCloudArtist(linkedId);
+        const snapshot = {
+          followers: s.followers,
+          popularity: null,
+          plays: s.plays,
+          likes: s.likes,
+          reposts: s.reposts,
+          track_count: s.trackCount,
+          detail: {
+            name: s.username,
+            avatarUrl: s.avatarUrl,
+            tracks: s.tracks,
+          },
+        };
 
         // One row per artist/platform/day — a second refresh today overwrites
         // rather than double-counting.
@@ -170,20 +151,35 @@ export async function POST(req: NextRequest) {
       }
 
       case "catalog": {
+        // Apple and Spotify both reduce to a catalog listing: neither exposes
+        // any metric to an app, so there is nothing to snapshot for either.
         const artistId = String(body.artistId ?? "");
+        const platform = String(body.platform ?? "apple");
+        if (platform !== "apple" && platform !== "spotify") {
+          return fail("Unknown platform.");
+        }
+
         const { data: artist, error } = await supabase
           .from("artists")
-          .select("id, apple_artist_id")
+          .select("id, apple_artist_id, spotify_artist_id")
           .eq("id", artistId)
           .maybeSingle();
         if (error) throw error;
-        if (!artist?.apple_artist_id) {
-          return fail("This artist isn't linked to Apple yet.");
+
+        const linkedId =
+          platform === "apple"
+            ? artist?.apple_artist_id
+            : artist?.spotify_artist_id;
+        if (!linkedId) {
+          return fail(`This artist isn't linked to ${platform} yet.`);
         }
-        return NextResponse.json(
-          { catalog: await fetchAppleCatalog(artist.apple_artist_id) },
-          { headers: noStore() }
-        );
+
+        const catalog =
+          platform === "apple"
+            ? await fetchAppleCatalog(linkedId)
+            : await fetchSpotifyCatalog(linkedId);
+
+        return NextResponse.json({ catalog }, { headers: noStore() });
       }
 
       default:

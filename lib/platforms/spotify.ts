@@ -3,10 +3,13 @@ import "server-only";
 /**
  * Spotify Web API, Client Credentials flow.
  *
- * Free tier. Gives followers, Spotify's own 0-100 popularity score, and the
- * artist's catalog. It does NOT give stream counts or monthly listeners —
- * those live only in Spotify for Artists, which has no public API. Nothing
- * here estimates them.
+ * Free, but catalog only. Spotify's February 2026 changes removed `followers`
+ * and `popularity` from the Artist object and deleted the top-tracks endpoint
+ * outright, so an app can no longer read any metric about an artist — verified
+ * against the live API: /artists/{id} returns 200 carrying only identity and
+ * images, and /artists/{id}/top-tracks returns 403. Stream counts and monthly
+ * listeners were never available to apps either; they live only in Spotify for
+ * Artists. Nothing here estimates any of it.
  *
  * Client Credentials has no user context, so this only ever reads public
  * data about an artist the user has explicitly linked.
@@ -15,13 +18,14 @@ import "server-only";
 const TOKEN_URL = "https://accounts.spotify.com/api/token";
 const API = "https://api.spotify.com/v1";
 
-export type SpotifyArtistStats = {
+/**
+ * Identity only — used to confirm a link and show the artist's name.
+ * There are no metrics left to return; see the note at the top of this file.
+ */
+export type SpotifyArtistIdentity = {
   name: string;
-  followers: number;
-  popularity: number;
-  genres: string[];
   imageUrl: string | null;
-  topTracks: { name: string; popularity: number; albumName: string | null }[];
+  url: string | null;
 };
 
 /** Cached across invocations of a warm lambda; tokens last an hour. */
@@ -96,44 +100,98 @@ export function parseSpotifyArtistId(input: string): string | null {
 
 export async function fetchSpotifyArtist(
   artistId: string
-): Promise<SpotifyArtistStats> {
-  type ArtistRes = {
+): Promise<SpotifyArtistIdentity> {
+  const artist = await spotifyGet<{
     name: string;
-    followers: { total: number };
-    popularity: number;
-    genres: string[];
-    images: { url: string }[];
-  };
-  type TopTracksRes = {
-    tracks: { name: string; popularity: number; album: { name: string } | null }[];
-  };
-
-  const [artist, top] = await Promise.all([
-    spotifyGet<ArtistRes>(`/artists/${artistId}`),
-    // Market is required; US is the conventional default for a global read.
-    spotifyGet<TopTracksRes>(`/artists/${artistId}/top-tracks?market=US`).catch(
-      () => ({ tracks: [] }) as TopTracksRes
-    ),
-  ]);
+    images?: { url: string }[];
+    external_urls?: { spotify?: string };
+  }>(`/artists/${artistId}`);
 
   return {
     name: artist.name,
-    followers: artist.followers?.total ?? 0,
-    popularity: artist.popularity ?? 0,
-    genres: artist.genres ?? [],
     imageUrl: artist.images?.[0]?.url ?? null,
-    topTracks: (top.tracks ?? []).slice(0, 5).map((t) => ({
-      name: t.name,
-      popularity: t.popularity,
-      albumName: t.album?.name ?? null,
-    })),
+    url: artist.external_urls?.spotify ?? null,
+  };
+}
+
+export type SpotifyRelease = {
+  id: string;
+  name: string;
+  releaseDate: string | null;
+  albumType: string | null;
+  trackCount: number | null;
+  artworkUrl: string | null;
+  url: string | null;
+};
+
+/**
+ * The artist's releases as Spotify lists them.
+ *
+ * This is all Spotify still offers about an artist: `/artists/{id}/albums`
+ * survived the February 2026 removals, while `followers`, `popularity` and
+ * top-tracks did not. Catalog, not analytics.
+ */
+export async function fetchSpotifyCatalog(artistId: string): Promise<{
+  name: string;
+  url: string | null;
+  releases: SpotifyRelease[];
+}> {
+  type ArtistRes = {
+    name: string;
+    external_urls?: { spotify?: string };
+  };
+  type AlbumsRes = {
+    items: {
+      id: string;
+      name: string;
+      release_date?: string;
+      album_type?: string;
+      total_tracks?: number;
+      images?: { url: string }[];
+      external_urls?: { spotify?: string };
+    }[];
+  };
+
+  const [artist, albums] = await Promise.all([
+    spotifyGet<ArtistRes>(`/artists/${artistId}`),
+    spotifyGet<AlbumsRes>(
+      `/artists/${artistId}/albums?limit=50&include_groups=album,single,compilation`
+    ).catch(() => ({ items: [] }) as AlbumsRes),
+  ]);
+
+  // Spotify lists the same release once per market; collapse by name + date.
+  const seen = new Set<string>();
+  const releases: SpotifyRelease[] = [];
+  for (const a of albums.items ?? []) {
+    const key = `${a.name}|${a.release_date ?? ""}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    releases.push({
+      id: a.id,
+      name: a.name,
+      releaseDate: a.release_date ?? null,
+      albumType: a.album_type ?? null,
+      trackCount: a.total_tracks ?? null,
+      artworkUrl: a.images?.[0]?.url ?? null,
+      url: a.external_urls?.spotify ?? null,
+    });
+  }
+
+  return {
+    name: artist.name,
+    url: artist.external_urls?.spotify ?? null,
+    releases: releases.sort((a, b) =>
+      (b.releaseDate ?? "").localeCompare(a.releaseDate ?? "")
+    ),
   };
 }
 
 /** Name search, so linking doesn't require the user to find an id by hand. */
 export async function searchSpotifyArtists(
   query: string
-): Promise<{ id: string; name: string; followers: number; imageUrl: string | null }[]> {
+): Promise<
+  { id: string; name: string; followers: number | null; imageUrl: string | null }[]
+> {
   type SearchRes = {
     artists: {
       items: {
@@ -147,10 +205,12 @@ export async function searchSpotifyArtists(
   const json = await spotifyGet<SearchRes>(
     `/search?type=artist&limit=8&q=${encodeURIComponent(query)}`
   );
+  // Search items carry even less than the artist object — no followers field
+  // at all — so the picker shows name and artwork only.
   return (json.artists?.items ?? []).map((a) => ({
     id: a.id,
     name: a.name,
-    followers: a.followers?.total ?? 0,
+    followers: a.followers?.total ?? null,
     imageUrl: a.images?.[0]?.url ?? null,
   }));
 }

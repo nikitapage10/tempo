@@ -17,14 +17,21 @@ export type PlatformSnapshot = {
   detail: Record<string, unknown> | null;
 };
 
-export type AppleRelease = {
-  id: number;
+export type CatalogRelease = {
+  id: number | string;
   name: string;
   releaseDate: string | null;
   trackCount: number | null;
   artworkUrl: string | null;
-  genre: string | null;
+  genre?: string | null;
+  albumType?: string | null;
   url: string | null;
+};
+
+export type PlatformCatalog = {
+  name: string;
+  url: string | null;
+  releases: CatalogRelease[];
 };
 
 /** True when migration 024 hasn't been run yet. */
@@ -124,11 +131,15 @@ export async function refreshPlatform(
   return json.snapshot;
 }
 
-export async function fetchAppleCatalog(
-  artistId: string
-): Promise<{ name: string; url: string | null; releases: AppleRelease[] }> {
-  const json = await callPlatformApi<{
-    catalog: { name: string; url: string | null; releases: AppleRelease[] };
-  }>({ action: "catalog", artistId });
+/** Apple and Spotify are both catalog-only; neither exposes any metric. */
+export async function fetchPlatformCatalog(
+  artistId: string,
+  platform: "apple" | "spotify"
+): Promise<PlatformCatalog> {
+  const json = await callPlatformApi<{ catalog: PlatformCatalog }>({
+    action: "catalog",
+    artistId,
+    platform,
+  });
   return json.catalog;
 }

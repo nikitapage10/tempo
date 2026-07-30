@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  fetchAppleCatalog,
+  fetchPlatformCatalog,
   fetchPlatformSnapshots,
   refreshPlatform,
   setPlatformLink,
@@ -18,10 +18,14 @@ export function usePlatformSnapshots(artistId: string | null) {
   });
 }
 
-export function useAppleCatalog(artistId: string | null, enabled: boolean) {
+export function usePlatformCatalog(
+  artistId: string | null,
+  platform: "apple" | "spotify",
+  enabled: boolean
+) {
   return useQuery({
-    queryKey: ["apple-catalog", artistId],
-    queryFn: () => fetchAppleCatalog(artistId!),
+    queryKey: ["platform-catalog", artistId, platform],
+    queryFn: () => fetchPlatformCatalog(artistId!, platform),
     enabled: !!artistId && enabled,
     // The catalog changes on release day, not hourly.
     staleTime: 6 * 60 * 60 * 1000,
@@ -35,7 +39,7 @@ export function usePlatformMutations(artistId: string | null) {
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["platform-snapshots", artistId] });
     qc.invalidateQueries({ queryKey: ["artists"] });
-    qc.invalidateQueries({ queryKey: ["apple-catalog", artistId] });
+    qc.invalidateQueries({ queryKey: ["platform-catalog", artistId] });
   };
 
   const link = useMutation({

@@ -12,12 +12,13 @@ import {
   useMeasuredWidth,
 } from "@/components/artist/chart-kit";
 import {
-  useAppleCatalog,
+  usePlatformCatalog,
   usePlatformMutations,
   usePlatformSnapshots,
 } from "@/hooks/use-platform-stats";
 import {
   resolvePlatformLink,
+  type CatalogRelease,
   type PlatformId,
   type PlatformSnapshot,
 } from "@/lib/api/platform-stats";
@@ -254,103 +255,150 @@ function Figure({
 }
 
 /* ------------------------------------------------------------------ */
-/* Spotify                                                             */
+/* Catalog platforms — Spotify and Apple Music                         */
 /* ------------------------------------------------------------------ */
 
-export function SpotifyModule({ artist }: { artist: Artist }) {
+/**
+ * Spotify and Apple both reduce to a list of releases.
+ *
+ * Apple's statistics need a paid developer membership. Spotify's February 2026
+ * changes removed `followers` and `popularity` from the Artist object and
+ * deleted the top-tracks endpoint, so an app gets no metric either. Rather
+ * than show an empty stat block, each module says so and lists the catalog —
+ * which is still genuinely useful for spotting a release missing from a store.
+ */
+function CatalogModule({
+  artist,
+  platform,
+  label,
+  quiet,
+  linkHint,
+  footnote,
+}: {
+  artist: Artist;
+  platform: "spotify" | "apple";
+  label: string;
+  quiet?: boolean;
+  linkHint: string;
+  footnote: string;
+}) {
   const { toast } = useToast();
-  const snapshotsQuery = usePlatformSnapshots(artist.id);
-  const { link, refresh } = usePlatformMutations(artist.id);
-  const linked = !!artist.spotify_artist_id;
-
-  const snapshots = snapshotsQuery.data ?? [];
-  const latest = latestOf(snapshots, "spotify");
-  const followerSeries = seriesOf(snapshots, "spotify", (s) => s.followers);
-  const detail = (latest?.detail ?? {}) as {
-    topTracks?: { name: string; popularity: number }[];
-    genres?: string[];
-  };
+  const { link } = usePlatformMutations(artist.id);
+  const linked =
+    platform === "spotify"
+      ? !!artist.spotify_artist_id
+      : !!artist.apple_artist_id;
+  const catalogQuery = usePlatformCatalog(artist.id, platform, linked);
 
   return (
     <PlatformShell
-      label="Spotify"
+      label={label}
+      quiet={quiet}
       linked={linked}
-      linkHint="Paste your Spotify artist link and TEMPO will track followers and popularity over time. Streams and monthly listeners aren’t available to any app — only Spotify for Artists has those."
+      linkHint={linkHint}
       onLink={async (input) => {
-        const resolved = await resolvePlatformLink("spotify", input);
-        await link.mutateAsync({ platform: "spotify", platformId: resolved.id });
-        await refresh.mutateAsync("spotify").catch(() => {});
-        toast(`Linked to ${resolved.name}`, "ok");
+        if (platform === "spotify") {
+          const resolved = await resolvePlatformLink("spotify", input);
+          await link.mutateAsync({
+            platform: "spotify",
+            platformId: resolved.id,
+          });
+          toast(`Linked to ${resolved.name}`, "ok");
+          return;
+        }
+        // Apple links look like .../artist/<slug>/<id>; fall back to any long
+        // run of digits so a bare id also works.
+        const id =
+          input.match(/artist\/[^/]*\/(\d+)/)?.[1] ??
+          input.match(/\d{6,}/)?.[0];
+        if (!id) throw new Error("That isn't an Apple Music artist link.");
+        await link.mutateAsync({ platform: "apple", platformId: id });
+        toast("Linked to Apple Music", "ok");
       }}
       onUnlink={() =>
         link.mutate(
-          { platform: "spotify", platformId: null },
-          { onSuccess: () => toast("Spotify unlinked", "ok") }
+          { platform, platformId: null },
+          { onSuccess: () => toast(`${label} unlinked`, "ok") }
         )
       }
-      onRefresh={() =>
-        refresh.mutate("spotify", {
-          onSuccess: () => toast("Spotify updated", "ok"),
-          onError: (err) =>
-            toast(err instanceof Error ? err.message : "Couldn’t refresh."),
-        })
-      }
-      refreshing={refresh.isPending}
     >
-      {!latest ? (
-        <QuietEmpty>
-          Linked, but nothing recorded yet — hit refresh to take the first
-          reading.
-        </QuietEmpty>
+      {catalogQuery.isLoading ? (
+        <div className="h-20 animate-pulse rounded-card bg-bg-2" />
+      ) : catalogQuery.isError ? (
+        <p className="text-sm text-warn">
+          {catalogQuery.error instanceof Error
+            ? catalogQuery.error.message
+            : `Couldn't load the ${label} catalog.`}
+        </p>
+      ) : !catalogQuery.data || catalogQuery.data.releases.length === 0 ? (
+        <QuietEmpty>Nothing listed on {label} under this artist yet.</QuietEmpty>
       ) : (
         <>
-          <div className="flex flex-wrap items-start gap-x-8 gap-y-4">
-            <Figure value={compact(latest.followers)} label="Followers" />
-            <Figure
-              value={latest.popularity != null ? String(latest.popularity) : "—"}
-              label="Popularity"
-              hint="0–100, Spotify's own measure"
-            />
-          </div>
-
-          <div className="mt-4">
-            <TrendLine points={followerSeries} label="Spotify followers" />
-          </div>
-
-          {detail.topTracks && detail.topTracks.length > 0 ? (
-            <>
-              <p className="label-mono mb-2 mt-5">Top tracks on Spotify</p>
-              <ul className="space-y-1">
-                {detail.topTracks.slice(0, 5).map((t) => (
-                  <li
-                    key={t.name}
-                    className="flex items-center gap-3 text-[12px]"
+          <ul className="space-y-1">
+            {catalogQuery.data.releases.slice(0, 8).map((release: CatalogRelease) => (
+              <li
+                key={release.id}
+                className="well flex items-center gap-3 rounded-input px-3 py-2"
+              >
+                <span className="min-w-0 flex-1 truncate text-[12px] text-text-hi">
+                  {release.name}
+                </span>
+                {release.albumType ? (
+                  <span className="shrink-0 rounded-chip bg-bg-2 px-2 py-0.5 text-[10px] text-text-lo">
+                    {release.albumType}
+                  </span>
+                ) : null}
+                <span className="shrink-0 text-[11px] tabular-nums text-text-lo">
+                  {release.releaseDate ?? "\u2014"}
+                </span>
+                {release.url ? (
+                  <a
+                    href={release.url}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="shrink-0 text-ice"
+                    aria-label={`Open ${release.name} on ${label}`}
                   >
-                    <span className="min-w-0 flex-1 truncate text-text-hi">
-                      {t.name}
-                    </span>
-                    <span className="shrink-0 tabular-nums text-text-lo">
-                      {t.popularity}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </>
-          ) : null}
-
-          <p className="mt-4 text-[10px] text-text-lo/70">
-            Last read {latest.captured_on}. Spotify doesn’t publish stream
-            counts to apps — these are followers and its relative popularity
-            score.
-          </p>
+                    <ExternalLink className="size-3" />
+                  </a>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-4 text-[10px] text-text-lo/70">{footnote}</p>
         </>
       )}
     </PlatformShell>
   );
 }
 
+export function SpotifyModule({ artist }: { artist: Artist }) {
+  return (
+    <CatalogModule
+      artist={artist}
+      platform="spotify"
+      label="Spotify"
+      linkHint="Paste your Spotify artist link to list your releases as Spotify has them. Spotify stopped giving apps follower counts and popularity in February 2026, so there are no numbers to show \u2014 and stream counts were never available outside Spotify for Artists."
+      footnote="Catalog only. Spotify removed followers, popularity and top tracks from its API in February 2026, so no statistics are available to any app."
+    />
+  );
+}
+
+export function AppleModule({ artist }: { artist: Artist }) {
+  return (
+    <CatalogModule
+      artist={artist}
+      platform="apple"
+      label="Apple Music"
+      quiet
+      linkHint="Paste your Apple Music artist link to show your releases as Apple lists them. Apple publishes no free stats API, so this is catalog only \u2014 no plays or followers."
+      footnote="Catalog only. Apple Music's statistics need a paid developer membership, so there are no play counts here."
+    />
+  );
+}
+
 /* ------------------------------------------------------------------ */
-/* SoundCloud                                                          */
+/* SoundCloud \u2014 the one platform still publishing numbers             */
 /* ------------------------------------------------------------------ */
 
 export function SoundCloudModule({ artist }: { artist: Artist }) {
@@ -441,79 +489,3 @@ export function SoundCloudModule({ artist }: { artist: Artist }) {
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* Apple — catalog only                                                */
-/* ------------------------------------------------------------------ */
-
-export function AppleModule({ artist }: { artist: Artist }) {
-  const { toast } = useToast();
-  const { link } = usePlatformMutations(artist.id);
-  const linked = !!artist.apple_artist_id;
-  const catalogQuery = useAppleCatalog(artist.id, linked);
-
-  return (
-    <PlatformShell
-      label="Apple Music"
-      quiet
-      linked={linked}
-      linkHint="Paste your Apple Music artist link to show your releases as Apple lists them. Apple publishes no free stats API, so this is catalog only — no plays or followers."
-      onLink={async (input) => {
-        const id = input.match(/artist\/[^/]*\/(\d+)/)?.[1] ?? input.match(/\d{6,}/)?.[0];
-        if (!id) throw new Error("That isn’t an Apple Music artist link.");
-        await link.mutateAsync({ platform: "apple", platformId: id });
-        toast("Linked to Apple Music", "ok");
-      }}
-      onUnlink={() =>
-        link.mutate(
-          { platform: "apple", platformId: null },
-          { onSuccess: () => toast("Apple Music unlinked", "ok") }
-        )
-      }
-    >
-      {catalogQuery.isLoading ? (
-        <div className="h-20 animate-pulse rounded-card bg-bg-2" />
-      ) : catalogQuery.isError ? (
-        <p className="text-sm text-warn">
-          {catalogQuery.error instanceof Error
-            ? catalogQuery.error.message
-            : "Couldn’t load the Apple catalog."}
-        </p>
-      ) : !catalogQuery.data || catalogQuery.data.releases.length === 0 ? (
-        <QuietEmpty>Nothing listed on Apple Music under this artist yet.</QuietEmpty>
-      ) : (
-        <>
-          <ul className="space-y-1">
-            {catalogQuery.data.releases.slice(0, 8).map((release) => (
-              <li
-                key={release.id}
-                className="well flex items-center gap-3 rounded-input px-3 py-2"
-              >
-                <span className="min-w-0 flex-1 truncate text-[12px] text-text-hi">
-                  {release.name}
-                </span>
-                <span className="shrink-0 text-[11px] tabular-nums text-text-lo">
-                  {release.releaseDate ?? "—"}
-                </span>
-                {release.url ? (
-                  <a
-                    href={release.url}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    className="shrink-0 text-ice"
-                    aria-label={`Open ${release.name} on Apple Music`}
-                  >
-                    <ExternalLink className="size-3" />
-                  </a>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-          <p className="mt-4 text-[10px] text-text-lo/70">
-            Catalog only. Apple Music’s stats need a paid developer membership,
-            so there are no play counts here.
-          </p>
-        </>
-      )}
-    </PlatformShell>
-  );
-}
