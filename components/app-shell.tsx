@@ -10,8 +10,10 @@ import {
   Music2,
   Settings,
   Plus,
+  Disc3,
 } from "lucide-react";
 import { AssistantRoot } from "@/components/assistant/assistant-root";
+import { ArtistFavicon } from "@/components/artist-favicon";
 import { ArtistSwitcher } from "@/components/artist-switcher";
 import { SpaceSwitcher } from "@/components/space-switcher";
 import { NotificationCenter } from "@/components/notification-center";
@@ -24,12 +26,15 @@ import { APP_VERSION } from "@/lib/version";
 import { cn } from "@/lib/utils";
 import { SlitDivider } from "@/components/ui/slit";
 
+// Artist sits above the space-scoped screens: it rolls up every space the
+// artist owns, so it stays in the rail whatever the active space's focus is.
 const MUSIC_MAIN_NAV = [
   { href: "/", label: "Today", icon: CalendarDays },
   { href: "/board", label: "Board", icon: Columns3 },
   { href: "/tracks", label: "Tracks", icon: Music2 },
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
+  { href: "/artist", label: "Artist", icon: Disc3 },
 ] as const;
 
 const MUSIC_MOBILE_NAV = [
@@ -44,6 +49,7 @@ const TASKS_MAIN_NAV = [
   { href: "/", label: "Today", icon: CalendarDays },
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
+  { href: "/artist", label: "Artist", icon: Disc3 },
 ] as const;
 
 const TASKS_MOBILE_NAV = [
@@ -74,6 +80,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen flex-col" data-lf-chrome>
+      <ArtistFavicon />
       <IntroMoment />
       <EdgeStrip />
 

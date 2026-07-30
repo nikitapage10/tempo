@@ -49,6 +49,11 @@ type ModularWorkspaceProps = {
   /** Optional count badges shown on grouped tabs (e.g. unresolved comments). */
   badges?: Partial<Record<ModuleId, number>>;
   compact?: boolean;
+  /**
+   * Module ids this surface knows about — drives the "Hidden" tray. Defaults
+   * to the track workspace's set; the artist overview passes its own.
+   */
+  vocabulary?: ModuleId[];
 };
 
 const COLUMN_IDS: Record<ColumnId, string> = {
@@ -64,6 +69,7 @@ export function ModularWorkspace({
   lockedModule,
   badges,
   compact,
+  vocabulary = ALL_MODULE_IDS,
 }: ModularWorkspaceProps) {
   // View mode renders the real modules with no drag wrappers at all — drag
   // listeners over a waveform or a form would fight the controls.
@@ -92,6 +98,7 @@ export function ModularWorkspace({
       modules={modules}
       onChange={onChange}
       lockedModule={lockedModule}
+      vocabulary={vocabulary}
     />
   );
 }
@@ -284,11 +291,13 @@ function LayoutEditor({
   modules,
   onChange,
   lockedModule,
+  vocabulary,
 }: {
   layout: ModuleLayout;
   modules: Partial<Record<ModuleId, React.ReactNode>>;
   onChange: (layout: ModuleLayout) => void;
   lockedModule?: ModuleId | null;
+  vocabulary: ModuleId[];
 }) {
   const [dragging, setDragging] = React.useState<ModuleId | null>(null);
   // Set when the dragged tile is hovering the *middle* of another tile, which
@@ -323,7 +332,9 @@ function LayoutEditor({
     setCombineTarget(inMiddle ? (overId as ModuleId) : null);
   }
 
-  const available = hiddenModules(layout).filter((id) => modules[id]);
+  const available = hiddenModules(layout, vocabulary).filter(
+    (id) => modules[id]
+  );
 
   function columnOfSlot(id: ModuleId): ColumnId | null {
     if (layout.left.some((s) => slotId(s) === id)) return "left";

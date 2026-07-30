@@ -2,6 +2,21 @@
 
 Plain-English history of what changed in TEMPO, newest first.
 
+## 2026-07-30
+
+- Added (v0.45.0): a new **Artist** page — everything under one artist name, across every space at once. It opens on your banner, logo and a headline row (tracks, bounces, in progress, released, focus time), then:
+  - **The year in bounces** — twelve months of bounces uploaded against tracks started, so a year of work is visible in one glance.
+  - **Pipeline** — where tracks sit in each space's stages, one bar per space so several spaces stay readable.
+  - **Spaces** — all of an artist's spaces side by side with their own counts and when each was last touched; tap one to switch to it.
+  - **Your sound** — the shape of your tempos, the keys you write in most, your genres and track types.
+  - **Work rhythm** — when you actually work, by day and hour, plus your busiest day, busiest hour and how many weeks in a row you've kept going.
+  - **Longest in progress** — the oldest unfinished tracks and how long they've sat in their current stage.
+  - **Releases** and **Feedback received** — countdowns to what's coming, what's already out, and how much feedback has come in from guests versus your own notes.
+- Added (v0.45.0): the Artist page is **modular** like a track workspace. "Edit layout" in the top-right of the banner lets you drag sections between the two columns, reorder them, drop one onto another to combine them into tabs, and hide what you don't want (hidden sections stay one click away). Reset puts it back. Your arrangement is remembered per artist, on that device.
+- Added (v0.45.0): **Artist** is now in the left rail, and "Artist overview" sits in the artist dropdown.
+- Changed (v0.45.0): the charts on the Artist page follow the artist's own Cool / Warm colours, adjusted so large filled shapes stay readable on the dark background.
+- Added (v0.45.0): your **emblem** now shows on the browser tab, on the assistant's round button, and beside the assistant's replies — so which artist you're working in reads at a glance, even across several tabs. Without an emblem uploaded you get your artist's own colour mark instead, and the tab keeps TEMPO's icon.
+
 ## 2026-07-29
 
 - Removed (v0.44.3): all special effects on the Today logo — it's just your logo again. Also, if you haven't uploaded an emblem, the artist switcher shows only the name (no placeholder mark).

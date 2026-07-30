@@ -8,7 +8,7 @@ import type { WorkspacePreset } from "@/lib/types";
  * eight tools were locked into a sidebar tab bar. Now all of them are modules
  * that can live in either column, in any order.
  */
-export type ModuleId =
+export type TrackModuleId =
   // primary sections
   | "player"
   | "versions"
@@ -25,7 +25,26 @@ export type ModuleId =
   | "activity"
   | "details";
 
-export const MODULE_DEFS: { id: ModuleId; label: string }[] = [
+/**
+ * The artist overview runs on this same layout engine with its own
+ * vocabulary — a second set of module ids rather than a second implementation
+ * of dragging, columns and the hidden tray.
+ */
+export type ArtistModuleId =
+  | "output"
+  | "pipeline"
+  | "momentum"
+  | "catalog"
+  | "spaces"
+  | "sound"
+  | "rhythm"
+  | "releases"
+  | "lingering"
+  | "feedback";
+
+export type ModuleId = TrackModuleId | ArtistModuleId;
+
+export const MODULE_DEFS: { id: TrackModuleId; label: string }[] = [
   { id: "player", label: "Player & waveform" },
   { id: "versions", label: "Versions" },
   { id: "workflow", label: "Workflow (Now / Next / Blocked / Target)" },
@@ -43,8 +62,29 @@ export const MODULE_DEFS: { id: ModuleId; label: string }[] = [
 
 export const ALL_MODULE_IDS: ModuleId[] = MODULE_DEFS.map((m) => m.id);
 
+export const ARTIST_MODULE_DEFS: { id: ArtistModuleId; label: string }[] = [
+  { id: "output", label: "The year in bounces" },
+  { id: "pipeline", label: "Pipeline" },
+  { id: "momentum", label: "Momentum" },
+  { id: "catalog", label: "Catalog" },
+  { id: "spaces", label: "Spaces" },
+  { id: "sound", label: "Your sound" },
+  { id: "rhythm", label: "Work rhythm" },
+  { id: "releases", label: "Releases" },
+  { id: "lingering", label: "Longest in progress" },
+  { id: "feedback", label: "Feedback received" },
+];
+
+export const ALL_ARTIST_MODULE_IDS: ModuleId[] = ARTIST_MODULE_DEFS.map(
+  (m) => m.id
+);
+
 export function moduleLabel(id: ModuleId): string {
-  return MODULE_DEFS.find((m) => m.id === id)?.label ?? id;
+  return (
+    MODULE_DEFS.find((m) => m.id === id)?.label ??
+    ARTIST_MODULE_DEFS.find((m) => m.id === id)?.label ??
+    id
+  );
 }
 
 /** The waveform can never be hidden once a track has versions — FEATURE-SPECS §15.5. */
@@ -282,7 +322,18 @@ export function layoutFromStored(raw: unknown): ModuleLayout {
 }
 
 /** Modules placed in neither column — available to add back. */
-export function hiddenModules(layout: ModuleLayout): ModuleId[] {
+/** `vocabulary` lets a second surface (the artist overview) reuse this. */
+export function hiddenModules(
+  layout: ModuleLayout,
+  vocabulary: ModuleId[] = ALL_MODULE_IDS
+): ModuleId[] {
   const placed = new Set<ModuleId>(flattenLayout(layout));
-  return ALL_MODULE_IDS.filter((id) => !placed.has(id));
+  return vocabulary.filter((id) => !placed.has(id));
 }
+
+/** Default arrangement of the artist overview, before any personal edits. */
+export const DEFAULT_ARTIST_LAYOUT: ModuleLayout = {
+  left: [["output"], ["pipeline"], ["spaces"], ["sound"], ["lingering"]],
+  right: [["momentum"], ["catalog"], ["rhythm"], ["releases"], ["feedback"]],
+  leftPct: 60,
+};

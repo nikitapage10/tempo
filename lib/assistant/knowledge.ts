@@ -39,6 +39,7 @@ WHERE THINGS LIVE
 - Focus (/track/[id]/focus): distraction-free session — timer, waveform, checklist, scratch notes.
 - Projects (/projects): card grid, scoped to the active space; open one for tracks/tasks; release types get release workspace.
 - Tasks (/tasks): Overdue / Today / This week / Later columns, scoped to the active space.
+- Artist (/artist): artist-wide rollup ACROSS EVERY SPACE (the only screen that is not space-scoped) — headline counts (tracks, bounces, in progress, released, focus time), 12-month bounces vs tracks-started chart, pipeline per space, all spaces side by side, "your sound" (BPM spread, top keys, genres, track types), work rhythm by day/hour + busiest day/hour + weeks-in-a-row streak, longest-in-progress tracks, release countdowns, feedback received (guest vs own, open threads, decisions). Modular: "Edit layout" in the banner's top-right drags sections between two columns, combines them into tabs, or hides them; saved per artist in the browser. Always in the rail, whatever the space focus. All numbers come from existing TEMPO data — nothing estimated.
 - Import (/import): conversational catalog intake (also Settings → Import).
 - Settings (/settings): artists (name, palette, logo, banner), spaces (name + focus) for the selected artist, stages, templates, import link, sign out.
 
