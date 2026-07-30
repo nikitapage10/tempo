@@ -1112,6 +1112,140 @@ After approval, add the approved test foundation, isolated test configuration, f
 
 ---
 
+# Prompt 14 — Social layer, phase 2: people directory, follow graph, and the Social page
+
+```text
+Context — read before doing anything, in this order:
+- .cursorrules and CLAUDE.md
+- PRODUCT.md and CHANGELOG.md (the entries dated 2026-07-30, versions 0.49.0–0.50.1)
+- migrations/028_artist_profiles.sql — the artist_profiles table, its security
+  kernel (my_profile_ids, owns_profile, profile_is_readable, notify_profile_owner),
+  and the RLS pattern (every social policy is `to authenticated`; no table this
+  layer creates gets an `anon` policy)
+- lib/types.ts (ArtistProfile, ArtistProfileUpdate, ProfileVisibility, ProfileLink)
+- lib/api/artist-profile.ts and hooks/use-artist-profile.ts
+- app/(app)/artist/page.tsx, app/(app)/artist/[handle]/page.tsx
+- app/p/[handle]/page.tsx, app/p/[handle]/public-profile-view.tsx,
+  app/api/p/[handle]/route.ts, lib/public-profile-server.ts — the anonymous
+  public-link pattern: a service-role route, never an anon RLS policy
+- lib/supabase/middleware.ts — the `/p` and `/api/p` public-route allowlist
+- components/app-shell.tsx — Artist / Social / Stats are already in the rail;
+  app/(app)/social/page.tsx is currently a placeholder ("Social is on its way")
+
+This is phase 2 of the social layer (phase 1 — artist profiles — is already
+shipped). Do not touch artists, artist_profiles, or any table's existing RLS
+policy. Every new table below is additive, in a new migration numbered 029.
+
+Standing rules established in phase 1 — keep following them:
+- No policy on a table that existed before this migration may be altered.
+- Every social-table policy is `to authenticated`. Anonymous access, if ever
+  needed, is a server route with the service-role client, never an anon
+  policy — see lib/public-profile-server.ts for the pattern.
+- Any subquery inside a policy or trigger that must see rows the caller
+  doesn't own goes through a `security definer` helper function (`stable`,
+  `set search_path = public`, ID-only arguments, returns a boolean or the
+  caller's own rows, revoked from `anon`/`public`). An RLS-filtered subquery
+  inside a policy silently evaluates to "no rows" rather than raising — that
+  turns a guard into a no-op, so never rely on one directly.
+- Any view over an RLS-protected table must carry `with (security_invoker = on)`
+  — a default view runs as its owner and bypasses RLS entirely.
+
+Implement, in migrations/029_people_and_follows.sql:
+
+1. People directory — a private CRM, NOT a shared graph. `people` is
+   strictly `user_id = auth.uid()`; two accounts that both know the same
+   collaborator get two independent rows. Columns: display_name,
+   linked_profile_id (nullable FK to artist_profiles — resolves to a real
+   TEMPO artist), linked_user_id, primary_email, roles text[], tags text[],
+   notes, avatar_url, source (manual|collaborator|guest_review|
+   release_credit|import), is_archived, last_interaction_at. Add
+   `person_identities` (every email/handle/credit string ever seen for a
+   person, with a normalized value for dedup, unique on
+   (user_id, kind, value_norm)) and `person_appearances` (provenance:
+   which track/project, what role, when — so the UI can say "credited as
+   producer on 3 tracks"). Both scoped to user_id = auth.uid(), same as
+   people.
+
+2. Auto-seeding — write a `upsert_person(...)` security-definer
+   find-or-create function plus a one-time transactional backfill at the
+   tail of the migration, then AFTER INSERT triggers to keep it current
+   going forward. Sources, in order: track_collaborators.invited_email,
+   comments.guest_name where guest_link_id is not null, and
+   release_track_metadata's featured_artists/writers/producers arrays plus
+   its scalar credit columns (primary_artist, mix_engineer,
+   mastering_engineer) — unnested and joined back through the owning
+   project for tenancy. Do NOT rewrite release_track_metadata's free-text
+   columns — they stay the source of truth; the seeder only reads them.
+   Add nullable person_id columns (FK, on delete set null) to
+   track_collaborators, comments, and guest_review_links so future rows
+   link automatically. artists gets no new columns.
+
+3. Follow graph — `profile_follows` (follower_profile_id,
+   followee_profile_id, primary key on the pair, both directions indexed)
+   and `profile_blocks`. Do NOT store a separate "connection" concept as a
+   table — a mutual follow is fully derivable, so add it as a view
+   `profile_connections` (self-join of profile_follows) with
+   `security_invoker = on`. The block check inside the follow INSERT policy
+   must go through a security-definer `is_blocked_between(a, b)` helper, not
+   an inline subquery over profile_blocks (see the standing rule above for
+   why). `create or replace` profile_is_readable (from migration 028) to
+   additionally exclude blocked profiles — note in a comment that this
+   replacement is not a no-op, since it changes behavior on an existing
+   function other tables' policies already depend on.
+
+4. The Social page (app/(app)/social/page.tsx, replacing the placeholder):
+   - Your network: the people directory as a filterable grid/list (by
+     role/tag/source), showing which entries resolve to a linked TEMPO
+     profile. A row for a linked person opens /artist/[handle]; otherwise a
+     contact detail sheet.
+   - Discover: search over published artist_profiles (visibility in
+     ('members','public')) by display_name using the pg_trgm index already
+     created in migration 028.
+   - Follow/follower lists, with a working Follow/Unfollow button on
+     /artist/[handle] (currently disabled there — wire it up).
+   - The network orbit at the bottom of the page — see below.
+
+5. The orbit constellation — components/social/network-orbit.tsx, built
+   from scratch with Spectra tokens, NOT copied from any external component
+   library. Three concentric rings, bottom-anchored, alternating CW/CCW
+   rotation at different durations, icons counter-rotating to stay upright.
+   Nodes are artist emblems drawn from the network (linked profiles first,
+   then unresolved contacts) via SignedImage, falling back to
+   components/artists/artist-mark.tsx's initials treatment. On hover: slow
+   the rotation via a CSS custom property multiplier (ease, don't hard-stop),
+   lift the hovered node, stop its own counter-rotation, and pop a
+   SpotlightCard-based card (name, roles, how you know them). Click routes to
+   /artist/[handle] or the contact sheet. Center: an LfWindow punched through
+   to the existing Lightfield canvas (components/lightfield.tsx) with the
+   active artist's emblem over it — do not add a new WebGL context or any
+   new dependency (framer-motion is used in exactly one file today; this
+   should not become the second — use CSS keyframes). Respect
+   prefers-reduced-motion (static angles, hover still works) and pause via
+   IntersectionObserver when offscreen. Use arbitrary Tailwind sizes
+   (w-[27.5rem], not w-110 — this is Tailwind v3, not v4).
+
+Do not implement the feed or messaging yet — those are phases 3 and 4.
+
+Required on every push per .cursorrules: bump APP_VERSION in lib/version.ts
+and version in package.json together (minor bump — this is a real feature),
+add a plain-English CHANGELOG.md entry under today's date noting migration
+029 needs to run (it applies automatically via
+.github/workflows/supabase-migrations.yml on push to main — no manual step),
+and update PRODUCT.md's Social paragraph to describe what actually shipped
+instead of "Social is on its way". Run npx tsc --noEmit and npm run build
+clean before considering this done.
+
+Return:
+- the exact RLS policies you wrote for people, profile_follows, and
+  profile_blocks, so they can be reviewed against the standing rules above
+- a two-account test plan: what account B should and should not be able to
+  see/do against account A's people, follows, and profile
+- a screenshot-driven walkthrough of the Social page and the orbit's hover
+  behavior
+```
+
+---
+
 ## How to use this pack
 
 1. Start with Prompt 0 and review the generated specifications.
