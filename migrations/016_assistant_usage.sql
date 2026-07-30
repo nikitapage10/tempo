@@ -15,5 +15,6 @@ create table if not exists assistant_usage (
 
 alter table assistant_usage enable row level security;
 
+drop policy if exists assistant_usage_own on assistant_usage;
 create policy assistant_usage_own on assistant_usage
   for all using (user_id = auth.uid()) with check (user_id = auth.uid());
