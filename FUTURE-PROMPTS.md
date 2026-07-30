@@ -2,6 +2,8 @@
 
 Paste these into Cursor **one work package at a time, in order**. Do not paste the entire file at once. Each prompt assumes the previous work package has been completed, manually tested, and deployed successfully.
 
+Prompt 14 is the exception: it says so explicitly at the top of its own block. It's meant to be pasted once and left to run — Cursor checks its own work at several points inside that single session instead of you pasting a new prompt after each part. Everything else in this file still follows the one-at-a-time rule above.
+
 These prompts are written for the current TEMPO codebase: Next.js 14 App Router, TypeScript, Tailwind, Supabase, TanStack React Query, WaveSurfer, and the existing Spectra design system.
 
 ## Product decisions used throughout
@@ -1289,3 +1291,9 @@ Return:
 4. Manually test the work package before moving on.
 5. Commit after each successful package so any regression can be isolated or rolled back.
 6. Do not let Cursor combine collaboration/RLS work with unrelated visual refactors.
+
+Prompt 14 runs differently, by design: paste it once and let Cursor work
+through all of it in one sitting. It checks its own work at each numbered
+step instead of you testing and re-prompting in between — you only step in
+if it says it's stuck. Steps 1–6 above still apply to every other prompt in
+this file.
