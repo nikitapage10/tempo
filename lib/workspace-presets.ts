@@ -40,7 +40,10 @@ export type ArtistModuleId =
   | "rhythm"
   | "releases"
   | "lingering"
-  | "feedback";
+  | "feedback"
+  | "spotify"
+  | "soundcloud"
+  | "apple";
 
 export type ModuleId = TrackModuleId | ArtistModuleId;
 
@@ -73,6 +76,9 @@ export const ARTIST_MODULE_DEFS: { id: ArtistModuleId; label: string }[] = [
   { id: "releases", label: "Releases" },
   { id: "lingering", label: "Longest in progress" },
   { id: "feedback", label: "Feedback received" },
+  { id: "spotify", label: "Spotify" },
+  { id: "soundcloud", label: "SoundCloud" },
+  { id: "apple", label: "Apple Music" },
 ];
 
 export const ALL_ARTIST_MODULE_IDS: ModuleId[] = ARTIST_MODULE_DEFS.map(
@@ -334,6 +340,19 @@ export function hiddenModules(
 /** Default arrangement of the artist overview, before any personal edits. */
 export const DEFAULT_ARTIST_LAYOUT: ModuleLayout = {
   left: [["output"], ["pipeline"], ["spaces"], ["sound"], ["lingering"]],
-  right: [["momentum"], ["catalog"], ["rhythm"], ["releases"], ["feedback"]],
+  right: [
+    ["momentum"],
+    ["catalog"],
+    // Each platform stands on its own — they report different things (Spotify
+    // followers, SoundCloud plays, Apple catalog), so tabbing them together
+    // would hide two thirds of the picture behind a click. Drop one onto
+    // another in Edit layout to group them if you'd rather.
+    ["spotify"],
+    ["soundcloud"],
+    ["apple"],
+    ["rhythm"],
+    ["releases"],
+    ["feedback"],
+  ],
   leftPct: 60,
 };

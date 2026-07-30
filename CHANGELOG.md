@@ -4,6 +4,14 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-30
 
+- Added (v0.46.0): **Spotify, SoundCloud and Apple Music sections** on the Artist page. Paste your profile link once and each one starts reporting:
+  - **SoundCloud** — plays, followers, likes and reposts, plus your most-played tracks.
+  - **Spotify** — followers and Spotify's 0–100 popularity score, plus your top tracks there.
+  - **Apple Music** — your releases as Apple lists them.
+  Each section says plainly what it can't show. Nobody publishes stream counts or monthly listeners to apps, so TEMPO never guesses at them — Spotify's real numbers live only in Spotify for Artists, and Apple's need a paid developer membership, so the Apple section is catalog only.
+- Added (v0.46.0): because these platforms only ever hand over *today's* totals and no history, TEMPO records them once a day and draws the trend itself. A section shows a flat number on day one and a line from day two, so the curve builds as you go.
+- Under the hood (v0.46.0): **run migration 024 in Supabase** before this works, and add the Spotify and SoundCloud keys to your environment. If you skip either, the sections just say they aren't linked — nothing breaks.
+
 - Added (v0.45.0): a new **Artist** page — everything under one artist name, across every space at once. It opens on your banner, logo and a headline row (tracks, bounces, in progress, released, focus time), then:
   - **The year in bounces** — twelve months of bounces uploaded against tracks started, so a year of work is visible in one glance.
   - **Pipeline** — where tracks sit in each space's stages, one bar per space so several spaces stay readable.

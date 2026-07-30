@@ -23,6 +23,11 @@ import {
 import { BpmHistogram, RankedBars } from "@/components/artist/sound-panel";
 import { RhythmHeatmap } from "@/components/artist/rhythm-heatmap";
 import { SpacesOverview } from "@/components/artist/spaces-overview";
+import {
+  AppleModule,
+  SoundCloudModule,
+  SpotifyModule,
+} from "@/components/artist/platform-modules";
 import { ModularWorkspace } from "@/components/track/modular-workspace";
 import {
   ALL_ARTIST_MODULE_IDS,
@@ -30,6 +35,7 @@ import {
   type ModuleLayout,
 } from "@/lib/workspace-presets";
 import { formatHours, type ArtistOverview } from "@/lib/artist-stats";
+import type { Artist } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export default function ArtistOverviewPage() {
@@ -52,7 +58,7 @@ export default function ArtistOverviewPage() {
       })
     : null;
 
-  const modules = useArtistModules(data);
+  const modules = useArtistModules(data, activeArtist);
 
   return (
     <div className="space-y-5">
@@ -196,7 +202,8 @@ export default function ArtistOverviewPage() {
 
 /** Each section of the page as a module the layout engine can place. */
 function useArtistModules(
-  data: ArtistOverview | undefined
+  data: ArtistOverview | undefined,
+  artist: Artist | null
 ): Partial<Record<ModuleId, React.ReactNode>> {
   const palette = useChartPalette();
 
@@ -401,8 +408,12 @@ function useArtistModules(
           )}
         </section>
       ),
+      // Platform modules only exist once there's an artist row to link them to.
+      spotify: artist ? <SpotifyModule artist={artist} /> : null,
+      soundcloud: artist ? <SoundCloudModule artist={artist} /> : null,
+      apple: artist ? <AppleModule artist={artist} /> : null,
     } satisfies Partial<Record<ModuleId, React.ReactNode>>;
-  }, [data, palette]);
+  }, [data, palette, artist]);
 }
 
 /** Edit-layout controls, mirroring the track workspace's toolbar. */

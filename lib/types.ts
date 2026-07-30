@@ -25,6 +25,10 @@ export type Artist = {
   /** Free Warm accent override; null = use palette_id preset. */
   amber_color: string | null;
   sort: number;
+  /** Linked platform profiles — see migration 024. Null = not linked. */
+  spotify_artist_id: string | null;
+  soundcloud_user_id: string | null;
+  apple_artist_id: string | null;
   created_at: string;
 };
 
@@ -39,6 +43,9 @@ export type ArtistUpdate = Partial<{
   ice_color: string | null;
   amber_color: string | null;
   sort: number;
+  spotify_artist_id: string | null;
+  soundcloud_user_id: string | null;
+  apple_artist_id: string | null;
 }>;
 
 export type Space = {

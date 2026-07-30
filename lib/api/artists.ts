@@ -16,6 +16,11 @@ export async function fetchArtists(): Promise<Artist[]> {
     ice_color: row.ice_color ?? null,
     amber_color: row.amber_color ?? null,
     banner_color_end: row.banner_color_end ?? null,
+    // Null until migration 024 adds these columns, so the platform modules
+    // simply read as "not linked" on a database that hasn't run it yet.
+    spotify_artist_id: row.spotify_artist_id ?? null,
+    soundcloud_user_id: row.soundcloud_user_id ?? null,
+    apple_artist_id: row.apple_artist_id ?? null,
   }));
 }
 
