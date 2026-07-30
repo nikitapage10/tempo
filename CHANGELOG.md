@@ -4,6 +4,11 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-30
 
+- Fixed (v0.50.1): your artist emblem on the Artist profile page was showing
+  inside a boxed, opaque background and getting cropped to a square. It now
+  shows at its own true shape and transparency, sitting right next to your
+  name at the same height — with your handle and tagline lined up flush
+  underneath the name, not the emblem.
 - Added (v0.50.0): the **Artist** page is now a real editable profile — a
   tagline, bio, backstory, location, pronouns, genres, roles, and up to 12
   links, plus who's allowed to message you. Nothing here is visible to

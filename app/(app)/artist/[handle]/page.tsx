@@ -84,28 +84,28 @@ export default function ArtistProfileByHandlePage() {
         </div>
 
         <div className="relative z-[1] flex items-start justify-between gap-3 px-6 py-8 sm:px-8 sm:py-10">
-          <div className="flex items-center gap-3">
-            {profile.emblem_url ? (
-              <span className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-card border border-line bg-bg-2 shadow-e1">
-                <SignedImage
-                  path={profile.emblem_url}
-                  alt={profile.display_name}
-                  className="size-full object-cover"
-                />
-              </span>
-            ) : null}
-            <div className="min-w-0">
-              <p className="label-mono mb-1.5">Artist profile</p>
-              <h1 className="font-display text-3xl font-semibold tracking-tight text-text-hi sm:text-[40px] sm:leading-[1.05]">
+          <div className="min-w-0">
+            <p className="label-mono mb-1.5">Artist profile</p>
+            <div className="flex items-center gap-3">
+              <h1 className="min-w-0 font-display text-3xl font-semibold tracking-tight text-text-hi sm:text-[40px] sm:leading-[1.05]">
                 {profile.display_name}
               </h1>
-              {profile.handle ? (
-                <p className="mt-1 text-sm text-text-lo">@{profile.handle}</p>
-              ) : null}
-              {profile.tagline ? (
-                <p className="mt-1.5 max-w-lg text-sm text-text-lo">{profile.tagline}</p>
+              {profile.emblem_url ? (
+                <span className="flex size-11 shrink-0 items-center justify-center sm:size-14">
+                  <SignedImage
+                    path={profile.emblem_url}
+                    alt={profile.display_name}
+                    className="size-full object-contain"
+                  />
+                </span>
               ) : null}
             </div>
+            {profile.handle ? (
+              <p className="mt-1 text-sm text-text-lo">@{profile.handle}</p>
+            ) : null}
+            {profile.tagline ? (
+              <p className="mt-1.5 max-w-lg text-sm text-text-lo">{profile.tagline}</p>
+            ) : null}
           </div>
 
           <Button type="button" size="sm" variant="secondary" disabled title="Follows land in a later update">

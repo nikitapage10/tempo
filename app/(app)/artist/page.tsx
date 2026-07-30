@@ -170,32 +170,32 @@ export default function ArtistProfilePage() {
 
         <div className="relative z-[1] flex flex-col gap-5 px-6 py-8 sm:px-8 sm:py-10">
           <div className="flex items-start justify-between gap-3">
-            <div className="flex items-center gap-3">
-              {activeArtist?.emblem_url ? (
-                <span className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-card border border-line bg-bg-2 shadow-e1">
-                  <ArtistMark
-                    emblemUrl={activeArtist.emblem_url}
-                    paletteId={activeArtist.palette_id}
-                    iceColor={activeArtist.ice_color}
-                    amberColor={activeArtist.amber_color}
-                    name={activeArtist.name}
-                    size={40}
-                    className="size-full rounded-none"
-                  />
-                </span>
-              ) : null}
-              <div className="min-w-0">
-                <p className="label-mono mb-1.5">Artist profile</p>
-                <h1 className="font-display text-3xl font-semibold tracking-tight text-text-hi sm:text-[40px] sm:leading-[1.05]">
+            <div className="min-w-0">
+              <p className="label-mono mb-1.5">Artist profile</p>
+              <div className="flex items-center gap-3">
+                <h1 className="min-w-0 font-display text-3xl font-semibold tracking-tight text-text-hi sm:text-[40px] sm:leading-[1.05]">
                   {loading ? "—" : (activeArtist?.name ?? "No artist")}
                 </h1>
-                {profile?.handle ? (
-                  <p className="mt-1 text-sm text-text-lo">@{profile.handle}</p>
-                ) : null}
-                {profile?.tagline && !editing ? (
-                  <p className="mt-1.5 max-w-lg text-sm text-text-lo">{profile.tagline}</p>
+                {activeArtist?.emblem_url ? (
+                  <span className="flex size-11 shrink-0 items-center justify-center sm:size-14">
+                    <ArtistMark
+                      emblemUrl={activeArtist.emblem_url}
+                      paletteId={activeArtist.palette_id}
+                      iceColor={activeArtist.ice_color}
+                      amberColor={activeArtist.amber_color}
+                      name={activeArtist.name}
+                      size={40}
+                      className="size-full rounded-none object-contain aspect-auto"
+                    />
+                  </span>
                 ) : null}
               </div>
+              {profile?.handle ? (
+                <p className="mt-1 text-sm text-text-lo">@{profile.handle}</p>
+              ) : null}
+              {profile?.tagline && !editing ? (
+                <p className="mt-1.5 max-w-lg text-sm text-text-lo">{profile.tagline}</p>
+              ) : null}
             </div>
 
             {!editing ? (
