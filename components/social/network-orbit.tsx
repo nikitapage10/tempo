@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { ArtistMark } from "@/components/artists/artist-mark";
 import { LfWindow } from "@/components/lf-windows";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
-import { SignedImage } from "@/components/ui/signed-image";
 import type { Person } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -69,8 +68,9 @@ export function buildOrbitNodes(people: Person[]): OrbitNode[] {
 }
 
 /** Pixel radius to the ring midline for each concentric ring. */
-const RING_R = [128, 176, 220] as const;
+const RING_R = [100, 148, 196] as const;
 const RING_DUR_S = [42, 58, 76] as const;
+const NODE = 44; // px — keep in sync with size-11
 
 type NetworkOrbitProps = {
   people: Person[];
@@ -83,10 +83,10 @@ type NetworkOrbitProps = {
 };
 
 /**
- * Three concentric rings, bottom-anchored. Spectra tokens + CSS keyframes
- * only (no framer-motion). Hover eases rotation via --orbit-speed; icons
- * counter-rotate to stay upright. Respects prefers-reduced-motion and
- * pauses via IntersectionObserver when offscreen.
+ * Three concentric rings, centered in the panel. Spectra tokens + CSS
+ * keyframes only. Hover eases rotation via --orbit-speed; icons
+ * counter-rotate to stay upright. Positioning uses a dedicated wrapper so
+ * the spin animation never overrides the circle placement transform.
  */
 export function NetworkOrbit({
   people,
@@ -130,16 +130,16 @@ export function NetworkOrbit({
   return (
     <div
       ref={rootRef}
-      className="relative mx-auto h-[20rem] w-full max-w-[32rem] overflow-visible sm:h-[24rem]"
+      className="relative mx-auto flex h-[26rem] w-full max-w-[32rem] items-center justify-center overflow-visible sm:h-[28rem]"
       style={{ ["--orbit-speed" as string]: String(speed) }}
       onMouseLeave={() => setHoverId(null)}
     >
-      <div className="absolute bottom-8 left-1/2 size-[27.5rem] max-w-[100vw] -translate-x-1/2 translate-y-[18%]">
+      <div className="relative size-[25rem] max-w-[100vw] sm:size-[27.5rem]">
         {/* Static ring guides */}
         {[0, 1, 2].map((ring) => (
           <div
             key={`guide-${ring}`}
-            className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-line/35"
+            className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-line/40"
             style={{ width: RING_R[ring] * 2, height: RING_R[ring] * 2 }}
             aria-hidden
           />
@@ -175,52 +175,59 @@ export function NetworkOrbit({
                       key={n.id}
                       className="absolute left-0 top-0"
                       style={{
-                        transform: `rotate(${n.angle}deg) translateY(-${RING_R[ring]}px)`,
+                        // Place on the ring. Final rotate(-angle) keeps the
+                        // node upright before the parent spin is applied.
+                        transform: `rotate(${n.angle}deg) translateY(-${RING_R[ring]}px) rotate(${-n.angle}deg)`,
                       }}
                     >
-                      <button
-                        type="button"
+                      {/* Counter-spin wrapper — animation owns transform here,
+                          so centering uses margin, not translate utilities. */}
+                      <div
                         className={cn(
-                          "relative flex size-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-line bg-bg-1 shadow-e2 transition-[transform,border-color] duration-300 sm:size-11",
-                          hovered && "z-20 scale-125 border-ice/50",
-                          spinning && !hovered && counterClass
+                          spinning && !hovered && counterClass,
+                          hovered && "z-20"
                         )}
-                        style={
-                          spinning && !hovered
+                        style={{
+                          width: NODE,
+                          height: NODE,
+                          marginLeft: -NODE / 2,
+                          marginTop: -NODE / 2,
+                          ...(spinning && !hovered
                             ? {
                                 animationDuration: dur,
                                 animationTimingFunction: "linear",
                                 animationIterationCount: "infinite",
                               }
-                            : undefined
-                        }
-                        onMouseEnter={() => setHoverId(n.id)}
-                        onFocus={() => setHoverId(n.id)}
-                        onClick={() => {
-                          if (n.handle) router.push(`/artist/${n.handle}`);
-                          else if (n.personId) onOpenPerson(n.personId);
+                            : undefined),
                         }}
-                        aria-label={n.name}
                       >
-                        {n.emblemUrl ? (
-                          <SignedImage
-                            path={n.emblemUrl}
-                            alt=""
-                            className="size-full rounded-full object-cover"
-                          />
-                        ) : (
+                        <button
+                          type="button"
+                          className={cn(
+                            "flex size-full items-center justify-center overflow-hidden rounded-full border border-line bg-bg-1 shadow-e2 transition-[transform,border-color] duration-300",
+                            hovered && "scale-125 border-ice/60"
+                          )}
+                          onMouseEnter={() => setHoverId(n.id)}
+                          onFocus={() => setHoverId(n.id)}
+                          onClick={() => {
+                            if (n.handle) router.push(`/artist/${n.handle}`);
+                            else if (n.personId) onOpenPerson(n.personId);
+                          }}
+                          aria-label={n.name}
+                        >
                           <ArtistMark
-                            emblemUrl={null}
+                            emblemUrl={n.emblemUrl}
                             paletteId={n.paletteId}
                             iceColor={n.iceColor}
                             amberColor={n.amberColor}
                             name={n.name}
-                            size={18}
+                            size={22}
+                            className="size-full rounded-full object-cover"
                           />
-                        )}
+                        </button>
 
                         {hovered ? (
-                          <span className="absolute left-1/2 top-full z-30 mt-2 w-48 -translate-x-1/2 text-left">
+                          <div className="pointer-events-none absolute left-1/2 top-full z-30 mt-2 w-48 -translate-x-1/2 text-left">
                             <SpotlightCard className="rounded-card border border-line bg-bg-1 p-3 shadow-e3">
                               <p className="truncate text-sm font-medium text-text-hi">
                                 {n.name}
@@ -234,9 +241,9 @@ export function NetworkOrbit({
                                 {n.howYouKnow}
                               </p>
                             </SpotlightCard>
-                          </span>
+                          </div>
                         ) : null}
-                      </button>
+                      </div>
                     </div>
                   );
                 })}

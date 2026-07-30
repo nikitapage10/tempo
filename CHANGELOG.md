@@ -4,6 +4,9 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-30
 
+- Fixed (v0.51.1): emblems on the Social orbit actually show and sit on the
+  rings — the spin animation was shoving them off their spots, and the
+  constellation is centered in the panel so you can see them.
 - Added (v0.51.0): **Social** is live — your private network of collaborators,
   guest reviewers and release credits, searchable and filterable, with a link
   through to anyone who already has a TEMPO artist profile.

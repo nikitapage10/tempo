@@ -35,7 +35,13 @@ export async function fetchPeople(opts?: {
   const { data, error } = await query;
   if (error) throw error;
 
-  const people = (data ?? []) as Person[];
+  const people = (data ?? []).map((row) => {
+    const raw = row.linked_profile as unknown;
+    const linked_profile = (
+      Array.isArray(raw) ? raw[0] : raw
+    ) as Person["linked_profile"];
+    return { ...row, linked_profile: linked_profile ?? null } as Person;
+  });
   if (!people.length) return people;
 
   const ids = people.map((p) => p.id);
