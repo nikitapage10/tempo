@@ -1150,6 +1150,20 @@ Standing rules established in phase 1 — keep following them:
 - Any view over an RLS-protected table must carry `with (security_invoker = on)`
   — a default view runs as its owner and bypasses RLS entirely.
 
+How to run this session: do the whole thing below in one continuous pass —
+don't stop and wait for a new prompt between the migration, the API/hooks
+layer, the Social page, and the orbit component. Work through the numbered
+steps in order, and after each one, check it before moving to the next:
+run `npx tsc --noEmit`, and where the step touches something renderable,
+load it in the browser and look at it yourself rather than assuming it
+works. If a check fails, fix it and re-check — don't carry a known-broken
+step forward into the next one. If you get stuck on the same failure after
+a couple of honest attempts (migration won't apply cleanly, an RLS policy
+you can't get to behave, a rendering bug you can't isolate), stop where you
+are, describe exactly what's broken and what you already tried, and ask me
+what to do before guessing further or pushing anything uncertain. Don't
+push to main until every step's checks pass and `npm run build` is clean.
+
 Implement, in migrations/029_people_and_follows.sql:
 
 1. People directory — a private CRM, NOT a shared graph. `people` is
@@ -1180,6 +1194,12 @@ Implement, in migrations/029_people_and_follows.sql:
    track_collaborators, comments, and guest_review_links so future rows
    link automatically. artists gets no new columns.
 
+   Check before continuing: apply the migration against Supabase, then
+   query `people`/`person_identities`/`person_appearances` directly and
+   confirm every existing collaborator email, guest name, and release
+   credit string shows up exactly once, and that re-running the backfill
+   doesn't duplicate anything.
+
 3. Follow graph — `profile_follows` (follower_profile_id,
    followee_profile_id, primary key on the pair, both directions indexed)
    and `profile_blocks`. Do NOT store a separate "connection" concept as a
@@ -1193,6 +1213,11 @@ Implement, in migrations/029_people_and_follows.sql:
    replacement is not a no-op, since it changes behavior on an existing
    function other tables' policies already depend on.
 
+   Check before continuing: with two Supabase accounts (or two rows you
+   create by hand), confirm account B can follow account A's published
+   profile, a block removes both directions from each other's follow
+   reads, and profile_connections only ever returns mutual follows.
+
 4. The Social page (app/(app)/social/page.tsx, replacing the placeholder):
    - Your network: the people directory as a filterable grid/list (by
      role/tag/source), showing which entries resolve to a linked TEMPO
@@ -1204,6 +1229,11 @@ Implement, in migrations/029_people_and_follows.sql:
    - Follow/follower lists, with a working Follow/Unfollow button on
      /artist/[handle] (currently disabled there — wire it up).
    - The network orbit at the bottom of the page — see below.
+
+   Check before continuing: load /social in the browser signed in as an
+   account with at least one seeded person and one followed profile.
+   Confirm the network grid, discover search, and follow/unfollow all
+   actually work against real data, not just that the page renders empty.
 
 5. The orbit constellation — components/social/network-orbit.tsx, built
    from scratch with Spectra tokens, NOT copied from any external component
@@ -1223,6 +1253,11 @@ Implement, in migrations/029_people_and_follows.sql:
    prefers-reduced-motion (static angles, hover still works) and pause via
    IntersectionObserver when offscreen. Use arbitrary Tailwind sizes
    (w-[27.5rem], not w-110 — this is Tailwind v3, not v4).
+
+   Check before continuing: in the browser, hover a node (rotation eases
+   down and the card pops), click through to a profile, resize to mobile
+   width (no horizontal overflow), and toggle reduced-motion in devtools
+   (rings go static, hover still works).
 
 Do not implement the feed or messaging yet — those are phases 3 and 4.
 
