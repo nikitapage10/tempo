@@ -36,16 +36,20 @@ import type {
 import { cn } from "@/lib/utils";
 
 const VISIBILITY_OPTIONS: { value: ProfileVisibility; label: string; hint: string }[] = [
-  { value: "private", label: "Private", hint: "Only you can see this profile." },
+  {
+    value: "private",
+    label: "Off the network",
+    hint: "Stay private — nobody can find, follow, or message you on Social. You don’t have to socialize. Your private collaborator contact book still works.",
+  },
   {
     value: "members",
     label: "TEMPO members",
-    hint: "Any signed-in TEMPO user can look you up.",
+    hint: "You’re on the network. Any signed-in TEMPO artist can look you up, follow you, and (if you allow) message you.",
   },
   {
     value: "public",
     label: "Public link",
-    hint: "Also reachable by anyone with the link — no account needed.",
+    hint: "On the network, plus a shareable /p/handle link anyone can open — no TEMPO account needed.",
   },
 ];
 
@@ -140,13 +144,13 @@ export default function ArtistProfilePage() {
     try {
       if (visibility === "private") {
         await unpublish.mutateAsync();
-        toast("Profile set to private.", "ok");
+        toast("You’re off the network — profile is private.", "ok");
       } else {
         await publish.mutateAsync(visibility);
         toast(
           visibility === "public"
-            ? "Profile published — the public link is live."
-            : "Profile visible to TEMPO members.",
+            ? "You’re on the network with a public link."
+            : "You’re on the network — visible to TEMPO members.",
           "ok"
         );
       }
@@ -265,45 +269,93 @@ function ProfileView({
 }) {
   const hasContent =
     !!profile?.bio || !!profile?.backstory || (profile?.links.length ?? 0) > 0;
+  const visibility = profile?.visibility ?? "private";
+  const onNetwork = visibility === "members" || visibility === "public";
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <section className="panel flex flex-col gap-4 p-6 lg:col-span-2">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="label-mono">Visibility</p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="label-mono">Social network</p>
+            <p className="mt-1 max-w-xl text-sm text-text-lo">
+              Optional. Keep it off if you just want TEMPO for your own catalog —
+              you can join later anytime.
+            </p>
+          </div>
           <div className="flex flex-wrap gap-1.5">
-            {VISIBILITY_OPTIONS.map((opt) => {
-              const active = (profile?.visibility ?? "private") === opt.value;
-              const Icon =
-                opt.value === "private" ? Lock : opt.value === "members" ? Users : Globe;
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  disabled={busy}
-                  onClick={() => onVisibilityChange(opt.value)}
-                  className={cn(
-                    "flex items-center gap-1.5 rounded-chip border px-2.5 py-1 text-xs transition-colors duration-hover disabled:opacity-50",
-                    active
-                      ? "border-ice/40 bg-ice/15 text-ice"
-                      : "border-line text-text-lo hover:border-ice/30 hover:text-text-hi"
-                  )}
-                >
-                  <Icon className="size-3" />
-                  {opt.label}
-                </button>
-              );
-            })}
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => onVisibilityChange("private")}
+              className={cn(
+                "flex items-center gap-1.5 rounded-chip border px-2.5 py-1 text-xs transition-colors duration-hover disabled:opacity-50",
+                !onNetwork
+                  ? "border-ice/40 bg-ice/15 text-ice"
+                  : "border-line text-text-lo hover:border-ice/30 hover:text-text-hi"
+              )}
+            >
+              <Lock className="size-3" />
+              Off the network
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                if (!onNetwork) onVisibilityChange("members");
+              }}
+              className={cn(
+                "flex items-center gap-1.5 rounded-chip border px-2.5 py-1 text-xs transition-colors duration-hover disabled:opacity-50",
+                onNetwork
+                  ? "border-ice/40 bg-ice/15 text-ice"
+                  : "border-line text-text-lo hover:border-ice/30 hover:text-text-hi"
+              )}
+            >
+              <Users className="size-3" />
+              On the network
+            </button>
           </div>
         </div>
-        <p className="text-[11px] text-text-lo">
-          {
-            VISIBILITY_OPTIONS.find(
-              (o) => o.value === (profile?.visibility ?? "private")
-            )?.hint
-          }
-        </p>
-        {profile?.visibility === "public" && profile.handle ? (
+
+        {onNetwork ? (
+          <div className="well space-y-3 rounded-input p-3">
+            <p className="text-[11px] text-text-lo">
+              How visible should you be while you&apos;re on the network?
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {VISIBILITY_OPTIONS.filter((o) => o.value !== "private").map((opt) => {
+                const active = visibility === opt.value;
+                const Icon = opt.value === "members" ? Users : Globe;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    disabled={busy}
+                    onClick={() => onVisibilityChange(opt.value)}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-chip border px-2.5 py-1 text-xs transition-colors duration-hover disabled:opacity-50",
+                      active
+                        ? "border-ice/40 bg-ice/15 text-ice"
+                        : "border-line text-text-lo hover:border-ice/30 hover:text-text-hi"
+                    )}
+                  >
+                    <Icon className="size-3" />
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-[11px] text-text-lo">
+              {VISIBILITY_OPTIONS.find((o) => o.value === visibility)?.hint}
+            </p>
+          </div>
+        ) : (
+          <p className="text-[11px] text-text-lo">
+            {VISIBILITY_OPTIONS.find((o) => o.value === "private")?.hint}
+          </p>
+        )}
+
+        {visibility === "public" && profile?.handle ? (
           <div className="well flex items-center justify-between gap-3 rounded-input px-3 py-2.5">
             <span className="truncate font-mono text-xs text-text-lo">
               /p/{profile.handle}
@@ -316,7 +368,7 @@ function ProfileView({
               Open <ExternalLink className="size-3" />
             </Link>
           </div>
-        ) : profile?.visibility === "public" ? (
+        ) : visibility === "public" ? (
           <p className="text-[11px] text-amber">
             Set a handle in Edit profile to activate the public link.
           </p>
@@ -390,8 +442,8 @@ function ProfileView({
           </div>
           <p className="text-sm leading-relaxed text-text-lo">
             Tell people who you are: a bio, a longer backstory, genres, roles,
-            and links to your music elsewhere. Nobody sees this until you set
-            visibility above.
+            and links to your music elsewhere. Nobody sees this until you turn
+            on the network above.
           </p>
         </section>
       )}

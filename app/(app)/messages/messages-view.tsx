@@ -1,13 +1,16 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Send } from "lucide-react";
+import { Lock, Send, Users } from "lucide-react";
 import { useActiveArtist } from "@/components/active-artist-provider";
 import { ArtistMark } from "@/components/artists/artist-mark";
+import { EmptyShaderPanel } from "@/components/shader-empty";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
+import { useToast } from "@/components/ui/toast";
 import { useArtistProfile } from "@/hooks/use-artist-profile";
 import {
   useConversations,
@@ -19,10 +22,17 @@ import { cn } from "@/lib/utils";
 
 export default function MessagesView() {
   const searchParams = useSearchParams();
+  const { toast } = useToast();
   const { activeArtist } = useActiveArtist();
-  const { profile } = useArtistProfile(activeArtist?.id ?? null);
+  const { profile, isLoading: profileLoading, publish } = useArtistProfile(
+    activeArtist?.id ?? null
+  );
   const myProfileId = profile?.id ?? null;
-  const { data: conversations = [], isLoading } = useConversations(myProfileId);
+  const onNetwork =
+    profile?.visibility === "members" || profile?.visibility === "public";
+  const { data: conversations = [], isLoading } = useConversations(
+    onNetwork ? myProfileId : null
+  );
   const { send, markRead } = useMessageMutations(myProfileId);
 
   const [activeId, setActiveId] = React.useState<string | null>(
@@ -36,12 +46,55 @@ export default function MessagesView() {
   }, [searchParams]);
 
   React.useEffect(() => {
-    if (activeId) markRead.mutate(activeId);
+    if (activeId && onNetwork) markRead.mutate(activeId);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mark once when thread opens
-  }, [activeId]);
+  }, [activeId, onNetwork]);
 
-  const { data: messages = [] } = useMessages(activeId);
+  const { data: messages = [] } = useMessages(onNetwork ? activeId : null);
   const active = conversations.find((c) => c.id === activeId) ?? null;
+
+  async function joinNetwork() {
+    try {
+      await publish.mutateAsync("members");
+      toast("You’re on the network — visible to TEMPO members.", "ok");
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Couldn’t join the network.");
+    }
+  }
+
+  if (!profileLoading && !onNetwork) {
+    return (
+      <div className="space-y-5">
+        <PageHeader
+          title="Messages"
+          subtitle="Direct threads with other TEMPO artists — join the network to use them."
+        />
+        <EmptyShaderPanel
+          title="You’re off the network"
+          copy="Messaging is part of the social network. Stay private if you want — or join when you’re ready to talk with other TEMPO artists."
+          action={
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                disabled={publish.isPending}
+                onClick={() => void joinNetwork()}
+              >
+                <Users className="size-3.5" />
+                Join as TEMPO member
+              </Button>
+              <Button asChild size="sm" variant="secondary">
+                <Link href="/artist">
+                  <Lock className="size-3.5" />
+                  Network settings
+                </Link>
+              </Button>
+            </div>
+          }
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">

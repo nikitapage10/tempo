@@ -119,33 +119,52 @@ export default function ArtistProfileByHandlePage() {
           </div>
 
           <div className="flex shrink-0 flex-wrap items-center gap-2">
-            <FollowButton
-              myProfileId={myProfile?.id ?? null}
-              targetProfileId={profile.id}
-            />
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              disabled={dmBusy || myProfile?.id === profile.id}
-              onClick={async () => {
-                if (!myProfile?.id) return;
-                setDmBusy(true);
-                try {
-                  const ok = await canDmProfile(profile.id);
-                  if (!ok) throw new Error("They aren't accepting messages from you.");
-                  const id = await startDm.mutateAsync(profile.id);
-                  router.push(`/messages?c=${id}`);
-                } catch (err) {
-                  alert(err instanceof Error ? err.message : "Couldn't start a message.");
-                } finally {
-                  setDmBusy(false);
-                }
-              }}
-            >
-              <MessageSquare className="size-3.5" />
-              Message
-            </Button>
+            {myProfile &&
+            myProfile.id !== profile.id &&
+            myProfile.visibility === "private" ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() => router.push("/artist")}
+              >
+                Join the network to follow
+              </Button>
+            ) : (
+              <>
+                <FollowButton
+                  myProfileId={myProfile?.id ?? null}
+                  targetProfileId={profile.id}
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  disabled={dmBusy || myProfile?.id === profile.id}
+                  onClick={async () => {
+                    if (!myProfile?.id) return;
+                    if (myProfile.visibility === "private") {
+                      router.push("/artist");
+                      return;
+                    }
+                    setDmBusy(true);
+                    try {
+                      const ok = await canDmProfile(profile.id);
+                      if (!ok) throw new Error("They aren't accepting messages from you.");
+                      const id = await startDm.mutateAsync(profile.id);
+                      router.push(`/messages?c=${id}`);
+                    } catch (err) {
+                      alert(err instanceof Error ? err.message : "Couldn't start a message.");
+                    } finally {
+                      setDmBusy(false);
+                    }
+                  }}
+                >
+                  <MessageSquare className="size-3.5" />
+                  Message
+                </Button>
+              </>
+            )}
           </div>
         </div>
 

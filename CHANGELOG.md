@@ -4,6 +4,12 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-30
 
+- Changed (v0.52.0): socializing is optional. On **Artist** you toggle
+  **Off the network** / **On the network** — off means private (nobody can
+  find or follow you); on lets you pick TEMPO members or a public link.
+  **Social** still shows your private contact book and orbit when you're
+  off; Feed, Follows, Discover, and Messages ask you to join first (one
+  tap), with a link back to network settings.
 - Fixed (v0.51.1): emblems on the Social orbit actually show and sit on the
   rings — the spin animation was shoving them off their spots, and the
   constellation is centered in the panel so you can see them.

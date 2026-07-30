@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { MessageSquare, Search, Users } from "lucide-react";
+import { Lock, MessageSquare, Search, Users } from "lucide-react";
 import { useActiveArtist } from "@/components/active-artist-provider";
 import { useArtistProfile } from "@/hooks/use-artist-profile";
 import { usePeople } from "@/hooks/use-people";
@@ -16,9 +16,11 @@ import { FeedComposer } from "@/components/social/feed-composer";
 import { FeedPostCard } from "@/components/social/feed-post";
 import { NetworkOrbit } from "@/components/social/network-orbit";
 import { PostDetailDialog } from "@/components/social/post-detail";
+import { EmptyShaderPanel } from "@/components/shader-empty";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
+import { useToast } from "@/components/ui/toast";
 import type { Person } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -26,11 +28,16 @@ type Tab = "network" | "feed" | "following" | "discover";
 
 export default function SocialView() {
   const searchParams = useSearchParams();
+  const { toast } = useToast();
   const { activeArtist } = useActiveArtist();
-  const { profile } = useArtistProfile(activeArtist?.id ?? null);
+  const { profile, isLoading: profileLoading, publish } = useArtistProfile(
+    activeArtist?.id ?? null
+  );
   const myProfileId = profile?.id ?? null;
+  const onNetwork =
+    profile?.visibility === "members" || profile?.visibility === "public";
 
-  const [tab, setTab] = React.useState<Tab>("feed");
+  const [tab, setTab] = React.useState<Tab>("network");
   const [sourceFilter, setSourceFilter] = React.useState<string>("");
   const [q, setQ] = React.useState("");
   const [discoverQ, setDiscoverQ] = React.useState("");
@@ -46,9 +53,11 @@ export default function SocialView() {
     source: sourceFilter || undefined,
     q: q || undefined,
   });
-  const { data: following = [] } = useFollowing(myProfileId);
-  const { data: followers = [] } = useFollowers(myProfileId);
-  const { data: timeline = [], isLoading: feedLoading } = useHomeTimeline(myProfileId);
+  const { data: following = [] } = useFollowing(onNetwork ? myProfileId : null);
+  const { data: followers = [] } = useFollowers(onNetwork ? myProfileId : null);
+  const { data: timeline = [], isLoading: feedLoading } = useHomeTimeline(
+    onNetwork ? myProfileId : null
+  );
   const { like, unlike } = useFeedMutations(myProfileId);
 
   React.useEffect(() => {
@@ -60,7 +69,13 @@ export default function SocialView() {
   }, [searchParams]);
 
   React.useEffect(() => {
-    if (!discoverQ.trim()) {
+    if (!onNetwork && (tab === "feed" || tab === "following" || tab === "discover")) {
+      setTab("network");
+    }
+  }, [onNetwork, tab]);
+
+  React.useEffect(() => {
+    if (!discoverQ.trim() || !onNetwork) {
       setDiscoverResults([]);
       return;
     }
@@ -70,29 +85,93 @@ export default function SocialView() {
       });
     }, 250);
     return () => clearTimeout(t);
-  }, [discoverQ]);
+  }, [discoverQ, onNetwork]);
 
-  const tabs: { id: Tab; label: string }[] = [
-    { id: "feed", label: "Feed" },
+  const tabs: { id: Tab; label: string; needsNetwork?: boolean }[] = [
     { id: "network", label: "Network" },
-    { id: "following", label: "Follows" },
-    { id: "discover", label: "Discover" },
+    { id: "feed", label: "Feed", needsNetwork: true },
+    { id: "following", label: "Follows", needsNetwork: true },
+    { id: "discover", label: "Discover", needsNetwork: true },
   ];
+
+  async function joinNetwork() {
+    try {
+      await publish.mutateAsync("members");
+      toast("You’re on the network — visible to TEMPO members.", "ok");
+      setTab("feed");
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Couldn’t join the network.");
+    }
+  }
+
+  const networkGate = (
+    <EmptyShaderPanel
+      title="You’re off the network"
+      copy="Socializing is optional. Stay private and keep using your collaborator contact book below — or join when you want follows, a feed, and discovery."
+      action={
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <Button
+            type="button"
+            size="sm"
+            disabled={publish.isPending || profileLoading}
+            onClick={() => void joinNetwork()}
+          >
+            <Users className="size-3.5" />
+            Join as TEMPO member
+          </Button>
+          <Button asChild size="sm" variant="secondary">
+            <Link href="/artist">
+              <Lock className="size-3.5" />
+              Network settings
+            </Link>
+          </Button>
+        </div>
+      }
+    />
+  );
 
   return (
     <div className="space-y-5">
       <PageHeader
         title="Social"
-        subtitle="Your network, follows, and what people you follow are up to."
+        subtitle={
+          onNetwork
+            ? "Your network, follows, and what people you follow are up to."
+            : "Your private contact book — join the network anytime if you want to socialize."
+        }
         actions={
-          <Button asChild size="sm" variant="secondary">
-            <Link href="/messages">
-              <MessageSquare className="size-3.5" />
-              Messages
-            </Link>
-          </Button>
+          onNetwork ? (
+            <Button asChild size="sm" variant="secondary">
+              <Link href="/messages">
+                <MessageSquare className="size-3.5" />
+                Messages
+              </Link>
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              size="sm"
+              disabled={publish.isPending || profileLoading}
+              onClick={() => void joinNetwork()}
+            >
+              <Users className="size-3.5" />
+              Join the network
+            </Button>
+          )
         }
       />
+
+      {!onNetwork && !profileLoading ? (
+        <div className="panel-quiet flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm text-text-lo">
+          <span className="flex items-center gap-2">
+            <Lock className="size-3.5 shrink-0 text-text-lo" />
+            Off the network — nobody can find or follow you.
+          </span>
+          <Link href="/artist" className="text-xs text-ice hover:underline">
+            Change on Artist
+          </Link>
+        </div>
+      ) : null}
 
       <div className="flex flex-wrap gap-1.5">
         {tabs.map((t) => (
@@ -108,31 +187,38 @@ export default function SocialView() {
             )}
           >
             {t.label}
+            {t.needsNetwork && !onNetwork ? (
+              <Lock className="ml-1 inline size-2.5 opacity-60" />
+            ) : null}
           </button>
         ))}
       </div>
 
       {tab === "feed" ? (
-        <div className="mx-auto grid max-w-xl gap-4">
-          <FeedComposer myProfileId={myProfileId} />
-          {feedLoading ? (
-            <div className="panel-quiet h-24 animate-pulse" />
-          ) : timeline.length === 0 ? (
-            <div className="panel-quiet p-6 text-center text-sm text-text-lo">
-              Nothing in your feed yet — follow someone, or post an update.
-            </div>
-          ) : (
-            timeline.map((post) => (
-              <FeedPostCard
-                key={post.id}
-                post={post}
-                onLike={() => like.mutate(post.id)}
-                onUnlike={() => unlike.mutate(post.id)}
-                onOpen={() => setPostId(post.id)}
-              />
-            ))
-          )}
-        </div>
+        onNetwork ? (
+          <div className="mx-auto grid max-w-xl gap-4">
+            <FeedComposer myProfileId={myProfileId} />
+            {feedLoading ? (
+              <div className="panel-quiet h-24 animate-pulse" />
+            ) : timeline.length === 0 ? (
+              <div className="panel-quiet p-6 text-center text-sm text-text-lo">
+                Nothing in your feed yet — follow someone, or post an update.
+              </div>
+            ) : (
+              timeline.map((post) => (
+                <FeedPostCard
+                  key={post.id}
+                  post={post}
+                  onLike={() => like.mutate(post.id)}
+                  onUnlike={() => unlike.mutate(post.id)}
+                  onOpen={() => setPostId(post.id)}
+                />
+              ))
+            )}
+          </div>
+        ) : (
+          networkGate
+        )
       ) : null}
 
       {tab === "network" ? (
@@ -219,124 +305,131 @@ export default function SocialView() {
       ) : null}
 
       {tab === "following" ? (
-        <div className="grid gap-6 lg:grid-cols-2">
-          <section>
-            <p className="label-mono mb-2 flex items-center gap-1.5">
-              <Users className="size-3" /> Following ({following.length})
-            </p>
-            <ul className="space-y-1.5">
-              {following.length === 0 ? (
-                <li className="text-sm text-text-lo">Not following anyone yet</li>
-              ) : (
-                following.map((f) => (
-                  <li key={f.followee_profile_id}>
-                    {f.profile?.handle ? (
-                      <Link
-                        href={`/artist/${f.profile.handle}`}
-                        className="well lift flex items-center gap-3 rounded-input px-3 py-2"
-                      >
-                        <ArtistMark
-                          emblemUrl={f.profile.emblem_url}
-                          paletteId={f.profile.palette_id}
-                          iceColor={f.profile.ice_color}
-                          amberColor={f.profile.amber_color}
-                          name={f.profile.display_name}
-                          size={18}
-                        />
-                        <span className="truncate text-sm text-text-hi">
-                          {f.profile.display_name}
-                        </span>
-                      </Link>
-                    ) : (
-                      <span className="text-sm text-text-lo">Unknown profile</span>
-                    )}
-                  </li>
-                ))
-              )}
-            </ul>
-          </section>
-          <section>
-            <p className="label-mono mb-2">Followers ({followers.length})</p>
-            <ul className="space-y-1.5">
-              {followers.length === 0 ? (
-                <li className="text-sm text-text-lo">No followers yet</li>
-              ) : (
-                followers.map((f) => (
-                  <li key={f.follower_profile_id}>
-                    {f.profile?.handle ? (
-                      <Link
-                        href={`/artist/${f.profile.handle}`}
-                        className="well lift flex items-center gap-3 rounded-input px-3 py-2"
-                      >
-                        <ArtistMark
-                          emblemUrl={f.profile.emblem_url}
-                          paletteId={f.profile.palette_id}
-                          iceColor={f.profile.ice_color}
-                          amberColor={f.profile.amber_color}
-                          name={f.profile.display_name}
-                          size={18}
-                        />
-                        <span className="truncate text-sm text-text-hi">
-                          {f.profile.display_name}
-                        </span>
-                      </Link>
-                    ) : (
-                      <span className="text-sm text-text-lo">Unknown profile</span>
-                    )}
-                  </li>
-                ))
-              )}
-            </ul>
-          </section>
-        </div>
+        onNetwork ? (
+          <div className="grid gap-6 lg:grid-cols-2">
+            <section>
+              <p className="label-mono mb-2 flex items-center gap-1.5">
+                <Users className="size-3" /> Following ({following.length})
+              </p>
+              <ul className="space-y-1.5">
+                {following.length === 0 ? (
+                  <li className="text-sm text-text-lo">Not following anyone yet</li>
+                ) : (
+                  following.map((f) => (
+                    <li key={f.followee_profile_id}>
+                      {f.profile?.handle ? (
+                        <Link
+                          href={`/artist/${f.profile.handle}`}
+                          className="well lift flex items-center gap-3 rounded-input px-3 py-2"
+                        >
+                          <ArtistMark
+                            emblemUrl={f.profile.emblem_url}
+                            paletteId={f.profile.palette_id}
+                            iceColor={f.profile.ice_color}
+                            amberColor={f.profile.amber_color}
+                            name={f.profile.display_name}
+                            size={18}
+                          />
+                          <span className="truncate text-sm text-text-hi">
+                            {f.profile.display_name}
+                          </span>
+                        </Link>
+                      ) : (
+                        <span className="text-sm text-text-lo">Unknown profile</span>
+                      )}
+                    </li>
+                  ))
+                )}
+              </ul>
+            </section>
+            <section>
+              <p className="label-mono mb-2">Followers ({followers.length})</p>
+              <ul className="space-y-1.5">
+                {followers.length === 0 ? (
+                  <li className="text-sm text-text-lo">No followers yet</li>
+                ) : (
+                  followers.map((f) => (
+                    <li key={f.follower_profile_id}>
+                      {f.profile?.handle ? (
+                        <Link
+                          href={`/artist/${f.profile.handle}`}
+                          className="well lift flex items-center gap-3 rounded-input px-3 py-2"
+                        >
+                          <ArtistMark
+                            emblemUrl={f.profile.emblem_url}
+                            paletteId={f.profile.palette_id}
+                            iceColor={f.profile.ice_color}
+                            amberColor={f.profile.amber_color}
+                            name={f.profile.display_name}
+                            size={18}
+                          />
+                          <span className="truncate text-sm text-text-hi">
+                            {f.profile.display_name}
+                          </span>
+                        </Link>
+                      ) : (
+                        <span className="text-sm text-text-lo">Unknown profile</span>
+                      )}
+                    </li>
+                  ))
+                )}
+              </ul>
+            </section>
+          </div>
+        ) : (
+          networkGate
+        )
       ) : null}
 
       {tab === "discover" ? (
-        <div className="mx-auto max-w-lg space-y-3">
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-text-lo" />
-            <Input
-              value={discoverQ}
-              onChange={(e) => setDiscoverQ(e.target.value)}
-              placeholder="Search published artists by name"
-              className="pl-9"
-            />
+        onNetwork ? (
+          <div className="mx-auto max-w-lg space-y-3">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-text-lo" />
+              <Input
+                value={discoverQ}
+                onChange={(e) => setDiscoverQ(e.target.value)}
+                placeholder="Search published artists by name"
+                className="pl-9"
+              />
+            </div>
+            {discoverResults.length === 0 && discoverQ.trim() ? (
+              <p className="text-sm text-text-lo">No published artists match that name.</p>
+            ) : null}
+            <ul className="space-y-1.5">
+              {discoverResults.map((p) => (
+                <li key={p.id}>
+                  {p.handle ? (
+                    <Link
+                      href={`/artist/${p.handle}`}
+                      className="well lift flex items-center gap-3 rounded-input px-3 py-2.5"
+                    >
+                      <ArtistMark
+                        emblemUrl={p.emblem_url}
+                        paletteId={p.palette_id}
+                        iceColor={p.ice_color}
+                        amberColor={p.amber_color}
+                        name={p.display_name}
+                        size={20}
+                      />
+                      <div className="min-w-0">
+                        <p className="truncate text-sm text-text-hi">{p.display_name}</p>
+                        <p className="truncate text-xs text-text-lo">
+                          @{p.handle}
+                          {p.tagline ? ` · ${p.tagline}` : ""}
+                        </p>
+                      </div>
+                    </Link>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
           </div>
-          {discoverResults.length === 0 && discoverQ.trim() ? (
-            <p className="text-sm text-text-lo">No published artists match that name.</p>
-          ) : null}
-          <ul className="space-y-1.5">
-            {discoverResults.map((p) => (
-              <li key={p.id}>
-                {p.handle ? (
-                  <Link
-                    href={`/artist/${p.handle}`}
-                    className="well lift flex items-center gap-3 rounded-input px-3 py-2.5"
-                  >
-                    <ArtistMark
-                      emblemUrl={p.emblem_url}
-                      paletteId={p.palette_id}
-                      iceColor={p.ice_color}
-                      amberColor={p.amber_color}
-                      name={p.display_name}
-                      size={20}
-                    />
-                    <div className="min-w-0">
-                      <p className="truncate text-sm text-text-hi">{p.display_name}</p>
-                      <p className="truncate text-xs text-text-lo">
-                        @{p.handle}
-                        {p.tagline ? ` · ${p.tagline}` : ""}
-                      </p>
-                    </div>
-                  </Link>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        </div>
+        ) : (
+          networkGate
+        )
       ) : null}
 
-      {/* Orbit constellation — always at the bottom */}
       <section className="panel overflow-visible pt-4 pb-2">
         <p className="label-mono mb-1 px-4">Your orbit</p>
         <p className="mb-2 px-4 text-xs text-text-lo">
