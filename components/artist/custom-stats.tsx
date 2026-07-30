@@ -5,7 +5,12 @@ import { Check, Pencil, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { SectionHeader, QuietEmpty } from "@/components/ui/section-header";
-import { TrendLine } from "@/components/artist/platform-modules";
+import {
+  AXIS_TEXT,
+  GRID,
+  useChartPalette,
+  useMeasuredWidth,
+} from "@/components/artist/chart-kit";
 import { useCustomModuleMutations } from "@/hooks/use-custom-stats";
 import type { CustomStat, CustomStatModule } from "@/lib/api/custom-stats";
 import { cn } from "@/lib/utils";
@@ -17,6 +22,142 @@ function today(): string {
 function formatValue(value: number, unit: string | null): string {
   const n = Number.isInteger(value) ? String(value) : value.toFixed(2);
   return unit ? `${n} ${unit}` : n;
+}
+
+function shortDate(iso: string): string {
+  const d = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+/**
+ * A filled area chart for one hand-logged stat — deliberately heavier than
+ * the platform sparkline (gradient fill, per-reading dots, a date axis) so a
+ * custom module reads as a real chart rather than a log with a hairline
+ * under it. Still its own shape, not a re-skin of the year-in-bounces combo
+ * chart: one series, no bars, no month grid.
+ */
+function StatAreaChart({
+  points,
+  unit,
+  gradientId,
+}: {
+  points: { date: string; value: number }[];
+  unit: string | null;
+  gradientId: string;
+}) {
+  const palette = useChartPalette();
+  const [ref, width] = useMeasuredWidth<HTMLDivElement>();
+  const H = 108;
+  const PAD_X = 6;
+  const PAD_TOP = 12;
+  const PAD_BOTTOM = 20;
+
+  if (points.length === 0) {
+    return (
+      <div className="flex h-[108px] items-center justify-center">
+        <p className="text-[11px] text-text-lo">
+          No readings yet — log one below to start the chart.
+        </p>
+      </div>
+    );
+  }
+
+  if (points.length === 1) {
+    return (
+      <div className="flex h-[108px] flex-col items-center justify-center gap-1">
+        <p className="text-xl tabular-nums text-text-hi">
+          {formatValue(points[0].value, unit)}
+        </p>
+        <p className="text-[11px] text-text-lo">
+          One reading recorded — the chart draws in from the second.
+        </p>
+      </div>
+    );
+  }
+
+  const values = points.map((p) => p.value);
+  const min = Math.min(...values, 0);
+  const max = Math.max(...values);
+  const span = max - min || 1;
+  const innerW = Math.max(0, width - PAD_X * 2);
+  const innerH = H - PAD_TOP - PAD_BOTTOM;
+  const x = (i: number) => PAD_X + (i / (points.length - 1)) * innerW;
+  const y = (v: number) => PAD_TOP + innerH - ((v - min) / span) * innerH;
+  const baseline = PAD_TOP + innerH;
+
+  const coords = points.map((p, i) => [x(i), y(p.value)] as const);
+  const linePoints = coords.map(([px, py]) => `${px},${py}`).join(" ");
+  const areaPath =
+    `M${coords[0][0]},${baseline} ` +
+    coords.map(([px, py]) => `L${px},${py}`).join(" ") +
+    ` L${coords[coords.length - 1][0]},${baseline} Z`;
+
+  const change = values[values.length - 1] - values[0];
+  const trendWord = change > 0 ? "up" : change < 0 ? "down" : "flat";
+
+  return (
+    <div ref={ref} className="w-full">
+      {width > 0 ? (
+        <svg
+          width={width}
+          height={H}
+          role="img"
+          aria-label={`${unit ? `${unit} ` : ""}reading trend across ${points.length} logged dates, ${trendWord} ${Math.abs(change)} since the first.`}
+        >
+          <defs>
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={palette.primary} stopOpacity={0.32} />
+              <stop offset="100%" stopColor={palette.primary} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <line
+            x1={PAD_X}
+            x2={width - PAD_X}
+            y1={baseline}
+            y2={baseline}
+            stroke={GRID}
+            strokeWidth={1}
+            shapeRendering="crispEdges"
+          />
+          <path d={areaPath} fill={`url(#${gradientId})`} />
+          <polyline
+            points={linePoints}
+            fill="none"
+            stroke={palette.primary}
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          {coords.map(([px, py], i) => (
+            <circle
+              key={i}
+              cx={px}
+              cy={py}
+              r={i === coords.length - 1 ? 3.5 : 2}
+              fill={i === coords.length - 1 ? palette.primary : "#121216"}
+              stroke={palette.primary}
+              strokeWidth={i === coords.length - 1 ? 2 : 1.5}
+            />
+          ))}
+          <text x={PAD_X} y={H - 5} fontSize={10} fill={AXIS_TEXT}>
+            {shortDate(points[0].date)}
+          </text>
+          <text
+            x={width - PAD_X}
+            y={H - 5}
+            fontSize={10}
+            fill={AXIS_TEXT}
+            textAnchor="end"
+          >
+            {shortDate(points[points.length - 1].date)}
+          </text>
+        </svg>
+      ) : (
+        <div style={{ height: H }} />
+      )}
+    </div>
+  );
 }
 
 /** Most recent readings, newest first — enough to spot and undo a typo. */
@@ -120,7 +261,7 @@ function StatRow({
       </div>
 
       <div className="mt-2">
-        <TrendLine points={points} label={stat.label} />
+        <StatAreaChart points={points} unit={stat.unit} gradientId={`stat-area-${stat.id}`} />
       </div>
 
       <RecentEntries

@@ -10,17 +10,17 @@ import {
 /**
  * Personal arrangement of the artist overview.
  *
- * Kept in localStorage rather than the database: it is a per-person view
- * preference with no collaboration story, and storing it locally means the
- * page ships without a migration anyone has to run by hand. Track workspace
- * layouts stay in Postgres because they resolve across track/stage/global
- * scopes — this one has a single scope, the artist.
+ * Lives in Supabase (migration 027), scoped to the signed-in user and the
+ * artist — so it follows you to another device instead of staying stuck to
+ * one browser. It used to be localStorage-only; `LEGACY_KEY_PREFIX` below is
+ * only for reading that old value once, to migrate it into the database
+ * instead of silently losing it.
  */
 
-const KEY_PREFIX = "tempo.artistLayout.";
+const LEGACY_KEY_PREFIX = "tempo.artistLayout.";
 
-function keyFor(artistId: string): string {
-  return `${KEY_PREFIX}${artistId}`;
+function legacyKeyFor(artistId: string): string {
+  return `${LEGACY_KEY_PREFIX}${artistId}`;
 }
 
 const KNOWN = new Set<ModuleId>(ALL_ARTIST_MODULE_IDS);
@@ -33,7 +33,7 @@ const KNOWN = new Set<ModuleId>(ALL_ARTIST_MODULE_IDS);
  * both are absent from the layout, but only the latter should be re-added on
  * read. Without it, hiding a section would be undone by the next save.
  */
-type StoredLayout = {
+export type StoredArtistLayout = {
   v: 1;
   layout: ModuleLayout;
   known: ModuleId[];
@@ -63,57 +63,54 @@ export function sanitizeArtistLayout(layout: ModuleLayout): ModuleLayout {
   };
 }
 
-export function readArtistLayout(artistId: string): ModuleLayout | null {
+export function buildStoredArtistLayout(layout: ModuleLayout): StoredArtistLayout {
+  return { v: 1, layout, known: ALL_ARTIST_MODULE_IDS };
+}
+
+/**
+ * Turns a raw stored value (old localStorage shape or the new database
+ * column, both the same JSON) into a layout safe to render, re-adding only
+ * modules that didn't exist yet when it was saved.
+ */
+export function reconcileStoredArtistLayout(raw: unknown): ModuleLayout | null {
+  if (!raw || typeof raw !== "object") return null;
+  const parsed = raw as Partial<StoredArtistLayout> & Partial<ModuleLayout>;
+  const stored: ModuleLayout | undefined =
+    "layout" in parsed && parsed.layout ? parsed.layout : (parsed as ModuleLayout);
+  if (!stored || !Array.isArray(stored.left) || !Array.isArray(stored.right)) {
+    return null;
+  }
+
+  const layout = sanitizeArtistLayout(stored);
+
+  const knownWhenSaved = new Set<ModuleId>(
+    Array.isArray(parsed.known) ? parsed.known : ALL_ARTIST_MODULE_IDS
+  );
+  const placed = new Set(flattenLayout(layout));
+  for (const id of ALL_ARTIST_MODULE_IDS) {
+    if (!placed.has(id) && !knownWhenSaved.has(id)) {
+      layout.right.push([id]);
+    }
+  }
+
+  return layout;
+}
+
+/** One-time read of the pre-migration 027 localStorage value, for carrying it into the database. */
+export function readLegacyLocalArtistLayout(artistId: string): ModuleLayout | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = localStorage.getItem(keyFor(artistId));
+    const raw = localStorage.getItem(legacyKeyFor(artistId));
     if (!raw) return null;
-
-    const parsed = JSON.parse(raw) as StoredLayout | ModuleLayout;
-    const stored: ModuleLayout =
-      "layout" in parsed ? parsed.layout : (parsed as ModuleLayout);
-    if (!Array.isArray(stored?.left) || !Array.isArray(stored?.right)) {
-      return null;
-    }
-
-    const layout = sanitizeArtistLayout(stored);
-
-    // Only modules that did not exist when this layout was saved get added
-    // back; anything the user hid stays hidden.
-    const knownWhenSaved = new Set<ModuleId>(
-      "known" in parsed && Array.isArray(parsed.known)
-        ? parsed.known
-        : ALL_ARTIST_MODULE_IDS
-    );
-    const placed = new Set(flattenLayout(layout));
-    for (const id of ALL_ARTIST_MODULE_IDS) {
-      if (!placed.has(id) && !knownWhenSaved.has(id)) {
-        layout.right.push([id]);
-      }
-    }
-
-    return layout;
+    return reconcileStoredArtistLayout(JSON.parse(raw));
   } catch {
     return null;
   }
 }
 
-export function writeArtistLayout(artistId: string, layout: ModuleLayout) {
+export function clearLegacyLocalArtistLayout(artistId: string) {
   try {
-    const payload: StoredLayout = {
-      v: 1,
-      layout,
-      known: ALL_ARTIST_MODULE_IDS,
-    };
-    localStorage.setItem(keyFor(artistId), JSON.stringify(payload));
-  } catch {
-    /* quota or private mode — the layout just doesn't persist */
-  }
-}
-
-export function clearArtistLayout(artistId: string) {
-  try {
-    localStorage.removeItem(keyFor(artistId));
+    localStorage.removeItem(legacyKeyFor(artistId));
   } catch {
     /* ignore */
   }

@@ -1,11 +1,16 @@
 "use client";
 
 import * as React from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  clearArtistLayout,
-  readArtistLayout,
+  clearArtistLayoutPref,
+  fetchArtistLayoutPref,
+  saveArtistLayoutPref,
+} from "@/lib/api/artist-layout";
+import {
+  clearLegacyLocalArtistLayout,
+  readLegacyLocalArtistLayout,
   sanitizeArtistLayout,
-  writeArtistLayout,
 } from "@/lib/artist-layout";
 import {
   DEFAULT_ARTIST_LAYOUT,
@@ -13,39 +18,58 @@ import {
 } from "@/lib/workspace-presets";
 
 /**
- * The artist overview's saved arrangement, per artist.
+ * The artist overview's saved arrangement, per artist — stored in Supabase
+ * (migration 027) so it follows the signed-in person across devices, rather
+ * than staying stuck to whichever browser last saved it.
  *
- * Reads on mount rather than during render so server and first client paint
- * agree; until then the default layout shows, which is also what a new artist
- * gets, so there is no visible swap for anyone who hasn't customised.
+ * On the first successful fetch that finds nothing in the database yet, a
+ * pre-migration 027 localStorage value (if this browser has one) is carried
+ * over once and the local copy is cleared, so nobody's existing arrangement
+ * is silently dropped by the switch.
  */
 export function useArtistLayout(artistId: string | null) {
-  const [layout, setLayout] = React.useState<ModuleLayout>(
-    DEFAULT_ARTIST_LAYOUT
-  );
-  const [loaded, setLoaded] = React.useState(false);
+  const qc = useQueryClient();
+  const queryKey = ["artist-layout", artistId];
 
+  const query = useQuery({
+    queryKey,
+    queryFn: () => fetchArtistLayoutPref(artistId!),
+    enabled: !!artistId,
+    staleTime: 30_000,
+  });
+
+  const save = useMutation({
+    mutationFn: (layout: ModuleLayout) =>
+      saveArtistLayoutPref(artistId!, layout),
+    onSuccess: (layout) => qc.setQueryData(queryKey, layout),
+  });
+
+  const clear = useMutation({
+    mutationFn: () => clearArtistLayoutPref(artistId!),
+    onSuccess: () => qc.setQueryData(queryKey, null),
+  });
+
+  const saveMutate = save.mutate;
   React.useEffect(() => {
-    if (!artistId) return;
-    setLayout(readArtistLayout(artistId) ?? DEFAULT_ARTIST_LAYOUT);
-    setLoaded(true);
-  }, [artistId]);
+    if (!artistId || !query.isSuccess || query.data !== null) return;
+    const legacy = readLegacyLocalArtistLayout(artistId);
+    if (!legacy) return;
+    // Only ever runs once per artist per browser: fires right after a fetch
+    // finds nothing saved, and clearing the local copy stops it firing again.
+    saveMutate(legacy, {
+      onSuccess: () => clearLegacyLocalArtistLayout(artistId),
+    });
+  }, [artistId, query.isSuccess, query.data, saveMutate]);
 
-  const save = React.useCallback(
-    (next: ModuleLayout) => {
-      // Sanitize only — never re-add absent modules here, or hiding one would
-      // be undone the moment it is saved.
-      const clean = sanitizeArtistLayout(next);
-      setLayout(clean);
-      if (artistId) writeArtistLayout(artistId, clean);
-    },
-    [artistId]
-  );
+  const layout = query.data ?? DEFAULT_ARTIST_LAYOUT;
 
-  const reset = React.useCallback(() => {
-    setLayout(DEFAULT_ARTIST_LAYOUT);
-    if (artistId) clearArtistLayout(artistId);
-  }, [artistId]);
+  function setLayout(next: ModuleLayout) {
+    save.mutate(sanitizeArtistLayout(next));
+  }
 
-  return { layout, setLayout: save, reset, loaded };
+  function reset() {
+    clear.mutate();
+  }
+
+  return { layout, setLayout, reset, loaded: query.isSuccess || query.isError };
 }
