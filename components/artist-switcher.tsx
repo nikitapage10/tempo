@@ -1,7 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { Check, ChevronDown, Disc3, Plus, Settings2 } from "lucide-react";
+import {
+  BarChart3,
+  Check,
+  ChevronDown,
+  Disc3,
+  Plus,
+  Settings2,
+} from "lucide-react";
 import Link from "next/link";
 import { useActiveArtist } from "@/components/active-artist-provider";
 import { cn } from "@/lib/utils";
@@ -96,7 +103,15 @@ export function ArtistSwitcher() {
               className="flex items-center gap-2 px-3 py-2 text-sm text-text-lo transition-colors duration-hover hover:bg-bg-2/60 hover:text-text-hi"
             >
               <Disc3 className="size-3.5" />
-              Artist overview
+              Artist profile
+            </Link>
+            <Link
+              href="/stats"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2 px-3 py-2 text-sm text-text-lo transition-colors duration-hover hover:bg-bg-2/60 hover:text-text-hi"
+            >
+              <BarChart3 className="size-3.5" />
+              Stats
             </Link>
             <Link
               href="/settings#artists"

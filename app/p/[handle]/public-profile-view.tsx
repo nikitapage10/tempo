@@ -1,0 +1,172 @@
+"use client";
+
+import * as React from "react";
+import { useQuery } from "@tanstack/react-query";
+import { ExternalLink } from "lucide-react";
+import { FlareLine } from "@/components/flare-line";
+import type { PublicArtistProfile } from "@/lib/public-profile-server";
+
+async function fetchPublicProfile(handle: string): Promise<PublicArtistProfile> {
+  const res = await fetch(`/api/p/${handle}`, { cache: "no-store" });
+  const body = await res.json();
+  if (!res.ok) throw new Error(body.error || "This profile isn’t available.");
+  return body;
+}
+
+export function PublicProfileView({ handle }: { handle: string }) {
+  const query = useQuery({
+    queryKey: ["public-profile", handle],
+    queryFn: () => fetchPublicProfile(handle),
+    retry: false,
+  });
+
+  return (
+    <main className="min-h-screen bg-bg-0 px-4 py-10 sm:py-16">
+      <div className="mx-auto w-full max-w-2xl">
+        <p className="font-display text-lg font-bold tracking-tight text-text-hi">TEMPO</p>
+
+        {query.isLoading ? (
+          <div className="mt-8 space-y-4">
+            <div className="h-40 animate-pulse rounded-panel bg-bg-2" />
+            <div className="h-24 animate-pulse rounded-panel bg-bg-2" />
+          </div>
+        ) : query.isError || !query.data ? (
+          <div className="mt-8 rounded-panel border border-line bg-bg-1 p-8 text-center">
+            <p className="text-sm text-text-lo">
+              {query.error instanceof Error
+                ? query.error.message
+                : "This profile isn’t available."}
+            </p>
+          </div>
+        ) : (
+          <ProfileContent profile={query.data} />
+        )}
+      </div>
+    </main>
+  );
+}
+
+function ProfileContent({ profile }: { profile: PublicArtistProfile }) {
+  const colorWash =
+    profile.banner_color && profile.banner_color_end
+      ? `linear-gradient(125deg, ${profile.banner_color} 0%, ${profile.banner_color_end} 42%, var(--bg-0) 100%)`
+      : profile.banner_color
+        ? `linear-gradient(180deg, ${profile.banner_color} 0%, var(--bg-0) 100%)`
+        : undefined;
+
+  return (
+    <div className="mt-6 space-y-5">
+      <div className="relative overflow-hidden rounded-panel border border-line shadow-e3">
+        <div className="absolute inset-0">
+          {profile.banner_url ? (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={profile.banner_url}
+                alt=""
+                className="absolute inset-0 size-full object-cover"
+              />
+              <div
+                aria-hidden
+                className="absolute inset-0"
+                style={{
+                  background:
+                    "linear-gradient(180deg, rgb(10 10 12 / 0.55) 0%, rgb(10 10 12 / 0.8) 70%, var(--bg-0) 100%)",
+                }}
+              />
+            </>
+          ) : colorWash ? (
+            <div aria-hidden className="absolute inset-0" style={{ background: colorWash }} />
+          ) : null}
+        </div>
+
+        <div className="relative z-[1] flex items-center gap-3 px-6 py-8 sm:px-8 sm:py-10">
+          {profile.emblem_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={profile.emblem_url}
+              alt={profile.display_name}
+              className="size-14 shrink-0 rounded-card border border-line object-cover shadow-e1"
+            />
+          ) : null}
+          <div className="min-w-0">
+            <h1 className="font-display text-3xl font-semibold tracking-tight text-text-hi sm:text-[40px] sm:leading-[1.05]">
+              {profile.display_name}
+            </h1>
+            <p className="mt-1 text-sm text-text-lo">
+              @{profile.handle}
+              {profile.pronouns ? ` · ${profile.pronouns}` : ""}
+              {profile.location ? ` · ${profile.location}` : ""}
+            </p>
+            {profile.tagline ? (
+              <p className="mt-1.5 max-w-lg text-sm text-text-lo">{profile.tagline}</p>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
+      {profile.bio ? (
+        <section className="panel-quiet p-6">
+          <p className="label-mono mb-2">Bio</p>
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-text-hi">
+            {profile.bio}
+          </p>
+        </section>
+      ) : null}
+
+      {profile.backstory ? (
+        <section className="panel-quiet p-6">
+          <p className="label-mono mb-2">Backstory</p>
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-text-hi">
+            {profile.backstory}
+          </p>
+        </section>
+      ) : null}
+
+      {profile.genres.length || profile.roles.length ? (
+        <section className="panel-quiet p-6">
+          <p className="label-mono mb-2">Genres &amp; roles</p>
+          <div className="flex flex-wrap gap-1.5">
+            {profile.genres.map((g) => (
+              <span key={g} className="rounded-chip border border-line px-2.5 py-1 text-xs text-text-lo">
+                {g}
+              </span>
+            ))}
+            {profile.roles.map((r) => (
+              <span
+                key={r}
+                className="rounded-chip border border-ice/30 bg-ice/10 px-2.5 py-1 text-xs text-ice"
+              >
+                {r}
+              </span>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {profile.links.length ? (
+        <section className="panel-quiet p-6">
+          <p className="label-mono mb-2">Links</p>
+          <ul className="space-y-1.5">
+            {profile.links.map((link, i) => (
+              <li key={i}>
+                <a
+                  href={link.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="well lift flex items-center gap-2 rounded-input px-3 py-2 text-sm text-text-hi"
+                >
+                  <ExternalLink className="size-3.5 shrink-0 text-ice" />
+                  <span className="truncate">{link.label}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      <FlareLine className="max-w-[240px] opacity-50" />
+      <p className="text-center text-[11px] text-text-lo">Made with TEMPO</p>
+    </div>
+  );
+}

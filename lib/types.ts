@@ -48,6 +48,65 @@ export type ArtistUpdate = Partial<{
   apple_artist_id: string | null;
 }>;
 
+export type ProfileVisibility = "private" | "members" | "public";
+export type ProfileDmPolicy = "anyone" | "connections" | "nobody";
+
+export type ProfileLink = {
+  label: string;
+  url: string;
+};
+
+/**
+ * The public-facing artist profile — migration 028. A separate 1:1 table
+ * from `artists`, not new columns on it: identity fields are mirrored in by
+ * trigger, and no social read path ever joins `artists` directly. See
+ * migrations/028_artist_profiles.sql.
+ */
+export type ArtistProfile = {
+  id: string;
+  artist_id: string;
+  owner_user_id: string;
+  /** Secondary identity (Discord model) — for share links and @mentions only. */
+  handle: string | null;
+  display_name: string;
+  emblem_url: string | null;
+  banner_url: string | null;
+  banner_color: string | null;
+  banner_color_end: string | null;
+  ice_color: string | null;
+  amber_color: string | null;
+  palette_id: ArtistPaletteId;
+  tagline: string | null;
+  bio: string | null;
+  backstory: string | null;
+  location: string | null;
+  country_code: string | null;
+  genres: string[];
+  roles: string[];
+  links: ProfileLink[];
+  pronouns: string | null;
+  visibility: ProfileVisibility;
+  published_at: string | null;
+  accepts_dms: ProfileDmPolicy;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ArtistProfileUpdate = Partial<{
+  handle: string | null;
+  tagline: string | null;
+  bio: string | null;
+  backstory: string | null;
+  location: string | null;
+  country_code: string | null;
+  genres: string[];
+  roles: string[];
+  links: ProfileLink[];
+  pronouns: string | null;
+  visibility: ProfileVisibility;
+  accepts_dms: ProfileDmPolicy;
+}>;
+
 export type Space = {
   id: string;
   user_id: string;
@@ -516,6 +575,13 @@ export type AppNotification = {
   body: string | null;
   read_at: string | null;
   created_at: string;
+  /** Social layer additions (migration 028) — null on catalog notifications. */
+  actor_profile_id: string | null;
+  target_profile_id: string | null;
+  entity_type: string | null;
+  entity_id: string | null;
+  link_url: string | null;
+  group_key: string | null;
 };
 
 export type WorkspacePreset =

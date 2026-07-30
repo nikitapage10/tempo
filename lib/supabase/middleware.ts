@@ -73,12 +73,24 @@ export async function updateSession(request: NextRequest) {
   // session — it has to be reachable from the (public) /register form.
   const isInviteCodeCheckRoute = path === "/api/auth/verify-invite";
 
+  // Public artist profiles — exact `/p` and `/api/p` prefixes only, mirroring
+  // the guest-review/invite pattern above. The route handler independently
+  // re-checks `visibility = 'public'` via the service-role client (see
+  // lib/public-profile-server.ts); this only keeps the page reachable
+  // without a TEMPO account. A loose match here would open the whole app.
+  const isPublicProfileRoute =
+    path === "/p" ||
+    path.startsWith("/p/") ||
+    path === "/api/p" ||
+    path.startsWith("/api/p/");
+
   if (
     !user &&
     !isAuthRoute &&
     !isGuestReviewRoute &&
     !isInviteRoute &&
-    !isInviteCodeCheckRoute
+    !isInviteCodeCheckRoute &&
+    !isPublicProfileRoute
   ) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/login";

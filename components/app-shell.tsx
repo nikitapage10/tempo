@@ -11,6 +11,8 @@ import {
   Settings,
   Plus,
   Disc3,
+  Orbit,
+  BarChart3,
 } from "lucide-react";
 import { AssistantRoot } from "@/components/assistant/assistant-root";
 import { ArtistFavicon } from "@/components/artist-favicon";
@@ -35,6 +37,8 @@ const MUSIC_MAIN_NAV = [
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/artist", label: "Artist", icon: Disc3 },
+  { href: "/social", label: "Social", icon: Orbit },
+  { href: "/stats", label: "Stats", icon: BarChart3 },
 ] as const;
 
 const MUSIC_MOBILE_NAV = [

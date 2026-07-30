@@ -4,6 +4,38 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-30
 
+- Added (v0.50.0): the **Artist** page is now a real editable profile — a
+  tagline, bio, backstory, location, pronouns, genres, roles, and up to 12
+  links, plus who's allowed to message you. Nothing here is visible to
+  anyone else until you choose to publish it.
+- Added (v0.50.0): **visibility controls** for your profile — keep it
+  **Private** (just you), open it to **TEMPO members** (anyone signed in can
+  look you up), or go **Public link**, which also makes it reachable by
+  anyone with the link, no TEMPO account needed.
+- Added (v0.50.0): a **handle** — a short, shareable @name for your public
+  link and future @mentions. Your artist name stays the prominent thing
+  everywhere in TEMPO; the handle is just the address.
+- Added (v0.50.0): visiting another TEMPO artist's profile (once they've
+  published one) now shows their bio, backstory, genres, roles and links —
+  reachable once the network view lands.
+- Under the hood (v0.50.0): **run migration 028 in Supabase** before any of
+  this works. Until then, the Artist page shows its old "nothing here yet"
+  placeholder and nothing breaks.
+
+- Changed (v0.49.0): the old **Artist** page — banner, headline numbers, the
+  year in bounces, pipeline, your sound, and everything else it tracked — is
+  still exactly where it was, just renamed **Stats** and moved to its own spot
+  in the left rail. Nothing about it changed except the name and location.
+- Added (v0.49.0): **Artist** is now your public-facing profile page — the
+  start of a page other people will eventually be able to look up: your name,
+  your branding, and soon a bio and backstory. It's a placeholder today; the
+  editable bio, links and visibility controls are coming next.
+- Added (v0.49.0): a new **Social** tab in the left rail — a first look at
+  what's coming: your network of collaborators and other artists on TEMPO,
+  with follows and a feed to follow in later updates.
+
+
+
 - Fixed (v0.48.0): the Artist page's **layout arrangement now follows your account**, not just the browser you set it up in. It used to be saved only to that one device, so a custom module you built at home wouldn't show up when you checked the site from your phone or another computer — same data, different arrangement. Now "Edit layout" is the same wherever you sign in. An arrangement already saved on a device carries over automatically the first time that browser loads the page after this update.
 - Added (v0.48.0): each stat inside a **custom module** now draws a proper filled area chart once it has two or more logged readings — a date under each end, a dot on every reading — instead of just a list of numbers.
 - Added (v0.47.0): **layout templates** for the Artist page. Open "Edit layout" and pick a starting point — **Overview** (everything), **Minimal** (just the shape of things), **Statistics** (numbers first), or **Platforms** (Spotify/SoundCloud/Apple Music lead) — then rearrange freely from there. Your own arrangement is never touched until you pick one.
