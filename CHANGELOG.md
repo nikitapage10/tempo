@@ -4,6 +4,10 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-30
 
+- Added (v0.47.0): **layout templates** for the Artist page. Open "Edit layout" and pick a starting point — **Overview** (everything), **Minimal** (just the shape of things), **Statistics** (numbers first), or **Platforms** (Spotify/SoundCloud/Apple Music lead) — then rearrange freely from there. Your own arrangement is never touched until you pick one.
+- Added (v0.47.0): **custom stat modules** on the Artist page — build your own tracker for anything TEMPO doesn't already measure: sync placements, merch sold, radio spins, an Instagram follower count, whatever matters to you. Create a module from "Edit layout", then add as many named stats as you like (with an optional unit) and log a reading for any date right from the card. Log as often as your own updates happen — each reading is kept, so a stat with two or more readings gets its own trend line. Made a typo? Each stat shows its recent readings with a one-tap undo. Rename or delete a whole module from its own header.
+- Under the hood (v0.47.0): database migrations now apply automatically when this project is pushed, instead of needing to be pasted into Supabase by hand.
+
 - Added (v0.46.0): **Spotify, SoundCloud and Apple Music sections** on the Artist page. Paste your profile link once and each one starts reporting:
   - **SoundCloud** — plays, followers, likes and reposts, plus your most-played tracks.
   - **Spotify** — your releases as Spotify lists them.

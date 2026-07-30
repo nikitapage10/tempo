@@ -138,8 +138,12 @@ function PlatformShell({
   );
 }
 
-/** Followers/plays over time. One series, so one colour and no legend box. */
-function TrendLine({
+/**
+ * Followers/plays over time. One series, so one colour and no legend box.
+ * Exported so the custom-stats module can draw the same trend shape for
+ * whatever a musician logs by hand.
+ */
+export function TrendLine({
   points,
   label,
 }: {

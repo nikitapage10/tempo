@@ -54,6 +54,8 @@ type ModularWorkspaceProps = {
    * to the track workspace's set; the artist overview passes its own.
    */
   vocabulary?: ModuleId[];
+  /** Labels for ids the static vocabulary doesn't know, e.g. custom modules. */
+  labelOverrides?: Partial<Record<ModuleId, string>>;
 };
 
 const COLUMN_IDS: Record<ColumnId, string> = {
@@ -70,6 +72,7 @@ export function ModularWorkspace({
   badges,
   compact,
   vocabulary = ALL_MODULE_IDS,
+  labelOverrides,
 }: ModularWorkspaceProps) {
   // View mode renders the real modules with no drag wrappers at all — drag
   // listeners over a waveform or a form would fight the controls.
@@ -80,12 +83,16 @@ export function ModularWorkspace({
         onLeftPctChange={(pct) => onChange({ ...layout, leftPct: pct })}
         left={
           <Column gap={compact}>
-            {layout.left.map((slot) => renderSlot(slot, modules, badges))}
+            {layout.left.map((slot) =>
+              renderSlot(slot, modules, badges, labelOverrides)
+            )}
           </Column>
         }
         right={
           <Column gap={compact}>
-            {layout.right.map((slot) => renderSlot(slot, modules, badges))}
+            {layout.right.map((slot) =>
+              renderSlot(slot, modules, badges, labelOverrides)
+            )}
           </Column>
         }
       />
@@ -99,6 +106,7 @@ export function ModularWorkspace({
       onChange={onChange}
       lockedModule={lockedModule}
       vocabulary={vocabulary}
+      labelOverrides={labelOverrides}
     />
   );
 }
@@ -268,7 +276,8 @@ function Column({
 function renderSlot(
   slot: ModuleSlot,
   modules: Partial<Record<ModuleId, React.ReactNode>>,
-  badges?: Partial<Record<ModuleId, number>>
+  badges?: Partial<Record<ModuleId, number>>,
+  labelOverrides?: Partial<Record<ModuleId, string>>
 ) {
   const present = slot.filter((id) => modules[id]);
   if (present.length === 0) return null;
@@ -278,6 +287,7 @@ function renderSlot(
       members={present}
       modules={modules}
       badges={badges}
+      labelOverrides={labelOverrides}
     />
   );
 }
@@ -292,13 +302,17 @@ function LayoutEditor({
   onChange,
   lockedModule,
   vocabulary,
+  labelOverrides,
 }: {
   layout: ModuleLayout;
   modules: Partial<Record<ModuleId, React.ReactNode>>;
   onChange: (layout: ModuleLayout) => void;
   lockedModule?: ModuleId | null;
   vocabulary: ModuleId[];
+  labelOverrides?: Partial<Record<ModuleId, string>>;
 }) {
+  const label = (id: ModuleId) => labelOverrides?.[id] ?? moduleLabel(id);
+
   const [dragging, setDragging] = React.useState<ModuleId | null>(null);
   // Set when the dragged tile is hovering the *middle* of another tile, which
   // means "merge into a tab group" rather than "reorder above/below it".
@@ -483,6 +497,7 @@ function LayoutEditor({
             combineTarget={combineTarget}
             onHide={hide}
             onUngroup={ungroup}
+            labelOverrides={labelOverrides}
           />
         }
         right={
@@ -495,6 +510,7 @@ function LayoutEditor({
             combineTarget={combineTarget}
             onHide={hide}
             onUngroup={ungroup}
+            labelOverrides={labelOverrides}
           />
         }
       />
@@ -506,13 +522,13 @@ function LayoutEditor({
             {available.map((id) => (
               <div key={id} className="flex items-center overflow-hidden rounded-chip border border-line">
                 <span className="px-3 py-1 text-xs text-text-lo">
-                  {moduleLabel(id)}
+                  {label(id)}
                 </span>
                 <button
                   type="button"
                   onClick={() => add(id, "left")}
                   className="border-l border-line px-2 py-1 text-[11px] text-ice transition-colors duration-hover hover:bg-ice/10"
-                  aria-label={`Add ${moduleLabel(id)} to the left column`}
+                  aria-label={`Add ${label(id)} to the left column`}
                 >
                   <Plus className="mr-0.5 inline size-3" />L
                 </button>
@@ -520,7 +536,7 @@ function LayoutEditor({
                   type="button"
                   onClick={() => add(id, "right")}
                   className="border-l border-line px-2 py-1 text-[11px] text-ice transition-colors duration-hover hover:bg-ice/10"
-                  aria-label={`Add ${moduleLabel(id)} to the right column`}
+                  aria-label={`Add ${label(id)} to the right column`}
                 >
                   <Plus className="mr-0.5 inline size-3" />R
                 </button>
@@ -531,7 +547,13 @@ function LayoutEditor({
       ) : null}
 
       <DragOverlay>
-        {dragging ? <Tile slot={findSlot(dragging) ?? [dragging]} overlay /> : null}
+        {dragging ? (
+          <Tile
+            slot={findSlot(dragging) ?? [dragging]}
+            overlay
+            labelOverrides={labelOverrides}
+          />
+        ) : null}
       </DragOverlay>
     </DndContext>
   );
@@ -547,6 +569,7 @@ function EditColumn({
   onHide,
   onUngroup,
   className,
+  labelOverrides,
 }: {
   column: ColumnId;
   label: string;
@@ -557,6 +580,7 @@ function EditColumn({
   onHide: (id: ModuleId) => void;
   onUngroup: (id: ModuleId) => void;
   className?: string;
+  labelOverrides?: Partial<Record<ModuleId, string>>;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: COLUMN_IDS[column] });
   const visible = slots
@@ -586,6 +610,7 @@ function EditColumn({
               combining={combineTarget === slotId(slot)}
               onHide={onHide}
               onUngroup={onUngroup}
+              labelOverrides={labelOverrides}
             />
           ))}
         </SortableContext>
@@ -606,6 +631,7 @@ function SortableTile({
   combining,
   onHide,
   onUngroup,
+  labelOverrides,
 }: {
   slot: ModuleSlot;
   locked?: boolean;
@@ -613,6 +639,7 @@ function SortableTile({
   combining?: boolean;
   onHide: (id: ModuleId) => void;
   onUngroup: (id: ModuleId) => void;
+  labelOverrides?: Partial<Record<ModuleId, string>>;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: slotId(slot) });
@@ -631,6 +658,7 @@ function SortableTile({
         onHide={onHide}
         onUngroup={onUngroup}
         handleProps={{ ...listeners, ...attributes }}
+        labelOverrides={labelOverrides}
       />
     </div>
   );
@@ -645,6 +673,7 @@ function Tile({
   onUngroup,
   handleProps,
   overlay,
+  labelOverrides,
 }: {
   slot: ModuleSlot;
   locked?: boolean;
@@ -654,8 +683,10 @@ function Tile({
   onUngroup?: (id: ModuleId) => void;
   handleProps?: Record<string, unknown>;
   overlay?: boolean;
+  labelOverrides?: Partial<Record<ModuleId, string>>;
 }) {
   const grouped = slot.length > 1;
+  const label = (id: ModuleId) => labelOverrides?.[id] ?? moduleLabel(id);
 
   return (
     <div
@@ -671,7 +702,7 @@ function Tile({
         <span
           {...handleProps}
           className="cursor-grab touch-none text-text-lo active:cursor-grabbing"
-          aria-label={`Reorder ${slot.map(moduleLabel).join(", ")}`}
+          aria-label={`Reorder ${slot.map(label).join(", ")}`}
         >
           <GripVertical className="size-4" />
         </span>
@@ -682,7 +713,7 @@ function Tile({
               <span className="truncate">{slot.length} tabs</span>
             </span>
           ) : (
-            moduleLabel(slot[0])
+            label(slot[0])
           )}
         </span>
         {!grouped ? (
@@ -698,7 +729,7 @@ function Tile({
               type="button"
               onClick={() => onHide(slot[0])}
               className="rounded-input p-1 text-text-lo transition-colors duration-hover hover:bg-warn/15 hover:text-warn"
-              aria-label={`Hide ${moduleLabel(slot[0])}`}
+              aria-label={`Hide ${label(slot[0])}`}
             >
               <X className="size-3.5" />
             </button>
@@ -711,14 +742,14 @@ function Tile({
           {slot.map((id) => (
             <li key={id} className="flex items-center gap-1.5">
               <span className="min-w-0 flex-1 truncate text-[11px] text-text-lo">
-                {moduleLabel(id)}
+                {label(id)}
               </span>
               {onUngroup ? (
                 <button
                   type="button"
                   onClick={() => onUngroup(id)}
                   className="rounded-input p-1 text-text-lo transition-colors duration-hover hover:bg-bg-2 hover:text-ice"
-                  aria-label={`Move ${moduleLabel(id)} out of this group`}
+                  aria-label={`Move ${label(id)} out of this group`}
                   title="Split out of group"
                 >
                   <Unlink className="size-3" />
@@ -733,7 +764,7 @@ function Tile({
                   type="button"
                   onClick={() => onHide(id)}
                   className="rounded-input p-1 text-text-lo transition-colors duration-hover hover:bg-warn/15 hover:text-warn"
-                  aria-label={`Hide ${moduleLabel(id)}`}
+                  aria-label={`Hide ${label(id)}`}
                 >
                   <X className="size-3" />
                 </button>

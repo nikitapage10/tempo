@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { Check, ExternalLink, LayoutGrid, RotateCcw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast";
 import { EmptyShaderPanel } from "@/components/shader-empty";
 import { FlareLine } from "@/components/flare-line";
 import { LfWindow } from "@/components/lf-windows";
@@ -28,15 +29,35 @@ import {
   SoundCloudModule,
   SpotifyModule,
 } from "@/components/artist/platform-modules";
+import { CustomModuleCard } from "@/components/artist/custom-stats";
 import { ModularWorkspace } from "@/components/track/modular-workspace";
+import { sanitizeArtistLayout } from "@/lib/artist-layout";
+import {
+  useCustomModuleMutations,
+  useCustomModules,
+} from "@/hooks/use-custom-stats";
+import type { CustomStatModule } from "@/lib/api/custom-stats";
 import {
   ALL_ARTIST_MODULE_IDS,
+  ARTIST_LAYOUT_TEMPLATES,
+  customModuleId,
+  type ArtistLayoutTemplate,
   type ModuleId,
   type ModuleLayout,
 } from "@/lib/workspace-presets";
 import { formatHours, type ArtistOverview } from "@/lib/artist-stats";
 import type { Artist } from "@/lib/types";
 import { cn } from "@/lib/utils";
+
+// Stable reference so a still-loading query doesn't churn memo deps every render.
+const NO_CUSTOM_MODULES: CustomStatModule[] = [];
+
+/** Strips one module id out of both columns — used when a custom module is deleted. */
+function stripModuleId(layout: ModuleLayout, id: ModuleId): ModuleLayout {
+  const drop = (slots: ModuleId[][]) =>
+    slots.map((s) => s.filter((m) => m !== id)).filter((s) => s.length > 0);
+  return { ...layout, left: drop(layout.left), right: drop(layout.right) };
+}
 
 export default function ArtistOverviewPage() {
   const { activeArtist, isLoading: artistLoading } = useActiveArtist();
@@ -51,6 +72,45 @@ export default function ArtistOverviewPage() {
   const loading = artistLoading || isLoading;
   const shown = editing ? (draft ?? layout) : layout;
 
+  const customModules =
+    useCustomModules(activeArtist?.id ?? null).data ?? NO_CUSTOM_MODULES;
+  const customModuleMutations = useCustomModuleMutations(
+    activeArtist?.id ?? null
+  );
+
+  function handleModuleDeleted(dbId: string) {
+    const id = customModuleId(dbId);
+    setLayout(stripModuleId(layout, id));
+    setDraft((prev) => (prev ? stripModuleId(prev, id) : prev));
+  }
+
+  async function handleCreateModule(title: string) {
+    const created = await customModuleMutations.addModule.mutateAsync({
+      title,
+      sortOrder: customModules.length,
+    });
+    const id = customModuleId(created.id);
+    setDraft((prev) => {
+      const base = prev ?? layout;
+      return { ...base, right: [...base.right, [id]] };
+    });
+  }
+
+  const vocabulary = React.useMemo(
+    () => [
+      ...ALL_ARTIST_MODULE_IDS,
+      ...customModules.map((m) => customModuleId(m.id)),
+    ],
+    [customModules]
+  );
+  const labelOverrides = React.useMemo(
+    () =>
+      Object.fromEntries(
+        customModules.map((m) => [customModuleId(m.id), m.title])
+      ) as Partial<Record<ModuleId, string>>,
+    [customModules]
+  );
+
   const sinceLabel = data?.firstActivityAt
     ? new Date(data.firstActivityAt).toLocaleDateString(undefined, {
         month: "long",
@@ -58,7 +118,12 @@ export default function ArtistOverviewPage() {
       })
     : null;
 
-  const modules = useArtistModules(data, activeArtist);
+  const modules = useArtistModules(
+    data,
+    activeArtist,
+    customModules,
+    handleModuleDeleted
+  );
 
   return (
     <div className="space-y-5">
@@ -181,10 +246,10 @@ export default function ArtistOverviewPage() {
       ) : (
         <>
           {editing ? (
-            <p className="text-[11px] text-text-lo">
-              Drag sections between columns, drop one onto another to combine
-              them, or send them to Hidden.
-            </p>
+            <ArtistTemplatePicker
+              onApply={(t) => setDraft(sanitizeArtistLayout(t.layout))}
+              onCreateModule={handleCreateModule}
+            />
           ) : null}
 
           <ModularWorkspace
@@ -192,7 +257,8 @@ export default function ArtistOverviewPage() {
             modules={modules}
             editing={editing}
             onChange={(next) => (editing ? setDraft(next) : setLayout(next))}
-            vocabulary={ALL_ARTIST_MODULE_IDS}
+            vocabulary={vocabulary}
+            labelOverrides={labelOverrides}
           />
         </>
       )}
@@ -203,7 +269,9 @@ export default function ArtistOverviewPage() {
 /** Each section of the page as a module the layout engine can place. */
 function useArtistModules(
   data: ArtistOverview | undefined,
-  artist: Artist | null
+  artist: Artist | null,
+  customModules: CustomStatModule[],
+  onCustomModuleDeleted: (dbId: string) => void
 ): Partial<Record<ModuleId, React.ReactNode>> {
   const palette = useChartPalette();
 
@@ -412,8 +480,22 @@ function useArtistModules(
       spotify: artist ? <SpotifyModule artist={artist} /> : null,
       soundcloud: artist ? <SoundCloudModule artist={artist} /> : null,
       apple: artist ? <AppleModule artist={artist} /> : null,
+      ...(artist
+        ? (Object.fromEntries(
+            customModules.map((m) => [
+              customModuleId(m.id),
+              <CustomModuleCard
+                key={m.id}
+                artistId={artist.id}
+                module={m}
+                quiet
+                onDeleted={onCustomModuleDeleted}
+              />,
+            ])
+          ) as Partial<Record<ModuleId, React.ReactNode>>)
+        : {}),
     } satisfies Partial<Record<ModuleId, React.ReactNode>>;
-  }, [data, palette, artist]);
+  }, [data, palette, artist, customModules, onCustomModuleDeleted]);
 }
 
 /** Edit-layout controls, mirroring the track workspace's toolbar. */
@@ -453,6 +535,103 @@ function LayoutBar({
           Edit layout
         </Button>
       )}
+    </div>
+  );
+}
+
+/** Template picker shown while editing the artist overview's layout. */
+function ArtistTemplatePicker({
+  onApply,
+  onCreateModule,
+}: {
+  onApply: (template: ArtistLayoutTemplate) => void;
+  onCreateModule: (title: string) => Promise<void>;
+}) {
+  const [naming, setNaming] = React.useState(false);
+  const [title, setTitle] = React.useState("");
+  const [busy, setBusy] = React.useState(false);
+  const { toast } = useToast();
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!title.trim()) return;
+    setBusy(true);
+    try {
+      await onCreateModule(title.trim());
+      setTitle("");
+      setNaming(false);
+    } catch (err) {
+      toast(
+        err instanceof Error ? err.message : "Couldn’t create that module."
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="panel-quiet p-3">
+      <p className="label-mono mb-2">Start from a template</p>
+      <div className="flex flex-wrap gap-1.5">
+        {ARTIST_LAYOUT_TEMPLATES.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => onApply(t)}
+            title={t.description}
+            className="rounded-chip border border-line px-2.5 py-1 text-xs text-text-lo transition-colors duration-hover hover:border-ice/50 hover:text-text-hi"
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+      <p className="mt-2 text-[11px] text-text-lo">
+        Drag sections between columns, drop one onto another to combine them,
+        or send them to Hidden. This layout is yours only — collaborators
+        keep their own.
+      </p>
+
+      <div className="mt-3 border-t border-line/70 pt-3">
+        <p className="label-mono mb-2">Track something of your own</p>
+        {naming ? (
+          <form onSubmit={submit} className="flex flex-wrap items-center gap-1.5">
+            <input
+              autoFocus
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              onKeyDown={(e) => e.key === "Escape" && setNaming(false)}
+              maxLength={60}
+              placeholder="Module name, e.g. Merch"
+              className="h-7 w-48 rounded-input border border-line bg-bg-2 px-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+            />
+            <Button type="submit" size="sm" disabled={busy || !title.trim()}>
+              {busy ? "Adding…" : "Add"}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => setNaming(false)}
+            >
+              Cancel
+            </Button>
+          </form>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setNaming(true)}
+            className="flex items-center gap-1 rounded-chip border border-dashed border-line px-2.5 py-1 text-xs text-ice transition-colors duration-hover hover:border-ice/50 hover:bg-ice/10"
+          >
+            <LayoutGrid className="size-3" />
+            New custom module
+          </button>
+        )}
+        <p className="mt-2 text-[11px] text-text-lo">
+          A blank module for whatever isn’t covered above — sync placements,
+          merch sold, radio spins. It lands in the right column here; add and
+          log stats from the card itself once you’re done editing.
+        </p>
+      </div>
     </div>
   );
 }

@@ -43,9 +43,21 @@ export type ArtistModuleId =
   | "feedback"
   | "spotify"
   | "soundcloud"
-  | "apple";
+  | "apple"
+  // A hand-built module, one per row in artist_custom_modules — the id
+  // vocabulary is per-artist and only known at runtime, so it can't be a
+  // fixed literal like the ids above.
+  | `custom:${string}`;
 
 export type ModuleId = TrackModuleId | ArtistModuleId;
+
+export function customModuleDbId(id: ModuleId): string | null {
+  return id.startsWith("custom:") ? id.slice("custom:".length) : null;
+}
+
+export function customModuleId(dbId: string): ArtistModuleId {
+  return `custom:${dbId}`;
+}
 
 export const MODULE_DEFS: { id: TrackModuleId; label: string }[] = [
   { id: "player", label: "Player & waveform" },
@@ -356,3 +368,60 @@ export const DEFAULT_ARTIST_LAYOUT: ModuleLayout = {
   ],
   leftPct: 60,
 };
+
+export type ArtistLayoutTemplateId = "overview" | "minimal" | "stats" | "platforms";
+
+export type ArtistLayoutTemplate = {
+  id: ArtistLayoutTemplateId;
+  label: string;
+  /** One line shown under the label in the template picker. */
+  description: string;
+  layout: ModuleLayout;
+};
+
+/**
+ * Starting points offered in "Edit layout" for the artist overview.
+ *
+ * Each is a *focused* set, not a complete one, same reasoning as
+ * PRESET_DEFAULTS above. Anything a template leaves out isn't gone — it just
+ * isn't placed, so it shows up in the "Hidden" tray of the layout editor,
+ * one click from being added back or dropped into either column.
+ */
+export const ARTIST_LAYOUT_TEMPLATES: ArtistLayoutTemplate[] = [
+  {
+    id: "overview",
+    label: "Overview",
+    description: "Everything, all at once — the default arrangement.",
+    layout: DEFAULT_ARTIST_LAYOUT,
+  },
+  {
+    id: "minimal",
+    label: "Minimal",
+    description: "Just the shape of things: output, spaces, catalog.",
+    layout: {
+      left: [["output"], ["spaces"]],
+      right: [["catalog"], ["releases"]],
+      leftPct: 60,
+    },
+  },
+  {
+    id: "stats",
+    label: "Statistics",
+    description: "Numbers first — momentum, pipeline, rhythm, sound.",
+    layout: {
+      left: [["momentum"], ["pipeline"], ["output"]],
+      right: [["rhythm"], ["sound"], ["catalog"], ["feedback"]],
+      leftPct: 55,
+    },
+  },
+  {
+    id: "platforms",
+    label: "Platforms",
+    description: "Spotify, SoundCloud and Apple Music lead the page.",
+    layout: {
+      left: [["spotify"], ["soundcloud"], ["apple"]],
+      right: [["output"], ["catalog"], ["spaces"]],
+      leftPct: 55,
+    },
+  },
+];

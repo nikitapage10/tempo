@@ -1,6 +1,7 @@
 import {
   ALL_ARTIST_MODULE_IDS,
   clampLeftPct,
+  customModuleDbId,
   flattenLayout,
   type ModuleId,
   type ModuleLayout,
@@ -38,9 +39,18 @@ type StoredLayout = {
   known: ModuleId[];
 };
 
+/**
+ * `custom:<id>` modules aren't in the static vocabulary above — they're
+ * created per-artist at runtime — so they'd otherwise look unknown and get
+ * stripped by `cleanSlots` on every read and save.
+ */
+function isKnownArtistModule(id: ModuleId): boolean {
+  return KNOWN.has(id) || customModuleDbId(id) !== null;
+}
+
 function cleanSlots(slots: ModuleId[][]): ModuleId[][] {
   return slots
-    .map((slot) => slot.filter((id) => KNOWN.has(id)))
+    .map((slot) => slot.filter((id) => isKnownArtistModule(id)))
     .filter((slot) => slot.length > 0);
 }
 

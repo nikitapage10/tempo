@@ -1,0 +1,49 @@
+name: Apply Supabase migrations
+
+# Runs whenever a push to main touches a numbered migration file. Every file
+# in /migrations is written to be additive and idempotent (if not exists,
+# drop if exists, no destructive statements), so re-applying the whole
+# numbered set on each run is safe — there's no "already applied" tracking
+# to get out of sync. The one-off bundle (_run_all_001_to_011.sql) is a
+# manual-bootstrap convenience file, not part of the ongoing sequence, so
+# it's excluded from the glob below on purpose.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "migrations/*.sql"
+  # Lets you re-run the full set by hand from the Actions tab if needed.
+  workflow_dispatch: {}
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install psql
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Apply migrations
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DATABASE_URL:-}" ]; then
+            echo "::error::SUPABASE_DB_URL secret is not set. Add it under" \
+                 "Settings > Secrets and variables > Actions — the direct" \
+                 "Postgres connection string from Supabase (Project Settings" \
+                 "> Database > Connection string > URI, password filled in)."
+            exit 1
+          fi
+          shopt -s nullglob
+          files=(migrations/[0-9]*.sql)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No numbered migration files found."
+            exit 0
+          fi
+          for f in $(printf '%s\n' "${files[@]}" | sort); do
+            echo "== Applying $f =="
+            psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"
+          done

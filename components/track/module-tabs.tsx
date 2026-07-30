@@ -16,10 +16,13 @@ export function ModuleTabs({
   members,
   modules,
   badges,
+  labelOverrides,
 }: {
   members: ModuleId[];
   modules: Partial<Record<ModuleId, React.ReactNode>>;
   badges?: Partial<Record<ModuleId, number>>;
+  /** Labels for ids the static vocabulary doesn't know, e.g. custom modules. */
+  labelOverrides?: Partial<Record<ModuleId, string>>;
 }) {
   const present = members.filter((id) => modules[id]);
   const [active, setActive] = React.useState<ModuleId | undefined>(present[0]);
@@ -59,7 +62,7 @@ export function ModuleTabs({
                   : "text-text-lo hover:bg-bg-2/50 hover:text-text-hi"
               )}
             >
-              {shortLabel(id)}
+              {labelOverrides?.[id] ?? shortLabel(id)}
               {badge ? (
                 <span className="rounded-chip bg-amber/15 px-1.5 py-0.5 font-mono text-[10px] text-amber">
                   {badge}
