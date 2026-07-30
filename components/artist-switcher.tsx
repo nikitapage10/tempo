@@ -1,10 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { Check, ChevronDown, Plus, Settings2 } from "lucide-react";
+import { Check, ChevronDown, Disc3, Plus, Settings2 } from "lucide-react";
 import Link from "next/link";
 import { useActiveArtist } from "@/components/active-artist-provider";
-import { ArtistMark } from "@/components/artists/artist-mark";
 import { cn } from "@/lib/utils";
 
 export function ArtistSwitcher() {
@@ -30,8 +29,9 @@ export function ArtistSwitcher() {
     );
   }
 
-  // Name always stays in the rail (logo lives on Today). Dropdown still
-  // opens with one artist so Manage / New artist are a click away.
+  // Name always stays in the rail — the emblem lives on the browser tab and
+  // the assistant avatar instead. Dropdown still opens with one artist so
+  // Manage / New artist are a click away.
   return (
     <div className="relative" ref={ref}>
       <button
@@ -41,17 +41,6 @@ export function ArtistSwitcher() {
         aria-expanded={open}
         aria-haspopup="listbox"
       >
-        {activeArtist?.emblem_url ? (
-          <ArtistMark
-            emblemUrl={activeArtist.emblem_url}
-            paletteId={activeArtist.palette_id}
-            iceColor={activeArtist.ice_color}
-            amberColor={activeArtist.amber_color}
-            name={activeArtist.name}
-            size={28}
-            className="size-7"
-          />
-        ) : null}
         <span className="truncate font-display text-[13px] tracking-wide">
           {activeArtist?.name ?? "No artist"}
         </span>
@@ -94,17 +83,6 @@ export function ArtistSwitcher() {
                         selected ? "text-ice opacity-100" : "opacity-0"
                       )}
                     />
-                    {artist.emblem_url ? (
-                      <ArtistMark
-                        emblemUrl={artist.emblem_url}
-                        paletteId={artist.palette_id}
-                        iceColor={artist.ice_color}
-                        amberColor={artist.amber_color}
-                        name={artist.name}
-                        size={22}
-                        className="size-[22px]"
-                      />
-                    ) : null}
                     <span className="truncate">{artist.name}</span>
                   </button>
                 </li>
@@ -112,6 +90,14 @@ export function ArtistSwitcher() {
             })}
           </ul>
           <div className="border-t border-line">
+            <Link
+              href="/artist"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2 px-3 py-2 text-sm text-text-lo transition-colors duration-hover hover:bg-bg-2/60 hover:text-text-hi"
+            >
+              <Disc3 className="size-3.5" />
+              Artist overview
+            </Link>
             <Link
               href="/settings#artists"
               onClick={() => setOpen(false)}
