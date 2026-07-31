@@ -437,6 +437,9 @@ export function IntroMoment({
         style={{ transitionDuration: `${CANVAS_SWAP_MS}ms` }}
       />
 
+      {/* Grain over the footage, under the wordmark — the type stays crisp. */}
+      <div className="intro-grain z-[5]" aria-hidden />
+
       <span
         aria-label="TEMPO"
         role="img"

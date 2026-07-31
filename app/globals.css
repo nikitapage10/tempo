@@ -132,6 +132,54 @@
     pointer-events: none;
   }
 
+  /**
+   * Boot-intro film grain.
+   *
+   * The footage is all soft bloom gradients, which read as mushy full-bleed
+   * and band in dark areas once compressed. Grain gives the eye high-frequency
+   * detail to hold onto and dithers the banding away.
+   *
+   * Deliberately cheap: one SVG-turbulence tile rasterised once and repeated,
+   * moved with a stepped `transform` (compositor-only — no repaint, no
+   * per-frame JS, nothing sampled through WebGL). The layer is oversized so
+   * the jitter never exposes an edge.
+   */
+  .intro-grain {
+    position: absolute;
+    inset: -6%;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    opacity: 0.19;
+    mix-blend-mode: overlay;
+    will-change: transform;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .intro-grain {
+      animation: intro-grain-jitter 0.5s steps(1) infinite;
+    }
+  }
+
+  /* Whole-tile offsets, so each step lands on fresh noise. */
+  @keyframes intro-grain-jitter {
+    0% {
+      transform: translate3d(0, 0, 0);
+    }
+    20% {
+      transform: translate3d(-3%, 2%, 0);
+    }
+    40% {
+      transform: translate3d(2%, -3%, 0);
+    }
+    60% {
+      transform: translate3d(-2%, -2%, 0);
+    }
+    80% {
+      transform: translate3d(3%, 1%, 0);
+    }
+  }
+
   /* Intro: hide punched chrome so the full field is visible */
   html[data-lf-intro] .lf-chrome-overlay {
     opacity: 0 !important;

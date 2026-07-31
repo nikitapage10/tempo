@@ -4,6 +4,12 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-31
 
+- Changed (v0.66.3): the boot video looks sharper. It now plays at its full
+  original resolution instead of a shrunken copy — and it actually got
+  *smaller* to download, not bigger. A fine film grain sits over the top,
+  which gives the soft light something crisp to sit against and clears up
+  the faint banding you get in the darker areas.
+
 - Fixed (v0.66.2): the boot video plays smoothly now. It was being pushed
   through the same graphics pipeline that draws the moving light in the app,
   frame by frame, while that light kept drawing away behind it — the two were
