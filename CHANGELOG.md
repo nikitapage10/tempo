@@ -4,6 +4,14 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-31
 
+- Fixed (v0.64.1): re-running the messaging inbox database update no longer
+  stops with an error partway through. It now skips work that's already been
+  done, like the other updates do.
+
+- Under the hood (v0.64.1): if a database update run stopped at
+  `039_messaging_inbox.sql`, run it again — 040 and 041 come after it and
+  won't have been applied yet.
+
 - Added (v0.64.0): you can start a message with anyone. **New message** in both
   the message menu and the Messages page finds any artist on the network by name
   or handle and opens the conversation — no need to go to their profile first.

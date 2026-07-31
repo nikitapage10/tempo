@@ -18,8 +18,12 @@ alter table support_messages
   alter column body set default '',
   alter column body drop not null;
 
+-- Dropped first so re-running this file is a no-op rather than an error:
+-- `add constraint` has no `if not exists` form.
 alter table support_messages
-  drop constraint if exists support_messages_body_check;
+  drop constraint if exists support_messages_body_check,
+  drop constraint if exists support_messages_media_len,
+  drop constraint if exists support_messages_body_or_media;
 
 alter table support_messages
   add constraint support_messages_media_len
