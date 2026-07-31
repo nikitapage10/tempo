@@ -4,6 +4,10 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-30
 
+- Added (v0.62.3): the Admin navigation now shows live count badges beside
+  Support and Reports whenever either queue has open work. Counts refresh
+  automatically and also update after an admin takes action.
+
 - Added (v0.62.0): Notifications, Messages, and Search now share the global
   top-right toolbar. Messages has its own unread badge and opens a mini-inbox
   with recent artist and TEMPO Support threads, quick reply, and a link into

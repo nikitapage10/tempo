@@ -31,6 +31,8 @@ activation and growth, and links directly into the relevant queues. Usage
 analytics switches between 7-, 30-, and 90-day windows, with line/area charts
 and explicit empty states for assistant use, storage growth, uploads, and focus
 time. These remain aggregate measurements and never expose creative content.
+Live count badges beside Support and Reports keep open queue work visible from
+every Admin screen.
 
 Every member support report becomes a private TEMPO Support conversation inside
 Messages. An admin can reply under the support identity, the member can answer

@@ -2,7 +2,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { actOnAdminReport, createAdminInvite, deleteAdminUser, getAdminAnalytics, getAdminAudit, getAdminInvites, getAdminOverview, getAdminReports, getAdminSupport, getAdminUser, getAdminUsers, reactivateAdminUser, revokeAdminInvite, sendAdminInvite, suspendAdminUser, updateAdminSupport } from "@/lib/api/admin";
 
-export function useAdminOverview() { return useQuery({ queryKey: ["admin", "overview"], queryFn: getAdminOverview }); }
+export function useAdminOverview() { return useQuery({ queryKey: ["admin", "overview"], queryFn: getAdminOverview, refetchInterval: 30_000 }); }
 export function useAdminAnalytics() { return useQuery({ queryKey: ["admin", "analytics"], queryFn: getAdminAnalytics }); }
 export function useAdminUsers(params: { q?: string; status?: string; page: number; sort?: string }) { return useQuery({ queryKey: ["admin", "users", params], queryFn: () => getAdminUsers(params) }); }
 export function useAdminUser(id: string) { return useQuery({ queryKey: ["admin", "user", id], queryFn: () => getAdminUser(id) }); }
