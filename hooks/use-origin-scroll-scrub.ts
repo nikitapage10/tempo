@@ -21,8 +21,12 @@ import * as React from "react";
  */
 
 type ScrubOptions = {
-  /** Scrolling container that defines the scrub range. */
-  containerRef: React.RefObject<HTMLElement>;
+  /**
+   * The element that actually scrolls. ORIGIN runs inside a fixed full-screen
+   * stage, so the document never scrolls — progress has to come from this
+   * element's own scrollTop, not from the window.
+   */
+  scrollerRef: React.RefObject<HTMLElement>;
   /** The active video element, handed over by the media stage. */
   videoRef: React.MutableRefObject<HTMLVideoElement | null>;
   /** Fractional boundaries, ascending, e.g. [0, 0.18, 0.42, 0.66, 0.88]. */
@@ -37,7 +41,7 @@ type VideoWithFastSeek = HTMLVideoElement & { fastSeek?: (t: number) => void };
 const MIN_DELTA_SECONDS = 1 / 48;
 
 export function useOriginScrollScrub({
-  containerRef,
+  scrollerRef,
   videoRef,
   chapterStops,
   enabled,
@@ -66,16 +70,14 @@ export function useOriginScrollScrub({
       if (!running || !dirty) return;
       dirty = false;
 
-      const container = containerRef.current;
+      const scroller = scrollerRef.current;
       const video = videoRef.current;
-      if (!container) return;
+      if (!scroller) return;
 
       // One read pass, then one write pass — never interleaved.
-      const rect = container.getBoundingClientRect();
-      const scrollable = rect.height - window.innerHeight;
-      const travelled = -rect.top;
+      const scrollable = scroller.scrollHeight - scroller.clientHeight;
       const progress =
-        scrollable > 0 ? Math.min(1, Math.max(0, travelled / scrollable)) : 0;
+        scrollable > 0 ? Math.min(1, Math.max(0, scroller.scrollTop / scrollable)) : 0;
       progressRef.current = progress;
 
       if (video && video.readyState >= 1 && Number.isFinite(video.duration)) {
@@ -101,6 +103,9 @@ export function useOriginScrollScrub({
       }
     }
 
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+
     const onScroll = () => markDirty();
     const onResize = () => markDirty();
     const onVisibility = () => {
@@ -108,7 +113,7 @@ export function useOriginScrollScrub({
     };
 
     // Passive: this never blocks or cancels the browser's own scrolling.
-    window.addEventListener("scroll", onScroll, { passive: true });
+    scroller.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onResize, { passive: true });
     document.addEventListener("visibilitychange", onVisibility);
     markDirty();
@@ -117,11 +122,11 @@ export function useOriginScrollScrub({
       running = false;
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
-      window.removeEventListener("scroll", onScroll);
+      scroller.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [enabled, containerRef, videoRef]);
+  }, [enabled, scrollerRef, videoRef]);
 
   return { chapter, progressRef };
 }

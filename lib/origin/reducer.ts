@@ -82,6 +82,7 @@ export type OriginAction =
   | { type: "undo" }
   | { type: "open_chapter" }
   | { type: "chapter_ended" }
+  | { type: "back_to_review" }
   | { type: "begin_save" }
   | { type: "save_ok" }
   | { type: "save_failed"; message: string }
@@ -299,6 +300,11 @@ export function originReducer(state: OriginState, action: OriginAction): OriginS
       return state.phase === "chapter_opening"
         ? { ...state, phase: "story_scroll" }
         : state;
+
+    case "back_to_review":
+      // Returns to the loop the review sits on, without replaying 4→5.
+      if (state.phase !== "story_scroll") return state;
+      return { ...state, phase: "review", savedStep: "review", error: null };
 
     case "begin_save":
       if (state.busy) return state;

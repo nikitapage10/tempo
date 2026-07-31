@@ -90,14 +90,22 @@ export function OriginStoryScroll({
   useForProfile: boolean;
   onUseForProfileChange: (v: boolean) => void;
 }) {
-  const containerRef = React.useRef<HTMLDivElement>(null);
+  const scrollerRef = React.useRef<HTMLDivElement>(null);
 
   const { chapter } = useOriginScrollScrub({
-    containerRef,
+    scrollerRef,
     videoRef,
     chapterStops: CHAPTER_STOPS,
     enabled: !staticMode,
   });
+
+  /** Jump straight to the closing section. A safety valve: if scrubbing ever
+   *  fails again, the way out must not be something you can only scroll to. */
+  const skipToEnd = React.useCallback(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+  }, []);
 
   const sections = [
     <p key="promise" className="font-display text-xl leading-relaxed text-text-hi sm:text-2xl">
@@ -181,19 +189,49 @@ export function OriginStoryScroll({
 
   return (
     <div
-      ref={containerRef}
-      // The scroll range. The sticky child below stays in view across it.
-      style={{ height: `${sections.length * VH_PER_CHAPTER + 100}vh` }}
-      className="relative z-10 w-full"
+      ref={scrollerRef}
+      // ORIGIN sits in a fixed full-screen stage, so the document never
+      // scrolls — this element is the scroller, and the scrub hook reads its
+      // scrollTop directly.
+      className="absolute inset-0 z-10 overflow-y-auto overscroll-contain"
     >
-      <div className="sticky top-0 flex h-[100dvh] items-center justify-center px-5">
-        {sections.map((content, i) => (
-          <div key={i} className={cn("absolute inset-x-5", i !== chapter && "pointer-events-none")}>
-            <ChapterSection index={i} active={i === chapter} staticMode={false}>
-              {content}
-            </ChapterSection>
-          </div>
-        ))}
+      {/* The scroll range. The sticky child stays in view across all of it. */}
+      <div style={{ height: `${sections.length * VH_PER_CHAPTER + 100}vh` }} className="w-full">
+        <div className="sticky top-0 flex h-[100dvh] items-center justify-center px-5">
+          {sections.map((content, i) => (
+            <div
+              key={i}
+              className={cn("absolute inset-x-5", i !== chapter && "pointer-events-none")}
+            >
+              <ChapterSection index={i} active={i === chapter} staticMode={false}>
+                {content}
+              </ChapterSection>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Always reachable, whatever the scroll position. */}
+      <div className="pointer-events-none sticky bottom-0 flex items-center justify-between gap-3 px-5 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <p
+          aria-hidden
+          className={cn(
+            "text-xs text-text-lo/70 transition-opacity duration-500",
+            chapter === 0 ? "opacity-100" : "opacity-0"
+          )}
+        >
+          Scroll to read on
+        </p>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={chapter === sections.length - 1 ? onEnter : skipToEnd}
+          disabled={busy}
+          className="pointer-events-auto bg-bg-0/70 text-text-lo backdrop-blur hover:text-text-hi"
+        >
+          {chapter === sections.length - 1 ? "Enter TEMPO" : "Skip to the end"}
+        </Button>
       </div>
     </div>
   );

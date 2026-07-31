@@ -4,7 +4,12 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { OriginMediaStage } from "@/components/origin/origin-media-stage";
-import { OriginOverlay, TimedCopy } from "@/components/origin/origin-copy-layer";
+import {
+  OriginOverlay,
+  StepFade,
+  TimedCopy,
+  useClipProgress,
+} from "@/components/origin/origin-copy-layer";
 import { OriginNameStep } from "@/components/origin/origin-name-step";
 import { OriginIntroductionStep } from "@/components/origin/origin-introduction-step";
 import {
@@ -33,11 +38,22 @@ import { applyOriginToProfile } from "@/lib/origin/profile-mapping";
 const IMPORT_ROUTE = "/import";
 const HOME_ROUTE = "/";
 
+/**
+ * "Who are you?" is deliberately not a timed line — it is the name panel's own
+ * heading, which fades in over the tail of the opening so the question and the
+ * field arrive together rather than one after the other.
+ */
 const OPENING_LINES = [
-  { text: "Every story begins with a pulse.", at: 0.04, until: 0.38 },
-  { text: "There's someone in the noise.", at: 0.4, until: 0.74 },
-  { text: "Who are you?", at: 0.78 },
+  { text: "Every story begins with a pulse.", at: 0.04, until: 0.4 },
+  { text: "There's someone in the noise.", at: 0.42, until: 0.72 },
 ];
+
+/**
+ * How far through a transition its destination panel starts fading up. Early
+ * enough that the panel is settled before the loop begins, late enough that it
+ * never competes with the film's own moment.
+ */
+const PRELUDE_AT = 0.66;
 
 export function OriginExperience({
   importPending,
@@ -75,6 +91,19 @@ export function OriginExperience({
 
   const clip = clipForPhase(state.phase);
   const poster = clip ? originAsset(clip.key).poster : undefined;
+
+  const clipProgress = useClipProgress(activeVideoRef, state.phase);
+  /** True once the current transition is far enough along to show what's next. */
+  const prelude = media.staticMode || clipProgress >= PRELUDE_AT;
+
+  // Each step is mounted during its incoming transition and faded up, so the
+  // panel is already in place when the destination loop starts.
+  const showName = state.phase === "name_idle" || (state.phase === "opening" && prelude);
+  const showIntroduction =
+    state.phase === "introduction_idle" ||
+    state.phase === "recording" ||
+    (state.phase === "recognizing" && prelude);
+  const showReview = state.phase === "review" || (state.phase === "resolving" && prelude);
 
   /** Kick off interpretation the moment the artist finishes speaking — in
    *  parallel with the transition, never gated on it. */
@@ -169,13 +198,13 @@ export function OriginExperience({
       {/* The story owns the whole scroll range, so it sits outside the centred
           overlay the other steps share. */}
       {storyPhase ? (
-        <div className="absolute inset-0 overflow-y-auto">
+        <div className="absolute inset-0">
           <OriginStoryScroll
             interpretation={state.interpretation}
             staticMode={media.staticMode}
             videoRef={activeVideoRef}
             onEnter={handleEnter}
-            onBack={() => dispatch({ type: "resolve_ended" })}
+            onBack={() => dispatch({ type: "back_to_review" })}
             busy={state.busy}
             error={state.error}
             importPending={importPending}
@@ -193,15 +222,20 @@ export function OriginExperience({
             />
           ) : null}
 
-          {state.phase === "name_idle" ? (
-            <OriginNameStep
-              name={state.name}
-              onNameChange={(name) => dispatch({ type: "set_name", name })}
-              onSubmit={() => dispatch({ type: "submit_name" })}
-              onSkip={handleSkip}
-              mediaReady={media.gateOpen(gateFor("recognizing"))}
-              busy={state.busy}
-            />
+          {showName ? (
+            <StepFade show={showName} className="w-full max-w-md">
+              <OriginNameStep
+                name={state.name}
+                onNameChange={(name) => dispatch({ type: "set_name", name })}
+                onSubmit={() => dispatch({ type: "submit_name" })}
+                onSkip={handleSkip}
+                mediaReady={media.gateOpen(gateFor("recognizing"))}
+                busy={state.busy}
+                // Focus waits for the loop; grabbing it mid-film would open a
+                // mobile keyboard over the opening.
+                active={state.phase === "name_idle"}
+              />
+            </StepFade>
           ) : null}
 
           {state.phase === "recognizing" ? (
@@ -215,17 +249,19 @@ export function OriginExperience({
             />
           ) : null}
 
-          {state.phase === "introduction_idle" || state.phase === "recording" ? (
-            <OriginIntroductionStep
+          {showIntroduction ? (
+            <StepFade show={showIntroduction} className="w-full max-w-xl">
+              <OriginIntroductionStep
               introduction={state.introduction}
               onIntroductionChange={(text) => dispatch({ type: "set_introduction", text })}
               onFinish={() => dispatch({ type: "finish_introduction" })}
               onRecordingChange={(recording) =>
                 dispatch({ type: recording ? "start_recording" : "stop_recording" })
               }
-              mediaReady={media.gateOpen(gateFor("interpreting_transition"))}
-              busy={state.busy}
-            />
+                mediaReady={media.gateOpen(gateFor("interpreting_transition"))}
+                busy={state.busy}
+              />
+            </StepFade>
           ) : null}
 
           {state.phase === "interpreting_transition" || state.phase === "processing" ? (
@@ -244,8 +280,9 @@ export function OriginExperience({
             />
           ) : null}
 
-          {state.phase === "review" ? (
-            <OriginReviewStep
+          {showReview ? (
+            <StepFade show={showReview} className="w-full max-w-2xl">
+              <OriginReviewStep
               interpretation={state.interpretation}
               pending={state.pendingInterpretation}
               canUndo={state.undoStack.length > 0}
@@ -255,11 +292,12 @@ export function OriginExperience({
               onAcceptPending={() => dispatch({ type: "accept_regeneration" })}
               onDiscardPending={() => dispatch({ type: "discard_regeneration" })}
               onOpenChapter={() => dispatch({ type: "open_chapter" })}
-              mediaReady={media.gateOpen(gateFor("chapter_opening"))}
-              mediaProgress={media.gateProgress(gateFor("chapter_opening"))}
-              busy={state.busy}
-              error={state.error}
-            />
+                mediaReady={media.gateOpen(gateFor("chapter_opening"))}
+                mediaProgress={media.gateProgress(gateFor("chapter_opening"))}
+                busy={state.busy}
+                error={state.error}
+              />
+            </StepFade>
           ) : null}
         </OriginOverlay>
       )}

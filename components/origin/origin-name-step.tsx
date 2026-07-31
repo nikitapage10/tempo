@@ -22,6 +22,7 @@ export function OriginNameStep({
   onSkip,
   mediaReady,
   busy,
+  active = true,
 }: {
   name: string;
   onNameChange: (v: string) => void;
@@ -29,6 +30,8 @@ export function OriginNameStep({
   onSkip: () => void;
   mediaReady: boolean;
   busy: boolean;
+  /** False while this is fading in under a still-playing transition. */
+  active?: boolean;
 }) {
   const [error, setError] = React.useState<string | null>(null);
   const [attempted, setAttempted] = React.useState(false);
@@ -36,11 +39,12 @@ export function OriginNameStep({
   const errorId = "origin-name-error";
 
   // Focus lands here once the opening has handed off, not before — otherwise
-  // the keyboard opens over a film the artist is still watching.
+  // a mobile keyboard opens over a film the artist is still watching.
   React.useEffect(() => {
+    if (!active) return;
     const t = setTimeout(() => inputRef.current?.focus(), 400);
     return () => clearTimeout(t);
-  }, []);
+  }, [active]);
 
   const waiting = attempted && !mediaReady;
 

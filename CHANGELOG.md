@@ -4,6 +4,18 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-31
 
+- Fixed (v0.68.0): the story at the end of Origin didn't respond to scrolling,
+  which also meant "Enter TEMPO" was out of reach and there was no way to
+  finish. Scrolling now moves through your story as intended, and there's a
+  quiet "Skip to the end" button visible the whole way through so the way out
+  is never something you have to scroll to find.
+- Changed (v0.68.0): Origin flows better between steps. The name box, the
+  speaking panel, and the review all now fade in over the last moment of the
+  film before them, so they're already settled by the time the scene lands —
+  instead of the film stopping, a beat of nothing, then a box appearing.
+- Fixed (v0.68.0): "Back" from the story now returns you to the review step
+  rather than doing nothing.
+
 - Fixed (v0.67.1): Origin's videos never appeared — you'd get a still frame or
   a black screen instead of the film. A mistake in the handoff between clips
   meant TEMPO waited forever for the next video to be ready and never showed

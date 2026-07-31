@@ -20,6 +20,84 @@ export type TimedLine = {
   until?: number;
 };
 
+/**
+ * Normalized progress (0–1) through whatever clip is currently on screen.
+ *
+ * Steps use this to fade themselves in over the *tail* of a transition, so the
+ * panel is already settled by the time the destination loop takes over. Without
+ * it the panel mounts only once the transition has ended, which reads as a
+ * skip: film, beat of nothing, then a box appears.
+ *
+ * Sampled on `timeupdate` (~4Hz) rather than rAF — this drives one opacity
+ * threshold, not an animation, so cheap and coarse is right.
+ */
+export function useClipProgress(
+  videoRef: React.MutableRefObject<HTMLVideoElement | null>,
+  /** Resets progress whenever the phase changes. */
+  resetKey: string
+): number {
+  const [progress, setProgress] = React.useState(0);
+
+  React.useEffect(() => {
+    setProgress(0);
+    let raf = 0;
+    let stop = false;
+
+    // The element arrives via a ref that the stage populates after its own
+    // handoff, so poll briefly for it rather than assuming it is there.
+    const attach = () => {
+      if (stop) return;
+      const video = videoRef.current;
+      if (!video) {
+        raf = requestAnimationFrame(attach);
+        return;
+      }
+      const onTime = () => {
+        if (!Number.isFinite(video.duration) || video.duration <= 0) return;
+        setProgress(Math.min(1, video.currentTime / video.duration));
+      };
+      video.addEventListener("timeupdate", onTime);
+      cleanup = () => video.removeEventListener("timeupdate", onTime);
+      onTime();
+    };
+    let cleanup = () => {};
+    attach();
+
+    return () => {
+      stop = true;
+      cancelAnimationFrame(raf);
+      cleanup();
+    };
+  }, [videoRef, resetKey]);
+
+  return progress;
+}
+
+/** Fades a step in without unmounting it, so it can settle before it is needed. */
+export function StepFade({
+  show,
+  children,
+  className,
+}: {
+  show: boolean;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "transition-opacity duration-[900ms] ease-out motion-reduce:transition-none",
+        show ? "opacity-100" : "pointer-events-none opacity-0",
+        className
+      )}
+      // Hidden from assistive tech until it is actually the live step.
+      aria-hidden={!show}
+    >
+      {children}
+    </div>
+  );
+}
+
 /** Body copy never sits directly on raw spectral movement — see §29. */
 export function OriginScrim({
   children,
