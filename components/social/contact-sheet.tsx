@@ -36,6 +36,7 @@ export function ContactSheet({
               amberColor={lp?.amber_color}
               name={person.display_name}
               size={28}
+              className="size-7"
             />
             <div className="min-w-0">
               <p className="truncate text-sm text-text-hi">{person.display_name}</p>

@@ -26,6 +26,11 @@ export function FeedComposer({
   const [imageFile, setImageFile] = React.useState<File | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const fileRef = React.useRef<HTMLInputElement>(null);
+  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+  // Collapsed = a one-line prompt; expanded reveals visibility/image/track/post.
+  // Stays expanded once there's anything to lose (text, an image, a track).
+  const [expanded, setExpanded] = React.useState(false);
+  const hasDraft = !!body.trim() || !!imageFile || !!trackId;
 
   React.useEffect(() => {
     if (!showTracks) return;
@@ -68,6 +73,7 @@ export function FeedComposer({
       setTrackId(null);
       setImageFile(null);
       setShowTracks(false);
+      setExpanded(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't post — try again.");
     }
@@ -82,102 +88,131 @@ export function FeedComposer({
   }
 
   return (
-    <form onSubmit={onSubmit} className={cn("panel space-y-3 p-4", className)}>
+    <form
+      onSubmit={onSubmit}
+      className={cn(
+        "panel space-y-3 transition-[padding] duration-150",
+        expanded ? "p-4" : "p-2.5",
+        className
+      )}
+    >
       <Textarea
+        ref={textareaRef}
         value={body}
         onChange={(e) => setBody(e.target.value)}
-        placeholder="Share an update — @mention anyone with a handle"
+        onFocus={() => setExpanded(true)}
+        placeholder="Share an update…"
         maxLength={5000}
-        rows={3}
-        className="min-h-[4.5rem] resize-y"
+        rows={expanded ? 3 : 1}
+        className={cn(
+          "resize-y transition-[min-height] duration-150",
+          expanded ? "min-h-[4.5rem]" : "min-h-0 resize-none py-1.5"
+        )}
       />
-      {imageFile ? (
-        <p className="text-xs text-text-lo">
-          Image ready: {imageFile.name}{" "}
-          <button
-            type="button"
-            className="text-ice hover:underline"
-            onClick={() => setImageFile(null)}
-          >
-            remove
-          </button>
-        </p>
-      ) : null}
-      {trackId ? (
-        <p className="text-xs text-text-lo">
-          Attached: {tracks.find((t) => t.id === trackId)?.title ?? "track"}{" "}
-          <button
-            type="button"
-            className="text-ice hover:underline"
-            onClick={() => setTrackId(null)}
-          >
-            remove
-          </button>
-        </p>
-      ) : null}
-      {showTracks ? (
-        <div className="well max-h-40 overflow-y-auto rounded-input p-2">
-          {tracks.length === 0 ? (
-            <p className="px-2 py-1 text-xs text-text-lo">No tracks yet</p>
-          ) : (
-            tracks.map((t) => (
+      {expanded ? (
+        <>
+          {imageFile ? (
+            <p className="text-xs text-text-lo">
+              Image ready: {imageFile.name}{" "}
               <button
-                key={t.id}
                 type="button"
-                className="block w-full truncate rounded-input px-2 py-1.5 text-left text-sm text-text-hi hover:bg-bg-2"
+                className="text-ice hover:underline"
+                onClick={() => setImageFile(null)}
+              >
+                remove
+              </button>
+            </p>
+          ) : null}
+          {trackId ? (
+            <p className="text-xs text-text-lo">
+              Attached: {tracks.find((t) => t.id === trackId)?.title ?? "track"}{" "}
+              <button
+                type="button"
+                className="text-ice hover:underline"
+                onClick={() => setTrackId(null)}
+              >
+                remove
+              </button>
+            </p>
+          ) : null}
+          {showTracks ? (
+            <div className="well max-h-40 overflow-y-auto rounded-input p-2">
+              {tracks.length === 0 ? (
+                <p className="px-2 py-1 text-xs text-text-lo">No tracks yet</p>
+              ) : (
+                tracks.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    className="block w-full truncate rounded-input px-2 py-1.5 text-left text-sm text-text-hi hover:bg-bg-2"
+                    onClick={() => {
+                      setTrackId(t.id);
+                      setShowTracks(false);
+                    }}
+                  >
+                    {t.title}
+                  </button>
+                ))
+              )}
+            </div>
+          ) : null}
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={visibility}
+              onChange={(e) => setVisibility(e.target.value as PostVisibility)}
+              className="rounded-input border border-line bg-bg-2 px-2 py-1.5 text-xs text-text-hi"
+            >
+              <option value="followers">Followers</option>
+              <option value="members">TEMPO members</option>
+              <option value="public">Public</option>
+            </select>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
+            />
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => fileRef.current?.click()}
+            >
+              <ImagePlus className="size-3.5" />
+              Image
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => setShowTracks((v) => !v)}
+            >
+              <Music2 className="size-3.5" />
+              Track
+            </Button>
+            <div className="flex-1" />
+            {!hasDraft ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
                 onClick={() => {
-                  setTrackId(t.id);
                   setShowTracks(false);
+                  setExpanded(false);
                 }}
               >
-                {t.title}
-              </button>
-            ))
-          )}
-        </div>
+                Cancel
+              </Button>
+            ) : null}
+            <Button type="submit" size="sm" disabled={create.isPending}>
+              <Send className="size-3.5" />
+              Post
+            </Button>
+          </div>
+          {error ? <p className="text-xs text-warn">{error}</p> : null}
+        </>
       ) : null}
-      <div className="flex flex-wrap items-center gap-2">
-        <select
-          value={visibility}
-          onChange={(e) => setVisibility(e.target.value as PostVisibility)}
-          className="rounded-input border border-line bg-bg-2 px-2 py-1.5 text-xs text-text-hi"
-        >
-          <option value="followers">Followers</option>
-          <option value="members">TEMPO members</option>
-          <option value="public">Public</option>
-        </select>
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
-        />
-        <Button
-          type="button"
-          size="sm"
-          variant="ghost"
-          onClick={() => fileRef.current?.click()}
-        >
-          <ImagePlus className="size-3.5" />
-          Image
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="ghost"
-          onClick={() => setShowTracks((v) => !v)}
-        >
-          <Music2 className="size-3.5" />
-          Track
-        </Button>
-        <div className="flex-1" />
-        <Button type="submit" size="sm" disabled={create.isPending}>
-          <Send className="size-3.5" />
-          Post
-        </Button>
-      </div>
-      {error ? <p className="text-xs text-warn">{error}</p> : null}
     </form>
   );
 }

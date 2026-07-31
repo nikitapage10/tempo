@@ -34,7 +34,7 @@ function RegisterForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const [inviteCode, setInviteCode] = useState("");
+  const [inviteCode, setInviteCode] = useState(() => searchParams.get("invite") ?? "");
   const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -57,7 +57,7 @@ function RegisterForm() {
     const inviteRes = await fetch("/api/auth/verify-invite", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code: inviteCode }),
+      body: JSON.stringify({ code: inviteCode, email }),
     });
     if (!inviteRes.ok) {
       setStatus("error");
@@ -65,6 +65,7 @@ function RegisterForm() {
       setError(body?.error ?? "That invite code isn’t valid.");
       return;
     }
+    const verifiedInvite = await inviteRes.json().catch(() => ({ inviteId: null }));
 
     const supabase = createClient();
     const { data, error: signUpError } = await supabase.auth.signUp({
@@ -91,6 +92,20 @@ function RegisterForm() {
         "Account created, but email confirmation is still required. In Supabase → Authentication → Providers → Email, turn off “Confirm email”, then sign in."
       );
       return;
+    }
+
+    if (verifiedInvite.inviteId) {
+      const redeemRes = await fetch("/api/auth/redeem-invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ inviteId: verifiedInvite.inviteId }),
+      });
+      if (!redeemRes.ok) {
+        setStatus("error");
+        const body = await redeemRes.json().catch(() => null);
+        setError(body?.error ?? "Account created, but the invite could not be recorded.");
+        return;
+      }
     }
 
     router.replace(isSafeRedirect(redirectTo) ? redirectTo : "/import");

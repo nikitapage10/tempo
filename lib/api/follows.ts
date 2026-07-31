@@ -12,6 +12,8 @@ type ProfileCard = Pick<
   | "amber_color"
   | "tagline"
   | "visibility"
+  | "location"
+  | "country_code"
 >;
 
 export async function followProfile(
@@ -64,7 +66,7 @@ export async function fetchFollowing(
       `
       follower_profile_id, followee_profile_id, created_at,
       profile:artist_profiles!profile_follows_followee_profile_id_fkey(
-        id, handle, display_name, emblem_url, palette_id, ice_color, amber_color, tagline, visibility
+        id, handle, display_name, emblem_url, palette_id, ice_color, amber_color, tagline, visibility, location, country_code
       )
     `
     )
@@ -93,7 +95,7 @@ export async function fetchFollowers(
       `
       follower_profile_id, followee_profile_id, created_at,
       profile:artist_profiles!profile_follows_follower_profile_id_fkey(
-        id, handle, display_name, emblem_url, palette_id, ice_color, amber_color, tagline, visibility
+        id, handle, display_name, emblem_url, palette_id, ice_color, amber_color, tagline, visibility, location, country_code
       )
     `
     )

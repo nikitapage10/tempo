@@ -687,33 +687,39 @@
     }
   }
 
-  /* Social network orbit — ring spin + counter-spin so emblems stay upright.
-   * Speed is controlled by --orbit-speed on the parent (1 = full, ~0.2 = hover). */
-  @keyframes orbit-cw {
-    from {
-      transform: rotate(0deg);
+  /* Social globe — slides an oversized ice/white/amber gradient behind a
+   * `mix-blend-mode: color` layer, so the continent dots seem to sweep
+   * through color rather than the whole globe shifting hue at once. */
+  @keyframes globe-color-sweep {
+    0%,
+    100% {
+      background-position: 0% 30%;
     }
-    to {
-      transform: rotate(360deg);
-    }
-  }
-  @keyframes orbit-ccw {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(-360deg);
+    50% {
+      background-position: 100% 70%;
     }
   }
-  .orbit-spin-cw {
-    animation-name: orbit-cw;
+  .globe-color-sweep {
+    animation: globe-color-sweep 26s ease-in-out infinite;
   }
-  .orbit-spin-ccw {
-    animation-name: orbit-ccw;
+  /* Atmosphere — a slow breathe so the halo isn't dead static. */
+  /* Transform only — the element's inline `opacity` drives the ready-state
+   * fade-in, and an animated opacity here would override it. */
+  @keyframes globe-atmosphere {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.02);
+    }
+  }
+  .globe-atmosphere {
+    animation: globe-atmosphere 14s ease-in-out infinite;
   }
   @media (prefers-reduced-motion: reduce) {
-    .orbit-spin-cw,
-    .orbit-spin-ccw {
+    .globe-color-sweep,
+    .globe-atmosphere {
       animation: none !important;
     }
   }

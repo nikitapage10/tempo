@@ -131,6 +131,7 @@ export default function MessagesView() {
                       amberColor={c.peer?.amber_color}
                       name={c.peer?.display_name ?? c.title ?? "Chat"}
                       size={18}
+                      className="size-[18px]"
                     />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm text-text-hi">
@@ -167,6 +168,7 @@ export default function MessagesView() {
                   amberColor={active?.peer?.amber_color}
                   name={active?.peer?.display_name ?? "Chat"}
                   size={20}
+                  className="size-5"
                 />
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-text-hi">

@@ -71,7 +71,8 @@ export async function updateSession(request: NextRequest) {
 
   // The account-creation invite-code check runs before anyone has a
   // session — it has to be reachable from the (public) /register form.
-  const isInviteCodeCheckRoute = path === "/api/auth/verify-invite";
+  const isInviteCodeCheckRoute =
+    path === "/api/auth/verify-invite" || path === "/api/auth/redeem-invite";
 
   // Public artist profiles — exact `/p` and `/api/p` prefixes only, mirroring
   // the guest-review/invite pattern above. The route handler independently

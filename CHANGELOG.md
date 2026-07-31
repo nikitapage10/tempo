@@ -4,6 +4,55 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-30
 
+- Added (v0.56.0): a private Admin console for running TEMPO’s invited
+  program. Platform admins can see member accounts and aggregate usage,
+  suspend or reactivate access, remove an account with strong confirmation,
+  issue and revoke individual invite links, review reported public content,
+  and inspect a permanent log of privileged changes. Members’ tracks,
+  projects, audio, lyrics, notes, feedback, comments, sessions, messages, and
+  private profile content are deliberately excluded.
+
+- Changed (v0.56.0): signup links can now carry a unique invite code, and a
+  successful signup records which invite was used. The original shared invite
+  code still works during the transition.
+
+- Under the hood (v0.56.0): run migration `033_admin_console.sql` in Supabase,
+  then set `ADMIN_EMAILS` in Vercel to the comma-separated email addresses that
+  should be allowed into the Admin console.
+
+- Changed (v0.55.0): the Social page has been rebuilt around three tabs —
+  **Top 8**, **Follows**, and **Discover**. A spinning globe now sits under
+  the tabs at all times, showing where the people you're connected to
+  actually are in the world. Hover a face to slow the globe down and see who
+  they are and where; click to open their profile. You can drag the globe to
+  spin it yourself, and it's painted in your own artist colors, with the
+  color washing slowly across the continents.
+
+- Added (v0.55.0): **Top 8** — pick up to eight people to pin at the top of
+  Social for quick access, the way you'd have on an old profile page. Add
+  from anyone you follow or any contact linked to a TEMPO profile.
+
+- Changed (v0.55.0): the feed moved to its own column down the right-hand
+  side of Social and fades out at the bottom instead of taking over the
+  middle of the page. The "Network" tab is gone — your contacts now surface
+  through Top 8, Follows, and Discover instead.
+
+- Changed (v0.55.0): **Discover** now shows artists you've recently worked
+  with before you've typed anything, so it's a place to reconnect rather than
+  just an empty search box.
+
+- Changed (v0.55.0): posting to the feed starts as a single line. Click it and
+  the rest — image, track, and who can see it — opens up, so the composer
+  stays out of the way until you're actually writing.
+
+- Changed (v0.55.0): setting your **location** on the Artist page now suggests
+  cities as you type — type "den" and pick "Denver, CO, USA". That's what
+  places you on the Social globe, so filling it in is how you show up there.
+
+- Fixed (v0.55.0): artist logos were blowing up to enormous size in the feed,
+  in Messages, and anywhere else they appeared without a fixed size — they
+  now stay the size they're meant to be.
+
 - Added (v0.54.0): search now covers your feed, too — posts from you and the
   people you follow show up alongside tracks, projects, and everything else.
   Pick one from the filter bar to jump straight to it and open the

@@ -2,7 +2,7 @@
 
 *Living document. Threat model and permissions matrix for current solo app and planned guest / collaboration features.*
 
-**Status today:** Single-user ownership via Supabase Auth + RLS. Private `audio` bucket. No service-role usage yet. `comments` / `feedback` tables exist but are owner-only and unused in UI.
+**Status today:** Account ownership and collaboration are enforced through Supabase Auth + RLS. The private `audio` bucket remains private. Narrow server-only routes use the service role for guest links, notifications, external platform snapshots, and the platform Admin console.
 
 ---
 
@@ -86,6 +86,23 @@
 - Calm 429-style message without infra vendor lock-in
 - Optional: CAPTCHA later — out of scope unless requested
 
+### T9 — Platform administration
+
+| Threat | Mitigation |
+|--------|------------|
+| Discovering or entering the console | No normal-app navigation; the server layout silently redirects non-admins; every API route independently requires an admin |
+| Service-role key reaching the browser | Constructed only in server modules after the signed-in caller is identified; never imported by client components |
+| Admin reading private creative work | Every admin database read imports a central column allowlist; no wildcard selects; member views expose identity, public profile identity, and aggregate metadata only |
+| Privileged action without accountability | Suspend, reactivate, delete, invite, and moderation actions write an immutable audit row |
+| UI-only suspension | Suspension updates Supabase Auth itself and mirrors the state in `account_flags` for display |
+| Broad table access through RLS | Admin tables have RLS enabled and no authenticated read policies; they are accessible only through guarded server routes |
+
+### Admin privacy boundary (explicit)
+
+**May see:** auth email, provider, account creation and last sign-in times; published profile handle, display name, and visibility; aggregate track/project counts, storage bytes, and assistant usage totals; invite redemption; account-event types and timestamps; and the exact public post, public comment, or published profile attached to a moderation report.
+
+**Must not see:** track, project, or version names; audio paths or signed URLs; lyrics; notes or board notes; checklist contents; feedback; ordinary comments; session contents; direct messages; private profile fields; or private contact-book entries.
+
 ---
 
 ## 3. Permissions matrix
@@ -139,6 +156,8 @@ Roles (planned): **Owner** · **Editor** · **Uploader** · **Commenter** · **V
 | `/review`, `/review/[token]` | Yes | Prompt 4 |
 | `/api/review/*` | Yes + server validation | Exact paths only |
 | `/invite/[token]` | Landing may be public; accept requires auth | Prompt 10 |
+| `/api/auth/verify-invite`, `/api/auth/redeem-invite` | Yes; redemption still requires an authenticated signup session | Registration gate |
+| `/admin/*`, `/api/admin/*` | No | Session required; server guard additionally requires `platform_admins` membership |
 | All `app/(app)/*` | No | Redirect login |
 
 ---

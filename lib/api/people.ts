@@ -15,7 +15,7 @@ export async function fetchPeople(opts?: {
       `
       *,
       linked_profile:artist_profiles!people_linked_profile_id_fkey(
-        id, handle, display_name, emblem_url, palette_id, ice_color, amber_color, visibility
+        id, handle, display_name, emblem_url, palette_id, ice_color, amber_color, visibility, location, country_code
       )
     `
     )

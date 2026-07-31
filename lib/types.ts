@@ -88,6 +88,8 @@ export type ArtistProfile = {
   visibility: ProfileVisibility;
   published_at: string | null;
   accepts_dms: ProfileDmPolicy;
+  /** Up to 8 artist_profiles ids — the owner's curated quick-access picks on Social. */
+  top8: string[];
   created_at: string;
   updated_at: string;
 };
@@ -105,6 +107,7 @@ export type ArtistProfileUpdate = Partial<{
   pronouns: string | null;
   visibility: ProfileVisibility;
   accepts_dms: ProfileDmPolicy;
+  top8: string[];
 }>;
 
 /** Private CRM contact — migration 029. Scoped to the owning account only. */
@@ -142,6 +145,8 @@ export type Person = {
     | "ice_color"
     | "amber_color"
     | "visibility"
+    | "location"
+    | "country_code"
   > | null;
   appearance_count?: number;
 };

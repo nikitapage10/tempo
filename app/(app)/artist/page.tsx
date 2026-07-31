@@ -24,6 +24,7 @@ import { LfWindow } from "@/components/lf-windows";
 import { SignedImage } from "@/components/ui/signed-image";
 import { ArtistBanner } from "@/components/artists/artist-banner";
 import { ArtistMark } from "@/components/artists/artist-mark";
+import { CityInput } from "@/components/artists/city-input";
 import { useActiveArtist } from "@/components/active-artist-provider";
 import { useArtistProfile } from "@/hooks/use-artist-profile";
 import { checkHandleAvailable } from "@/lib/api/artist-profile";
@@ -521,9 +522,9 @@ function ProfileEditor({
           />
         </Field>
         <Field label="Location">
-          <Input
+          <CityInput
             value={draft.location}
-            onChange={(e) => patch({ location: e.target.value })}
+            onChange={(v) => patch({ location: v })}
             placeholder="Los Angeles, CA"
           />
         </Field>

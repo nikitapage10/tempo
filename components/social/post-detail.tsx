@@ -53,6 +53,7 @@ export function PostDetailDialog({
                         paletteId={c.author?.palette_id}
                         name={c.author?.display_name ?? "Artist"}
                         size={16}
+                        className="size-4"
                       />
                       <div className="min-w-0 flex-1">
                         <p className="text-xs text-text-lo">
