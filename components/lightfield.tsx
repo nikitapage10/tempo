@@ -21,6 +21,7 @@ import {
   getDebugOverride,
   getLightfieldUniforms,
   isLightfieldKillSwitch,
+  isLightfieldPaused,
   prefersReducedMotion,
   setDebugOverride,
   subscribeLightfield,
@@ -153,7 +154,8 @@ function LightfieldCanvas() {
 
       const animate = (ts: number) => {
         animationId = requestAnimationFrame(animate);
-        if (!tabVisible || !renderer) return;
+        // Paused while the boot intro covers the field — see setLightfieldPaused.
+        if (!tabVisible || !renderer || isLightfieldPaused()) return;
         const dt = Math.min(64, ts - lastTs);
         lastTs = ts;
         // Match original time step at default speed: += 0.05 per frame (~60fps).

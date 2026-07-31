@@ -4,6 +4,13 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-31
 
+- Fixed (v0.66.2): the boot video plays smoothly now. It was being pushed
+  through the same graphics pipeline that draws the moving light in the app,
+  frame by frame, while that light kept drawing away behind it — the two were
+  fighting for the graphics card and the video lost, unevenly. The video now
+  plays directly, the background light pauses while it's on screen, and the
+  graphics effect only switches on for the dissolve at the very end.
+
 - Fixed (v0.66.1): the boot moment is smooth now. The video starts loading
   quietly while you're on the sign-in screen, so it's ready to go the moment
   you're through, and it waits until it actually has enough to play instead

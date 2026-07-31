@@ -64,6 +64,7 @@ let target: LightfieldUniforms = cloneUniforms(LIGHTFIELD_DEFAULTS);
 /** Debug panel hard-overrides (null = follow driver targets). */
 let debugOverride: Partial<LightfieldUniforms> | null = null;
 let introActive = false;
+let renderPaused = false;
 let sweepBoost = 1;
 let sweepUntil = 0;
 const listeners = new Set<Listener>();
@@ -245,6 +246,23 @@ export function setIntroActive(active: boolean) {
 
 export function isIntroActive() {
   return introActive;
+}
+
+/**
+ * Stop the field from rendering while something opaque covers it.
+ *
+ * The field shader is a 15-iteration loop per pixel over the full viewport,
+ * so leaving it running behind the boot video just starves the video decode
+ * for GPU. The rAF loop keeps ticking — only the draw is skipped — so it
+ * resumes instantly.
+ */
+export function setLightfieldPaused(paused: boolean) {
+  renderPaused = paused;
+  notify();
+}
+
+export function isLightfieldPaused() {
+  return renderPaused;
 }
 
 /** Map stage index within an ordered list → 0…1 progress. */

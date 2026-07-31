@@ -1,12 +1,15 @@
 "use client";
 
 import * as React from "react";
-import type { ShaderMaterial, VideoTexture, WebGLRenderer } from "three";
-import { setIntroActive } from "@/lib/lightfield";
-import {
-  FRAGMENT_SHADER,
-  VERTEX_SHADER,
-} from "@/lib/intro-shader-glsl";
+import type {
+  OrthographicCamera,
+  Scene,
+  ShaderMaterial,
+  VideoTexture,
+  WebGLRenderer,
+} from "three";
+import { setIntroActive, setLightfieldPaused } from "@/lib/lightfield";
+import { FRAGMENT_SHADER, VERTEX_SHADER } from "@/lib/intro-shader-glsl";
 import {
   INTRO_DAY_KEY,
   INTRO_POSTER,
@@ -26,6 +29,9 @@ const MELT_DURATION_MS = 1100;
 /** The whole overlay (black backdrop included) dissolves over the tail of the
  *  melt, so the streaks stay full-strength briefly before the app shows through. */
 const MELT_FADE_DELAY_MS = 350;
+/** Cross-fade video → canvas. Both show the same frame, so this only has to
+ *  cover a possible one-frame offset. */
+const CANVAS_SWAP_MS = 80;
 const SKIP_HINT_AFTER_MS = 1200;
 const SAFETY_TIMEOUT_MS = 12000;
 /** Longest we'll sit on black waiting for enough video to play smoothly. */
@@ -35,15 +41,30 @@ const MAX_INTERNAL_PIXELS = 1280 * 720;
 
 const CHARS = ["T", "E", "M", "P", "O"];
 
+type GL = {
+  renderer: WebGLRenderer;
+  scene: Scene;
+  camera: OrthographicCamera;
+  material: ShaderMaterial;
+  texture: VideoTexture;
+  uniforms: { uMelt: { value: number }; uTexAspect: { value: number } };
+};
+
 /**
  * Boot intro: the TEMPO INTRO video plays full-bleed, the wordmark reveals
  * character by character over it, then a GLSL dispersion pass melts the
- * frame apart while the app fades up underneath. Once per calendar day;
+ * frame apart while the app dissolves up underneath. Once per calendar day;
  * skipped under prefers-reduced-motion.
  *
- * Rendering uses a short-lived second WebGL context (disposed on unmount) —
- * a deliberate exception to the "one context for the whole app" rule in
- * components/lightfield.tsx, scoped to ~9s once a day.
+ * Playback deliberately runs as a plain composited <video>, NOT through the
+ * shader: sampling it into a VideoTexture costs a full-frame GPU upload every
+ * frame, which is what made playback stutter. The WebGL context is built up
+ * front but stays idle until the melt, then draws for ~1.1s and is disposed.
+ * The root Lightfield is paused for the same reason — it's invisible behind
+ * this overlay and its shader is expensive.
+ *
+ * The second WebGL context is a deliberate, documented exception to the "one
+ * context for the whole app" rule in components/lightfield.tsx.
  */
 export function IntroMoment({
   onDone,
@@ -53,7 +74,7 @@ export function IntroMoment({
   const [phase, setPhase] = React.useState<
     "checking" | "playing" | "melting" | "done"
   >("checking");
-  const [glFailed, setGlFailed] = React.useState(false);
+  const [glReady, setGlReady] = React.useState(false);
   const [charsOn, setCharsOn] = React.useState<boolean[]>(() =>
     CHARS.map(() => false)
   );
@@ -61,13 +82,17 @@ export function IntroMoment({
 
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const containerRef = React.useRef<HTMLDivElement>(null);
-  const meltRef = React.useRef<{ value: number }>({ value: 0 });
+  const glRef = React.useRef<GL | null>(null);
   const phaseRef = React.useRef(phase);
   phaseRef.current = phase;
   const gateRanRef = React.useRef(false);
 
+  /** Stable across playing→melting so the melt context survives the switch. */
+  const glActive = phase === "playing" || phase === "melting";
+
   const finish = React.useCallback(() => {
     setIntroActive(false);
+    setLightfieldPaused(false);
     clearIntroPending();
     setPhase((p) => (p === "done" ? p : "done"));
     onDone?.();
@@ -111,14 +136,23 @@ export function IntroMoment({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [phase, skipToMelt]);
 
-  // Chrome punch-through while intro is on screen.
+  // Chrome punch-through, and pause the field so the video gets the GPU.
+  // Both release on "melting" — the field has to be live again by the time
+  // the dissolve reveals it. Written as a plain set (no cleanup-then-reapply)
+  // so the phase change can't thrash the attribute.
   React.useEffect(() => {
-    if (phase === "playing" || phase === "melting") {
-      setIntroActive(true);
-      return () => setIntroActive(false);
-    }
-    setIntroActive(false);
+    const active = phase === "playing";
+    setIntroActive(active);
+    setLightfieldPaused(active);
   }, [phase]);
+
+  React.useEffect(
+    () => () => {
+      setIntroActive(false);
+      setLightfieldPaused(false);
+    },
+    []
+  );
 
   // Safety net: never get stuck.
   React.useEffect(() => {
@@ -137,6 +171,8 @@ export function IntroMoment({
     let cancelled = false;
     let meltTriggered = false;
     let hintTimer: number | null = null;
+    let bufferTimer: number | null = null;
+    let started = false;
 
     const onTimeUpdate = () => {
       const t = video.currentTime;
@@ -164,16 +200,9 @@ export function IntroMoment({
       if (!cancelled) finish();
     };
 
-    video.addEventListener("timeupdate", onTimeUpdate);
-    video.addEventListener("ended", onEnded);
-    video.addEventListener("error", onError);
-
     // Don't start into a stall — the overlay is already opaque black, so
     // waiting here is invisible, whereas playing unbuffered stutters through
     // the ignition. The login-screen preloader usually makes this instant.
-    let started = false;
-    let bufferTimer: number | null = null;
-
     const start = () => {
       if (started || cancelled) return;
       started = true;
@@ -187,6 +216,10 @@ export function IntroMoment({
         SKIP_HINT_AFTER_MS
       );
     };
+
+    video.addEventListener("timeupdate", onTimeUpdate);
+    video.addEventListener("ended", onEnded);
+    video.addEventListener("error", onError);
 
     if (video.readyState >= 4 /* HAVE_ENOUGH_DATA */) {
       start();
@@ -207,48 +240,24 @@ export function IntroMoment({
     };
   }, [phase, finish]);
 
-  // Melt: ramp uMelt (or CSS fallback), release chrome, then finish.
+  // Build the melt context up front, but draw nothing until the melt — a
+  // VideoTexture upload per frame is exactly what we're avoiding here.
+  // Keyed on a flag that spans playing+melting, so the playing→melting
+  // transition doesn't tear down the context the melt is about to use.
   React.useEffect(() => {
-    if (phase !== "melting") return;
-    setIntroActive(false);
-    // Must drop with the chrome — the pre-paint cover is opaque, so leaving
-    // it up would block the app from showing through the dissolve.
-    clearIntroPending();
-
-    const start = performance.now();
-    let raf = 0;
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / MELT_DURATION_MS);
-      meltRef.current.value = t;
-      if (t < 1) {
-        raf = requestAnimationFrame(tick);
-      } else {
-        finish();
-      }
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [phase, finish]);
-
-  // WebGL melt renderer. Falls back to CSS-only melt on the raw <video> if
-  // context creation fails.
-  React.useEffect(() => {
-    if (phase !== "playing" && phase !== "melting") return;
+    if (!glActive) return;
     const container = containerRef.current;
     const video = videoRef.current;
     if (!container || !video) return;
 
     let cancelled = false;
-    let renderer: WebGLRenderer | null = null;
-    let material: ShaderMaterial | null = null;
-    let texture: VideoTexture | null = null;
-    let animationId: number | null = null;
     let onResize: (() => void) | null = null;
 
     void (async () => {
       const THREE = await import("three");
       if (cancelled || !containerRef.current) return;
 
+      let renderer: WebGLRenderer;
       try {
         renderer = new THREE.WebGLRenderer({
           antialias: false,
@@ -256,13 +265,10 @@ export function IntroMoment({
           powerPreference: "low-power",
         });
       } catch {
-        setGlFailed(true);
-        return;
+        return; // CSS melt fallback — glReady stays false.
       }
       if (!renderer.getContext()) {
         renderer.dispose();
-        renderer = null;
-        setGlFailed(true);
         return;
       }
 
@@ -270,7 +276,7 @@ export function IntroMoment({
       const scene = new THREE.Scene();
       const geometry = new THREE.PlaneGeometry(2, 2);
 
-      texture = new THREE.VideoTexture(video);
+      const texture = new THREE.VideoTexture(video);
       texture.colorSpace = THREE.SRGBColorSpace;
 
       const uniforms = {
@@ -281,12 +287,11 @@ export function IntroMoment({
         uTime: { value: 0 },
       };
 
-      material = new THREE.ShaderMaterial({
+      const material = new THREE.ShaderMaterial({
         uniforms,
         vertexShader: VERTEX_SHADER,
         fragmentShader: FRAGMENT_SHADER,
       });
-
       scene.add(new THREE.Mesh(geometry, material));
 
       const canvas = renderer.domElement;
@@ -297,7 +302,6 @@ export function IntroMoment({
       container.appendChild(canvas);
 
       onResize = () => {
-        if (!renderer) return;
         const cssW = Math.max(1, window.innerWidth);
         const cssH = Math.max(1, window.innerHeight);
         const dpr = Math.min(window.devicePixelRatio || 1, DPR_CAP);
@@ -315,37 +319,78 @@ export function IntroMoment({
       onResize();
       window.addEventListener("resize", onResize);
 
-      const animate = (ts: number) => {
-        animationId = requestAnimationFrame(animate);
-        if (!renderer) return;
-        uniforms.uTime.value = ts / 1000;
-        uniforms.uMelt.value = meltRef.current.value;
-        if (video.videoWidth && video.videoHeight) {
-          uniforms.uTexAspect.value = video.videoWidth / video.videoHeight;
-        }
-        renderer.render(scene, camera);
+      glRef.current = {
+        renderer,
+        scene,
+        camera,
+        material,
+        texture,
+        uniforms,
       };
-      animationId = requestAnimationFrame(animate);
+      // Compile the program now so the melt's first frame isn't a hitch.
+      renderer.compile(scene, camera);
+      setGlReady(true);
     })();
 
     return () => {
       cancelled = true;
-      if (animationId != null) cancelAnimationFrame(animationId);
       if (onResize) window.removeEventListener("resize", onResize);
-      texture?.dispose();
-      material?.dispose();
-      if (renderer) {
-        renderer.dispose();
-        if (renderer.domElement.parentNode === container) {
-          container.removeChild(renderer.domElement);
+      const gl = glRef.current;
+      if (gl) {
+        gl.texture.dispose();
+        gl.material.dispose();
+        gl.renderer.dispose();
+        if (gl.renderer.domElement.parentNode === container) {
+          container.removeChild(gl.renderer.domElement);
         }
+        glRef.current = null;
       }
     };
-  }, [phase]);
+  }, [glActive]);
+
+  // Melt: ramp uMelt (or CSS fallback), then finish. Chrome and the field are
+  // released by the phase effect above.
+  React.useEffect(() => {
+    if (phase !== "melting") return;
+    // Must drop with the chrome — the pre-paint cover is opaque, so leaving
+    // it up would block the app from showing through the dissolve.
+    clearIntroPending();
+
+    const gl = glRef.current;
+    const video = videoRef.current;
+    let videoPaused = false;
+
+    const start = performance.now();
+    let raf = 0;
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / MELT_DURATION_MS);
+      if (gl) {
+        gl.uniforms.uMelt.value = t;
+        if (video?.videoWidth && video.videoHeight) {
+          gl.uniforms.uTexAspect.value = video.videoWidth / video.videoHeight;
+        }
+        gl.renderer.render(gl.scene, gl.camera);
+        // Freeze after the first draw — the texture now holds the frame we
+        // melt, and decoding further would just burn cycles behind it.
+        if (!videoPaused && video) {
+          video.pause();
+          videoPaused = true;
+        }
+      }
+      if (t < 1) {
+        raf = requestAnimationFrame(tick);
+      } else {
+        finish();
+      }
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [phase, finish]);
 
   if (phase === "checking" || phase === "done") return null;
 
-  const meltingCss = phase === "melting";
+  const melting = phase === "melting";
+  const cssMelt = melting && !glReady;
 
   return (
     <div
@@ -353,30 +398,24 @@ export function IntroMoment({
       className={cn(
         "fixed inset-0 z-[300] flex items-center justify-center overflow-hidden bg-bg-0",
         "transition-opacity ease-out",
-        meltingCss && "opacity-0"
+        melting && "opacity-0"
       )}
       style={{
         transitionDuration: `${MELT_DURATION_MS - MELT_FADE_DELAY_MS}ms`,
-        transitionDelay: meltingCss ? `${MELT_FADE_DELAY_MS}ms` : "0ms",
+        transitionDelay: melting ? `${MELT_FADE_DELAY_MS}ms` : "0ms",
       }}
       aria-hidden
       role="presentation"
       onClick={skipToMelt}
     >
+      {/* Plain composited playback — no per-frame GPU upload. */}
       <video
         ref={videoRef}
         className={cn(
           "absolute inset-0 h-full w-full object-cover",
-          !glFailed && "opacity-0",
-          glFailed &&
-            "transition-[filter,opacity,transform] ease-out" +
-              (meltingCss ? " scale-125 opacity-0 blur-2xl" : "")
+          cssMelt && "scale-125 opacity-0 blur-2xl transition-[filter,opacity,transform] ease-out"
         )}
-        style={
-          glFailed && meltingCss
-            ? { transitionDuration: `${MELT_DURATION_MS}ms` }
-            : undefined
-        }
+        style={cssMelt ? { transitionDuration: `${MELT_DURATION_MS}ms` } : undefined}
         muted
         playsInline
         preload="auto"
@@ -387,19 +426,23 @@ export function IntroMoment({
         ))}
       </video>
 
-      {!glFailed ? (
-        <div
-          ref={containerRef}
-          className="pointer-events-none absolute inset-0 h-full w-full"
-        />
-      ) : null}
+      {/* Melt canvas — idle and invisible until the handoff. */}
+      <div
+        ref={containerRef}
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute inset-0 h-full w-full transition-opacity ease-linear",
+          melting && glReady ? "opacity-100" : "opacity-0"
+        )}
+        style={{ transitionDuration: `${CANVAS_SWAP_MS}ms` }}
+      />
 
       <span
         aria-label="TEMPO"
         role="img"
         className={cn(
           "relative z-10 inline-flex select-none font-display font-light leading-none text-text-hi/90 transition-[filter,opacity,transform] ease-out",
-          meltingCss && "scale-105 opacity-0 blur-xl"
+          melting && "scale-105 opacity-0 blur-xl"
         )}
         style={{
           fontSize: "clamp(2.5rem, 11vw, 7rem)",
@@ -416,12 +459,12 @@ export function IntroMoment({
             style={{
               opacity: charsOn[i] ? 1 : 0,
               filter: charsOn[i] ? "blur(0px)" : "blur(10px)",
-              transform: meltingCss
+              transform: melting
                 ? `translateX(${(i - 2) * 18}px)`
                 : charsOn[i]
                   ? "translateY(0)"
                   : "translateY(6px)",
-              transitionDuration: meltingCss
+              transitionDuration: melting
                 ? `${MELT_DURATION_MS}ms`
                 : `${WORDMARK_SETTLE * 1000}ms`,
             }}
@@ -442,7 +485,7 @@ export function IntroMoment({
           "transition-[opacity,color,border-color] duration-hover",
           "hover:border-line hover:text-text-hi",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
-          showSkipHint && !meltingCss ? "opacity-100" : "pointer-events-none opacity-0"
+          showSkipHint && !melting ? "opacity-100" : "pointer-events-none opacity-0"
         )}
       >
         Skip
