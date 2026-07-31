@@ -4,6 +4,11 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-31
 
+- Fixed (v0.67.1): Origin's videos never appeared — you'd get a still frame or
+  a black screen instead of the film. A mistake in the handoff between clips
+  meant TEMPO waited forever for the next video to be ready and never showed
+  it. The film now plays.
+
 - Added (v0.67.0): **Origin** — TEMPO's new welcome for a first-time artist.
   Instead of landing straight in an empty workspace, the app opens with a short
   film: it asks who you are, then asks you to talk for half a minute about what

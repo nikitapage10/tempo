@@ -31,15 +31,26 @@ type VideoWithFrameCallback = HTMLVideoElement & {
 function whenPainted(video: HTMLVideoElement): Promise<void> {
   return new Promise((resolve) => {
     let settled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    // Declared before `done` on purpose: `done` removes these listeners, and
+    // the requestVideoFrameCallback path below returns early — so if `check`
+    // were declared after that return it would never be initialized, and every
+    // call to `done` would throw instead of resolving.
+    const check = () => {
+      if (video.readyState >= 2) requestAnimationFrame(() => requestAnimationFrame(done));
+    };
+
     const done = () => {
       if (settled) return;
       settled = true;
-      clearTimeout(timer);
+      if (timer !== undefined) clearTimeout(timer);
       video.removeEventListener("loadeddata", check);
       video.removeEventListener("playing", check);
       resolve();
     };
-    const timer = setTimeout(done, PAINT_TIMEOUT_MS);
+
+    timer = setTimeout(done, PAINT_TIMEOUT_MS);
 
     const v = video as VideoWithFrameCallback;
     if (typeof v.requestVideoFrameCallback === "function") {
@@ -48,9 +59,6 @@ function whenPainted(video: HTMLVideoElement): Promise<void> {
       v.requestVideoFrameCallback(() => done());
       return;
     }
-    const check = () => {
-      if (video.readyState >= 2) requestAnimationFrame(() => requestAnimationFrame(done));
-    };
     video.addEventListener("loadeddata", check);
     video.addEventListener("playing", check);
     check();
