@@ -77,7 +77,7 @@ export function NotificationCenter() {
       </button>
 
       {open ? (
-        <div className="absolute left-0 z-[60] mt-1.5 w-80 max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-card border border-line bg-bg-1 shadow-e3">
+        <div className="absolute right-0 z-[60] mt-1.5 w-80 max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-card border border-line bg-bg-1 shadow-e3">
           <div className="flex items-center justify-between border-b border-line px-3 py-2">
             <h2 className="font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
               Notifications

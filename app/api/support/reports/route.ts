@@ -7,16 +7,19 @@ export const dynamic = "force-dynamic";
 const headers: HeadersInit = { "Cache-Control": "no-store" };
 const categories = new Set(["bug", "help", "feedback"]);
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const supabase = createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401, headers });
   const service = createAdminClient();
-  const { data: reports, error } = await service.from("support_reports").select(SUPPORT_REPORT_COLUMNS).eq("user_id", user.id).order("last_message_at", { ascending: false, nullsFirst: false }).order("created_at", { ascending: false });
+  const archived = request.nextUrl.searchParams.get("archived") === "true";
+  let reportQuery = service.from("support_reports").select(SUPPORT_REPORT_COLUMNS).eq("user_id", user.id).order("last_message_at", { ascending: false, nullsFirst: false }).order("created_at", { ascending: false });
+  reportQuery = archived ? reportQuery.not("member_archived_at", "is", null) : reportQuery.is("member_archived_at", null);
+  const { data: reports, error } = await reportQuery;
   if (error) return NextResponse.json({ error: "Couldn’t load support conversations. Run migration 036 if needed." }, { status: 500, headers });
   const ids = (reports ?? []).map((report) => report.id);
   const { data: messages, error: messageError } = ids.length
-    ? await service.from("support_messages").select(SUPPORT_MESSAGE_COLUMNS).in("report_id", ids).order("created_at", { ascending: true })
+    ? await service.from("support_messages").select(SUPPORT_MESSAGE_COLUMNS).in("report_id", ids).is("deleted_at", null).order("created_at", { ascending: true })
     : { data: [], error: null };
   if (messageError) return NextResponse.json({ error: "Couldn’t load support messages." }, { status: 500, headers });
   return NextResponse.json({ reports: (reports ?? []).map((report) => ({ ...report, messages: (messages ?? []).filter((message) => message.report_id === report.id) })) }, { headers });

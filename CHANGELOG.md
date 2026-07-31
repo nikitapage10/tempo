@@ -4,6 +4,25 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-30
 
+- Added (v0.62.0): Notifications, Messages, and Search now share the global
+  top-right toolbar. Messages has its own unread badge and opens a mini-inbox
+  with recent artist and TEMPO Support threads, quick reply, and a link into
+  the full conversation. The TEMPO rail wordmark is larger now that the bell
+  no longer occupies its header.
+
+- Added (v0.62.0): direct and support messages now support live dictation,
+  recorded transcription fallback, and up to four private image, audio,
+  document, or archive attachments (10 MB each). Attachments use short-lived
+  links checked against both thread membership and the original sender.
+
+- Added (v0.62.0): the full Messages page and Admin Support inbox can archive
+  and restore conversations, show unread state, and let a sender delete their
+  own individual replies. A new reply automatically returns an archived thread
+  to the recipient's inbox.
+
+- Under the hood (v0.62.0): run `039_messaging_inbox.sql` after migration 036
+  before using unread, archive, attachment, or support-message deletion features.
+
 - Changed (v0.61.0): artist identity images can now be either a profile photo
   or an emblem. They appear as larger, circular avatars in the feed, on artist
   profiles, in messages, and around the Social globe, with a colour-mark

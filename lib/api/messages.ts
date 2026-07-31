@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
-import type { Conversation, ConversationMessage } from "@/lib/types";
+import { deleteFile } from "@/lib/storage";
+import type { Conversation, ConversationMessage, MessageAttachment } from "@/lib/types";
 
 const PEER_SELECT =
   "id, handle, display_name, emblem_url, palette_id, ice_color, amber_color";
@@ -18,7 +19,8 @@ export async function startDirectConversation(
 }
 
 export async function fetchConversations(
-  myProfileId: string
+  myProfileId: string,
+  archived = false,
 ): Promise<Conversation[]> {
   const supabase = createClient();
   const {
@@ -26,11 +28,13 @@ export async function fetchConversations(
   } = await supabase.auth.getUser();
   if (!user) return [];
 
-  const { data: parts, error } = await supabase
+  let participantQuery = supabase
     .from("conversation_participants")
-    .select("conversation_id, last_read_at, left_at")
+    .select("conversation_id, last_read_at, left_at, archived_at")
     .eq("user_id", user.id)
     .is("left_at", null);
+  participantQuery = archived ? participantQuery.not("archived_at", "is", null) : participantQuery.is("archived_at", null);
+  const { data: parts, error } = await participantQuery;
   if (error) throw error;
   if (!parts?.length) return [];
 
@@ -73,7 +77,7 @@ export async function fetchConversations(
       unread = count ?? 0;
     }
 
-    result.push({ ...(c as Conversation), peer, unread_count: unread });
+    result.push({ ...(c as Conversation), peer, unread_count: unread, archived_at: parts.find((part) => part.conversation_id === c.id)?.archived_at ?? null });
   }
   return result;
 }
@@ -100,7 +104,7 @@ export async function sendMessage(input: {
   conversationId: string;
   senderProfileId: string;
   body: string;
-  media?: string[];
+  media?: MessageAttachment[];
 }): Promise<ConversationMessage> {
   const supabase = createClient();
   const {
@@ -121,6 +125,28 @@ export async function sendMessage(input: {
     .single();
   if (error) throw error;
   return data as ConversationMessage;
+}
+
+export async function deleteMessage(messageOrId: ConversationMessage | string): Promise<void> {
+  const supabase = createClient();
+  const messageId = typeof messageOrId === "string" ? messageOrId : messageOrId.id;
+  const { data: fetchedMessage } = typeof messageOrId === "string"
+    ? await supabase.from("messages").select("id, media").eq("id", messageId).maybeSingle()
+    : { data: messageOrId };
+  const { error } = await supabase.from("messages").update({ deleted_at: new Date().toISOString() }).eq("id", messageId);
+  if (error) throw error;
+  if (fetchedMessage) {
+    const typedMessage = fetchedMessage as Pick<ConversationMessage, "id" | "media">;
+    await Promise.allSettled((typedMessage.media ?? []).map((item) => deleteFile(typeof item === "string" ? item : item.path)));
+  }
+}
+
+export async function setConversationArchived(conversationId: string, archived: boolean): Promise<void> {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Signed out");
+  const { error } = await supabase.from("conversation_participants").update({ archived_at: archived ? new Date().toISOString() : null }).eq("conversation_id", conversationId).eq("user_id", user.id);
+  if (error) throw error;
 }
 
 export async function markConversationRead(conversationId: string): Promise<void> {

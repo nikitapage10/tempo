@@ -103,6 +103,13 @@
 
 ### Admin privacy boundary (explicit)
 
+Message attachments remain in the private storage bucket. A guarded server
+route issues a short-lived URL only when the requested path appears on a
+non-deleted message in a conversation the caller may access, and the path must
+also sit under that message sender's private storage prefix. Archive state is
+per participant. Message deletion is sender-only and soft-deletes the database
+row; owned attachment objects are removed on a best-effort basis.
+
 Support conversations use a dedicated `support_messages` table rather than the
 artist messaging tables. It has RLS enabled with no browser-facing policies.
 Member support APIs first authenticate the caller and verify that the ticket's

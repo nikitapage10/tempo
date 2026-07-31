@@ -64,6 +64,18 @@ export function buildPostMediaPath(params: {
   return `profiles/${profileId}/posts/${postId}/${sanitizeFilename(filename)}`;
 }
 
+/** Private direct/support message attachments. Access is signed by a guarded API. */
+export function buildMessageMediaPath(params: {
+  userId: string;
+  scope: "direct" | "support";
+  threadId: string;
+  attachmentId: string;
+  filename: string;
+}): string {
+  const { userId, scope, threadId, attachmentId, filename } = params;
+  return `messages/${userId}/${scope}/${threadId}/${attachmentId}/${sanitizeFilename(filename)}`;
+}
+
 export function sanitizeFilename(name: string): string {
   const trimmed = name.trim() || "file";
   const lastDot = trimmed.lastIndexOf(".");

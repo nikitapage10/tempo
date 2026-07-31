@@ -247,6 +247,14 @@ export type Conversation = {
     | "amber_color"
   > | null;
   unread_count?: number;
+  archived_at?: string | null;
+};
+
+export type MessageAttachment = {
+  path: string;
+  name: string;
+  type: string;
+  size: number;
 };
 
 export type ConversationMessage = {
@@ -255,7 +263,7 @@ export type ConversationMessage = {
   sender_profile_id: string;
   sender_user_id: string;
   body: string;
-  media: string[];
+  media: (string | MessageAttachment)[];
   deleted_at: string | null;
   created_at: string;
 };

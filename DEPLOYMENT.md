@@ -34,6 +34,9 @@ Three environment variables, set in BOTH places:
 
 ## Database changes (migrations)
 
+For v0.62.0 messaging, run `migrations/039_messaging_inbox.sql` after the
+support-conversation migration and before deploying the matching app code.
+
 For v0.60.0, run `migrations/036_support_conversations.sql` before deploying
 the matching support-reply code. For invitation email, production also needs
 both `RESEND_API_KEY` and `INVITE_FROM_EMAIL`; the latter must use a domain

@@ -16,6 +16,15 @@ Three kinds of things sit at the center of TEMPO: **tracks** (a musical work wit
 
 ## Current feature set
 
+**Messaging inbox.** Notifications, Messages, and Search sit together in the
+global top-right toolbar. The Messages icon carries an unread badge and opens a
+mini-inbox for recent artist and TEMPO Support conversations, including quick
+reply and a path to the full Messages page. The full inbox separates active and
+archived conversations; a new reply returns an archived thread to the
+recipient's inbox. Senders can remove their own messages, dictate into the
+composer, or attach up to four private images, audio files, documents, or ZIPs.
+The same composer and archive behavior applies to member/admin support replies.
+
 **Admin and support experience.** The Admin overview is an operating dashboard:
 it calls out support and moderation work needing attention, shows 30-day member
 activation and growth, and links directly into the relevant queues. Usage
