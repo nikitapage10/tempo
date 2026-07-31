@@ -1,9 +1,11 @@
 import { createClient } from "@/lib/supabase/client";
 import { fetchPeople } from "@/lib/api/people";
+import { fetchHomeTimeline } from "@/lib/api/feed";
 import type {
   BoardNote,
   Momentum,
   Person,
+  Post,
   Project,
   ProjectType,
   Space,
@@ -60,6 +62,16 @@ export type SearchStage = Pick<Stage, "id" | "space_id" | "name" | "sort"> & {
   space_name: string;
 };
 
+/** Feed posts you can already see — your own plus who you follow. */
+export type SearchPost = Pick<
+  Post,
+  "id" | "body" | "created_at" | "attachment_snapshot"
+> & {
+  author_handle: string | null;
+  author_display_name: string | null;
+  author_emblem_url: string | null;
+};
+
 export type SearchCatalog = {
   tracks: SearchTrack[];
   projects: SearchProject[];
@@ -68,7 +80,20 @@ export type SearchCatalog = {
   notes: SearchNote[];
   stages: SearchStage[];
   spaces: Pick<Space, "id" | "name" | "focus">[];
+  posts: SearchPost[];
 };
+
+function toSearchPosts(posts: Post[]): SearchPost[] {
+  return posts.map((p) => ({
+    id: p.id,
+    body: p.body,
+    created_at: p.created_at,
+    attachment_snapshot: p.attachment_snapshot,
+    author_handle: p.author?.handle ?? null,
+    author_display_name: p.author?.display_name ?? null,
+    author_emblem_url: p.author?.emblem_url ?? null,
+  }));
+}
 
 /**
  * One round-trip bundle of everything global search needs for an artist.
@@ -91,7 +116,10 @@ export async function fetchSearchCatalog(
   const spaceName = new Map(spaceList.map((s) => [s.id, s.name]));
 
   if (spaceIds.length === 0) {
-    const people = await fetchPeople().catch(() => [] as Person[]);
+    const [people, feedPosts] = await Promise.all([
+      fetchPeople().catch(() => [] as Person[]),
+      fetchHomeTimeline({ limit: 100 }).catch(() => [] as Post[]),
+    ]);
     return {
       tracks: [],
       projects: [],
@@ -100,10 +128,11 @@ export async function fetchSearchCatalog(
       notes: [],
       stages: [],
       spaces: [],
+      posts: toSearchPosts(feedPosts),
     };
   }
 
-  const [tracksRes, projectsRes, tasksRes, notesRes, stagesRes, people] =
+  const [tracksRes, projectsRes, tasksRes, notesRes, stagesRes, people, feedPosts] =
     await Promise.all([
       supabase
         .from("tracks")
@@ -135,6 +164,7 @@ export async function fetchSearchCatalog(
         .in("space_id", spaceIds)
         .order("sort", { ascending: true }),
       fetchPeople().catch(() => [] as Person[]),
+      fetchHomeTimeline({ limit: 100 }).catch(() => [] as Post[]),
     ]);
 
   // Board notes / stages may fail if a migration hasn't been applied — soft-empty.
@@ -149,6 +179,7 @@ export async function fetchSearchCatalog(
   return {
     spaces: spaceList,
     people,
+    posts: toSearchPosts(feedPosts),
     tracks: (tracksRes.data ?? []).map((t) => ({
       id: t.id,
       space_id: t.space_id,

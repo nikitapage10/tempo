@@ -1,6 +1,7 @@
 import type {
   SearchCatalog,
   SearchNote,
+  SearchPost,
   SearchProject,
   SearchStage,
   SearchTask,
@@ -16,6 +17,7 @@ export type SearchCategory =
   | "notes"
   | "stages"
   | "spaces"
+  | "posts"
   | "pages";
 
 export const SEARCH_CATEGORY_LABELS: Record<SearchCategory, string> = {
@@ -26,6 +28,7 @@ export const SEARCH_CATEGORY_LABELS: Record<SearchCategory, string> = {
   notes: "Board notes",
   stages: "Stages",
   spaces: "Spaces",
+  posts: "Posts",
   pages: "Go to",
 };
 
@@ -126,6 +129,7 @@ const CATEGORY_ORDER: SearchCategory[] = [
   "projects",
   "tasks",
   "people",
+  "posts",
   "notes",
   "stages",
   "spaces",
@@ -351,6 +355,45 @@ function personHit(p: Person, tokens: string[]): SearchHit | null {
   };
 }
 
+function postHit(p: SearchPost, tokens: string[]): SearchHit | null {
+  const { score } = scoreTokens(
+    [
+      { value: p.body, weight: 32 },
+      { value: p.author_display_name, weight: 24 },
+      { value: p.author_handle, weight: 20 },
+      { value: p.attachment_snapshot?.title, weight: 16 },
+    ],
+    tokens
+  );
+  if (score <= 0) return null;
+
+  const title =
+    p.body?.trim() ||
+    (p.attachment_snapshot?.title
+      ? `Shared “${p.attachment_snapshot.title}”`
+      : "Post");
+
+  const posted = new Date(p.created_at).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+
+  return {
+    id: `post:${p.id}`,
+    category: "posts",
+    title,
+    subtitle: [
+      p.author_display_name ?? (p.author_handle ? `@${p.author_handle}` : null),
+      posted,
+    ]
+      .filter(Boolean)
+      .join(" · "),
+    href: `/social?post=${p.id}`,
+    score,
+    artworkUrl: p.author_emblem_url,
+  };
+}
+
 function noteHit(n: SearchNote, tokens: string[]): SearchHit | null {
   const { score } = scoreTokens(
     [
@@ -485,6 +528,12 @@ export function matchSearchCatalog(
   if (allow("people")) {
     for (const p of catalog.people) {
       const hit = personHit(p, tokens);
+      if (hit) hits.push(hit);
+    }
+  }
+  if (allow("posts")) {
+    for (const p of catalog.posts) {
+      const hit = postHit(p, tokens);
       if (hit) hits.push(hit);
     }
   }

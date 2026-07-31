@@ -8,6 +8,7 @@ import {
   Disc3,
   FolderKanban,
   Hash,
+  MessageCircle,
   Music2,
   StickyNote,
   UserRound,
@@ -33,6 +34,7 @@ const CATEGORY_ICONS: Record<SearchCategory, LucideIcon> = {
   notes: StickyNote,
   stages: Columns3,
   spaces: Disc3,
+  posts: MessageCircle,
   pages: Hash,
 };
 
@@ -42,6 +44,7 @@ const FILTER_OPTIONS: Array<{ id: SearchCategory | "all"; label: string }> = [
   { id: "projects", label: "Projects" },
   { id: "tasks", label: "Tasks" },
   { id: "people", label: "People" },
+  { id: "posts", label: "Posts" },
   { id: "notes", label: "Notes" },
   { id: "pages", label: "Go to" },
 ];

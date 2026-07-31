@@ -4,6 +4,11 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-30
 
+- Added (v0.54.0): search now covers your feed, too — posts from you and the
+  people you follow show up alongside tracks, projects, and everything else.
+  Pick one from the filter bar to jump straight to it and open the
+  conversation.
+
 - Changed (v0.53.9): the thin animated light strip along the very top of the
   app is smaller now — more of a subtle accent than a bold band.
 
