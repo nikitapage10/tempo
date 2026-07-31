@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
-import { dateInTimeZone } from "@/lib/calendar/date";
+import { addDateKey, dateInTimeZone } from "@/lib/calendar/date";
 import type {
   CalendarData,
   CalendarEvent,
@@ -47,15 +47,14 @@ export async function fetchCalendarData(
   input: CalendarQueryInput
 ): Promise<CalendarData> {
   if (input.spaceIds.length === 0) {
-    return { items: [], relationOptions: [], eventsAvailable: true };
+    return { items: [], relationOptions: [], unscheduled: [], eventsAvailable: true, planningAvailable: true };
   }
   const supabase = createClient();
-  const [tasksRes, tracksRes, projectsRes, eventsRes] = await Promise.all([
+  const [tasksRes, tracksRes, projectsRes, eventsRes, planningRes] = await Promise.all([
     supabase
       .from("tasks")
       .select("id,user_id,space_id,track_id,project_id,title,status,due_date")
-      .in("space_id", input.spaceIds)
-      .not("due_date", "is", null),
+      .in("space_id", input.spaceIds),
     supabase
       .from("tracks")
       .select("id,user_id,space_id,project_id,title,deadline,next_action,next_action_due,blocked_reason,artwork_url")
@@ -65,18 +64,31 @@ export async function fetchCalendarData(
       .select("id,user_id,space_id,name,status,project_type,deadline")
       .in("space_id", input.spaceIds),
     supabase.from("calendar_events").select("*").in("space_id", input.spaceIds),
+    supabase.from("calendar_events").select("recurrence").limit(1),
   ]);
 
   if (tasksRes.error) throw tasksRes.error;
   if (tracksRes.error) throw tracksRes.error;
   if (projectsRes.error) throw projectsRes.error;
   const eventsAvailable = !isMissingEventsTable(eventsRes.error);
+  const planningAvailable = eventsAvailable && !planningRes.error;
   if (eventsRes.error && eventsAvailable) throw eventsRes.error;
 
   const tasks = tasksRes.data ?? [];
   const tracks = tracksRes.data ?? [];
   const projects = projectsRes.data ?? [];
-  const events = (eventsAvailable ? eventsRes.data ?? [] : []) as CalendarEvent[];
+  const events = (eventsAvailable ? eventsRes.data ?? [] : []).map((row) => ({
+    ...row,
+    recurrence: row.recurrence ?? "none",
+    recurrence_until: row.recurrence_until ?? null,
+    reminder_minutes: row.reminder_minutes ?? [],
+    participants: row.participants ?? [],
+    links: row.links ?? [],
+    attachment_urls: row.attachment_urls ?? [],
+    milestone_stage: row.milestone_stage ?? null,
+    dependency_event_id: row.dependency_event_id ?? null,
+    completed_at: row.completed_at ?? null,
+  })) as CalendarEvent[];
   const projectIds = projects.map((project) => project.id);
   const releasesRes = projectIds.length
     ? await supabase
@@ -103,6 +115,30 @@ export async function fetchCalendarData(
     })),
   ];
   const items: CalendarItem[] = [];
+  const unscheduled = [
+    ...tasks
+      .filter((task) => !task.due_date && task.status !== "done")
+      .map((task) => ({
+        id: `task:${task.id}`,
+        source: "task" as const,
+        sourceId: task.id,
+        spaceId: task.space_id!,
+        title: task.title,
+        subtitle: "Task without a due date",
+        destinationHref: `/tasks?edit=${task.id}`,
+      })),
+    ...tracks
+      .filter((track) => track.next_action && !track.next_action_due)
+      .map((track) => ({
+        id: `track_next_action:${track.id}`,
+        source: "track_next_action" as const,
+        sourceId: track.id,
+        spaceId: track.space_id,
+        title: track.next_action!,
+        subtitle: `${track.title} · Next`,
+        destinationHref: `/track/${track.id}?edit=next-action`,
+      })),
+  ];
   const keepDerived = (date: string, overdueEligible: boolean) =>
     inRange(date, input.rangeStart, input.rangeEndExclusive) ||
     (overdueEligible && date < input.today);
@@ -295,6 +331,14 @@ export async function fetchCalendarData(
     }
   }
 
+  function nextOccurrence(date: string, recurrence: CalendarEvent["recurrence"]) {
+    if (recurrence === "daily") return addDateKey(date, 1);
+    if (recurrence === "weekly") return addDateKey(date, 7);
+    const current = new Date(`${date}T12:00:00`);
+    current.setMonth(current.getMonth() + 1);
+    return `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, "0")}-${String(current.getDate()).padStart(2, "0")}`;
+  }
+
   for (const event of events) {
     const timezone = event.timezone || "UTC";
     const date = event.all_day
@@ -306,7 +350,23 @@ export async function fetchCalendarData(
         ? dateInTimeZone(event.ends_at, timezone)
         : null;
     const effectiveEnd = endDate ?? date;
-    if (date >= input.rangeEndExclusive || effectiveEnd < input.rangeStart) continue;
+    const occurrenceDates: string[] = [];
+    if (event.recurrence === "none") {
+      if (date < input.rangeEndExclusive && effectiveEnd >= input.rangeStart) {
+        occurrenceDates.push(date);
+      }
+    } else {
+      let occurrence = date;
+      let guard = 0;
+      while (occurrence < input.rangeEndExclusive && guard++ < 400) {
+        if (occurrence >= input.rangeStart && (!event.recurrence_until || occurrence <= event.recurrence_until)) {
+          occurrenceDates.push(occurrence);
+        }
+        if (event.recurrence_until && occurrence > event.recurrence_until) break;
+        occurrence = nextOccurrence(occurrence, event.recurrence);
+      }
+    }
+    if (occurrenceDates.length === 0 && (date >= input.rangeEndExclusive || effectiveEnd < input.rangeStart)) continue;
     const relation = event.track_id
       ? trackById.get(event.track_id)?.title
       : event.project_id
@@ -315,8 +375,8 @@ export async function fetchCalendarData(
     const artwork = event.track_id
       ? trackById.get(event.track_id)?.artwork_url ?? null
       : null;
-    items.push({
-      id: `custom_event:${event.id}`,
+    for (const occurrenceDate of occurrenceDates) items.push({
+      id: `custom_event:${event.id}:${occurrenceDate}`,
       source: "custom_event",
       sourceGroup: "events",
       sourceId: event.id,
@@ -324,13 +384,15 @@ export async function fetchCalendarData(
       spaceLabel: input.spaceLabels[event.space_id] ?? "Space",
       title: event.title,
       subtitle: event.location || relation || "Event",
-      date,
-      endDate,
+      date: occurrenceDate,
+      endDate: event.recurrence === "none" ? endDate : null,
       allDay: event.all_day,
       startsAt: event.starts_at,
       endsAt: event.ends_at,
       timezone: event.timezone,
-      state: derivedState({ date, today: input.today }),
+      state: event.completed_at
+        ? "completed"
+        : derivedState({ date: occurrenceDate, today: input.today }),
       destinationHref: `/calendar?event=${event.id}`,
       relationLabel: relation ?? null,
       artworkPath: artwork,
@@ -338,5 +400,5 @@ export async function fetchCalendarData(
     });
   }
 
-  return { items, relationOptions, eventsAvailable };
+  return { items, relationOptions, unscheduled, eventsAvailable, planningAvailable };
 }

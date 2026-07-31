@@ -4,6 +4,24 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-30
 
+- Added (v0.61.0): Calendar is now a complete creative planning workspace.
+  It adds a six-stage Timeline, drag and bulk rescheduling, unscheduled-work
+  suggestions, search and saved presets, workload and participant-conflict
+  signals, natural-language scheduling, configurable week layout, and
+  release-plan generation.
+
+- Added (v0.61.0): custom events now support milestones and dependencies,
+  recurrence, in-app reminders, participants, completion, links and briefs,
+  comments, activity history, duplication, and CSV or print-to-PDF export.
+  External calendar synchronization remains intentionally excluded.
+
+- Changed (v0.61.0): Calendar now uses the calendar glyph previously shown
+  for Today; Today uses a sunrise glyph so the two destinations are distinct.
+
+- Under the hood (v0.61.0): run migration `038_calendar_planning.sql` after
+  migration 037 to enable the expanded planning metadata and reminder
+  delivery. Core Calendar events retain a migration-safe fallback.
+
 - Changed (v0.60.0): the Admin overview is now an operating dashboard rather
   than a flat set of totals. It highlights work needing attention, 30-day
   member activation, growth, membership health, storage, and direct shortcuts

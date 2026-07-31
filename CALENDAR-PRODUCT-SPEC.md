@@ -1,6 +1,6 @@
 # TEMPO — Calendar Product Specification
 
-*Status: Implemented (v0.59.0). Custom-event writes require migration 037; derived TEMPO dates remain readable before it is applied.*
+*Status: Expanded and implemented (v0.61.0). Core events require migration 037; planning features require migration 038. Derived TEMPO dates remain readable before either is applied.*
 
 **Related:** `CALENDAR-UX-SPEC.md` · `CALENDAR-TECHNICAL-DESIGN.md` · `PRODUCT.md` · `DESIGN-SYSTEM-V2.md` · `SECURITY-AND-PERMISSIONS.md`
 

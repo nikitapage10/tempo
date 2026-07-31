@@ -53,6 +53,7 @@ function presentation(item: CalendarItem): {
         content: "Content",
         live_show: "Live / show",
         personal: "Personal",
+        milestone: "Milestone",
         other: "Event",
       };
       return {
@@ -74,11 +75,17 @@ export function CalendarItemSurface({
   compact = false,
   showSpace = false,
   onActivate,
+  onDragStart,
+  selected = false,
+  onSelect,
 }: {
   item: CalendarItem;
   compact?: boolean;
   showSpace?: boolean;
   onActivate: (item: CalendarItem) => void;
+  onDragStart?: (item: CalendarItem, event: React.DragEvent) => void;
+  selected?: boolean;
+  onSelect?: (item: CalendarItem, selected: boolean) => void;
 }) {
   const { tone, label, Icon } = presentation(item);
   const time = timeLabel(item);
@@ -98,11 +105,17 @@ export function CalendarItemSurface({
       <SpotlightCard tone={tone} radius={7} borderWidth={1} size={110}>
         <button
           type="button"
-          onClick={() => onActivate(item)}
+          draggable={!!onDragStart}
+          onDragStart={(event) => onDragStart?.(item, event)}
+          onClick={(event) => {
+            if (onSelect && (event.ctrlKey || event.metaKey)) onSelect(item, !selected);
+            else onActivate(item);
+          }}
           aria-label={accessible}
           className={cn(
             "relative flex h-7 w-full min-w-0 items-center gap-1 rounded-[6px] border border-line bg-gradient-to-b from-[#17171e] to-bg-1 px-1.5 text-left shadow-e1 transition-shadow duration-hover hover:shadow-e2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
-            item.state === "completed" && "opacity-60"
+            item.state === "completed" && "opacity-60",
+            selected && "ring-2 ring-ice"
           )}
         >
           <Icon className="size-3 shrink-0" aria-hidden />
@@ -132,16 +145,16 @@ export function CalendarItemSurface({
       size={180}
       className="rounded-card"
     >
-      <button
-        type="button"
-        onClick={() => onActivate(item)}
-        aria-label={accessible}
+      <div
+        draggable={!!onDragStart}
+        onDragStart={(event) => onDragStart?.(item, event)}
         className={cn(
           "relative flex w-full items-start gap-3 rounded-card border border-line bg-bg-1 px-3 py-3 text-left shadow-e1 transition-shadow duration-hover hover:shadow-e2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
-          item.state === "completed" && "opacity-60"
+          item.state === "completed" && "opacity-60",
+          selected && "ring-2 ring-ice"
         )}
       >
-        <span
+        <button type="button" onClick={() => onActivate(item)} aria-label={accessible} className="flex min-w-0 flex-1 items-start gap-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"><span
           className={cn(
             "mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-input border border-line bg-bg-2",
             tone === "amber" && "text-amber",
@@ -188,8 +201,9 @@ export function CalendarItemSurface({
             {item.subtitle ? <span>{item.subtitle}</span> : null}
             {showSpace ? <span>· {item.spaceLabel}</span> : null}
           </span>
-        </span>
-      </button>
+        </span></button>
+        {onSelect ? <input type="checkbox" checked={selected} onClick={(event) => event.stopPropagation()} onChange={(event) => onSelect(item, event.target.checked)} aria-label={`Select ${item.title}`} className="mt-1 size-4 shrink-0 accent-[var(--ice)]" /> : null}
+      </div>
     </SpotlightCard>
   );
 }

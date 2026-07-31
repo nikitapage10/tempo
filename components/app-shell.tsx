@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   CalendarDays,
-  CalendarRange,
+  Sunrise,
   Columns3,
   FolderKanban,
   CheckSquare,
@@ -21,6 +21,7 @@ import { ArtistSwitcher } from "@/components/artist-switcher";
 import { GlobalSearch } from "@/components/global-search";
 import { SpaceSwitcher } from "@/components/space-switcher";
 import { NotificationCenter } from "@/components/notification-center";
+import { MessageCenter } from "@/components/message-center";
 import { EdgeStrip, IntroMoment } from "@/components/intro-moment";
 import { FlareLine } from "@/components/flare-line";
 import { Wordmark } from "@/components/wordmark";
@@ -34,8 +35,8 @@ import { SupportReportDialog } from "@/components/support/support-report-dialog"
 // Artist sits above the space-scoped screens: it rolls up every space the
 // artist owns, so it stays in the rail whatever the active space's focus is.
 const MUSIC_MAIN_NAV = [
-  { href: "/", label: "Today", icon: CalendarDays },
-  { href: "/calendar", label: "Calendar", icon: CalendarRange },
+  { href: "/", label: "Today", icon: Sunrise },
+  { href: "/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/board", label: "Board", icon: Columns3 },
   { href: "/tracks", label: "Tracks", icon: Music2 },
   { href: "/projects", label: "Projects", icon: FolderKanban },
@@ -46,17 +47,17 @@ const MUSIC_MAIN_NAV = [
 ] as const;
 
 const MUSIC_MOBILE_NAV = [
-  { href: "/", label: "Today", icon: CalendarDays },
+  { href: "/", label: "Today", icon: Sunrise },
   { href: "/board", label: "Board", icon: Columns3 },
-  { href: "/calendar", label: "Calendar", icon: CalendarRange },
+  { href: "/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
 ] as const;
 
 // Tasks-focused spaces have no board or stage pipeline, so Board/Tracks
 // drop out and Projects/Tasks take the front seat instead.
 const TASKS_MAIN_NAV = [
-  { href: "/", label: "Today", icon: CalendarDays },
-  { href: "/calendar", label: "Calendar", icon: CalendarRange },
+  { href: "/", label: "Today", icon: Sunrise },
+  { href: "/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/artist", label: "Artist", icon: Disc3 },
@@ -65,9 +66,9 @@ const TASKS_MAIN_NAV = [
 ] as const;
 
 const TASKS_MOBILE_NAV = [
-  { href: "/", label: "Today", icon: CalendarDays },
+  { href: "/", label: "Today", icon: Sunrise },
   { href: "/projects", label: "Projects", icon: FolderKanban },
-  { href: "/calendar", label: "Calendar", icon: CalendarRange },
+  { href: "/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
 ] as const;
 
@@ -113,14 +114,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             aria-hidden
           />
           <div className="px-5 pt-6 pb-4">
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
               <Link
                 href="/"
                 className="rounded-input focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
               >
-                <Wordmark size={20} />
+                <Wordmark size={26} />
               </Link>
-              <NotificationCenter />
             </div>
             <FlareLine className="mt-3" />
           </div>
@@ -195,8 +195,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         <main className="flex-1 overflow-x-hidden pb-20 md:pb-0">
           <div className="mx-auto w-full max-w-[1440px] px-4 md:px-8">
-            <div className="sticky top-[var(--edge-strip-h)] z-40 mb-2 flex justify-end bg-bg-0/85 pb-4 pt-1.5 backdrop-blur-md">
-              <GlobalSearch className="ml-auto" />
+            <div className="sticky top-[var(--edge-strip-h)] z-40 mb-2 flex items-center justify-end gap-1.5 bg-bg-0/85 pb-4 pt-1.5 backdrop-blur-md">
+              <NotificationCenter />
+              <MessageCenter />
+              <GlobalSearch className="ml-1" />
             </div>
             <div className="pb-6 pt-1">{children}</div>
           </div>

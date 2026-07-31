@@ -1,6 +1,6 @@
 # TEMPO — Calendar UX and Visual Specification
 
-*Status: Implemented (v0.59.0) at `/calendar`.*
+*Status: Expanded and implemented (v0.61.0) at `/calendar`, including Month, Agenda, and creative Timeline views.*
 
 **Related:** `CALENDAR-PRODUCT-SPEC.md` · `CALENDAR-TECHNICAL-DESIGN.md` · `DESIGN-SYSTEM-V2.md` · `tempo-design-spec.md`
 

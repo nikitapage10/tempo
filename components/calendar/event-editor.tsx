@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
-import { useCalendarEventMutations } from "@/hooks/use-calendar";
+import { useCalendarCommentMutation, useCalendarDiscussion, useCalendarEventMutations } from "@/hooks/use-calendar";
 import {
   browserTimezone,
   dateInTimeZone,
@@ -18,6 +18,8 @@ import {
   type CalendarEvent,
   type CalendarEventInput,
   type CalendarEventKind,
+  type CalendarMilestoneStage,
+  type CalendarRecurrence,
   type CalendarRelationOption,
 } from "@/lib/calendar/types";
 import type { Space } from "@/lib/types";
@@ -41,6 +43,10 @@ export function CalendarEventEditor({
   defaultSpaceId,
   spaces,
   relationOptions,
+  existingEvents = [],
+  defaultKind = "other",
+  defaultTitle = "",
+  defaultMilestoneStage = null,
   onClose,
 }: {
   open: boolean;
@@ -49,6 +55,10 @@ export function CalendarEventEditor({
   defaultSpaceId: string;
   spaces: Space[];
   relationOptions: CalendarRelationOption[];
+  existingEvents?: CalendarEvent[];
+  defaultKind?: CalendarEventKind;
+  defaultTitle?: string;
+  defaultMilestoneStage?: CalendarMilestoneStage | null;
   onClose: () => void;
 }) {
   const { toast } = useToast();
@@ -65,13 +75,25 @@ export function CalendarEventEditor({
   const [relation, setRelation] = React.useState("");
   const [location, setLocation] = React.useState("");
   const [description, setDescription] = React.useState("");
+  const [recurrence, setRecurrence] = React.useState<CalendarRecurrence>("none");
+  const [recurrenceUntil, setRecurrenceUntil] = React.useState("");
+  const [reminders, setReminders] = React.useState<number[]>([]);
+  const [participants, setParticipants] = React.useState("");
+  const [links, setLinks] = React.useState("");
+  const [attachments, setAttachments] = React.useState("");
+  const [milestoneStage, setMilestoneStage] = React.useState<CalendarMilestoneStage | "">("");
+  const [dependencyEventId, setDependencyEventId] = React.useState("");
+  const [completed, setCompleted] = React.useState(false);
+  const [comment, setComment] = React.useState("");
   const [confirmDelete, setConfirmDelete] = React.useState(false);
+  const discussion = useCalendarDiscussion(event?.id ?? null);
+  const commentMutation = useCalendarCommentMutation(event?.id ?? null);
 
   React.useEffect(() => {
     if (!open) return;
     const zone = event?.timezone || browserTimezone();
-    setTitle(event?.title ?? "");
-    setKind(event?.kind ?? "other");
+    setTitle(event?.title ?? defaultTitle);
+    setKind(event?.kind ?? defaultKind);
     setSpaceId(event?.space_id ?? defaultSpaceId);
     setAllDay(event?.all_day ?? true);
     setTimezone(zone);
@@ -106,8 +128,17 @@ export function CalendarEventEditor({
     );
     setLocation(event?.location ?? "");
     setDescription(event?.description ?? "");
+    setRecurrence(event?.recurrence ?? "none");
+    setRecurrenceUntil(event?.recurrence_until ?? "");
+    setReminders(event?.reminder_minutes ?? []);
+    setParticipants((event?.participants ?? []).join(", "));
+    setLinks((event?.links ?? []).map((link) => `${link.label} | ${link.url}`).join("\n"));
+    setAttachments((event?.attachment_urls ?? []).join("\n"));
+    setMilestoneStage(event?.milestone_stage ?? defaultMilestoneStage ?? "");
+    setDependencyEventId(event?.dependency_event_id ?? "");
+    setCompleted(!!event?.completed_at);
     setConfirmDelete(false);
-  }, [open, event, defaultDate, defaultSpaceId]);
+  }, [open, event, defaultDate, defaultSpaceId, defaultKind, defaultTitle, defaultMilestoneStage]);
 
   const options = relationOptions.filter((option) => option.spaceId === spaceId);
   const busy =
@@ -120,6 +151,20 @@ export function CalendarEventEditor({
     if (!title.trim() || !spaceId || !startDate) return;
     const [relationType, relationId] = relation.split(":");
     let input: CalendarEventInput;
+    const planning = {
+      recurrence,
+      recurrence_until: recurrence === "none" ? null : recurrenceUntil || null,
+      reminder_minutes: reminders,
+      participants: participants.split(",").map((value) => value.trim()).filter(Boolean).slice(0, 25),
+      links: links.split("\n").map((line) => {
+        const [label, ...url] = line.split("|");
+        return { label: label?.trim() || "Link", url: url.join("|").trim() };
+      }).filter((link) => /^https?:\/\//.test(link.url)),
+      attachment_urls: attachments.split("\n").map((value) => value.trim()).filter((value) => /^https?:\/\//.test(value)).slice(0, 12),
+      milestone_stage: kind === "milestone" ? milestoneStage || null : null,
+      dependency_event_id: dependencyEventId || null,
+      completed_at: completed ? event?.completed_at ?? new Date().toISOString() : null,
+    };
     try {
       if (allDay) {
         if (endDate && endDate < startDate) {
@@ -140,6 +185,7 @@ export function CalendarEventEditor({
           starts_at: null,
           ends_at: null,
           timezone: null,
+          ...planning,
         };
       } else {
         const startsAt = zonedLocalToUtc(startDate, startTime || "09:00", timezone);
@@ -164,6 +210,7 @@ export function CalendarEventEditor({
           starts_at: startsAt,
           ends_at: endsAt,
           timezone,
+          ...planning,
         };
       }
       if (event) {
@@ -187,6 +234,17 @@ export function CalendarEventEditor({
       onClose();
     } catch (error) {
       toast(error instanceof Error ? error.message : "Couldn’t delete the event.");
+    }
+  }
+
+  async function duplicate() {
+    if (!event) return;
+    try {
+      await mutations.duplicate.mutateAsync({ event });
+      toast("Event duplicated", "ok");
+      onClose();
+    } catch (error) {
+      toast(error instanceof Error ? error.message : "Couldn’t duplicate the event.");
     }
   }
 
@@ -343,6 +401,35 @@ export function CalendarEventEditor({
               className="mt-1"
             />
           </div>
+          {kind === "milestone" ? (
+            <div>
+              <Label htmlFor="event-stage">Creative stage</Label>
+              <select id="event-stage" value={milestoneStage} onChange={(e) => setMilestoneStage(e.target.value as CalendarMilestoneStage)} className="mt-1 h-9 w-full rounded-input border border-line bg-bg-2 px-3 text-sm text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice">
+                <option value="">No stage</option>
+                {(["writing", "recording", "mixing", "mastering", "pitching", "release"] as const).map((stage) => <option key={stage} value={stage}>{stage[0].toUpperCase() + stage.slice(1)}</option>)}
+              </select>
+            </div>
+          ) : null}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="event-recurrence">Repeat</Label>
+              <select id="event-recurrence" value={recurrence} onChange={(e) => setRecurrence(e.target.value as CalendarRecurrence)} className="mt-1 h-9 w-full rounded-input border border-line bg-bg-2 px-3 text-sm text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice">
+                <option value="none">Does not repeat</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option>
+              </select>
+            </div>
+            {recurrence !== "none" ? <div><Label htmlFor="event-repeat-until">Repeat until (optional)</Label><Input id="event-repeat-until" type="date" value={recurrenceUntil} onChange={(e) => setRecurrenceUntil(e.target.value)} className="mt-1" /></div> : null}
+          </div>
+          <fieldset>
+            <legend className="text-xs font-medium text-text-lo">Reminders</legend>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {[[15, "15 min"], [60, "1 hour"], [1440, "1 day"], [10080, "1 week"]].map(([minutes, label]) => <label key={minutes} className="flex items-center gap-1.5 rounded-chip border border-line px-2 py-1 text-xs text-text-hi"><input type="checkbox" checked={reminders.includes(minutes as number)} onChange={() => setReminders((current) => current.includes(minutes as number) ? current.filter((value) => value !== minutes) : [...current, minutes as number])} className="accent-[var(--ice)]" />{label}</label>)}
+            </div>
+          </fieldset>
+          <div><Label htmlFor="event-participants">Participants (comma separated)</Label><Input id="event-participants" value={participants} onChange={(e) => setParticipants(e.target.value)} placeholder="Name or email, Name or email" className="mt-1" /></div>
+          <div><Label htmlFor="event-dependency">Depends on (optional)</Label><select id="event-dependency" value={dependencyEventId} onChange={(e) => setDependencyEventId(e.target.value)} className="mt-1 h-9 w-full rounded-input border border-line bg-bg-2 px-3 text-sm text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"><option value="">No dependency</option>{existingEvents.filter((candidate) => candidate.id !== event?.id).map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.title}</option>)}</select></div>
+          <div><Label htmlFor="event-links">Links (one per line: Label | https://…)</Label><Textarea id="event-links" value={links} onChange={(e) => setLinks(e.target.value)} rows={2} className="mt-1" /></div>
+          <div><Label htmlFor="event-attachments">Attachments or briefs (one URL per line)</Label><Textarea id="event-attachments" value={attachments} onChange={(e) => setAttachments(e.target.value)} rows={2} className="mt-1" /></div>
+          {event ? <label className="flex items-center gap-2 text-sm text-text-hi"><input type="checkbox" checked={completed} onChange={(e) => setCompleted(e.target.checked)} className="size-4 accent-[var(--ice)]" />Mark complete</label> : null}
           <div>
             <Label htmlFor="event-description">Description (optional)</Label>
             <Textarea
@@ -354,6 +441,16 @@ export function CalendarEventEditor({
               className="mt-1"
             />
           </div>
+          {event ? (
+            <section className="rounded-card border border-line bg-bg-2/35 p-3">
+              <h3 className="label-mono text-text-lo">Conversation & activity</h3>
+              <div className="mt-2 flex gap-2"><Input value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Add a comment…" /><Button type="button" size="sm" disabled={!comment.trim() || commentMutation.isPending} onClick={async () => { await commentMutation.mutateAsync(comment); setComment(""); }}>Post</Button></div>
+              <div className="mt-3 max-h-36 space-y-2 overflow-y-auto text-xs">
+                {(discussion.data?.comments ?? []).map((item) => <p key={item.id} className="rounded-input bg-bg-1 px-2 py-1.5 text-text-hi">{item.body}</p>)}
+                {(discussion.data?.activity ?? []).slice(0, 5).map((item) => <p key={item.id} className="font-mono text-[10px] text-text-lo">{item.summary}</p>)}
+              </div>
+            </section>
+          ) : null}
           <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-4">
             <div>
               {event ? (
@@ -378,14 +475,7 @@ export function CalendarEventEditor({
                     </Button>
                   </span>
                 ) : (
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => setConfirmDelete(true)}
-                  >
-                    Delete
-                  </Button>
+                  <span className="flex gap-2"><Button type="button" variant="ghost" size="sm" onClick={() => void duplicate()} disabled={busy}>Duplicate</Button><Button type="button" variant="destructive" size="sm" onClick={() => setConfirmDelete(true)}>Delete</Button></span>
                 )
               ) : null}
             </div>
@@ -403,4 +493,3 @@ export function CalendarEventEditor({
     </Dialog>
   );
 }
-

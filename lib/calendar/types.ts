@@ -4,7 +4,19 @@ export type CalendarEventKind =
   | "content"
   | "live_show"
   | "personal"
+  | "milestone"
   | "other";
+
+export type CalendarRecurrence = "none" | "daily" | "weekly" | "monthly";
+export type CalendarMilestoneStage =
+  | "writing"
+  | "recording"
+  | "mixing"
+  | "mastering"
+  | "pitching"
+  | "release";
+
+export type CalendarLink = { label: string; url: string };
 
 export type CalendarEvent = {
   id: string;
@@ -22,6 +34,15 @@ export type CalendarEvent = {
   starts_at: string | null;
   ends_at: string | null;
   timezone: string | null;
+  recurrence: CalendarRecurrence;
+  recurrence_until: string | null;
+  reminder_minutes: number[];
+  participants: string[];
+  links: CalendarLink[];
+  attachment_urls: string[];
+  milestone_stage: CalendarMilestoneStage | null;
+  dependency_event_id: string | null;
+  completed_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -83,10 +104,39 @@ export type CalendarRelationOption = {
   label: string;
 };
 
+export type UnscheduledCalendarItem = {
+  id: string;
+  source: "task" | "track_next_action";
+  sourceId: string;
+  spaceId: string;
+  title: string;
+  subtitle: string | null;
+  destinationHref: string;
+};
+
+export type CalendarComment = {
+  id: string;
+  event_id: string;
+  user_id: string;
+  body: string;
+  created_at: string;
+};
+
+export type CalendarActivity = {
+  id: string;
+  event_id: string;
+  user_id: string;
+  action: string;
+  summary: string;
+  created_at: string;
+};
+
 export type CalendarData = {
   items: CalendarItem[];
   relationOptions: CalendarRelationOption[];
+  unscheduled: UnscheduledCalendarItem[];
   eventsAvailable: boolean;
+  planningAvailable: boolean;
 };
 
 export const CALENDAR_EVENT_KINDS: {
@@ -98,6 +148,6 @@ export const CALENDAR_EVENT_KINDS: {
   { value: "content", label: "Content" },
   { value: "live_show", label: "Live / show" },
   { value: "personal", label: "Personal" },
+  { value: "milestone", label: "Milestone" },
   { value: "other", label: "Other" },
 ];
-
