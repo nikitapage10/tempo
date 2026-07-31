@@ -7,6 +7,7 @@ import { Wordmark } from "@/components/wordmark";
 import { FlareLine } from "@/components/flare-line";
 import { SlitDivider } from "@/components/ui/slit";
 import { useAdminOverview } from "@/hooks/use-admin";
+import { useRealtimeInbox } from "@/hooks/use-realtime-inbox";
 import { APP_VERSION } from "@/lib/version";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +22,7 @@ const items = [
 ];
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
+  useRealtimeInbox(true);
   const pathname = usePathname();
   const overview = useAdminOverview();
   const attentionCount = (attention?: "support" | "reports") => attention === "support"

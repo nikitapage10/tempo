@@ -312,6 +312,8 @@ export type Track = {
   waiting_on: string | null;
   stage_entered_at: string;
   list_sort: number;
+  /** Tracks-page group (migration 041). Independent of project_id. */
+  list_group_id: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -343,8 +345,20 @@ export type TrackUpdate = Partial<
     artwork_url?: string | null;
     project_id?: string | null;
     list_sort?: number;
+    list_group_id?: string | null;
   }
 >;
+
+/** Named Tracks-page group (album / EP / playlist / etc). Migration 041. */
+export type TrackGroup = {
+  id: string;
+  user_id: string;
+  space_id: string;
+  name: string;
+  sort: number;
+  created_at: string;
+  updated_at: string;
+};
 
 /** Named snapshot of Tracks-page order within a space (migration 018). */
 export type TrackListPreset = {

@@ -109,17 +109,38 @@ export function useTrackMutations(spaceId: string | null) {
   });
 
   const reorder = useMutation({
-    mutationFn: (ordered: { id: string; list_sort: number }[]) =>
-      reorderTracks(ordered),
+    mutationFn: (
+      ordered: {
+        id: string;
+        list_sort: number;
+        list_group_id?: string | null;
+      }[]
+    ) => reorderTracks(ordered),
     onMutate: async (ordered) => {
       await qc.cancelQueries({ queryKey: key });
       const prev = qc.getQueryData<Track[]>(key);
       if (prev) {
-        const sortById = new Map(ordered.map((o) => [o.id, o.list_sort]));
+        const byId = new Map(
+          ordered.map((o) => [
+            o.id,
+            {
+              list_sort: o.list_sort,
+              list_group_id: o.list_group_id,
+            },
+          ])
+        );
         const next = prev
-          .map((t) =>
-            sortById.has(t.id) ? { ...t, list_sort: sortById.get(t.id)! } : t
-          )
+          .map((t) => {
+            const patch = byId.get(t.id);
+            if (!patch) return t;
+            return {
+              ...t,
+              list_sort: patch.list_sort,
+              ...(patch.list_group_id !== undefined
+                ? { list_group_id: patch.list_group_id }
+                : {}),
+            };
+          })
           .sort(
             (a, b) =>
               a.list_sort - b.list_sort || a.title.localeCompare(b.title)

@@ -114,6 +114,8 @@ Use stable string roots; scope with ids; avoid anonymous objects as keys.
 | Domain | Key | Notes |
 |--------|-----|-------|
 | Tracks in space | `["tracks", spaceId]` | Board / Tracks list |
+| Track groups in space | `["track-groups", spaceId]` | Tracks page sections (migration 041) |
+| Track list presets | `["track-list-presets", spaceId]` | Tracks saved Custom orders |
 | Track detail | `["track", trackId]` | |
 | Version count | `["version-count", trackId]` | |
 | Versions | `["versions", trackId]` | |

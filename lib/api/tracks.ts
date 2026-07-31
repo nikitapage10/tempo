@@ -149,18 +149,37 @@ export async function deleteTrack(id: string): Promise<void> {
   if (error) throw error;
 }
 
-/** Persist Tracks-page custom order. Does not bump updated_at. */
+/** Persist Tracks-page custom order and optional group membership. Does not bump updated_at. */
 export async function reorderTracks(
-  ordered: { id: string; list_sort: number }[]
+  ordered: {
+    id: string;
+    list_sort: number;
+    list_group_id?: string | null;
+  }[]
 ): Promise<void> {
   const supabase = createClient();
   const results = await Promise.all(
-    ordered.map(({ id, list_sort }) =>
-      supabase.from("tracks").update({ list_sort }).eq("id", id)
-    )
+    ordered.map(({ id, list_sort, list_group_id }) => {
+      const patch: { list_sort: number; list_group_id?: string | null } = {
+        list_sort,
+      };
+      if (list_group_id !== undefined) patch.list_group_id = list_group_id;
+      return supabase.from("tracks").update(patch).eq("id", id);
+    })
   );
   const failed = results.find((r) => r.error);
-  if (failed?.error) throw failed.error;
+  if (failed?.error) {
+    const message = (failed.error.message ?? "").toLowerCase();
+    if (
+      failed.error.code === "PGRST204" ||
+      message.includes("list_group_id")
+    ) {
+      throw new Error(
+        "Track groups need migration 041 in Supabase — run that SQL, then try again."
+      );
+    }
+    throw failed.error;
+  }
 }
 
 function normalizeTrack(row: Track): Track {
@@ -176,5 +195,6 @@ function normalizeTrack(row: Track): Track {
     waiting_on: row.waiting_on ?? null,
     stage_entered_at: row.stage_entered_at ?? row.created_at,
     list_sort: typeof row.list_sort === "number" ? row.list_sort : 0,
+    list_group_id: row.list_group_id ?? null,
   };
 }

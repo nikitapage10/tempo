@@ -210,6 +210,32 @@ create table if not exists board_notes (
 create index if not exists idx_board_notes_space_stage
   on board_notes (space_id, stage_id, sort);
 
+-- Tracks-page groups (migration 041) — independent of projects
+create table if not exists track_groups (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  space_id uuid not null references spaces(id) on delete cascade,
+  name text not null,
+  sort int not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint track_groups_name_len check (
+    char_length(trim(name)) >= 1 and char_length(name) <= 60
+  )
+);
+
+create index if not exists idx_track_groups_space_sort
+  on track_groups (space_id, sort);
+
+alter table tracks
+  add column if not exists list_sort int not null default 0;
+
+alter table tracks
+  add column if not exists list_group_id uuid references track_groups(id) on delete set null;
+
+create index if not exists idx_tracks_space_list_group
+  on tracks (space_id, list_group_id, list_sort);
+
 -- ---------- Row Level Security (single-user: you can only see your own data) ----------
 
 alter table spaces enable row level security;
@@ -225,6 +251,7 @@ alter table sessions enable row level security;
 alter table comments enable row level security;
 alter table feedback enable row level security;
 alter table board_notes enable row level security;
+alter table track_groups enable row level security;
 alter table artists enable row level security; -- migration 021
 
 create policy own_artists on artists for all using (user_id = auth.uid()) with check (user_id = auth.uid()); -- migration 021
@@ -265,6 +292,10 @@ create policy own_feedback on feedback for all
   with check (exists (select 1 from tracks t where t.id = track_id and t.user_id = auth.uid()));
 
 create policy own_board_notes on board_notes for all
+  using (user_id = auth.uid())
+  with check (user_id = auth.uid());
+
+create policy own_track_groups on track_groups for all
   using (user_id = auth.uid())
   with check (user_id = auth.uid());
 

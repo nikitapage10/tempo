@@ -14,7 +14,7 @@ TEMPO is a single-user (for now) workspace that manages **the entire life of a m
 Three object types make this work:
 
 1. **Tracks** — a musical work (original, remix, edit, bootleg, collab) with metadata, a stage in a workflow, versions, stems, and notes.
-2. **Projects** — a container that groups tracks and tasks toward a goal (an EP, "Edit Pack Vol. 2," an album, a label campaign). A track can live in a project or stand alone.
+2. **Projects** — a work container you define (a campaign, a release push, related tasks and tracks, whatever the goal is). Many tracks and tasks can attach to one project; a track can stand alone with no project. Not a one-track wrapper. (Album/EP/playlist-style buckets on the Tracks list are a separate “groups” concept.)
 3. **Tasks** — anything actionable, attachable to a track, a project, or nothing ("post teaser clip," "email X a remix," "pitch 'Song' to Label Y"). Tasks have their own lightweight workflow independent of track stages.
 
 This three-object model is what makes TEMPO "all-encompassing musician workflow" rather than a production tracker clone.

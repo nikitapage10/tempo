@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient as createServerClient } from "@/lib/supabase/server";
+import { notifySupportAdmins } from "@/lib/admin/support-notifications";
 
 export const dynamic = "force-dynamic";
 const headers: HeadersInit = { "Cache-Control": "no-store" };
@@ -14,10 +15,11 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   const media = Array.isArray(input?.media) ? input.media.slice(0, 4).filter((item: unknown) => item && typeof item === "object" && typeof (item as { path?: unknown }).path === "string" && (item as { path: string }).path.startsWith(`messages/${user.id}/support/${params.id}/`)) : [];
   if (!body && media.length === 0) return NextResponse.json({ error: "Write a reply or attach a file first." }, { status: 400, headers });
   const service = createAdminClient();
-  const { data: report } = await service.from("support_reports").select("id").eq("id", params.id).eq("user_id", user.id).maybeSingle();
+  const { data: report } = await service.from("support_reports").select("id, subject").eq("id", params.id).eq("user_id", user.id).maybeSingle();
   if (!report) return NextResponse.json({ error: "Support ticket not found." }, { status: 404, headers });
   const { error } = await service.from("support_messages").insert({ report_id: report.id, sender_role: "member", sender_user_id: user.id, body, media });
   if (error) return NextResponse.json({ error: "Couldn’t send your reply. Run migration 036 if it has not been applied." }, { status: 500, headers });
+  await notifySupportAdmins({ reportId: report.id, subject: report.subject });
   return NextResponse.json({ ok: true }, { status: 201, headers });
 }
 

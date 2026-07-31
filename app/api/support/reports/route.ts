@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { SUPPORT_MESSAGE_COLUMNS, SUPPORT_REPORT_COLUMNS } from "@/lib/admin/select";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient as createServerClient } from "@/lib/supabase/server";
+import { notifySupportAdmins } from "@/lib/admin/support-notifications";
 
 export const dynamic = "force-dynamic";
 const headers: HeadersInit = { "Cache-Control": "no-store" };
@@ -40,5 +41,6 @@ export async function POST(request: NextRequest) {
   const id = crypto.randomUUID();
   const { error } = await supabase.from("support_reports").insert({ id, user_id: user.id, email: user.email ?? null, category, subject, details, page_url: pageUrl, user_agent: userAgent, source, last_message_at: new Date().toISOString() });
   if (error) return NextResponse.json({ error: "Couldn’t send your report. Run migration 036 if it has not been applied." }, { status: 500, headers });
+  await notifySupportAdmins({ reportId: id, subject, isNew: true });
   return NextResponse.json({ ok: true, id }, { status: 201, headers });
 }

@@ -31,6 +31,8 @@ import { APP_VERSION } from "@/lib/version";
 import { cn } from "@/lib/utils";
 import { SlitDivider } from "@/components/ui/slit";
 import { SupportReportDialog } from "@/components/support/support-report-dialog";
+import { useRealtimeInbox } from "@/hooks/use-realtime-inbox";
+import { GlobalPlayerBar } from "@/components/player/global-player-bar";
 
 // Artist sits above the space-scoped screens: it rolls up every space the
 // artist owns, so it stays in the rail whatever the active space's focus is.
@@ -80,6 +82,7 @@ function isActive(pathname: string, href: string) {
 const FOCUS_ROUTE = /^\/track\/[^/]+\/focus(\/|$)/;
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  useRealtimeInbox();
   const pathname = usePathname();
   const router = useRouter();
   const { activeSpace } = useActiveSpace();
@@ -159,6 +162,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               );
             })}
           </nav>
+
+          <GlobalPlayerBar />
 
           <SlitDivider />
           <div className="px-3 py-4">

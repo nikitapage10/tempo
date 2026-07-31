@@ -57,7 +57,7 @@ RLS: via space ownership. Tracks.stage_id ON DELETE SET NULL.
 | id | uuid PK | |
 | user_id | uuid → auth.users CASCADE | owner |
 | space_id | uuid → spaces CASCADE | |
-| project_id | uuid → projects SET NULL | |
+| project_id | uuid → projects SET NULL | Optional link to at most one project (many tracks may share a project; not 1:1) |
 | stage_id | uuid → stages SET NULL | |
 | title | text | |
 | artist_alias | text null | |
@@ -70,9 +70,24 @@ RLS: via space ownership. Tracks.stage_id ON DELETE SET NULL.
 | notes | text null | |
 | artwork_url | text null | storage path |
 | list_sort | int | Tracks page custom order within a space (migration 017) |
+| list_group_id | uuid → track_groups SET NULL | Tracks-page group (migration 041); not projects |
 | created_at, updated_at | timestamptz | |
 
-Indexes today: `idx_tracks_space`, `idx_tracks_stage`, `idx_tracks_space_list_sort`.
+Indexes today: `idx_tracks_space`, `idx_tracks_stage`, `idx_tracks_space_list_sort`, `idx_tracks_space_list_group`.
+
+#### `track_groups` (migration 041)
+Named Tracks-page buckets (album, EP, playlist, etc.) — independent of `projects`.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid PK | |
+| user_id | uuid → auth.users CASCADE | |
+| space_id | uuid → spaces CASCADE | |
+| name | text | 1–60 chars |
+| sort | int | group order on Tracks |
+| created_at, updated_at | timestamptz | |
+
+RLS: `user_id = auth.uid()`. Delete sets `tracks.list_group_id` null.
 
 #### `track_list_presets` (migration 018)
 Named Tracks-page order snapshots per space.

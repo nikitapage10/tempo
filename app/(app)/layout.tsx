@@ -5,6 +5,7 @@ import { ActiveSpaceProvider } from "@/components/active-space-provider";
 import { AppShell } from "@/components/app-shell";
 import { ArtistThemeProvider } from "@/components/artist-theme-provider";
 import { LightfieldDriver } from "@/components/lightfield-driver";
+import { GlobalPlayerProvider } from "@/components/player/global-player-provider";
 
 export default function AppLayout({
   children,
@@ -17,7 +18,9 @@ export default function AppLayout({
       <ArtistThemeProvider>
         <ActiveSpaceProvider>
           <LightfieldDriver />
-          <AppShell>{children}</AppShell>
+          <GlobalPlayerProvider>
+            <AppShell>{children}</AppShell>
+          </GlobalPlayerProvider>
         </ActiveSpaceProvider>
       </ArtistThemeProvider>
     </ActiveArtistProvider>

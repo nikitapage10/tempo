@@ -8,6 +8,7 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DragOverEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -16,7 +17,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Plus, Rows2, Rows3, Trash2, X } from "lucide-react";
+import { FolderPlus, GripVertical, Pause, Play, Plus, Rows2, Rows3, Trash2, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useActiveSpace } from "@/components/active-space-provider";
@@ -34,12 +35,27 @@ import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { EmptyShaderPanel } from "@/components/shader-empty";
 import { SpectraCoverArt } from "@/components/spectra/spectra-cover-art";
 import { TrackFormModal } from "@/components/tracks/track-form-modal";
+import {
+  TrackGroupSection,
+  UNGROUPED_DROP_ID,
+  groupDropId,
+  parseGroupDropId,
+} from "@/components/tracks/track-group-section";
+import {
+  useGlobalPlayer,
+  type PlayerTrack,
+} from "@/components/player/global-player-provider";
 import { useStages } from "@/hooks/use-stages";
 import {
   useTrackListPresetMutations,
   useTrackListPresets,
 } from "@/hooks/use-track-list-presets";
+import {
+  useTrackGroupMutations,
+  useTrackGroups,
+} from "@/hooks/use-track-groups";
 import { useTrackMutations, useTracks } from "@/hooks/use-tracks";
+import { useVersionsForTracks } from "@/hooks/use-versions";
 import { deriveAttentionSignals } from "@/lib/attention/signals";
 import { TRACK_TYPES } from "@/lib/constants";
 import {
@@ -47,7 +63,7 @@ import {
   momentumDotClass,
   typeChipClass,
 } from "@/lib/track-style";
-import type { Track, TrackInsert, TrackListPreset, TrackType } from "@/lib/types";
+import type { Track, TrackGroup, TrackInsert, TrackListPreset, TrackType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type BuiltinSort = "custom" | "title" | "stage" | "updated" | "deadline";
@@ -174,6 +190,68 @@ function mergeVisibleReorder(
   return allOrderedIds.map((id) => (visible.has(id) ? queue.shift()! : id));
 }
 
+type GroupKey = string | null;
+
+function trackGroupKey(track: Track, groups: TrackGroup[]): GroupKey {
+  if (
+    track.list_group_id &&
+    groups.some((g) => g.id === track.list_group_id)
+  ) {
+    return track.list_group_id;
+  }
+  return null;
+}
+
+type TrackSection = {
+  groupId: GroupKey;
+  name: string;
+  tracks: Track[];
+};
+
+function buildTrackSections(
+  tracks: Track[],
+  groups: TrackGroup[]
+): TrackSection[] {
+  if (groups.length === 0) {
+    return [{ groupId: null, name: "", tracks }];
+  }
+
+  const byGroup = new Map<GroupKey, Track[]>();
+  for (const g of groups) byGroup.set(g.id, []);
+  byGroup.set(null, []);
+
+  for (const t of tracks) {
+    byGroup.get(trackGroupKey(t, groups))!.push(t);
+  }
+
+  const sections: TrackSection[] = groups.map((g) => ({
+    groupId: g.id,
+    name: g.name,
+    tracks: byGroup.get(g.id)!,
+  }));
+  sections.push({
+    groupId: null,
+    name: "Ungrouped",
+    tracks: byGroup.get(null)!,
+  });
+  return sections;
+}
+
+function resolveDropGroup(
+  overId: string,
+  tracks: Track[],
+  groups: TrackGroup[]
+): GroupKey | undefined {
+  const fromDrop = parseGroupDropId(overId);
+  if (fromDrop !== undefined) {
+    if (fromDrop === null) return null;
+    return groups.some((g) => g.id === fromDrop) ? fromDrop : undefined;
+  }
+  const overTrack = tracks.find((t) => t.id === overId);
+  if (!overTrack) return undefined;
+  return trackGroupKey(overTrack, groups);
+}
+
 export default function TracksPage() {
   const router = useRouter();
   const { activeSpace, activeSpaceId, isLoading: spacesLoading } =
@@ -181,12 +259,19 @@ export default function TracksPage() {
   const stagesQuery = useStages(activeSpaceId);
   const tracksQuery = useTracks(activeSpaceId);
   const presetsQuery = useTrackListPresets(activeSpaceId);
+  const groupsQuery = useTrackGroups(activeSpaceId);
   const { create, remove, reorder } = useTrackMutations(activeSpaceId);
   const {
     create: createPreset,
     update: updatePreset,
     remove: removePreset,
   } = useTrackListPresetMutations(activeSpaceId);
+  const {
+    create: createGroup,
+    update: updateGroup,
+    reorder: reorderGroups,
+    remove: removeGroup,
+  } = useTrackGroupMutations(activeSpaceId);
   const { toast } = useToast();
 
   const stages = React.useMemo(
@@ -195,6 +280,7 @@ export default function TracksPage() {
   );
   const tracks = tracksQuery.data ?? [];
   const presets = presetsQuery.data ?? [];
+  const groups = groupsQuery.data ?? [];
   const stageName = React.useMemo(() => {
     const map = new Map(stages.map((s) => [s.id, s.name]));
     return (id: string | null) => (id ? map.get(id) ?? "—" : "—");
@@ -223,6 +309,17 @@ export default function TracksPage() {
   const [saveOpen, setSaveOpen] = React.useState(false);
   const [saveName, setSaveName] = React.useState("");
   const [savingOrder, setSavingOrder] = React.useState(false);
+
+  const [groupDialog, setGroupDialog] = React.useState<
+    null | { mode: "create" } | { mode: "rename"; group: TrackGroup }
+  >(null);
+  const [groupName, setGroupName] = React.useState("");
+  const [savingGroup, setSavingGroup] = React.useState(false);
+  const [deleteGroupTarget, setDeleteGroupTarget] =
+    React.useState<TrackGroup | null>(null);
+  const [overGroupId, setOverGroupId] = React.useState<GroupKey | undefined>(
+    undefined
+  );
 
   // Drop a stale preset id from localStorage if it was deleted elsewhere.
   React.useEffect(() => {
@@ -257,6 +354,50 @@ export default function TracksPage() {
     () => sortTracks(filtered, sortSelection, stageSort, presets),
     [filtered, sortSelection, stageSort, presets]
   );
+
+  const sections = React.useMemo(
+    () => buildTrackSections(displayed, groups),
+    [displayed, groups]
+  );
+
+  const showGroups = groups.length > 0;
+
+  const versionsByTrackQuery = useVersionsForTracks(displayed.map((t) => t.id));
+  const { current: nowPlaying, playing, play, toggle } = useGlobalPlayer();
+
+  const playableTracks = React.useMemo(() => {
+    const versionsByTrack = versionsByTrackQuery.data;
+    const map = new Map<string, PlayerTrack>();
+    if (!versionsByTrack) return map;
+    for (const track of displayed) {
+      const versions = versionsByTrack.get(track.id);
+      if (!versions || versions.length === 0) continue;
+      const version = versions.find((v) => v.is_current) ?? versions[0];
+      map.set(track.id, {
+        id: track.id,
+        title: track.title,
+        artist: track.artist_alias,
+        artworkUrl: track.artwork_url,
+        fileUrl: version.file_url,
+      });
+    }
+    return map;
+  }, [displayed, versionsByTrackQuery.data]);
+
+  const playableQueue = React.useMemo(
+    () => displayed.map((t) => playableTracks.get(t.id)).filter((t): t is PlayerTrack => !!t),
+    [displayed, playableTracks]
+  );
+
+  function handlePlayTrack(track: Track) {
+    const playerTrack = playableTracks.get(track.id);
+    if (!playerTrack) return;
+    if (nowPlaying?.id === track.id) {
+      toggle();
+    } else {
+      play(playerTrack, playableQueue);
+    }
+  }
 
   const activePreset = React.useMemo(() => {
     const id = presetIdFromSort(sortSelection);
@@ -328,19 +469,115 @@ export default function TracksPage() {
     }
   }
 
+  function handleDragOver(event: DragOverEvent) {
+    if (!canDrag || !showGroups) {
+      setOverGroupId(undefined);
+      return;
+    }
+    const overId = event.over?.id;
+    if (!overId) {
+      setOverGroupId(undefined);
+      return;
+    }
+    setOverGroupId(resolveDropGroup(String(overId), tracks, groups));
+  }
+
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
+    setOverGroupId(undefined);
     if (!over || active.id === over.id || !canDrag) return;
 
-    const visibleIds = displayed.map((t) => t.id);
-    const oldIndex = visibleIds.indexOf(String(active.id));
-    const newIndex = visibleIds.indexOf(String(over.id));
-    if (oldIndex < 0 || newIndex < 0) return;
+    const activeId = String(active.id);
+    const overId = String(over.id);
 
-    const nextVisible = arrayMove(visibleIds, oldIndex, newIndex);
-    const allOrdered = customOrderedIds();
-    const merged = mergeVisibleReorder(allOrdered, nextVisible);
-    reorder.mutate(merged.map((id, list_sort) => ({ id, list_sort })));
+    if (!showGroups) {
+      const visibleIds = displayed.map((t) => t.id);
+      const oldIndex = visibleIds.indexOf(activeId);
+      const newIndex = visibleIds.indexOf(overId);
+      if (oldIndex < 0 || newIndex < 0) return;
+
+      const nextVisible = arrayMove(visibleIds, oldIndex, newIndex);
+      const allOrdered = customOrderedIds();
+      const merged = mergeVisibleReorder(allOrdered, nextVisible);
+      reorder.mutate(merged.map((id, list_sort) => ({ id, list_sort })));
+      return;
+    }
+
+    const targetGroupId = resolveDropGroup(overId, tracks, groups);
+    if (targetGroupId === undefined) return;
+
+    const activeTrack = tracks.find((t) => t.id === activeId);
+    if (!activeTrack) return;
+
+    const groupKeys: GroupKey[] = [...groups.map((g) => g.id), null];
+    const full = new Map<GroupKey, string[]>();
+    const visible = new Map<GroupKey, string[]>();
+    for (const k of groupKeys) {
+      full.set(k, []);
+      visible.set(k, []);
+    }
+    for (const t of sortTracks(tracks, "custom", stageSort, presets)) {
+      full.get(trackGroupKey(t, groups))!.push(t.id);
+    }
+    for (const t of displayed) {
+      visible.get(trackGroupKey(t, groups))!.push(t.id);
+    }
+
+    const sourceGroup = trackGroupKey(activeTrack, groups);
+    const overIsDroppable = parseGroupDropId(overId) !== undefined;
+
+    if (sourceGroup === targetGroupId && !overIsDroppable) {
+      // Same-group reorder onto another track
+      const vis = visible.get(sourceGroup)!;
+      const oldIndex = vis.indexOf(activeId);
+      const newIndex = vis.indexOf(overId);
+      if (oldIndex < 0 || newIndex < 0) return;
+      const nextVis = arrayMove(vis, oldIndex, newIndex);
+      full.set(
+        sourceGroup,
+        mergeVisibleReorder(full.get(sourceGroup)!, nextVis)
+      );
+    } else if (sourceGroup === targetGroupId && overIsDroppable) {
+      // Dropped on own group chrome — no-op
+      return;
+    } else {
+      full.set(
+        sourceGroup,
+        full.get(sourceGroup)!.filter((id) => id !== activeId)
+      );
+      const targetFull = [...full.get(targetGroupId)!];
+      const targetVis = visible
+        .get(targetGroupId)!
+        .filter((id) => id !== activeId);
+
+      let insertAt: number;
+      if (overIsDroppable || !targetFull.includes(overId)) {
+        if (targetVis.length === 0) insertAt = targetFull.length;
+        else {
+          const lastId = targetVis[targetVis.length - 1]!;
+          const idx = targetFull.indexOf(lastId);
+          insertAt = idx >= 0 ? idx + 1 : targetFull.length;
+        }
+      } else {
+        const idx = targetFull.indexOf(overId);
+        insertAt = idx >= 0 ? idx : targetFull.length;
+      }
+      targetFull.splice(insertAt, 0, activeId);
+      full.set(targetGroupId, targetFull);
+    }
+
+    const flattened: {
+      id: string;
+      list_sort: number;
+      list_group_id: string | null;
+    }[] = [];
+    let i = 0;
+    for (const k of groupKeys) {
+      for (const id of full.get(k)!) {
+        flattened.push({ id, list_sort: i++, list_group_id: k });
+      }
+    }
+    reorder.mutate(flattened);
   }
 
   async function handleSaveOrder() {
@@ -422,8 +659,82 @@ export default function TracksPage() {
     }
   }
 
+  function openCreateGroup() {
+    setGroupName("");
+    setGroupDialog({ mode: "create" });
+  }
+
+  function openRenameGroup(group: TrackGroup) {
+    setGroupName(group.name);
+    setGroupDialog({ mode: "rename", group });
+  }
+
+  async function handleSaveGroup() {
+    const name = groupName.trim();
+    if (!name || !groupDialog) return;
+    setSavingGroup(true);
+    try {
+      if (groupDialog.mode === "create") {
+        const group = await createGroup.mutateAsync(name);
+        toast(`Created “${group.name}”. Drag tracks into it.`, "ok");
+      } else {
+        await updateGroup.mutateAsync({
+          id: groupDialog.group.id,
+          name,
+        });
+        toast(`Renamed to “${name}”.`, "ok");
+      }
+      setGroupDialog(null);
+      setGroupName("");
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Couldn’t save that group.");
+    } finally {
+      setSavingGroup(false);
+    }
+  }
+
+  async function handleDeleteGroup() {
+    if (!deleteGroupTarget) return;
+    const name = deleteGroupTarget.name;
+    try {
+      await removeGroup.mutateAsync(deleteGroupTarget.id);
+      setDeleteGroupTarget(null);
+      toast(`Removed “${name}” — tracks are ungrouped.`);
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Couldn’t remove that group.");
+    }
+  }
+
+  function moveGroup(groupId: string, direction: -1 | 1) {
+    const index = groups.findIndex((g) => g.id === groupId);
+    const swapWith = index + direction;
+    if (index < 0 || swapWith < 0 || swapWith >= groups.length) return;
+    const next = arrayMove(groups, index, swapWith);
+    reorderGroups.mutate(next.map((g, sort) => ({ id: g.id, sort })));
+  }
+
   const loading = spacesLoading || tracksQuery.isLoading;
   const selectedTracks = tracks.filter((t) => selected.has(t.id));
+  const densityListClass = density === "compact" ? "space-y-1" : "space-y-2";
+
+  function renderTrackRow(track: Track) {
+    return (
+      <SortableTrackRow
+        key={track.id}
+        track={track}
+        stageLabel={stageName(track.stage_id)}
+        selecting={selecting}
+        selected={selected.has(track.id)}
+        canDrag={canDrag}
+        compact={density === "compact"}
+        onToggleSelect={() => toggleSelected(track.id)}
+        onOpen={() => router.push(`/track/${track.id}`)}
+        playable={playableTracks.has(track.id)}
+        isPlaying={nowPlaying?.id === track.id && playing}
+        onPlay={() => handlePlayTrack(track)}
+      />
+    );
+  }
 
   return (
     <div>
@@ -670,6 +981,15 @@ export default function TracksPage() {
                   <Button
                     size="sm"
                     variant="ghost"
+                    onClick={openCreateGroup}
+                  >
+                    <FolderPlus className="size-3.5" />
+                    Group
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    variant="ghost"
                     onClick={() => setSelecting(true)}
                   >
                     Select
@@ -734,7 +1054,9 @@ export default function TracksPage() {
         <>
           {sortSelection === "custom" && !selecting ? (
             <p className="mb-2 text-[11px] text-text-lo/70">
-              Drag to rearrange ·{" "}
+              {showGroups
+                ? "Drag to rearrange or move between groups · "
+                : "Drag to rearrange · "}
               <button
                 type="button"
                 className="text-ice hover:underline"
@@ -745,7 +1067,19 @@ export default function TracksPage() {
               >
                 Save
               </button>{" "}
-              adds it to Sort
+              adds the order to Sort
+              {!showGroups ? (
+                <>
+                  {" · "}
+                  <button
+                    type="button"
+                    className="text-ice hover:underline"
+                    onClick={openCreateGroup}
+                  >
+                    New group
+                  </button>
+                </>
+              ) : null}
             </p>
           ) : null}
           {activePreset ? (
@@ -777,28 +1111,69 @@ export default function TracksPage() {
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
+            onDragOver={handleDragOver}
             onDragEnd={handleDragEnd}
+            onDragCancel={() => setOverGroupId(undefined)}
           >
             <SortableContext
               items={displayed.map((t) => t.id)}
               strategy={verticalListSortingStrategy}
               disabled={!canDrag}
             >
-              <ul className={cn(density === "compact" ? "space-y-1" : "space-y-2")}>
-                {displayed.map((track) => (
-                  <SortableTrackRow
-                    key={track.id}
-                    track={track}
-                    stageLabel={stageName(track.stage_id)}
-                    selecting={selecting}
-                    selected={selected.has(track.id)}
-                    canDrag={canDrag}
-                    compact={density === "compact"}
-                    onToggleSelect={() => toggleSelected(track.id)}
-                    onOpen={() => router.push(`/track/${track.id}`)}
-                  />
-                ))}
-              </ul>
+              {showGroups ? (
+                <div className={cn(density === "compact" ? "space-y-4" : "space-y-5")}>
+                  {sections.map((section) => {
+                    const dropId =
+                      section.groupId === null
+                        ? UNGROUPED_DROP_ID
+                        : groupDropId(section.groupId);
+                    const groupIndex =
+                      section.groupId === null
+                        ? -1
+                        : groups.findIndex((g) => g.id === section.groupId);
+                    const group =
+                      section.groupId === null
+                        ? null
+                        : groups.find((g) => g.id === section.groupId) ?? null;
+
+                    return (
+                      <TrackGroupSection
+                        key={dropId}
+                        dropId={dropId}
+                        title={section.name}
+                        count={section.tracks.length}
+                        canDrag={canDrag}
+                        densityClass={densityListClass}
+                        isOver={overGroupId === section.groupId}
+                        onRename={
+                          group ? () => openRenameGroup(group) : undefined
+                        }
+                        onDelete={
+                          group ? () => setDeleteGroupTarget(group) : undefined
+                        }
+                        onMoveUp={
+                          group && groupIndex > 0
+                            ? () => moveGroup(group.id, -1)
+                            : undefined
+                        }
+                        onMoveDown={
+                          group &&
+                          groupIndex >= 0 &&
+                          groupIndex < groups.length - 1
+                            ? () => moveGroup(group.id, 1)
+                            : undefined
+                        }
+                      >
+                        {section.tracks.map((track) => renderTrackRow(track))}
+                      </TrackGroupSection>
+                    );
+                  })}
+                </div>
+              ) : (
+                <ul className={densityListClass}>
+                  {displayed.map((track) => renderTrackRow(track))}
+                </ul>
+              )}
             </SortableContext>
           </DndContext>
         </>
@@ -896,6 +1271,98 @@ export default function TracksPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <Dialog
+        open={groupDialog != null}
+        onOpenChange={(open) => {
+          if (!open) setGroupDialog(null);
+        }}
+      >
+        <DialogContent
+          title={
+            groupDialog?.mode === "rename" ? "Rename group" : "New group"
+          }
+          description={
+            groupDialog?.mode === "rename"
+              ? "Just the label on the Tracks list — projects stay as they are."
+              : "An album, EP, playlist, or any bucket you want on Tracks. Separate from projects."
+          }
+          onClose={() => setGroupDialog(null)}
+        >
+          <label className="mt-3 block">
+            <span className="label-mono">Name</span>
+            <Input
+              className="mt-1.5"
+              value={groupName}
+              onChange={(e) => setGroupName(e.target.value)}
+              placeholder="e.g. Echoes EP"
+              maxLength={60}
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  void handleSaveGroup();
+                }
+              }}
+            />
+          </label>
+          <div className="mt-4 flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={savingGroup}
+              onClick={() => setGroupDialog(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              disabled={savingGroup || !groupName.trim()}
+              onClick={() => void handleSaveGroup()}
+            >
+              {savingGroup
+                ? "Saving…"
+                : groupDialog?.mode === "rename"
+                  ? "Save"
+                  : "Create group"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={deleteGroupTarget != null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteGroupTarget(null);
+        }}
+      >
+        <DialogContent
+          title={
+            deleteGroupTarget
+              ? `Remove “${deleteGroupTarget.name}”?`
+              : "Remove group?"
+          }
+          description="Tracks in it stay in your catalog — they just move back to Ungrouped. Nothing is deleted."
+          onClose={() => setDeleteGroupTarget(null)}
+        >
+          <div className="mt-4 flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setDeleteGroupTarget(null)}
+            >
+              Keep group
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => void handleDeleteGroup()}
+            >
+              Remove group
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -909,6 +1376,9 @@ function SortableTrackRow({
   compact,
   onToggleSelect,
   onOpen,
+  playable,
+  isPlaying,
+  onPlay,
 }: {
   track: Track;
   stageLabel: string;
@@ -918,6 +1388,9 @@ function SortableTrackRow({
   compact?: boolean;
   onToggleSelect: () => void;
   onOpen: () => void;
+  playable: boolean;
+  isPlaying: boolean;
+  onPlay: () => void;
 }) {
   const {
     attributes,
@@ -965,6 +1438,24 @@ function SortableTrackRow({
                 {...listeners}
               >
                 <GripVertical className="size-3.5" />
+              </button>
+            ) : null}
+
+            {playable ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onPlay();
+                }}
+                aria-label={isPlaying ? `Pause ${track.title}` : `Play ${track.title}`}
+                className="shrink-0 text-text-lo transition-colors duration-hover hover:text-ice"
+              >
+                {isPlaying ? (
+                  <Pause className="size-3" fill="currentColor" />
+                ) : (
+                  <Play className="size-3" fill="currentColor" />
+                )}
               </button>
             ) : null}
 
@@ -1032,6 +1523,34 @@ function SortableTrackRow({
               </button>
             ) : null}
 
+            <div className="group relative size-14 shrink-0 overflow-hidden rounded-input border border-line shadow-e1">
+              <SpectraCoverArt
+                trackId={track.id}
+                title={track.title}
+                artworkUrl={track.artwork_url}
+                animate={false}
+              />
+              {playable && !selecting ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onPlay();
+                  }}
+                  aria-label={isPlaying ? `Pause ${track.title}` : `Play ${track.title}`}
+                  className="absolute inset-0 flex items-center justify-center bg-bg-0/0 opacity-0 transition-opacity duration-hover group-hover:bg-bg-0/55 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none"
+                >
+                  <span className="flex size-7 items-center justify-center rounded-full bg-ice text-bg-0 shadow-e1">
+                    {isPlaying ? (
+                      <Pause className="size-3.5" fill="currentColor" />
+                    ) : (
+                      <Play className="size-3.5 translate-x-px" fill="currentColor" />
+                    )}
+                  </span>
+                </button>
+              ) : null}
+            </div>
+
             <button
               type="button"
               aria-pressed={selecting ? selected : undefined}
@@ -1061,15 +1580,6 @@ function SortableTrackRow({
                   ) : null}
                 </span>
               ) : null}
-
-              <span className="relative size-14 shrink-0 overflow-hidden rounded-input border border-line shadow-e1">
-                <SpectraCoverArt
-                  trackId={track.id}
-                  title={track.title}
-                  artworkUrl={track.artwork_url}
-                  animate={false}
-                />
-              </span>
 
               <span className="min-w-0 flex-1">
                 <span className="flex items-center gap-2">

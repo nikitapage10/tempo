@@ -118,6 +118,11 @@ admin routes independently require the admin guard. Provider errors retain only
 a short Resend error name/message and HTTP class, never request headers, API
 keys, or provider response metadata.
 
+Realtime inbox updates subscribe only to the signed-in user's own RLS-protected
+notification rows. The event acts as an invalidation signal; clients refetch
+message content through the existing conversation or guarded support APIs.
+Support message bodies are never published to a shared realtime topic.
+
 **May see:** auth email, provider, account creation and last sign-in times; published profile handle, display name, and visibility; aggregate track/project counts, storage bytes, and assistant usage totals; invite redemption; account-event types and timestamps; and the exact public post, public comment, or published profile attached to a moderation report.
 
 For support reports, an admin may additionally see the subject/details the member intentionally submitted, its bug/help/feedback category, a UUID-masked page path, browser identification, submission source, and support status/notes.

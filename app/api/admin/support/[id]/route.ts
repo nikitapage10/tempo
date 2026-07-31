@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/admin/guard";
 import { logAdminAction } from "@/lib/admin/audit";
 import { adminError, adminJson } from "@/lib/admin/http";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { notifySupportMember } from "@/lib/admin/support-notifications";
 
 export const dynamic = "force-dynamic";
 const statuses = new Set(["open", "in_progress", "resolved"]);
@@ -18,7 +19,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   if (!statuses.has(status)) return adminError("Invalid support status.", 400);
 
   const service = createAdminClient();
-  const { data: report } = await service.from("support_reports").select("id").eq("id", params.id).maybeSingle();
+  const { data: report } = await service.from("support_reports").select("id, user_id, subject").eq("id", params.id).maybeSingle();
   if (!report) return adminError("Support ticket not found.", 404);
   const now = new Date().toISOString();
   const isReadOnly = input?.read === true
@@ -36,6 +37,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   if (reply || media.length) {
     const { error: replyError } = await service.from("support_messages").insert({ report_id: params.id, sender_role: "support", sender_user_id: access.user.id, body: reply, media });
     if (replyError) return adminError("The ticket was updated, but the reply could not be delivered. Run migration 036.", 500);
+    await notifySupportMember({ reportId: report.id, recipientUserId: report.user_id, subject: report.subject, body: reply || "TEMPO Support sent an attachment." });
   }
   if (typeof input?.archived === "boolean") await service.from("support_reports").update({ admin_archived_at: input.archived ? now : null }).eq("id", params.id);
   if (input?.read === true) await service.from("support_reports").update({ admin_last_read_at: now }).eq("id", params.id);
