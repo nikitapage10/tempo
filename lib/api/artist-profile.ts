@@ -40,6 +40,47 @@ export async function fetchArtistProfileByHandle(
   return (data as ArtistProfile) ?? null;
 }
 
+/** A network artist as shown in the "new message" recipient picker. */
+export type ProfileSearchResult = Pick<
+  ArtistProfile,
+  | "id"
+  | "handle"
+  | "display_name"
+  | "emblem_url"
+  | "palette_id"
+  | "ice_color"
+  | "amber_color"
+  | "tagline"
+>;
+
+/**
+ * Name/handle typeahead over profiles that are on the network. RLS already
+ * hides private profiles, so the visibility filter here is only about keeping
+ * the query cheap.
+ */
+export async function searchArtistProfiles(
+  query: string,
+  opts: { excludeProfileId?: string | null; limit?: number } = {}
+): Promise<ProfileSearchResult[]> {
+  const term = query.trim().replace(/[%,()]/g, " ").trim();
+  if (term.length < 2) return [];
+  const supabase = createClient();
+  let request = supabase
+    .from("artist_profiles")
+    .select("id, handle, display_name, emblem_url, palette_id, ice_color, amber_color, tagline")
+    .in("visibility", ["members", "public"])
+    .or(`display_name.ilike.%${term}%,handle.ilike.%${term}%`)
+    .order("display_name", { ascending: true })
+    .limit(opts.limit ?? 8);
+  if (opts.excludeProfileId) request = request.neq("id", opts.excludeProfileId);
+  const { data, error } = await request;
+  if (error) {
+    if (isMissingArtistProfileSchema(error)) return [];
+    throw error;
+  }
+  return (data ?? []) as ProfileSearchResult[];
+}
+
 /**
  * Creates the profile row on first edit (a fresh artist has none yet), or
  * updates the existing one. Never touches `visibility`/`published_at` —

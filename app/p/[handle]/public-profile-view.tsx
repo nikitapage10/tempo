@@ -81,21 +81,21 @@ function ProfileContent({ profile }: { profile: PublicArtistProfile }) {
           ) : null}
         </div>
 
-        <div className="relative z-[1] px-6 py-8 sm:px-8 sm:py-10">
-          <div className="flex items-center gap-4">
-            <h1 className="min-w-0 font-display text-3xl font-semibold tracking-tight text-text-hi sm:text-[40px] sm:leading-[1.05]">
-              {profile.display_name}
-            </h1>
-            {profile.emblem_url ? (
-              <ArtistProfileImage
-                emblemUrl={profile.emblem_url}
-                paletteId={profile.palette_id}
-                iceColor={profile.ice_color}
-                amberColor={profile.amber_color}
-                name={profile.display_name}
-              />
-            ) : null}
-          </div>
+        {profile.emblem_url ? (
+          <ArtistProfileImage
+            emblemUrl={profile.emblem_url}
+            paletteId={profile.palette_id}
+            iceColor={profile.ice_color}
+            amberColor={profile.amber_color}
+            name={profile.display_name}
+            className="absolute inset-y-0 left-[27%] z-[1] hidden w-[25%] sm:flex"
+          />
+        ) : null}
+
+        <div className="relative z-[2] px-6 py-8 sm:px-8 sm:py-10">
+          <h1 className="min-w-0 font-display text-3xl font-semibold tracking-tight text-text-hi sm:text-[40px] sm:leading-[1.05]">
+            {profile.display_name}
+          </h1>
           <p className="mt-1 text-sm text-text-lo">
             @{profile.handle}
             {profile.pronouns ? ` · ${profile.pronouns}` : ""}

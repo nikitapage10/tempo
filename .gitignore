@@ -54,3 +54,6 @@ next-env.d.ts
 # ffmpeg.wasm assets (copied from node_modules on install/build)
 /public/ffmpeg/
 .env*
+
+# Local seed/test fixtures (contain test-account credentials)
+/scripts/_*.json

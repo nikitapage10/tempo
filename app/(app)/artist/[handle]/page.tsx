@@ -95,23 +95,23 @@ export default function ArtistProfileByHandlePage() {
           ) : null}
         </div>
 
-        <div className="relative z-[1] flex items-start justify-between gap-3 px-6 py-8 sm:px-8 sm:py-10">
+        {profile.emblem_url ? (
+          <ArtistProfileImage
+            emblemUrl={profile.emblem_url}
+            paletteId={profile.palette_id}
+            iceColor={profile.ice_color}
+            amberColor={profile.amber_color}
+            name={profile.display_name}
+            className="absolute inset-y-0 left-[15%] z-[1] hidden w-[23%] sm:flex"
+          />
+        ) : null}
+
+        <div className="relative z-[2] flex items-start justify-between gap-3 px-6 py-8 sm:px-8 sm:py-10">
           <div className="min-w-0">
             <p className="label-mono mb-1.5">Artist profile</p>
-            <div className="flex items-center gap-4">
-              <h1 className="min-w-0 font-display text-3xl font-semibold tracking-tight text-text-hi sm:text-[40px] sm:leading-[1.05]">
-                {profile.display_name}
-              </h1>
-              {profile.emblem_url ? (
-                <ArtistProfileImage
-                  emblemUrl={profile.emblem_url}
-                  paletteId={profile.palette_id}
-                  iceColor={profile.ice_color}
-                  amberColor={profile.amber_color}
-                  name={profile.display_name}
-                />
-              ) : null}
-            </div>
+            <h1 className="min-w-0 font-display text-3xl font-semibold tracking-tight text-text-hi sm:text-[40px] sm:leading-[1.05]">
+              {profile.display_name}
+            </h1>
             {profile.handle ? (
               <p className="mt-1 text-sm text-text-lo">@{profile.handle}</p>
             ) : null}

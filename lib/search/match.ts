@@ -14,6 +14,7 @@ export type SearchCategory =
   | "projects"
   | "tasks"
   | "people"
+  | "messages"
   | "notes"
   | "stages"
   | "spaces"
@@ -25,6 +26,7 @@ export const SEARCH_CATEGORY_LABELS: Record<SearchCategory, string> = {
   projects: "Projects",
   tasks: "Tasks",
   people: "People",
+  messages: "Messages",
   notes: "Board notes",
   stages: "Stages",
   spaces: "Spaces",
@@ -41,6 +43,8 @@ export type SearchHit = {
   score: number;
   spaceId?: string | null;
   artworkUrl?: string | null;
+  /** True when the query only matched loosely — a typo or a missing word. */
+  approximate?: boolean;
 };
 
 export type SearchPageDef = {
@@ -129,6 +133,7 @@ const CATEGORY_ORDER: SearchCategory[] = [
   "projects",
   "tasks",
   "people",
+  "messages",
   "posts",
   "notes",
   "stages",
@@ -148,6 +153,59 @@ function includes(hay: string | null | undefined, needle: string): boolean {
   return normalize(hay).includes(needle);
 }
 
+/** Longest typo budget we ever allow — keeps the DP below cheap. */
+const MAX_EDITS = 2;
+
+/**
+ * Levenshtein distance, abandoned as soon as it can't come in at or under
+ * `max`. Only ever called on short strings (a query token vs. one word).
+ */
+function editDistanceWithin(a: string, b: string, max: number): number {
+  if (Math.abs(a.length - b.length) > max) return max + 1;
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i += 1) {
+    const row = [i];
+    let rowBest = i;
+    for (let j = 1; j <= b.length; j += 1) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      const value = Math.min(row[j - 1] + 1, prev[j] + 1, prev[j - 1] + cost);
+      row.push(value);
+      if (value < rowBest) rowBest = value;
+    }
+    if (rowBest > max) return max + 1;
+    prev = row;
+  }
+  return prev[b.length];
+}
+
+/** One typo per 4 characters, so short words stay strict. */
+function editBudget(token: string): number {
+  if (token.length < 4) return 0;
+  return Math.min(MAX_EDITS, Math.floor(token.length / 4));
+}
+
+/**
+ * Near-miss match for misspellings and half-remembered names: compares the
+ * token against each word of the field. Skips long free-text fields (notes,
+ * transcripts) so every keystroke stays cheap — fuzzy is for names and titles.
+ */
+function fuzzyFieldScore(value: string, token: string, weight: number): number {
+  const budget = editBudget(token);
+  if (!budget || value.length > 120) return 0;
+  let best = 0;
+  const words = value.split(" ");
+  for (let i = 0; i < words.length && i < 24; i += 1) {
+    const word = words[i];
+    if (!word || Math.abs(word.length - token.length) > budget) continue;
+    const distance = editDistanceWithin(token, word, budget);
+    if (distance > budget) continue;
+    // Closer spellings rank higher, but never above a real substring hit.
+    const closeness = distance === 1 ? 0.6 : 0.4;
+    best = Math.max(best, weight * closeness);
+  }
+  return best;
+}
+
 function scoreField(
   value: string | null | undefined,
   q: string,
@@ -158,7 +216,17 @@ function scoreField(
   if (v === q) return weight * 3;
   if (v.startsWith(q)) return weight * 2;
   if (v.includes(q)) return weight;
-  return 0;
+  return fuzzyFieldScore(v, q, weight);
+}
+
+/**
+ * How many query words are allowed to miss entirely — one, plus one more for
+ * every three words. Enough that "fade from dust" still finds "Fade to Dust"
+ * and "battle scars" still surfaces "Battle Wounds" (as a suggestion), without
+ * a single shared word dragging in the whole catalog.
+ */
+function missBudget(tokenCount: number): number {
+  return tokenCount >= 2 ? Math.max(1, Math.floor(tokenCount / 3)) : 0;
 }
 
 function scoreTokens(
@@ -166,6 +234,9 @@ function scoreTokens(
   tokens: string[]
 ): { score: number; matched: string[] } {
   let score = 0;
+  let hits = 0;
+  let misses = 0;
+  const allowedMisses = missBudget(tokens.length);
   const matched: string[] = [];
   for (const token of tokens) {
     let best = 0;
@@ -178,11 +249,18 @@ function scoreTokens(
         bestLabel = value;
       }
     }
-    if (best === 0) return { score: 0, matched: [] };
+    if (best === 0) {
+      misses += 1;
+      if (misses > allowedMisses) return { score: 0, matched: [] };
+      continue;
+    }
+    hits += 1;
     score += best;
     if (bestLabel && !matched.includes(bestLabel)) matched.push(bestLabel);
   }
-  return { score, matched };
+  if (!hits) return { score: 0, matched: [] };
+  // A partial match still ranks below the same query matching in full.
+  return { score: score * (hits / tokens.length), matched };
 }
 
 function parseBpmQuery(raw: string): number | null {
@@ -461,6 +539,34 @@ function spaceHit(
   };
 }
 
+function messageHit(
+  thread: SearchCatalog["messages"][number],
+  tokens: string[]
+): SearchHit | null {
+  const { score } = scoreTokens(
+    [
+      { value: thread.title, weight: 34 },
+      { value: thread.handle ?? "", weight: 26 },
+      { value: thread.preview, weight: 16 },
+      { value: thread.transcript, weight: 10 },
+      { value: thread.kind === "support" ? "support ticket help tempo" : "message dm conversation", weight: 8 },
+    ],
+    tokens
+  );
+  if (score <= 0) return null;
+  const param = thread.kind === "support" ? `support=${thread.id}` : `c=${thread.id}`;
+  return {
+    id: `message:${thread.kind}:${thread.id}`,
+    category: "messages",
+    title: thread.kind === "support" ? `TEMPO Support · ${thread.title}` : thread.title,
+    // Archived threads stay searchable, so the label says where it landed.
+    subtitle: `${thread.archived ? "Archived · " : ""}${thread.preview}`.slice(0, 120),
+    href: `/messages?${param}${thread.archived ? "&archived=1" : ""}`,
+    score,
+    artworkUrl: thread.emblem_url,
+  };
+}
+
 function pageHit(page: SearchPageDef, tokens: string[]): SearchHit | null {
   const { score } = scoreTokens(
     [
@@ -531,6 +637,12 @@ export function matchSearchCatalog(
       if (hit) hits.push(hit);
     }
   }
+  if (allow("messages")) {
+    for (const thread of catalog.messages ?? []) {
+      const hit = messageHit(thread, tokens);
+      if (hit) hits.push(hit);
+    }
+  }
   if (allow("posts")) {
     for (const p of catalog.posts) {
       const hit = postHit(p, tokens);
@@ -574,7 +686,40 @@ export function matchSearchCatalog(
     limited.push(hit);
     if (limited.length >= (opts.limit ?? TOTAL_LIMIT)) break;
   }
-  return limited;
+  // Flag only the distant matches, so the UI can offer "did you mean…" when
+  // the guess is a real stretch — not for a typo or one small wrong word.
+  return limited.map((hit) => ({
+    ...hit,
+    approximate: matchCloseness(hit, tokens) < APPROXIMATE_THRESHOLD,
+  }));
+}
+
+/** Below this share of the query landing on the result, we offer a suggestion. */
+const APPROXIMATE_THRESHOLD = 0.6;
+
+/**
+ * How much of what the user typed actually shows up in the result, 0–1.
+ * A word that's there counts fully; a word that's one typo away counts most of
+ * the way; a word that's simply absent counts for nothing. So "fade from dust"
+ * against "Fade to Dust" scores well (two of three words are right there),
+ * while "battle scars" against "Battle Wounds" does not.
+ */
+function matchCloseness(hit: SearchHit, tokens: string[]): number {
+  if (!tokens.length) return 1;
+  const haystack = normalize(`${hit.title} ${hit.subtitle}`);
+  const words = haystack.split(" ").slice(0, 40);
+  let covered = 0;
+  for (const token of tokens) {
+    if (haystack.includes(token)) {
+      covered += 1;
+      continue;
+    }
+    const budget = editBudget(token);
+    if (budget && words.some((word) => editDistanceWithin(token, word, budget) <= budget)) {
+      covered += 0.75;
+    }
+  }
+  return covered / tokens.length;
 }
 
 export function groupSearchHits(

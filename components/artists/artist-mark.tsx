@@ -44,6 +44,11 @@ export function ArtistMark({
   return <MonogramMark ice={ice} amber={amber} name={name} size={size} className={className} />;
 }
 
+const PROFILE_IMAGE_MASK = [
+  "linear-gradient(to right, transparent 0%, rgb(0 0 0 / 0.5) 14%, #000 36%, #000 66%, rgb(0 0 0 / 0.45) 88%, transparent 100%)",
+  "linear-gradient(to bottom, #000 0%, #000 54%, rgb(0 0 0 / 0.6) 80%, transparent 100%)",
+].join(", ");
+
 /**
  * A profile-header treatment that lets the identity image dissolve into the
  * artist banner instead of reading like a standard avatar chip.
@@ -71,37 +76,39 @@ export function ArtistProfileImage({
   return (
     <span
       className={cn(
-        "relative isolate flex size-[72px] shrink-0 items-center justify-center sm:size-20",
+        "pointer-events-none relative isolate flex h-full items-center justify-center",
         className
       )}
     >
       <span
         aria-hidden
-        className="absolute inset-[14%] -z-10 rounded-full opacity-45 blur-xl"
+        className="absolute inset-[16%] -z-10 rounded-full opacity-25 blur-3xl"
         style={{
           background: `linear-gradient(135deg, ${ice}, ${amber})`,
         }}
       />
       <span
-        className="relative block size-full [mask-image:radial-gradient(circle_at_50%_48%,#000_44%,rgba(0,0,0,0.94)_58%,transparent_78%)]"
+        className="absolute inset-x-0 -top-[3%] bottom-0"
+        style={{
+          // Two linear fades intersected: the image fills its box edge to edge,
+          // so the feather lands on the photo itself rather than on empty
+          // letterbox space, and it dissolves into the banner on every side.
+          WebkitMaskImage: PROFILE_IMAGE_MASK,
+          maskImage: PROFILE_IMAGE_MASK,
+          WebkitMaskComposite: "source-in",
+          maskComposite: "intersect",
+          WebkitMaskRepeat: "no-repeat",
+          maskRepeat: "no-repeat",
+          WebkitMaskSize: "100% 100%",
+          maskSize: "100% 100%",
+        }}
       >
-        <ArtistMark
-          emblemUrl={emblemUrl}
-          paletteId={paletteId}
-          iceColor={iceColor}
-          amberColor={amberColor}
-          name={name}
-          size={72}
-          className="size-full scale-110 border-0"
+        <SignedImage
+          path={emblemUrl}
+          alt={name}
+          className="size-full object-cover object-[50%_18%]"
         />
       </span>
-      <span
-        aria-hidden
-        className="absolute -bottom-1 left-1/2 h-px w-[72%] -translate-x-1/2 opacity-60"
-        style={{
-          background: `linear-gradient(90deg, transparent, ${ice}, #fff, ${amber}, transparent)`,
-        }}
-      />
     </span>
   );
 }
@@ -134,25 +141,44 @@ function MonogramMark({
         className
       )}
       style={{
-        height: size,
-        background: `radial-gradient(circle at 28% 22%, color-mix(in srgb, ${ice} 72%, white) 0%, transparent 34%), linear-gradient(145deg, color-mix(in srgb, ${ice} 38%, var(--bg-2)) 0%, var(--bg-2) 52%, color-mix(in srgb, ${amber} 34%, var(--bg-2)) 100%)`,
+        width: className ? undefined : size,
+        height: className ? undefined : size,
+        background: `radial-gradient(circle at 30% 24%, color-mix(in srgb, ${ice} 26%, transparent) 0%, transparent 44%), radial-gradient(circle at 76% 80%, color-mix(in srgb, ${amber} 20%, transparent) 0%, transparent 48%), linear-gradient(145deg, #24242d 0%, #111116 100%)`,
+        boxShadow: "inset 0 1px 0 rgb(255 255 255 / 0.07), inset 0 -8px 18px rgb(0 0 0 / 0.26)",
       }}
       role="img"
       aria-label={name}
     >
       <span
         aria-hidden
-        className="absolute inset-0 opacity-35"
+        className="absolute inset-[7%] rounded-full opacity-70"
         style={{
-          background: `linear-gradient(112deg, transparent 30%, ${ice} 49%, #fff 50%, ${amber} 51%, transparent 70%)`,
+          background: `conic-gradient(from 215deg, transparent 0deg 58deg, ${ice} 78deg, transparent 102deg 226deg, ${amber} 246deg, transparent 270deg 360deg)`,
+          WebkitMaskImage: "radial-gradient(circle, transparent 64%, #000 68%)",
+          maskImage: "radial-gradient(circle, transparent 64%, #000 68%)",
         }}
       />
+      <span aria-hidden className="absolute inset-[18%] rounded-full border border-white/[0.07]" />
+      <span aria-hidden className="absolute inset-[31%] rounded-full border border-white/[0.04]" />
       <span
-        className="relative font-display font-semibold leading-none tracking-[-0.04em] text-white/90"
-        style={{ fontSize: Math.max(8, Math.round(size * 0.36)) }}
+        className="relative font-display font-semibold leading-none tracking-[-0.04em] text-white/85"
+        style={{
+          fontSize: Math.max(8, Math.round(size * 0.34)),
+          textShadow: "0 1px 8px rgb(0 0 0 / 0.7)",
+        }}
       >
         {initials}
       </span>
+      <span
+        aria-hidden
+        className="absolute right-[16%] top-[14%] rounded-full"
+        style={{
+          width: Math.max(2, Math.round(size * 0.08)),
+          height: Math.max(2, Math.round(size * 0.08)),
+          background: ice,
+          boxShadow: `0 0 ${Math.max(4, Math.round(size * 0.18))}px ${ice}`,
+        }}
+      />
     </span>
   );
 }

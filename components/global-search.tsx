@@ -9,6 +9,7 @@ import {
   FolderKanban,
   Hash,
   MessageCircle,
+  MessagesSquare,
   Music2,
   StickyNote,
   UserRound,
@@ -31,6 +32,7 @@ const CATEGORY_ICONS: Record<SearchCategory, LucideIcon> = {
   projects: FolderKanban,
   tasks: CheckSquare,
   people: UserRound,
+  messages: MessagesSquare,
   notes: StickyNote,
   stages: Columns3,
   spaces: Disc3,
@@ -44,6 +46,7 @@ const FILTER_OPTIONS: Array<{ id: SearchCategory | "all"; label: string }> = [
   { id: "projects", label: "Projects" },
   { id: "tasks", label: "Tasks" },
   { id: "people", label: "People" },
+  { id: "messages", label: "Messages" },
   { id: "posts", label: "Posts" },
   { id: "notes", label: "Notes" },
   { id: "pages", label: "Go to" },
@@ -96,6 +99,9 @@ export function GlobalSearch({ className }: { className?: string }) {
 
   const groups = React.useMemo(() => groupSearchHits(hits), [hits]);
   const flatHits = hits;
+  // Nothing matched the words as typed — the list is all near-misses, so say so
+  // and point at the closest one.
+  const didYouMean = hits.length > 0 && hits.every((hit) => hit.approximate) ? hits[0] : null;
 
   React.useEffect(() => {
     setActiveIndex(0);
@@ -348,7 +354,21 @@ export function GlobalSearch({ className }: { className?: string }) {
               Nothing matches “{query.trim()}”.
             </p>
           ) : (
-            groups.map((group) => (
+            <>
+            {didYouMean ? (
+              <p className="border-b border-line bg-bg-2/40 px-3 py-2 text-xs leading-relaxed text-text-lo">
+                No exact match for “{query.trim()}”. Did you mean{" "}
+                <button
+                  type="button"
+                  onClick={() => go(didYouMean)}
+                  className="text-ice hover:underline"
+                >
+                  {didYouMean.title}
+                </button>
+                ?
+              </p>
+            ) : null}
+            {groups.map((group) => (
               <div
                 key={group.category}
                 className="border-b border-line last:border-b-0"
@@ -401,7 +421,8 @@ export function GlobalSearch({ className }: { className?: string }) {
                   })}
                 </ul>
               </div>
-            ))
+            ))}
+            </>
           )}
         </div>
       ) : null}

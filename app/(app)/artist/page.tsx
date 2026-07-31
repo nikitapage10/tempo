@@ -173,24 +173,24 @@ export default function ArtistProfilePage() {
           ) : null}
         </div>
 
-        <div className="relative z-[1] flex flex-col gap-5 px-6 py-8 sm:px-8 sm:py-10">
+        {activeArtist?.emblem_url ? (
+          <ArtistProfileImage
+            emblemUrl={activeArtist.emblem_url}
+            paletteId={activeArtist.palette_id}
+            iceColor={activeArtist.ice_color}
+            amberColor={activeArtist.amber_color}
+            name={activeArtist.name}
+            className="absolute inset-y-0 left-[13%] z-[1] hidden w-[23%] sm:flex"
+          />
+        ) : null}
+
+        <div className="relative z-[2] flex flex-col gap-5 px-6 py-8 sm:px-8 sm:py-10">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="label-mono mb-1.5">Artist profile</p>
-              <div className="flex items-center gap-4">
-                <h1 className="min-w-0 font-display text-3xl font-semibold tracking-tight text-text-hi sm:text-[40px] sm:leading-[1.05]">
-                  {loading ? "—" : (activeArtist?.name ?? "No artist")}
-                </h1>
-                {activeArtist?.emblem_url ? (
-                  <ArtistProfileImage
-                    emblemUrl={activeArtist.emblem_url}
-                    paletteId={activeArtist.palette_id}
-                    iceColor={activeArtist.ice_color}
-                    amberColor={activeArtist.amber_color}
-                    name={activeArtist.name}
-                  />
-                ) : null}
-              </div>
+              <h1 className="min-w-0 font-display text-3xl font-semibold tracking-tight text-text-hi sm:text-[40px] sm:leading-[1.05]">
+                {loading ? "—" : (activeArtist?.name ?? "No artist")}
+              </h1>
               {profile?.handle ? (
                 <p className="mt-1 text-sm text-text-lo">@{profile.handle}</p>
               ) : null}

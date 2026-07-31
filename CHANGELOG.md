@@ -2,6 +2,62 @@
 
 Plain-English history of what changed in TEMPO, newest first.
 
+## 2026-07-31
+
+- Added (v0.64.0): you can start a message with anyone. **New message** in both
+  the message menu and the Messages page finds any artist on the network by name
+  or handle and opens the conversation — no need to go to their profile first.
+  If someone has direct messages turned off, TEMPO says so instead of failing.
+
+- Added (v0.64.0): search now covers your messages. Artist conversations and
+  TEMPO Support tickets — active and archived — are searchable by who they're
+  with and by what was said in them, with their own **Messages** filter.
+  Opening an archived result takes you straight to it in Archived.
+
+- Changed (v0.64.0): search forgives spelling. A typo, or one wrong word in a
+  title, still finds what you meant — "Fade from Dust" finds *Fade to Dust*.
+  When the nearest thing is a real stretch, search says there's no exact match
+  and offers it as a "did you mean" you can click.
+
+- Changed (v0.64.0): the profile photo on artist headers now fills the banner
+  top to bottom, sits closer to your name, and feathers into the artwork on
+  every side instead of reading as a photo box dropped on top of it.
+
+- Added (v0.63.3): direct and TEMPO Support messages now arrive through a
+  private realtime notification stream, immediately refreshing the mini-inbox,
+  full conversation, unread counts, notification center, and Admin Support.
+  A timed refresh remains as a reconnect fallback, so no manual refresh is
+  needed.
+
+- Changed (v0.63.3): selecting a conversation in the top-right message menu
+  now replaces the inbox list with that conversation's focused quick-reply
+  view. A Back control returns to the compact inbox.
+
+- Changed (v0.63.2): profile-header images are larger and blend into their
+  banners with a broad, soft artist-colour halo. The short decorative line
+  beneath the image has been removed.
+
+- Changed (v0.63.1): docs and assistant copy now say clearly that a **project is
+  not one track** (and a track does not need a project). Projects are work
+  containers you define; album / EP / playlist buckets stay on Tracks as groups.
+
+- Added (v0.63.0): on Tracks, you can split songs into named **groups** — an
+  album, EP, playlist, or whatever bucket you need. Create a group, drag tracks
+  in or out, rename or reorder groups, and remove a group without deleting the
+  tracks (they land back in Ungrouped). Groups are only for organizing the
+  Tracks list; they are not projects.
+
+- Under the hood (v0.63.0): run migration `041_track_groups.sql` in Supabase
+  before using groups.
+
+- Fixed (v0.62.7): generated artist avatars now stay perfectly square inside
+  circular map pins, and profile-header images keep their full circular edge
+  instead of being stretched or clipped by overlapping size effects.
+
+- Changed (v0.62.6): default artist avatars keep their initials but now use a
+  restrained circular signal-disc design with subtle depth and palette-colour
+  orbit accents instead of the glossy horizontal stripe.
+
 ## 2026-07-30
 
 - Fixed (v0.62.5): re-running the calendar planning database update no longer

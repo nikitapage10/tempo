@@ -1,6 +1,9 @@
 import { createClient } from "@/lib/supabase/client";
 import { fetchPeople } from "@/lib/api/people";
 import { fetchHomeTimeline } from "@/lib/api/feed";
+import { fetchArtistProfile } from "@/lib/api/artist-profile";
+import { fetchConversations } from "@/lib/api/messages";
+import { fetchSupportThreads, type SupportThread } from "@/lib/api/support-messages";
 import type {
   BoardNote,
   Momentum,
@@ -72,6 +75,22 @@ export type SearchPost = Pick<
   author_emblem_url: string | null;
 };
 
+/**
+ * A conversation you're part of — direct or TEMPO Support. `transcript` holds
+ * the recent message bodies so search finds a thread by something said in it,
+ * not just by who it's with.
+ */
+export type SearchMessageThread = {
+  id: string;
+  kind: "direct" | "support";
+  title: string;
+  handle: string | null;
+  preview: string;
+  transcript: string;
+  emblem_url: string | null;
+  archived: boolean;
+};
+
 export type SearchCatalog = {
   tracks: SearchTrack[];
   projects: SearchProject[];
@@ -81,7 +100,83 @@ export type SearchCatalog = {
   stages: SearchStage[];
   spaces: Pick<Space, "id" | "name" | "focus">[];
   posts: SearchPost[];
+  messages: SearchMessageThread[];
 };
+
+/**
+ * Recent bodies across the caller's conversations, keyed by conversation.
+ * Archived threads are indexed too — archiving files a conversation away, it
+ * doesn't make it unfindable.
+ */
+async function fetchMessageThreads(artistId: string): Promise<SearchMessageThread[]> {
+  const supabase = createClient();
+  const threads: SearchMessageThread[] = [];
+
+  const profile = await fetchArtistProfile(artistId).catch(() => null);
+  if (profile?.id) {
+    const [inbox, archivedInbox] = await Promise.all([
+      fetchConversations(profile.id, false).catch(() => []),
+      fetchConversations(profile.id, true).catch(() => []),
+    ]);
+    const conversations = [
+      ...inbox.map((conversation) => ({ conversation, archived: false })),
+      ...archivedInbox.map((conversation) => ({ conversation, archived: true })),
+    ];
+    const ids = conversations.map((entry) => entry.conversation.id);
+    const bodies = new Map<string, string[]>();
+    if (ids.length) {
+      const { data } = await supabase
+        .from("messages")
+        .select("conversation_id, body")
+        .in("conversation_id", ids)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+        .limit(600);
+      for (const row of data ?? []) {
+        const list = bodies.get(row.conversation_id) ?? [];
+        if (list.length < 25 && row.body) list.push(row.body as string);
+        bodies.set(row.conversation_id, list);
+      }
+    }
+    for (const { conversation, archived } of conversations) {
+      threads.push({
+        id: conversation.id,
+        kind: "direct",
+        title: conversation.peer?.display_name ?? conversation.title ?? "Conversation",
+        handle: conversation.peer?.handle ?? null,
+        preview: conversation.last_message_preview ?? "No messages yet",
+        transcript: (bodies.get(conversation.id) ?? []).join(" · "),
+        emblem_url: conversation.peer?.emblem_url ?? null,
+        archived,
+      });
+    }
+  }
+
+  const empty = { reports: [] as SupportThread[] };
+  const [support, archivedSupport] = await Promise.all([
+    fetchSupportThreads(false).catch(() => empty),
+    fetchSupportThreads(true).catch(() => empty),
+  ]);
+  for (const [reports, archived] of [
+    [support.reports ?? [], false],
+    [archivedSupport.reports ?? [], true],
+  ] as Array<[SupportThread[], boolean]>) {
+    for (const report of reports) {
+      threads.push({
+        id: report.id,
+        kind: "support",
+        title: report.subject,
+        handle: null,
+        preview: report.messages.at(-1)?.body ?? report.details,
+        transcript: [report.details, ...report.messages.map((message) => message.body)].join(" · "),
+        emblem_url: null,
+        archived,
+      });
+    }
+  }
+
+  return threads;
+}
 
 function toSearchPosts(posts: Post[]): SearchPost[] {
   return posts.map((p) => ({
@@ -116,9 +211,10 @@ export async function fetchSearchCatalog(
   const spaceName = new Map(spaceList.map((s) => [s.id, s.name]));
 
   if (spaceIds.length === 0) {
-    const [people, feedPosts] = await Promise.all([
+    const [people, feedPosts, messages] = await Promise.all([
       fetchPeople().catch(() => [] as Person[]),
       fetchHomeTimeline({ limit: 100 }).catch(() => [] as Post[]),
+      fetchMessageThreads(artistId).catch(() => [] as SearchMessageThread[]),
     ]);
     return {
       tracks: [],
@@ -129,10 +225,11 @@ export async function fetchSearchCatalog(
       stages: [],
       spaces: [],
       posts: toSearchPosts(feedPosts),
+      messages,
     };
   }
 
-  const [tracksRes, projectsRes, tasksRes, notesRes, stagesRes, people, feedPosts] =
+  const [tracksRes, projectsRes, tasksRes, notesRes, stagesRes, people, feedPosts, messages] =
     await Promise.all([
       supabase
         .from("tracks")
@@ -165,6 +262,7 @@ export async function fetchSearchCatalog(
         .order("sort", { ascending: true }),
       fetchPeople().catch(() => [] as Person[]),
       fetchHomeTimeline({ limit: 100 }).catch(() => [] as Post[]),
+      fetchMessageThreads(artistId).catch(() => [] as SearchMessageThread[]),
     ]);
 
   // Board notes / stages may fail if a migration hasn't been applied — soft-empty.
@@ -180,6 +278,7 @@ export async function fetchSearchCatalog(
     spaces: spaceList,
     people,
     posts: toSearchPosts(feedPosts),
+    messages,
     tracks: (tracksRes.data ?? []).map((t) => ({
       id: t.id,
       space_id: t.space_id,
