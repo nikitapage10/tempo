@@ -16,6 +16,8 @@ Three kinds of things sit at the center of TEMPO: **tracks** (a musical work wit
 
 ## Current feature set
 
+**Calendar.** Calendar is its own desktop and mobile tab. It gathers task due dates, track targets and next moves, project deadlines, releases, and pitching deadlines without making duplicate records. Desktop opens a Month grid and phone opens Agenda; either view can show the active space or every space for the current artist. Selecting a derived item opens its real editor. Standalone all-day or timed events cover studio sessions, meetings, content, shows, personal plans, and other work, with an optional related track or project. Event pills and Agenda rows use the same cursor-following edge light as TEMPO's tracks, tasks, and projects.
+
 **Sign-in.** You open the live site and land on a two-column sign-in screen: the TEMPO wordmark and form on the left (a plain, solid panel), a large rounded window showing the animated Spectra light field on the right. You can sign in with email and password, or tap “Continue with Google”, “Continue with Microsoft”, or “Continue with Apple” (each provider has to be enabled in Supabase before it works). The password field has a show/hide toggle. On first load of a session you may see a short Spectra light intro behind the TEMPO wordmark (skipped if you prefer reduced motion). You can sign out from Settings.
 
 **Creating an account.** Create account is one link away from sign-in and uses the same layout, but making a new account needs an invite code — anyone who doesn't have one sees a "Request an invite" link that emails you directly. The provider sign-in buttons aren't offered on this screen, since only the coded form can be gated.

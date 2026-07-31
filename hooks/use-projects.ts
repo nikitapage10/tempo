@@ -48,6 +48,8 @@ export function useProjectTasks(projectId: string | null) {
 
 export function useProjectMutations() {
   const qc = useQueryClient();
+  const invalidateCalendar = () =>
+    qc.invalidateQueries({ queryKey: ["calendar"] });
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["projects"] });
@@ -56,6 +58,7 @@ export function useProjectMutations() {
     qc.invalidateQueries({ queryKey: ["project-tasks"] });
     qc.invalidateQueries({ queryKey: ["tracks"] });
     qc.invalidateQueries({ queryKey: ["tasks"] });
+    invalidateCalendar();
   };
 
   const create = useMutation({

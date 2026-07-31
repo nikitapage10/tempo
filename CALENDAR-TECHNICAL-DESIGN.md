@@ -1,6 +1,6 @@
 # TEMPO — Calendar Technical Design
 
-*Status: Design only. No route, table, migration, API, or component described here is implemented by this document.*
+*Status: Implemented (v0.59.0). Database deployment uses `migrations/037_calendar_events.sql`.*
 
 **Related:** `CALENDAR-PRODUCT-SPEC.md` · `CALENDAR-UX-SPEC.md` · `TECHNICAL-ARCHITECTURE.md` · `DATA-MODEL.md` · `SECURITY-AND-PERMISSIONS.md`
 

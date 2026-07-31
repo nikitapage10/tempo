@@ -1,6 +1,6 @@
 # TEMPO — Calendar Product Specification
 
-*Status: Spec only. This document defines the intended first release of Calendar; it does not claim the feature is implemented.*
+*Status: Implemented (v0.59.0). Custom-event writes require migration 037; derived TEMPO dates remain readable before it is applied.*
 
 **Related:** `CALENDAR-UX-SPEC.md` · `CALENDAR-TECHNICAL-DESIGN.md` · `PRODUCT.md` · `DESIGN-SYSTEM-V2.md` · `SECURITY-AND-PERMISSIONS.md`
 

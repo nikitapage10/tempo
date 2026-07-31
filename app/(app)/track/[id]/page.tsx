@@ -5,7 +5,7 @@ import { Suspense } from "react";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useActiveSpace } from "@/components/active-space-provider";
 import { useToast } from "@/components/ui/toast";
 import { ActiveSessionBanner } from "@/components/track/active-session-banner";
@@ -74,6 +74,8 @@ function TrackDetailContent() {
   const params = useParams<{ id: string }>();
   const trackId = params.id;
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const calendarEdit = searchParams.get("edit");
   const { setActiveSpaceId } = useActiveSpace();
 
   const trackQuery = useTrack(trackId);
@@ -281,6 +283,11 @@ function TrackDetailContent() {
         track={track}
         onPatch={onPatch}
         unresolvedCommentCount={unresolvedCommentsQuery.data ?? 0}
+        autoEdit={
+          calendarEdit === "deadline" || calendarEdit === "next-action"
+            ? calendarEdit
+            : null
+        }
       />
     ),
     guestLinks: permissions.isOwner ? (

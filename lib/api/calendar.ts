@@ -59,8 +59,7 @@ export async function fetchCalendarData(
     supabase
       .from("tracks")
       .select("id,user_id,space_id,project_id,title,deadline,next_action,next_action_due,blocked_reason,artwork_url")
-      .in("space_id", input.spaceIds)
-      .or("deadline.not.is.null,next_action_due.not.is.null"),
+      .in("space_id", input.spaceIds),
     supabase
       .from("projects")
       .select("id,user_id,space_id,name,status,project_type,deadline")
@@ -341,4 +340,3 @@ export async function fetchCalendarData(
 
   return { items, relationOptions, eventsAvailable };
 }
-

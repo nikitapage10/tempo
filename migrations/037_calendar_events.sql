@@ -1,5 +1,5 @@
--- TEMPO migration 035 — native calendar events
--- Additive only. Run manually in the Supabase SQL editor after migration 034.
+-- TEMPO migration 037 — native calendar events
+-- Additive only. Run manually in the Supabase SQL editor after migration 036.
 
 create table if not exists calendar_events (
   id uuid primary key default gen_random_uuid(),
@@ -122,4 +122,3 @@ create policy own_calendar_events_update on calendar_events for update
 drop policy if exists own_calendar_events_delete on calendar_events;
 create policy own_calendar_events_delete on calendar_events for delete
   using (user_id = auth.uid());
-

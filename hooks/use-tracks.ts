@@ -44,6 +44,7 @@ export function useTrackMutations(spaceId: string | null) {
   const invalidateLists = () => {
     qc.invalidateQueries({ queryKey: key });
     qc.invalidateQueries({ queryKey: ["track"] });
+    qc.invalidateQueries({ queryKey: ["calendar"] });
   };
 
   const create = useMutation({

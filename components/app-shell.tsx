@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   CalendarDays,
+  CalendarRange,
   Columns3,
   FolderKanban,
   CheckSquare,
@@ -34,6 +35,7 @@ import { SupportReportDialog } from "@/components/support/support-report-dialog"
 // artist owns, so it stays in the rail whatever the active space's focus is.
 const MUSIC_MAIN_NAV = [
   { href: "/", label: "Today", icon: CalendarDays },
+  { href: "/calendar", label: "Calendar", icon: CalendarRange },
   { href: "/board", label: "Board", icon: Columns3 },
   { href: "/tracks", label: "Tracks", icon: Music2 },
   { href: "/projects", label: "Projects", icon: FolderKanban },
@@ -46,6 +48,7 @@ const MUSIC_MAIN_NAV = [
 const MUSIC_MOBILE_NAV = [
   { href: "/", label: "Today", icon: CalendarDays },
   { href: "/board", label: "Board", icon: Columns3 },
+  { href: "/calendar", label: "Calendar", icon: CalendarRange },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
 ] as const;
 
@@ -53,6 +56,7 @@ const MUSIC_MOBILE_NAV = [
 // drop out and Projects/Tasks take the front seat instead.
 const TASKS_MAIN_NAV = [
   { href: "/", label: "Today", icon: CalendarDays },
+  { href: "/calendar", label: "Calendar", icon: CalendarRange },
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/artist", label: "Artist", icon: Disc3 },
@@ -63,6 +67,7 @@ const TASKS_MAIN_NAV = [
 const TASKS_MOBILE_NAV = [
   { href: "/", label: "Today", icon: CalendarDays },
   { href: "/projects", label: "Projects", icon: FolderKanban },
+  { href: "/calendar", label: "Calendar", icon: CalendarRange },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
 ] as const;
 

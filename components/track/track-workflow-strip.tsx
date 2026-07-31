@@ -39,6 +39,7 @@ type TrackWorkflowStripProps = {
   onPatch: (patch: TrackUpdate) => Promise<void>;
   /** Unresolved comment threads on this track — feeds the "unresolved feedback" signal. */
   unresolvedCommentCount?: number;
+  autoEdit?: "deadline" | "next-action" | null;
 };
 
 /**
@@ -51,12 +52,21 @@ export function TrackWorkflowStrip({
   track,
   onPatch,
   unresolvedCommentCount,
+  autoEdit,
 }: TrackWorkflowStripProps) {
   const { data: sessions = [] } = useSessions(track.id);
   const { data: activeSession } = useActiveSession();
   const { data: runs = [] } = useRecipeRuns(track.id);
   const [expanded, setExpanded] = React.useState(false);
   const [focusOpen, setFocusOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!autoEdit) return;
+    document.getElementById("track-workflow")?.scrollIntoView({
+      block: "center",
+      behavior: "smooth",
+    });
+  }, [autoEdit]);
 
   const sessionHere = activeSession?.track_id === track.id ? activeSession : null;
 
@@ -82,7 +92,10 @@ export function TrackWorkflowStrip({
   const hiddenCount = signals.length - visibleSignals.length;
 
   return (
-    <section className="panel p-5">
+    <section
+      id="track-workflow"
+      className={cn("panel p-5", autoEdit && "ring-2 ring-ice/60")}
+    >
       <div className="mb-3 flex items-center justify-between gap-2">
         <h2 className="font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
           Workflow
@@ -131,6 +144,7 @@ export function TrackWorkflowStrip({
             value={track.next_action_due}
             onCommit={(next) => onPatch({ next_action_due: next })}
             ariaLabel="Next action due"
+            autoEdit={autoEdit === "next-action"}
           />
         </StripCell>
 
@@ -151,6 +165,7 @@ export function TrackWorkflowStrip({
             onCommit={(next) => onPatch({ deadline: next })}
             ariaLabel="Deadline"
             placeholder="No deadline"
+            autoEdit={autoEdit === "deadline"}
           />
         </StripCell>
       </div>
@@ -326,6 +341,7 @@ function InlineTextField({
   ariaLabel,
   tone,
   prefix,
+  autoEdit = false,
 }: {
   value: string;
   placeholder: string;
@@ -334,6 +350,7 @@ function InlineTextField({
   ariaLabel: string;
   tone?: "warn";
   prefix?: string;
+  autoEdit?: boolean;
 }) {
   const [editing, setEditing] = React.useState(false);
   const [text, setText] = React.useState(value);
@@ -346,6 +363,10 @@ function InlineTextField({
   React.useEffect(() => {
     if (editing) inputRef.current?.focus();
   }, [editing]);
+
+  React.useEffect(() => {
+    if (autoEdit) setEditing(true);
+  }, [autoEdit]);
 
   function commit() {
     setEditing(false);
@@ -412,11 +433,13 @@ function InlineDateField({
   onCommit,
   ariaLabel,
   placeholder = "No date",
+  autoEdit = false,
 }: {
   value: string | null;
   onCommit: (next: string | null) => Promise<void> | void;
   ariaLabel: string;
   placeholder?: string;
+  autoEdit?: boolean;
 }) {
   const [editing, setEditing] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -424,6 +447,10 @@ function InlineDateField({
   React.useEffect(() => {
     if (editing) inputRef.current?.focus();
   }, [editing]);
+
+  React.useEffect(() => {
+    if (autoEdit) setEditing(true);
+  }, [autoEdit]);
 
   if (editing) {
     return (

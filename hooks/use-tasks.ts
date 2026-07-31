@@ -25,6 +25,7 @@ export function useTaskMutations(spaceId: string | null) {
     qc.invalidateQueries({ queryKey: ["tasks"] });
     qc.invalidateQueries({ queryKey: ["today-stats"] });
     qc.invalidateQueries({ queryKey: ["project-tasks"] });
+    qc.invalidateQueries({ queryKey: ["calendar"] });
   };
 
   const create = useMutation({

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,8 @@ export default function ProjectDetailPage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const calendarEdit = searchParams.get("edit");
   const { toast } = useToast();
   const { activeSpaceId } = useActiveSpace();
 
@@ -61,6 +63,25 @@ export default function ProjectDetailPage() {
     setDeadline(project.deadline ?? "");
     setProjectType(project.project_type);
   }, [project]);
+
+  React.useEffect(() => {
+    if (!project || !calendarEdit) return;
+    const targetId =
+      calendarEdit === "deadline"
+        ? "p-deadline"
+        : calendarEdit === "release-date"
+          ? "release-date"
+          : calendarEdit === "pitching-deadline"
+            ? "pitching-deadline"
+            : null;
+    if (!targetId) return;
+    const timer = window.setTimeout(() => {
+      const target = document.getElementById(targetId);
+      target?.scrollIntoView({ block: "center", behavior: "smooth" });
+      target?.focus();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [project, calendarEdit]);
 
   const availableTracks = allTracks.filter(
     (t) => t.project_id !== id && !tracks.some((x) => x.id === t.id)
@@ -176,14 +197,23 @@ export default function ProjectDetailPage() {
       </div>
 
       {project.project_type !== "general" ? (
-        <ReleaseWorkspace
-          project={project}
-          tracks={tracks}
-          tasks={tasks}
-          onUpdateTask={async (taskId, patch) => {
-            await updateTask.mutateAsync({ id: taskId, patch });
-          }}
-        />
+        <div
+          id="release-workspace"
+          className={
+            calendarEdit === "release-date" || calendarEdit === "pitching-deadline"
+              ? "rounded-panel ring-2 ring-ice/60"
+              : undefined
+          }
+        >
+          <ReleaseWorkspace
+            project={project}
+            tracks={tracks}
+            tasks={tasks}
+            onUpdateTask={async (taskId, patch) => {
+              await updateTask.mutateAsync({ id: taskId, patch });
+            }}
+          />
+        </div>
       ) : null}
 
       <section className="rounded-card border border-line bg-bg-1 p-4">

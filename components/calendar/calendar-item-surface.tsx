@@ -46,8 +46,21 @@ function presentation(item: CalendarItem): {
       return { tone: "amber", label: "Release", Icon: Rocket };
     case "pitching_deadline":
       return { tone: "amber", label: "Pitching", Icon: Send };
-    default:
-      return { tone: "violet", label: "Event", Icon: CalendarDays };
+    default: {
+      const eventLabel: Record<string, string> = {
+        studio_session: "Studio",
+        meeting: "Meeting",
+        content: "Content",
+        live_show: "Live / show",
+        personal: "Personal",
+        other: "Event",
+      };
+      return {
+        tone: "violet",
+        label: eventLabel[item.event?.kind ?? "other"] ?? "Event",
+        Icon: CalendarDays,
+      };
+    }
   }
 }
 
@@ -180,4 +193,3 @@ export function CalendarItemSurface({
     </SpotlightCard>
   );
 }
-

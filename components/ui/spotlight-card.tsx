@@ -94,6 +94,7 @@ function useSpotlightPointer() {
 
 export type SpotlightCardProps = {
   children: React.ReactNode;
+  id?: string;
   className?: string;
   /** Palette token driving the halo. Defaults to ice (interactive). */
   tone?: SpotlightTone;
@@ -111,6 +112,7 @@ export type SpotlightCardProps = {
 
 export function SpotlightCard({
   children,
+  id,
   className,
   tone = "ramp",
   radius = 16,
@@ -123,6 +125,7 @@ export function SpotlightCard({
 
   return (
     <Tag
+      id={id}
       className={cn("spotlight", className)}
       style={
         {

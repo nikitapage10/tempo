@@ -4,6 +4,21 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-30
 
+- Added (v0.59.0): **Calendar** is now its own desktop and mobile tab. It
+  combines task due dates, track targets and next moves, project deadlines,
+  releases, and pitching deadlines in Month and Agenda views. You can filter
+  sources, switch between the active space and every space for the artist,
+  and open any derived item at its real editor. Calendar event pills and
+  agenda rows use TEMPO's cursor-following edge glow.
+
+- Added (v0.59.0): create all-day or timed Calendar events for studio
+  sessions, meetings, content, shows, personal plans, and other work, with an
+  optional location, description, and related track or project.
+
+- Under the hood (v0.59.0): run migration `037_calendar_events.sql` in
+  Supabase to enable custom-event creation. Existing TEMPO deadlines still
+  appear before the migration is applied.
+
 - Added (v0.59.0): **Report a problem** now sits beside Settings and inside
   the Settings page. Members can send a bug, ask for help, or share feedback;
   the report includes only what they type, a privacy-safe page label, and basic

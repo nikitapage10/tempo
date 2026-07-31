@@ -1,6 +1,6 @@
 # TEMPO — Calendar UX and Visual Specification
 
-*Status: Spec only. This document defines Calendar presentation and interaction; it does not claim the route or components exist.*
+*Status: Implemented (v0.59.0) at `/calendar`.*
 
 **Related:** `CALENDAR-PRODUCT-SPEC.md` · `CALENDAR-TECHNICAL-DESIGN.md` · `DESIGN-SYSTEM-V2.md` · `tempo-design-spec.md`
 
@@ -354,4 +354,3 @@ The destination page owns dialog opening, focus, save, error, and return behavio
 - [ ] Today and selected-day states are calm and distinct from hover.
 - [ ] Dense days remain legible and expose the complete list.
 - [ ] Touch, keyboard, focus, error, empty, and reduced-motion states are designed—not left to implementation guesswork.
-

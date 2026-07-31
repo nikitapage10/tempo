@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { Chip } from "@/components/ui/chip";
@@ -50,6 +51,16 @@ const BUCKET_LABELS: Record<Bucket, string> = {
 };
 
 export default function TasksPage() {
+  return (
+    <React.Suspense fallback={<div className="h-48 animate-pulse rounded-card bg-bg-1" />}>
+      <TasksContent />
+    </React.Suspense>
+  );
+}
+
+function TasksContent() {
+  const searchParams = useSearchParams();
+  const editTaskId = searchParams.get("edit");
   const { toast } = useToast();
   const { activeSpaceId } = useActiveSpace();
   const { data: tasks = [], isLoading } = useTasks(activeSpaceId);
@@ -83,6 +94,22 @@ export default function TasksPage() {
   const [showMore, setShowMore] = React.useState(false);
 
   const today = localDateString();
+
+  React.useEffect(() => {
+    if (!editTaskId || isLoading) return;
+    setCategoryFilter("all");
+    setStatusFilter("all");
+    const timer = window.setTimeout(() => {
+      document.getElementById(`task-${editTaskId}`)?.scrollIntoView({
+        block: "center",
+        behavior: "smooth",
+      });
+      document
+        .querySelector<HTMLInputElement>(`#task-${editTaskId} input[type="date"]`)
+        ?.focus();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [editTaskId, isLoading]);
 
   const filtered = React.useMemo(() => {
     return tasks.filter((t) => {
@@ -360,6 +387,7 @@ export default function TasksPage() {
                         trackTitle={trackName(task.track_id)}
                         projectTitle={projectName(task.project_id)}
                         overdue={bucket === "overdue"}
+                        focused={editTaskId === task.id}
                         onToggle={async () => {
                           try {
                             await update.mutateAsync({
@@ -390,6 +418,12 @@ export default function TasksPage() {
                                 : "Couldn’t update task."
                             );
                           }
+                        }}
+                        onDue={async (next) => {
+                          await update.mutateAsync({
+                            id: task.id,
+                            patch: { due_date: next || null },
+                          });
                         }}
                         onDelete={async () => {
                           try {
@@ -431,6 +465,7 @@ export default function TasksPage() {
                     trackTitle={trackName(task.track_id)}
                     projectTitle={projectName(task.project_id)}
                     overdue={false}
+                    focused={editTaskId === task.id}
                     onToggle={async () => {
                       await update.mutateAsync({
                         id: task.id,
@@ -441,6 +476,12 @@ export default function TasksPage() {
                       await update.mutateAsync({
                         id: task.id,
                         patch: { status: next },
+                      });
+                    }}
+                    onDue={async (next) => {
+                      await update.mutateAsync({
+                        id: task.id,
+                        patch: { due_date: next || null },
                       });
                     }}
                     onDelete={async () => {
@@ -501,16 +542,20 @@ function TaskRow({
   trackTitle,
   projectTitle,
   overdue,
+  focused,
   onToggle,
   onStatus,
+  onDue,
   onDelete,
 }: {
   task: Task;
   trackTitle?: string;
   projectTitle?: string;
   overdue: boolean;
+  focused: boolean;
   onToggle: () => Promise<void>;
   onStatus: (s: TaskStatus) => Promise<void>;
+  onDue: (date: string) => Promise<void>;
   onDelete: () => Promise<void>;
 }) {
   const [confirm, setConfirm] = React.useState(false);
@@ -520,11 +565,15 @@ function TaskRow({
 
   return (
     <SpotlightCard
+      id={`task-${task.id}`}
       as="li"
       tone={overdue ? "warn" : task.status === "done" ? "ok" : "ice"}
       radius={10}
       size={180}
-      className="flex items-start gap-3 rounded-card border border-line bg-bg-1 px-3 py-2.5"
+      className={cn(
+        "flex items-start gap-3 rounded-card border border-line bg-bg-1 px-3 py-2.5",
+        focused && "ring-2 ring-ice shadow-e2"
+      )}
     >
       <input
         type="checkbox"
@@ -562,14 +611,16 @@ function TaskRow({
             ))}
           </select>
           {task.due_date ? (
-            <span
+            <input
+              type="date"
+              value={task.due_date}
+              onChange={(e) => void onDue(e.target.value)}
+              aria-label={`Due date for ${task.title}`}
               className={cn(
-                "font-mono text-[11px]",
+                "h-6 rounded-chip border border-line bg-bg-2 px-2 font-mono text-[10px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
                 overdue ? "text-warn" : "text-text-lo"
               )}
-            >
-              {task.due_date}
-            </span>
+            />
           ) : null}
           {task.track_id && trackTitle ? (
             <Link

@@ -33,7 +33,10 @@ export function useReleaseMutations(projectId: string | null) {
   const saveDetails = useMutation({
     mutationFn: (patch: UpsertReleaseDetailsInput) =>
       upsertReleaseDetails(projectId!, patch),
-    onSuccess: (data) => qc.setQueryData(["release-details", projectId], data),
+    onSuccess: (data) => {
+      qc.setQueryData(["release-details", projectId], data);
+      qc.invalidateQueries({ queryKey: ["calendar"] });
+    },
   });
 
   const saveTrackMetadata = useMutation({
