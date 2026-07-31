@@ -4,6 +4,10 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-30
 
+- Changed (v0.58.1): the Social globe is a bit more willing to show nearby
+  pins at full zoom-out — places like London, Amsterdam, and Berlin can sit
+  together with a little overlap instead of collapsing to a single face.
+
 - Added (v0.58.0): you can scroll to zoom the Social globe. When a bunch of
   people are piled into the same part of the world, only some pins show at
   first — zoom in and more appear as they get room to separate. Dispersed

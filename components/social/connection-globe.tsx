@@ -61,8 +61,10 @@ const GLOW_PAD = 52;
 const ZOOM_MIN = 1;
 const ZOOM_MAX = 2.55;
 /** At zoom 1, pins closer than this (degrees) hide behind each other;
- *  zooming in lowers the threshold so clustered cities peel apart. */
-const BASE_SEP_DEG = 7.2;
+ *  zooming in lowers the threshold so clustered cities peel apart.
+ *  Tuned so near-neighbors like London / Amsterdam / Berlin can all show
+ *  zoomed out (with a little overlap) instead of collapsing to one pin. */
+const BASE_SEP_DEG = 2.6;
 
 type Projected = { x: number; y: number; z: number };
 
