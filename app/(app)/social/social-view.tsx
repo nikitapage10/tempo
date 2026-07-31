@@ -83,14 +83,34 @@ export default function SocialView() {
   }, [discoverQ, onNetwork]);
 
   /**
-   * Who gets a pin. People you follow come first (they're the ones with real
-   * public profiles), then contacts that link to a profile with a location.
-   * Anyone whose location text we can't place is skipped rather than guessed
-   * at, and the globe caps the list again on its own.
+   * Who gets a pin. You come first (so your own city always shows when set),
+   * then people you follow, then contacts that link to a profile with a
+   * location. Anyone whose location text we can't place is skipped rather
+   * than guessed at, and the globe caps the list again on its own.
    */
   const globePeople = React.useMemo<GlobePerson[]>(() => {
     const seen = new Set<string>();
     const out: GlobePerson[] = [];
+
+    if (
+      profile &&
+      resolveLocation(profile.location, profile.country_code)
+    ) {
+      seen.add(profile.id);
+      out.push({
+        id: `me-${profile.id}`,
+        name: profile.display_name,
+        handle: profile.handle,
+        emblemUrl: profile.emblem_url,
+        paletteId: profile.palette_id,
+        iceColor: profile.ice_color,
+        amberColor: profile.amber_color,
+        location: profile.location,
+        countryCode: profile.country_code,
+        detail: "That's you",
+        personId: null,
+      });
+    }
 
     for (const f of following) {
       const p = f.profile;
@@ -137,7 +157,7 @@ export default function SocialView() {
     }
 
     return out;
-  }, [following, allPeople]);
+  }, [profile, following, allPeople]);
 
   /** Anyone with an artist_profiles id — the only kind of person a Top 8 pick
    *  can be, since a pick links straight to a profile. */
@@ -324,7 +344,7 @@ export default function SocialView() {
               {globePeople.length === 0 ? (
                 <p className="text-xs text-text-lo">
                   Nobody has set a location yet — add yours on the Artist page and
-                  you’ll start showing up here.
+                  you’ll show up here too.
                 </p>
               ) : null}
               <ConnectionGlobe

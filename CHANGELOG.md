@@ -4,6 +4,24 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-30
 
+- Added (v0.57.0): the Admin console now has a dedicated usage analytics
+  screen showing 90-day trends for assistant requests, storage growth,
+  uploads, and focus time, plus current storage and useful 30-day totals.
+  These are aggregate measurements only—admins still cannot open anyone’s
+  tracks, projects, notes, audio, or other creative work.
+
+- Added (v0.57.0): entering an email when creating a program invite now sends
+  a dark, TEMPO-branded invitation containing that person’s unique code and
+  one-click signup link. The Invites screen shows delivery status and supports
+  sending the invitation again when needed.
+
+- Under the hood (v0.57.0): run migration `034_admin_invite_delivery.sql`,
+  then add `RESEND_API_KEY` and a verified `INVITE_FROM_EMAIL` sender in
+  Vercel before sending invitation emails.
+
+- Fixed (v0.56.4): you show up on your own Social globe now — if your Artist
+  location is set (like Denver), your pin is there with everyone else’s.
+
 - Changed (v0.56.3): Social globe shows a little more of the lower half, with
   a gentler fade into the page, and the atmosphere glow no longer clips flat
   against the top edge.
