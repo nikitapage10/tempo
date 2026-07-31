@@ -4,6 +4,13 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-31
 
+- Changed (v0.66.0): the boot video now plays *after* you sign in, not before.
+  The sign-in screen is plain again, and the video runs as the loading screen
+  while your workspace loads behind it. The ending is a true dissolve now —
+  the picture breaks into prismatic streaks and fades through into the app
+  instead of cutting. The **Skip** button also shows up sooner and is easier
+  to see.
+
 - Added (v0.65.0): the boot moment has a new look. Opening TEMPO (or the
   sign-in screen) now plays a short video — a spark igniting into the app's
   ice/white/amber light — with the TEMPO wordmark revealing letter by letter

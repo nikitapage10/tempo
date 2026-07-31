@@ -16,7 +16,11 @@ const WORDMARK_START = 2.2; // s — per-character reveal begins
 const WORDMARK_STAGGER = 0.09; // s between characters
 const WORDMARK_SETTLE = 0.42; // s per character fade/blur/rise
 const MELT_START = 7.6; // s — dispersion melt begins
-const MELT_DURATION_MS = 900;
+const MELT_DURATION_MS = 1100;
+/** The whole overlay (black backdrop included) dissolves over the tail of the
+ *  melt, so the streaks stay full-strength briefly before the app shows through. */
+const MELT_FADE_DELAY_MS = 350;
+const SKIP_HINT_AFTER_MS = 1200;
 const SAFETY_TIMEOUT_MS = 12000;
 const DPR_CAP = 1.5;
 const MAX_INTERNAL_PIXELS = 1280 * 720;
@@ -175,7 +179,7 @@ export function IntroMoment({
       if (!cancelled) finish();
     });
 
-    hintTimer = window.setTimeout(() => setShowSkipHint(true), 3500);
+    hintTimer = window.setTimeout(() => setShowSkipHint(true), SKIP_HINT_AFTER_MS);
 
     return () => {
       cancelled = true;
@@ -326,7 +330,15 @@ export function IntroMoment({
   return (
     <div
       data-lf-intro-layer
-      className="fixed inset-0 z-[300] flex items-center justify-center overflow-hidden bg-bg-0"
+      className={cn(
+        "fixed inset-0 z-[300] flex items-center justify-center overflow-hidden bg-bg-0",
+        "transition-opacity ease-out",
+        meltingCss && "opacity-0"
+      )}
+      style={{
+        transitionDuration: `${MELT_DURATION_MS - MELT_FADE_DELAY_MS}ms`,
+        transitionDelay: meltingCss ? `${MELT_FADE_DELAY_MS}ms` : "0ms",
+      }}
       aria-hidden
       role="presentation"
       onClick={skipToMelt}
@@ -398,15 +410,22 @@ export function IntroMoment({
         ))}
       </span>
 
-      {showSkipHint && !meltingCss ? (
-        <button
-          type="button"
-          onClick={skipToMelt}
-          className="pointer-events-auto absolute bottom-8 z-10 font-sans text-xs uppercase tracking-[0.14em] text-text-lo/70 transition-colors hover:text-text-hi"
-        >
-          Skip
-        </button>
-      ) : null}
+      <button
+        type="button"
+        onClick={skipToMelt}
+        aria-hidden={!showSkipHint}
+        tabIndex={showSkipHint ? 0 : -1}
+        className={cn(
+          "pointer-events-auto absolute bottom-8 z-10 rounded-chip border border-line/70 px-4 py-1.5",
+          "font-sans text-xs uppercase tracking-[0.14em] text-text-lo",
+          "transition-[opacity,color,border-color] duration-hover",
+          "hover:border-line hover:text-text-hi",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
+          showSkipHint && !meltingCss ? "opacity-100" : "pointer-events-none opacity-0"
+        )}
+      >
+        Skip
+      </button>
     </div>
   );
 }

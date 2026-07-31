@@ -84,7 +84,10 @@ export const FRAGMENT_SHADER = `
 
   void main(void) {
     vec4 texel = sampleMelt(vUv, uMelt);
-    float fade = 1.0 - smoothstep(0.55, 1.0, uMelt);
+    // Hold the streaks at full strength well into the melt — the overlay's own
+    // opacity fade is what reveals the app, so dimming early would just make
+    // the handoff read as a dip to black instead of a dissolve.
+    float fade = 1.0 - smoothstep(0.7, 1.0, uMelt);
     gl_FragColor = vec4(texel.rgb * fade, 1.0);
   }
 `;
