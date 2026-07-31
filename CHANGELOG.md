@@ -4,6 +4,33 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-30
 
+- Changed (v0.53.7): search bar redone — the glowing border now matches
+  TEMPO's own ice/amber accent colors instead of the leftover purple/pink,
+  the bar is sized down closer to the rest of the header, and the fade that
+  was washing out your typed text is gone. Hovering now speeds the glow up
+  smoothly (no more visible jump) and blooms a soft halo around the whole
+  bar; it settles back down the instant your mouse leaves instead of
+  staying sped up.
+- Changed (v0.53.6): search placeholder reads “Search tracks, artists,
+  details…” instead of calling out BPM.
+- Changed (v0.53.5): search bar brings back the colorful glowing border
+  (purple / pink conic layers), with slower, smoother motion on hover and
+  focus.
+- Changed (v0.53.4): a little less space above the search bar, a little more
+  below it.
+- Changed (v0.53.3): search glow follows your cursor the same smooth way
+  track cards do (ice → white → amber), instead of the fast spinning border.
+- Fixed (v0.53.2): search lines up with the right edge of the page content
+  (same column as Today/Board), instead of floating short of it.
+- Changed (v0.53.1): search sits flush on the right with the rest of the page,
+  and the “⌘K to focus” line under it is gone.
+- Added (v0.53.0): a glowing **search** bar at the top of every screen. Type
+  and results pop up grouped — tracks (including BPM, key, tags, artist name,
+  genre, next move), projects, tasks, people from your network, board notes,
+  stages, spaces, and quick jumps to pages like Board or Stats. The filter
+  button narrows to one category; arrow keys and Enter pick a result; ⌘K / Ctrl+K
+  focuses the bar. Searching a track in another space switches you there when
+  you open it.
 - Changed (v0.52.0): socializing is optional. On **Artist** you toggle
   **Off the network** / **On the network** — off means private (nobody can
   find or follow you); on lets you pick TEMPO members or a public link.

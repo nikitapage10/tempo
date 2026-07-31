@@ -17,6 +17,7 @@ import {
 import { AssistantRoot } from "@/components/assistant/assistant-root";
 import { ArtistFavicon } from "@/components/artist-favicon";
 import { ArtistSwitcher } from "@/components/artist-switcher";
+import { GlobalSearch } from "@/components/global-search";
 import { SpaceSwitcher } from "@/components/space-switcher";
 import { NotificationCenter } from "@/components/notification-center";
 import { EdgeStrip, IntroMoment } from "@/components/intro-moment";
@@ -186,8 +187,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </aside>
 
         <main className="flex-1 overflow-x-hidden pb-20 md:pb-0">
-          <div className="mx-auto w-full max-w-[1440px] px-4 py-6 md:px-8">
-            {children}
+          <div className="mx-auto w-full max-w-[1440px] px-4 md:px-8">
+            <div className="sticky top-[var(--edge-strip-h)] z-40 flex justify-end bg-bg-0/85 pb-4 pt-1.5 backdrop-blur-md">
+              <GlobalSearch className="ml-auto" />
+            </div>
+            <div className="pb-6 pt-1">{children}</div>
           </div>
         </main>
       </div>

@@ -130,6 +130,7 @@ Use stable string roots; scope with ids; avoid anonymous objects as keys.
 | Activity (future) | `["activity", trackId]` | Paginated cursor later |
 | Notifications (future) | `["notifications"]` | |
 | Workspace prefs (future) | `["workspace-prefs", trackId]` | Per user |
+| Global search catalog | `["search-catalog", artistId]` | Artist-wide tracks/projects/tasks/notes/stages/people; client-side match |
 
 ### Invalidation expectations
 - **Track patch** (stage, workflow, notes, meta): invalidate `["track", id]`, `["tracks", spaceId]`, and Today-related keys (`["today-stats"]`, future attention keys).

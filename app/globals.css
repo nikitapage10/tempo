@@ -174,6 +174,144 @@
 
   /* Temporary track covers — vertical Spectra slits (title language).
      Light group blur + thin glow; no heavy bloom orb, no hard chrome. */
+
+  /* Global search glow � artist --ice/--amber, continuous slow spin.
+   * Real layers (not ::before) so motion works above the sticky header. */
+  @keyframes search-glow-spin {
+    to {
+      transform: translate(-50%, -50%) rotate(360deg);
+    }
+  }
+
+  .search-glow {
+    position: absolute;
+    inset: -3px;
+    z-index: 0;
+    overflow: hidden;
+    border-radius: 12px;
+    pointer-events: none;
+  }
+
+  /* Soft ambient halo around the whole bar — separate from the spin so it can
+     transition instantly via opacity/box-shadow without touching animation
+     timing. Makes the hover/focus reaction read as more than "spins faster". */
+  .tempo-search-shell {
+    border-radius: 12px;
+    box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+    transition: box-shadow 300ms ease;
+  }
+
+  .tempo-search-shell:hover,
+  .tempo-search-shell:focus-within {
+    box-shadow:
+      0 0 22px -6px color-mix(in oklab, var(--ice) 65%, transparent),
+      0 0 34px -8px color-mix(in oklab, var(--amber) 50%, transparent);
+  }
+
+  .search-glow__layer {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    /* Fixed square sizes (not % of the box) — the box is wide and short,
+       so a %-sized layer stretches the conic gradient into a broken oval.
+       A square keeps the ring uniform regardless of the input's aspect ratio. */
+    width: 520px;
+    height: 520px;
+    transform: translate(-50%, -50%);
+    background-repeat: no-repeat;
+    animation: search-glow-spin var(--search-glow-duration, 26s) linear infinite;
+    will-change: transform;
+  }
+
+  .search-glow__layer--a {
+    background: conic-gradient(
+      from 60deg,
+      #010201,
+      var(--ice) 5%,
+      #010201 38%,
+      #010201 50%,
+      var(--amber) 60%,
+      #010201 87%
+    );
+    filter: blur(3px);
+  }
+
+  .search-glow__layer--b {
+    width: 420px;
+    height: 420px;
+    background: conic-gradient(
+      from 82deg,
+      transparent,
+      color-mix(in oklab, var(--ice) 55%, #0a0a0c),
+      transparent 10%,
+      transparent 50%,
+      color-mix(in oklab, var(--amber) 50%, #0a0a0c),
+      transparent 60%
+    );
+    filter: blur(3px);
+    animation-duration: calc(var(--search-glow-duration, 26s) * 1.15);
+    animation-direction: reverse;
+  }
+
+  .search-glow__layer--c {
+    width: 400px;
+    height: 400px;
+    background: conic-gradient(
+      from 83deg,
+      transparent 0%,
+      color-mix(in oklab, var(--ice) 70%, white),
+      transparent 8%,
+      transparent 50%,
+      color-mix(in oklab, var(--amber) 65%, white),
+      transparent 58%
+    );
+    filter: blur(2px) brightness(1.25);
+    animation-duration: calc(var(--search-glow-duration, 26s) * 0.9);
+  }
+
+  .search-glow__layer--d {
+    width: 380px;
+    height: 380px;
+    background: conic-gradient(
+      from 70deg,
+      #121216,
+      var(--ice) 5%,
+      #121216 14%,
+      #121216 50%,
+      var(--amber) 60%,
+      #121216 64%
+    );
+    filter: blur(0.5px) brightness(1.15);
+    animation-duration: calc(var(--search-glow-duration, 26s) * 1.05);
+  }
+
+  .search-glow-filter-spin {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 600px;
+    height: 600px;
+    transform: translate(-50%, -50%);
+    background: conic-gradient(
+      from 90deg,
+      transparent,
+      color-mix(in oklab, var(--ice) 35%, #1a1a21),
+      transparent 50%,
+      transparent 50%,
+      color-mix(in oklab, var(--amber) 30%, #1a1a21),
+      transparent 100%
+    );
+    animation: search-glow-spin 16s linear infinite;
+    will-change: transform;
+    filter: brightness(1.35);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .search-glow__layer,
+    .search-glow-filter-spin {
+      animation: none !important;
+    }
+  }
   @keyframes spectra-bar-pulse {
     0%,
     100% {

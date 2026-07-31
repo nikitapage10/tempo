@@ -96,6 +96,7 @@ const config: Config = {
         },
       },
       animation: {
+        "spin-slow": "spin 16s linear infinite",
         "infinite-slider-x":
           "infinite-slider-x var(--infinite-slider-duration, 40s) linear infinite",
         "infinite-slider-x-reverse":
