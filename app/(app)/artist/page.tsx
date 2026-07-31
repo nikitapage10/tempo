@@ -23,7 +23,7 @@ import { FlareLine } from "@/components/flare-line";
 import { LfWindow } from "@/components/lf-windows";
 import { SignedImage } from "@/components/ui/signed-image";
 import { ArtistBanner } from "@/components/artists/artist-banner";
-import { ArtistMark, ArtistProfileImage } from "@/components/artists/artist-mark";
+import { ArtistProfileImage } from "@/components/artists/artist-mark";
 import { CityInput } from "@/components/artists/city-input";
 import { useActiveArtist } from "@/components/active-artist-provider";
 import { useArtistProfile } from "@/hooks/use-artist-profile";
@@ -181,7 +181,7 @@ export default function ArtistProfilePage() {
                 <h1 className="min-w-0 font-display text-3xl font-semibold tracking-tight text-text-hi sm:text-[40px] sm:leading-[1.05]">
                   {loading ? "—" : (activeArtist?.name ?? "No artist")}
                 </h1>
-                {activeArtist ? (
+                {activeArtist?.emblem_url ? (
                   <ArtistProfileImage
                     emblemUrl={activeArtist.emblem_url}
                     paletteId={activeArtist.palette_id}

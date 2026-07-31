@@ -8,6 +8,17 @@ Plain-English history of what changed in TEMPO, newest first.
   Support and Reports whenever either queue has open work. Counts refresh
   automatically and also update after an admin takes action.
 
+- Changed (v0.62.4): Today now uses a simple sun icon without the upward
+  arrow, while Calendar keeps its separate calendar icon.
+
+- Changed (v0.62.4): artist profiles with no uploaded profile image now leave
+  that space empty. Elsewhere, the old thin-bar placeholder is replaced by a
+  readable artist-coloured monogram in feeds, messages, lists, and the globe.
+
+- Changed (v0.62.4): profile-header images now sit to the right of the artist
+  name and feather into the banner with a soft artist-colour glow and a fine
+  Spectra light edge, replacing the plain circular-avatar treatment.
+
 - Added (v0.62.0): Notifications, Messages, and Search now share the global
   top-right toolbar. Messages has its own unread badge and opens a mini-inbox
   with recent artist and TEMPO Support threads, quick reply, and a link into

@@ -86,13 +86,15 @@ function ProfileContent({ profile }: { profile: PublicArtistProfile }) {
             <h1 className="min-w-0 font-display text-3xl font-semibold tracking-tight text-text-hi sm:text-[40px] sm:leading-[1.05]">
               {profile.display_name}
             </h1>
-            <ArtistProfileImage
-              emblemUrl={profile.emblem_url}
-              paletteId={profile.palette_id}
-              iceColor={profile.ice_color}
-              amberColor={profile.amber_color}
-              name={profile.display_name}
-            />
+            {profile.emblem_url ? (
+              <ArtistProfileImage
+                emblemUrl={profile.emblem_url}
+                paletteId={profile.palette_id}
+                iceColor={profile.ice_color}
+                amberColor={profile.amber_color}
+                name={profile.display_name}
+              />
+            ) : null}
           </div>
           <p className="mt-1 text-sm text-text-lo">
             @{profile.handle}

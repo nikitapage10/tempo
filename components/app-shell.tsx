@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   CalendarDays,
-  Sunrise,
+  SunMedium,
   Columns3,
   FolderKanban,
   CheckSquare,
@@ -35,7 +35,7 @@ import { SupportReportDialog } from "@/components/support/support-report-dialog"
 // Artist sits above the space-scoped screens: it rolls up every space the
 // artist owns, so it stays in the rail whatever the active space's focus is.
 const MUSIC_MAIN_NAV = [
-  { href: "/", label: "Today", icon: Sunrise },
+  { href: "/", label: "Today", icon: SunMedium },
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/board", label: "Board", icon: Columns3 },
   { href: "/tracks", label: "Tracks", icon: Music2 },
@@ -47,7 +47,7 @@ const MUSIC_MAIN_NAV = [
 ] as const;
 
 const MUSIC_MOBILE_NAV = [
-  { href: "/", label: "Today", icon: Sunrise },
+  { href: "/", label: "Today", icon: SunMedium },
   { href: "/board", label: "Board", icon: Columns3 },
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
@@ -56,7 +56,7 @@ const MUSIC_MOBILE_NAV = [
 // Tasks-focused spaces have no board or stage pipeline, so Board/Tracks
 // drop out and Projects/Tasks take the front seat instead.
 const TASKS_MAIN_NAV = [
-  { href: "/", label: "Today", icon: Sunrise },
+  { href: "/", label: "Today", icon: SunMedium },
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
@@ -66,7 +66,7 @@ const TASKS_MAIN_NAV = [
 ] as const;
 
 const TASKS_MOBILE_NAV = [
-  { href: "/", label: "Today", icon: Sunrise },
+  { href: "/", label: "Today", icon: SunMedium },
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },

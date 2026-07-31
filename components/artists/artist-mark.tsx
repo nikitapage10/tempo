@@ -4,23 +4,7 @@ import { SignedImage } from "@/components/ui/signed-image";
 import { resolveArtistAccent } from "@/lib/artist-theme";
 import { cn } from "@/lib/utils";
 
-/**
- * An artist's chip-size identity: their uploaded logo, or — when they have
- * none — a miniature of the wordmark's bar cluster in their own palette.
- *
- * The fallback deliberately reuses the product's bar motif rather than an
- * initial or a generic avatar, so an artist without a logo still looks like
- * they belong in TEMPO.
- */
-
-/** height (0–1) and width in px — the wordmark's silhouette, shortened. */
-const BARS: { h: number; w: number; o: number }[] = [
-  { h: 0.55, w: 1, o: 0.7 },
-  { h: 1.0, w: 1.5, o: 1 },
-  { h: 0.75, w: 1, o: 0.85 },
-  { h: 0.4, w: 1, o: 0.5 },
-];
-
+/** An artist's compact identity image, with a palette monogram fallback. */
 export function ArtistMark({
   emblemUrl,
   paletteId,
@@ -43,8 +27,6 @@ export function ArtistMark({
     ice: iceColor,
     amber: amberColor,
   });
-  const ramp = `linear-gradient(180deg, ${ice} 0%, #ffffff 50%, ${amber} 100%)`;
-
   if (emblemUrl) {
     return (
       <SignedImage
@@ -54,14 +36,12 @@ export function ArtistMark({
           "aspect-square shrink-0 rounded-full border border-line bg-bg-2 object-cover",
           className
         )}
-        fallback={
-          <BarMark ramp={ramp} size={size} className={className} />
-        }
+        fallback={<MonogramMark ice={ice} amber={amber} name={name} size={size} className={className} />}
       />
     );
   }
 
-  return <BarMark ramp={ramp} size={size} className={className} />;
+  return <MonogramMark ice={ice} amber={amber} name={name} size={size} className={className} />;
 }
 
 /**
@@ -126,36 +106,53 @@ export function ArtistProfileImage({
   );
 }
 
-function BarMark({
-  ramp,
+function MonogramMark({
+  ice,
+  amber,
+  name,
   size,
   className,
 }: {
-  ramp: string;
+  ice: string;
+  amber: string;
+  name: string;
   size: number;
   className?: string;
 }) {
+  const initials =
+    name
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join("") || "?";
+
   return (
     <span
       className={cn(
-        "flex shrink-0 items-center justify-center gap-[2px] overflow-hidden rounded-full border border-line bg-bg-2",
+        "relative flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/10 text-white shadow-e1",
         className
       )}
-      style={{ height: size }}
-      aria-hidden
+      style={{
+        height: size,
+        background: `radial-gradient(circle at 28% 22%, color-mix(in srgb, ${ice} 72%, white) 0%, transparent 34%), linear-gradient(145deg, color-mix(in srgb, ${ice} 38%, var(--bg-2)) 0%, var(--bg-2) 52%, color-mix(in srgb, ${amber} 34%, var(--bg-2)) 100%)`,
+      }}
+      role="img"
+      aria-label={name}
     >
-      {BARS.map((bar, i) => (
-        <span
-          key={i}
-          className="rounded-full"
-          style={{
-            width: bar.w,
-            height: `${bar.h * 100}%`,
-            background: ramp,
-            opacity: bar.o,
-          }}
-        />
-      ))}
+      <span
+        aria-hidden
+        className="absolute inset-0 opacity-35"
+        style={{
+          background: `linear-gradient(112deg, transparent 30%, ${ice} 49%, #fff 50%, ${amber} 51%, transparent 70%)`,
+        }}
+      />
+      <span
+        className="relative font-display font-semibold leading-none tracking-[-0.04em] text-white/90"
+        style={{ fontSize: Math.max(8, Math.round(size * 0.36)) }}
+      >
+        {initials}
+      </span>
     </span>
   );
 }
