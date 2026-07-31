@@ -18,16 +18,20 @@ alter table calendar_events drop constraint if exists calendar_events_kind_check
 alter table calendar_events add constraint calendar_events_kind_check
   check (kind in ('studio_session','meeting','content','live_show','personal','milestone','other'));
 
+alter table calendar_events drop constraint if exists calendar_events_recurrence_shape;
 alter table calendar_events add constraint calendar_events_recurrence_shape check (
   recurrence = 'none' or recurrence_until is null or
   recurrence_until >= coalesce(start_date, (starts_at at time zone coalesce(timezone, 'UTC'))::date)
 );
+alter table calendar_events drop constraint if exists calendar_events_reminders_valid;
 alter table calendar_events add constraint calendar_events_reminders_valid check (
   reminder_minutes <@ array[0,15,30,60,1440,10080]
 );
+alter table calendar_events drop constraint if exists calendar_events_participants_limit;
 alter table calendar_events add constraint calendar_events_participants_limit check (
   cardinality(participants) <= 25
 );
+alter table calendar_events drop constraint if exists calendar_events_attachments_limit;
 alter table calendar_events add constraint calendar_events_attachments_limit check (
   cardinality(attachment_urls) <= 12
 );

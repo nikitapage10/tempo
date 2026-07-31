@@ -4,6 +4,12 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-30
 
+- Fixed (v0.62.5): re-running the calendar planning database update no longer
+  fails when those planning rules were already applied once.
+
+- Under the hood (v0.62.5): re-run migration `038_calendar_planning.sql` (and
+  anything after it that didn’t finish) in Supabase / your migration runner.
+
 - Added (v0.62.3): the Admin navigation now shows live count badges beside
   Support and Reports whenever either queue has open work. Counts refresh
   automatically and also update after an admin takes action.
