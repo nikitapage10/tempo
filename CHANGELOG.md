@@ -4,6 +4,12 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-30
 
+- Added (v0.58.0): you can scroll to zoom the Social globe. When a bunch of
+  people are piled into the same part of the world, only some pins show at
+  first — zoom in and more appear as they get room to separate. Dispersed
+  people still show together. Drag to spin, and tap Reset when you’re zoomed
+  in to jump back out.
+
 - Added (v0.57.0): the Admin console now has a dedicated usage analytics
   screen showing 90-day trends for assistant requests, storage growth,
   uploads, and focus time, plus current storage and useful 30-day totals.

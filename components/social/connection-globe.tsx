@@ -28,7 +28,8 @@ type GlobeMarker = GlobePerson & { coords: LatLon; label: string };
 
 type ConnectionGlobeProps = {
   people: GlobePerson[];
-  /** Hard cap so the globe stays readable — the rest are simply not plotted. */
+  /** How many people to resolve onto the globe at most. Density culling
+   *  (and zoom) decide how many of those actually show at once. */
   max?: number;
   onOpenPerson?: (personId: string) => void;
   className?: string;
@@ -57,6 +58,11 @@ const VISIBLE = 0.58;
 /** Room above the sphere crest for the atmosphere glow — without this the
  *  halo clips against the container and reads as a flat square top. */
 const GLOW_PAD = 52;
+const ZOOM_MIN = 1;
+const ZOOM_MAX = 2.55;
+/** At zoom 1, pins closer than this (degrees) hide behind each other;
+ *  zooming in lowers the threshold so clustered cities peel apart. */
+const BASE_SEP_DEG = 7.2;
 
 type Projected = { x: number; y: number; z: number };
 
@@ -103,10 +109,41 @@ function toMarkers(people: GlobePerson[], max: number): GlobeMarker[] {
   return out;
 }
 
+/** Rough degree distance with longitude compressed by latitude — good enough
+ *  for "are these two pins sitting on top of each other on the globe". */
+function approxDegDist(a: LatLon, b: LatLon): number {
+  const midLat = (((a[0] + b[0]) / 2) * Math.PI) / 180;
+  const dLat = a[0] - b[0];
+  const dLon = (a[1] - b[1]) * Math.cos(midLat);
+  return Math.hypot(dLat, dLon);
+}
+
+/**
+ * Greedy density cull. Order is preserved (you first, then follows, …), so
+ * earlier pins win contested spots. Separation shrinks as zoom grows, so a
+ * crowded Europe only reveals neighbors once you've scrolled in.
+ */
+function cullDense(markers: GlobeMarker[], zoom: number): GlobeMarker[] {
+  const minSep = BASE_SEP_DEG / Math.max(ZOOM_MIN, zoom);
+  const shown: GlobeMarker[] = [];
+  for (const m of markers) {
+    if (shown.every((s) => approxDegDist(s.coords, m.coords) >= minSep)) {
+      shown.push(m);
+    }
+  }
+  return shown;
+}
+
+function clampZoom(z: number) {
+  return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z));
+}
+
 /**
  * A half globe cresting up from the bottom of the Social page, with your
  * connections pinned where they are in the world. Hovering a pin eases the
- * spin down (never a hard stop); clicking opens their profile.
+ * spin down (never a hard stop); clicking opens their profile. Scroll to zoom
+ * in — clustered pins (e.g. several people in Europe) stay collapsed until
+ * the view is close enough for them to separate.
  *
  * Pins are plain DOM so they can carry avatars, hover cards and links — their
  * positions are written straight to `style` each frame rather than through
@@ -114,7 +151,7 @@ function toMarkers(people: GlobePerson[], max: number): GlobeMarker[] {
  */
 export function ConnectionGlobe({
   people,
-  max = 12,
+  max = 80,
   onOpenPerson,
   className,
   accentIce = "#7fb4ff",
@@ -130,8 +167,13 @@ export function ConnectionGlobe({
   const [ready, setReady] = React.useState(false);
   const [reduced, setReduced] = React.useState(false);
   const [dragging, setDragging] = React.useState(false);
+  const [zoom, setZoom] = React.useState(ZOOM_MIN);
 
-  const markers = React.useMemo(() => toMarkers(people, max), [people, max]);
+  const allMarkers = React.useMemo(() => toMarkers(people, max), [people, max]);
+  const markers = React.useMemo(
+    () => cullDense(allMarkers, zoom),
+    [allMarkers, zoom]
+  );
   const markerRgb = React.useMemo(
     () => hexToUnitRgb(accentIce, [0.498, 0.706, 1]),
     [accentIce]
@@ -144,6 +186,7 @@ export function ConnectionGlobe({
   // layer near the markup — that's what actually colors the continent dots).
   const iceCss = markerRgb.map((c) => Math.round(c * 255)).join(" ");
   const amberCss = glowRgb.map((c) => Math.round(c * 255)).join(" ");
+  const culled = allMarkers.length > markers.length;
 
   // Read by the animation loop without restarting it.
   const hoverRef = React.useRef<string | null>(null);
@@ -151,6 +194,10 @@ export function ConnectionGlobe({
   const visibleRef = React.useRef(true);
   const reducedRef = React.useRef(false);
   reducedRef.current = reduced;
+  const markersRef = React.useRef(markers);
+  markersRef.current = markers;
+  const zoomRef = React.useRef(zoom);
+  zoomRef.current = zoom;
 
   // Drag-to-spin state (persists between drags, like a real globe).
   const dragPhiOffset = React.useRef(0);
@@ -188,6 +235,23 @@ export function ConnectionGlobe({
       ro.disconnect();
       io.disconnect();
     };
+  }, []);
+
+  // Non-passive wheel so we can zoom without scrolling the page away.
+  React.useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const next = clampZoom(
+        // Trackpads send small deltas; mice send larger chunks — normalize.
+        zoomRef.current * Math.exp(-e.deltaY * 0.0016)
+      );
+      zoomRef.current = next;
+      setZoom(next);
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
   }, []);
 
   const onPointerDown = React.useCallback((e: React.PointerEvent) => {
@@ -249,7 +313,9 @@ export function ConnectionGlobe({
       glowColor: [0, 0, 0],
       opacity: 1,
       markerElevation: 0,
-      markers: markers.map((m) => ({ location: m.coords, size: 0.02 })),
+      // Tiny WebGL dots for everyone with a location — DOM avatars are
+      // density-culled separately so crowded regions stay readable.
+      markers: allMarkers.map((m) => ({ location: m.coords, size: 0.014 })),
     });
 
     const center = size / 2;
@@ -259,6 +325,7 @@ export function ConnectionGlobe({
       if (stopped) return;
       const hovered = hoverRef.current;
       const reduce = reducedRef.current || !visibleRef.current;
+      const liveMarkers = markersRef.current;
 
       const autoSpeed = reduce
         ? 0
@@ -275,7 +342,7 @@ export function ConnectionGlobe({
 
       globe.update({ phi: effPhi, theta: effTheta });
 
-      for (const m of markers) {
+      for (const m of liveMarkers) {
         const el = pinRefs.current.get(m.id);
         if (!el) continue;
         const surface = project(m.coords, effPhi, effTheta, SPHERE_R);
@@ -311,7 +378,7 @@ export function ConnectionGlobe({
       globe.destroy();
       setReady(false);
     };
-  }, [size, markers, markerRgb, glowRgb]);
+  }, [size, allMarkers, markerRgb, glowRgb]);
 
   function open(m: GlobeMarker) {
     if (m.handle) router.push(`/artist/${m.handle}`);
@@ -340,12 +407,14 @@ export function ConnectionGlobe({
       onPointerCancel={onPointerUp}
     >
       <div
-        className="absolute left-1/2 -translate-x-1/2"
+        className="absolute left-1/2"
         style={{
           width: size,
           height: size,
           top: GLOW_PAD,
           cursor: dragging ? "grabbing" : "grab",
+          transform: `translateX(-50%) scale(${zoom})`,
+          transformOrigin: "50% 42%",
         }}
       >
         {/* Atmosphere — soft outer glow only. Box-shadow on a circle that
@@ -506,6 +575,30 @@ export function ConnectionGlobe({
         }}
         aria-hidden
       />
+
+      {allMarkers.length > 0 ? (
+        <div className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center gap-3 px-3">
+          <p className="text-[10px] text-text-lo">
+            {culled
+              ? "Scroll to zoom — denser areas open up as you get closer"
+              : zoom > 1.04
+                ? "Scroll to zoom"
+                : "Scroll to zoom · drag to spin"}
+          </p>
+          {zoom > 1.04 ? (
+            <button
+              type="button"
+              className="pointer-events-auto text-[10px] text-ice hover:underline"
+              onClick={() => {
+                zoomRef.current = ZOOM_MIN;
+                setZoom(ZOOM_MIN);
+              }}
+            >
+              Reset
+            </button>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

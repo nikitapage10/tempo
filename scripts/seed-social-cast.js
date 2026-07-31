@@ -51,8 +51,8 @@ const CAST = [
     backstory:
       "Started as a session singer who accidentally recorded a global hit on Voice Memos while brushing her teeth. Now she charges extra for 'natural reverb consultations' and refuses dry rooms on principle.",
     emblem: "emblem-velvet-static.png",
-    ice: "#9BC4FF",
-    amber: "#FFC48A",
+    ice: "#F5A8C8",
+    amber: "#A8C4FF",
     location: "Los Angeles, CA, USA",
     countryCode: "us",
     source: "collaborator",
@@ -70,8 +70,8 @@ const CAST = [
     backstory:
       "Former brand strategist who pivoted to production after soft-launching a sandwich on Instagram and getting 40k saves. Treats every arrangement like a product rollout.",
     emblem: "emblem-soft-launch.png",
-    ice: "#7FB4FF",
-    amber: "#FFB56B",
+    ice: "#5CE1FF",
+    amber: "#FF5CC8",
     location: "New York, NY, USA",
     countryCode: "us",
     source: "collaborator",
@@ -89,8 +89,8 @@ const CAST = [
     backstory:
       "Grew up in a choir where every wrong note was a federal case. Channelled that energy into session work and a slightly litigious approach to stacked vocals.",
     emblem: "emblem-harmony-lawsuit.png",
-    ice: "#A8C8FF",
-    amber: "#E8B07A",
+    ice: "#C4B0FF",
+    amber: "#E8C46A",
     location: "Nashville, TN, USA",
     countryCode: "us",
     source: "release_credit",
@@ -108,8 +108,8 @@ const CAST = [
     backstory:
       "Bought a subwoofer before he bought a bed. Neighbors know his release calendar better than he does. Co-produces from a basement that has its own ZIP code in the low frequencies.",
     emblem: "emblem-bassline-barry.png",
-    ice: "#6FA8FF",
-    amber: "#FF9E4D",
+    ice: "#3D7EFF",
+    amber: "#FF8A3D",
     location: "London, UK",
     countryCode: "gb",
     source: "collaborator",
@@ -127,8 +127,8 @@ const CAST = [
     backstory:
       "Famous for turning mild studio disagreements into charting choruses. Keeps a spreadsheet of which 'yeah' takes were recorded during which personal spiral.",
     emblem: "emblem-chorus-crisis.png",
-    ice: "#8EB8FF",
-    amber: "#FFBE78",
+    ice: "#FF8A8A",
+    amber: "#FF6B6B",
     location: "Berlin, Germany",
     countryCode: "de",
     source: "guest_review",
@@ -146,7 +146,7 @@ const CAST = [
     backstory:
       "Left seminary after discovering convolution reverb. Now performs 'patch blessings' before print masters and refuses to delete demo folders 'out of respect for the ghosts.'",
     emblem: "emblem-plugin-priest.png",
-    ice: "#B5A8FF",
+    ice: "#9D8CFF",
     amber: "#FFB56B",
     location: "Amsterdam, Netherlands",
     countryCode: "nl",
@@ -165,8 +165,8 @@ const CAST = [
     backstory:
       "Everyone's cool aunt who also owns every version of pitch correction ever shipped. Will feed you and then ask why bar 32 is flat emotionally and sonically.",
     emblem: "emblem-autotune-auntie.png",
-    ice: "#7FB4FF",
-    amber: "#FFC9A0",
+    ice: "#3DCFC0",
+    amber: "#FFB89A",
     location: "Lagos, Nigeria",
     countryCode: "ng",
     source: "collaborator",
@@ -212,7 +212,8 @@ async function uploadEmblem(artistId, filename) {
   const filePath = path.join(ASSETS, filename);
   if (!fs.existsSync(filePath)) throw new Error(`Missing emblem ${filePath}`);
   const buf = fs.readFileSync(filePath);
-  const storagePath = `artists/${artistId}/emblem/${filename}`;
+  // Versioned path so browsers don't keep serving a cached older emblem.
+  const storagePath = `artists/${artistId}/emblem/v2-${filename}`;
   const { error } = await admin.storage.from(BUCKET).upload(storagePath, buf, {
     contentType: "image/png",
     upsert: true,
