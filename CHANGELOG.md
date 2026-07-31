@@ -4,6 +4,10 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-30
 
+- Fixed (v0.53.8): the search bar's glow was bleeding down onto the row of
+  buttons below it on Board and Projects (Sort/Filter/Stages/Track), making
+  things look blurry and crowded. It now sits with proper clearance on every
+  screen.
 - Changed (v0.53.7): search bar redone — the glowing border now matches
   TEMPO's own ice/amber accent colors instead of the leftover purple/pink,
   the bar is sized down closer to the rest of the header, and the fade that
