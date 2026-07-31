@@ -23,7 +23,7 @@ import { FlareLine } from "@/components/flare-line";
 import { LfWindow } from "@/components/lf-windows";
 import { SignedImage } from "@/components/ui/signed-image";
 import { ArtistBanner } from "@/components/artists/artist-banner";
-import { ArtistMark } from "@/components/artists/artist-mark";
+import { ArtistMark, ArtistProfileImage } from "@/components/artists/artist-mark";
 import { CityInput } from "@/components/artists/city-input";
 import { useActiveArtist } from "@/components/active-artist-provider";
 import { useArtistProfile } from "@/hooks/use-artist-profile";
@@ -177,22 +177,18 @@ export default function ArtistProfilePage() {
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="label-mono mb-1.5">Artist profile</p>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-4">
                 <h1 className="min-w-0 font-display text-3xl font-semibold tracking-tight text-text-hi sm:text-[40px] sm:leading-[1.05]">
                   {loading ? "—" : (activeArtist?.name ?? "No artist")}
                 </h1>
-                {activeArtist?.emblem_url ? (
-                  <span className="flex size-11 shrink-0 items-center justify-center sm:size-14">
-                    <ArtistMark
-                      emblemUrl={activeArtist.emblem_url}
-                      paletteId={activeArtist.palette_id}
-                      iceColor={activeArtist.ice_color}
-                      amberColor={activeArtist.amber_color}
-                      name={activeArtist.name}
-                      size={40}
-                      className="size-full rounded-none object-contain aspect-auto"
-                    />
-                  </span>
+                {activeArtist ? (
+                  <ArtistProfileImage
+                    emblemUrl={activeArtist.emblem_url}
+                    paletteId={activeArtist.palette_id}
+                    iceColor={activeArtist.ice_color}
+                    amberColor={activeArtist.amber_color}
+                    name={activeArtist.name}
+                  />
                 ) : null}
               </div>
               {profile?.handle ? (

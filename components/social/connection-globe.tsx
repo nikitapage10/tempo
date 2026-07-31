@@ -531,7 +531,7 @@ export function ConnectionGlobe({
                 onClick={() => open(m)}
                 aria-label={`${m.name} — ${m.label}`}
                 className={cn(
-                  "absolute -left-[17px] -top-[17px] flex size-[34px] items-center justify-center",
+                  "absolute -left-5 -top-5 flex size-10 items-center justify-center",
                   "overflow-hidden rounded-full border bg-bg-1 shadow-e2",
                   "transition-[transform,border-color,box-shadow] duration-300",
                   hovered

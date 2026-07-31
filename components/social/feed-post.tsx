@@ -53,8 +53,8 @@ export function FeedPostCard({
           iceColor={author?.ice_color}
           amberColor={author?.amber_color}
           name={author?.display_name ?? "Artist"}
-          size={22}
-          className="size-[22px]"
+          size={32}
+          className="size-8"
         />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">

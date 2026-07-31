@@ -4,6 +4,14 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-30
 
+- Changed (v0.61.0): artist identity images can now be either a profile photo
+  or an emblem. They appear as larger, circular avatars in the feed, on artist
+  profiles, in messages, and around the Social globe, with a colour-mark
+  fallback when an artist has not uploaded one.
+
+- Changed (v0.61.0): the assistant now uses TEMPO's compact equalizer mark
+  instead of borrowing the active artist's profile image.
+
 - Added (v0.61.0): Calendar is now a complete creative planning workspace.
   It adds a six-stage Timeline, drag and bulk rescheduling, unscheduled-work
   suggestions, search and saved presets, workload and participant-conflict

@@ -30,7 +30,7 @@ export function ArtistMark({
   size = 18,
   className,
 }: {
-  /** Square identity image — falls back to palette bars when null. */
+  /** Profile photo or emblem — falls back to palette bars when null. */
   emblemUrl: string | null;
   paletteId: string | null | undefined;
   iceColor?: string | null;
@@ -51,7 +51,7 @@ export function ArtistMark({
         path={emblemUrl}
         alt={name}
         className={cn(
-          "shrink-0 rounded-[4px] object-cover aspect-square",
+          "aspect-square shrink-0 rounded-full border border-line bg-bg-2 object-cover",
           className
         )}
         fallback={
@@ -62,6 +62,68 @@ export function ArtistMark({
   }
 
   return <BarMark ramp={ramp} size={size} className={className} />;
+}
+
+/**
+ * A profile-header treatment that lets the identity image dissolve into the
+ * artist banner instead of reading like a standard avatar chip.
+ */
+export function ArtistProfileImage({
+  emblemUrl,
+  paletteId,
+  iceColor,
+  amberColor,
+  name,
+  className,
+}: {
+  emblemUrl: string | null;
+  paletteId: string | null | undefined;
+  iceColor?: string | null;
+  amberColor?: string | null;
+  name: string;
+  className?: string;
+}) {
+  const { ice, amber } = resolveArtistAccent(paletteId, {
+    ice: iceColor,
+    amber: amberColor,
+  });
+
+  return (
+    <span
+      className={cn(
+        "relative isolate flex size-[72px] shrink-0 items-center justify-center sm:size-20",
+        className
+      )}
+    >
+      <span
+        aria-hidden
+        className="absolute inset-[14%] -z-10 rounded-full opacity-45 blur-xl"
+        style={{
+          background: `linear-gradient(135deg, ${ice}, ${amber})`,
+        }}
+      />
+      <span
+        className="relative block size-full [mask-image:radial-gradient(circle_at_50%_48%,#000_44%,rgba(0,0,0,0.94)_58%,transparent_78%)]"
+      >
+        <ArtistMark
+          emblemUrl={emblemUrl}
+          paletteId={paletteId}
+          iceColor={iceColor}
+          amberColor={amberColor}
+          name={name}
+          size={72}
+          className="size-full scale-110 border-0"
+        />
+      </span>
+      <span
+        aria-hidden
+        className="absolute -bottom-1 left-1/2 h-px w-[72%] -translate-x-1/2 opacity-60"
+        style={{
+          background: `linear-gradient(90deg, transparent, ${ice}, #fff, ${amber}, transparent)`,
+        }}
+      />
+    </span>
+  );
 }
 
 function BarMark({
@@ -75,7 +137,10 @@ function BarMark({
 }) {
   return (
     <span
-      className={cn("flex shrink-0 items-center gap-[2px]", className)}
+      className={cn(
+        "flex shrink-0 items-center justify-center gap-[2px] overflow-hidden rounded-full border border-line bg-bg-2",
+        className
+      )}
       style={{ height: size }}
       aria-hidden
     >

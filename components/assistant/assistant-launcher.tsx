@@ -1,8 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
-import { useActiveArtist } from "@/components/active-artist-provider";
-import { ArtistMark } from "@/components/artists/artist-mark";
+import { Wordmark } from "@/components/wordmark";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -18,8 +17,6 @@ export function AssistantLauncher({
   onToggle,
   launcherRef,
 }: Props) {
-  const { activeArtist } = useActiveArtist();
-
   return (
     <button
       ref={launcherRef}
@@ -36,17 +33,9 @@ export function AssistantLauncher({
     >
       {open ? (
         <X className="size-5 text-text-hi" strokeWidth={1.75} />
-      ) : activeArtist ? (
-        <ArtistMark
-          emblemUrl={activeArtist.emblem_url}
-          paletteId={activeArtist.palette_id}
-          iceColor={activeArtist.ice_color}
-          amberColor={activeArtist.amber_color}
-          name={activeArtist.name}
-          size={24}
-          className="size-6"
-        />
-      ) : null}
+      ) : (
+        <Wordmark markOnly size={24} />
+      )}
       {hasUnread && !open ? (
         <span
           aria-label="New reply"

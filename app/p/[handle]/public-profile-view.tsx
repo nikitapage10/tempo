@@ -4,6 +4,7 @@ import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ExternalLink } from "lucide-react";
 import { FlareLine } from "@/components/flare-line";
+import { ArtistProfileImage } from "@/components/artists/artist-mark";
 import type { PublicArtistProfile } from "@/lib/public-profile-server";
 
 async function fetchPublicProfile(handle: string): Promise<PublicArtistProfile> {
@@ -81,18 +82,17 @@ function ProfileContent({ profile }: { profile: PublicArtistProfile }) {
         </div>
 
         <div className="relative z-[1] px-6 py-8 sm:px-8 sm:py-10">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <h1 className="min-w-0 font-display text-3xl font-semibold tracking-tight text-text-hi sm:text-[40px] sm:leading-[1.05]">
               {profile.display_name}
             </h1>
-            {profile.emblem_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={profile.emblem_url}
-                alt={profile.display_name}
-                className="size-11 shrink-0 object-contain sm:size-14"
-              />
-            ) : null}
+            <ArtistProfileImage
+              emblemUrl={profile.emblem_url}
+              paletteId={profile.palette_id}
+              iceColor={profile.ice_color}
+              amberColor={profile.amber_color}
+              name={profile.display_name}
+            />
           </div>
           <p className="mt-1 text-sm text-text-lo">
             @{profile.handle}

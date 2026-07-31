@@ -9,6 +9,7 @@ import { FlareLine } from "@/components/flare-line";
 import { LfWindow } from "@/components/lf-windows";
 import { EmptyShaderPanel } from "@/components/shader-empty";
 import { SignedImage } from "@/components/ui/signed-image";
+import { ArtistProfileImage } from "@/components/artists/artist-mark";
 import { FollowButton } from "@/components/social/follow-button";
 import { useActiveArtist } from "@/components/active-artist-provider";
 import { useArtistProfile } from "@/hooks/use-artist-profile";
@@ -97,19 +98,17 @@ export default function ArtistProfileByHandlePage() {
         <div className="relative z-[1] flex items-start justify-between gap-3 px-6 py-8 sm:px-8 sm:py-10">
           <div className="min-w-0">
             <p className="label-mono mb-1.5">Artist profile</p>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               <h1 className="min-w-0 font-display text-3xl font-semibold tracking-tight text-text-hi sm:text-[40px] sm:leading-[1.05]">
                 {profile.display_name}
               </h1>
-              {profile.emblem_url ? (
-                <span className="flex size-11 shrink-0 items-center justify-center sm:size-14">
-                  <SignedImage
-                    path={profile.emblem_url}
-                    alt={profile.display_name}
-                    className="size-full object-contain"
-                  />
-                </span>
-              ) : null}
+              <ArtistProfileImage
+                emblemUrl={profile.emblem_url}
+                paletteId={profile.palette_id}
+                iceColor={profile.ice_color}
+                amberColor={profile.amber_color}
+                name={profile.display_name}
+              />
             </div>
             {profile.handle ? (
               <p className="mt-1 text-sm text-text-lo">@{profile.handle}</p>

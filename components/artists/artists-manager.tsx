@@ -152,7 +152,7 @@ export function ArtistsManager() {
       </p>
       <p className="mt-2 text-sm text-text-lo">
         Each artist name you release under gets its own spaces, colors, logo,
-        emblem and banner. Switch between them from the rail.
+        profile image and banner. Switch between them from the rail.
       </p>
 
       {isLoading ? (
@@ -544,10 +544,10 @@ function SortableArtistRow({
 
             <div className="flex items-center gap-1.5">
               <span className="font-mono text-[10px] uppercase tracking-wider text-text-lo">
-                Emblem
+                Profile image
               </span>
               <span className="hidden text-[11px] text-text-lo sm:inline">
-                (square — profile)
+                (photo or emblem)
               </span>
               <input
                 ref={emblemInputRef}
@@ -558,7 +558,7 @@ function SortableArtistRow({
                   void withImage(
                     e.target.files,
                     onUploadEmblem,
-                    "Emblem updated"
+                    "Profile image updated"
                   );
                   e.target.value = "";
                 }}
@@ -592,12 +592,12 @@ function SortableArtistRow({
                     void (async () => {
                       try {
                         await onClearEmblem();
-                        toast("Emblem removed", "ok");
+                        toast("Profile image removed", "ok");
                       } catch (err) {
                         onError(
                           err instanceof Error
                             ? err.message
-                            : "Could not remove emblem."
+                            : "Could not remove profile image."
                         );
                       }
                     })();
