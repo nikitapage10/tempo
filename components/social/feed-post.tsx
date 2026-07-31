@@ -8,6 +8,7 @@ import { SignedImage } from "@/components/ui/signed-image";
 import type { Post } from "@/lib/types";
 import { formatShortDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { ModerationReportDialog } from "@/components/social/moderation-report-dialog";
 
 /** Turn @handles into links; leave the rest as plain text. */
 export function renderPostBody(body: string) {
@@ -31,12 +32,14 @@ export function FeedPostCard({
   onUnlike,
   onOpen,
   dense,
+  myProfileId,
 }: {
   post: Post;
   onLike: () => void;
   onUnlike: () => void;
   onOpen: () => void;
   dense?: boolean;
+  myProfileId?: string | null;
 }) {
   const author = post.author;
   const snap = post.attachment_snapshot;
@@ -137,6 +140,7 @@ export function FeedPostCard({
               <MessageCircle className="size-3.5" />
               {post.comment_count}
             </button>
+            {myProfileId && myProfileId !== post.author_profile_id ? <ModerationReportDialog reporterProfileId={myProfileId} targetType="post" targetId={post.id} compact /> : null}
           </div>
         </div>
       </header>

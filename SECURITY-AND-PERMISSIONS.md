@@ -96,12 +96,20 @@
 | Privileged action without accountability | Suspend, reactivate, delete, invite, and moderation actions write an immutable audit row |
 | UI-only suspension | Suspension updates Supabase Auth itself and mirrors the state in `account_flags` for display |
 | Broad table access through RLS | Admin tables have RLS enabled and no authenticated read policies; they are accessible only through guarded server routes |
+| Invite email credential exposure | The provider key and verified sender exist only in server environment variables; client code receives delivery status, never provider credentials |
+| Leaking invite codes across accounts | Each email is rendered server-side for one stored invite and its bound recipient; delivery actions require the admin guard and are audited |
+| Support report used to leak private workspace data | Manual reports send only user-entered text, a UUID-masked pathname, and browser information; assistant reports are instructed to use only the described issue and require confirmation |
+| Reporting someone’s private content | Moderation targets are limited to a specific network post or non-private published profile; the reporting route cannot attach tracks, messages, or private profiles |
 
 ### Admin privacy boundary (explicit)
 
 **May see:** auth email, provider, account creation and last sign-in times; published profile handle, display name, and visibility; aggregate track/project counts, storage bytes, and assistant usage totals; invite redemption; account-event types and timestamps; and the exact public post, public comment, or published profile attached to a moderation report.
 
+For support reports, an admin may additionally see the subject/details the member intentionally submitted, its bug/help/feedback category, a UUID-masked page path, browser identification, submission source, and support status/notes.
+
 **Must not see:** track, project, or version names; audio paths or signed URLs; lyrics; notes or board notes; checklist contents; feedback; ordinary comments; session contents; direct messages; private profile fields; or private contact-book entries.
+
+Aggregate analytics may read only counts, timestamps, byte sizes, assistant request totals, and focus-session duration/status. The analytics API does not select creative names, file paths, session notes or goals, message bodies, or generated AI content.
 
 ---
 

@@ -88,6 +88,12 @@ Allowed actionKind values:
   or "clear" to remove it.
 - set_track_waiting — actionRef track (k…); actionTitle is who/what they're
   waiting on, or "clear" to remove it.
+- create_support_report — use only when the artist clearly asks to report a
+  TEMPO bug, request help, or send product feedback. actionCategory must be
+  bug/help/feedback, actionTitle is a concise subject, and actionSummary is the
+  useful report detail based only on what the artist said. Do not include
+  unrelated catalog names or private workspace information. The artist still
+  confirms before the report is sent.
 - navigate — actionHref an in-app path, or actionRef to open a track/project.
 
 Never propose delete, revoke, discard, or anything that permanently removes data.

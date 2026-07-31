@@ -1,6 +1,7 @@
 "use client";
+
 import * as React from "react";
-import { Copy, Plus, X } from "lucide-react";
+import { Copy, Mail, Plus, RotateCw, X } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,16 +11,67 @@ import { useAdminInvites } from "@/hooks/use-admin";
 import { useToast } from "@/components/ui/toast";
 import type { AdminInvite } from "@/lib/api/admin";
 
-function date(value: string | null) { return value ? new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(new Date(value)) : "Never"; }
+function date(value: string | null) {
+  return value ? new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(new Date(value)) : "Never";
+}
+
 export default function AdminInvitesPage() {
-  const invites = useAdminInvites(); const { toast } = useToast(); const [open, setOpen] = React.useState(false); const [email, setEmail] = React.useState(""); const [note, setNote] = React.useState(""); const [expiresAt, setExpiresAt] = React.useState("");
-  async function create() { try { const result = await invites.create.mutateAsync({ email, note, expiresAt: expiresAt || undefined }); setOpen(false); setEmail(""); setNote(""); setExpiresAt(""); await navigator.clipboard.writeText(`${window.location.origin}/register?invite=${result.invite.code}`); toast("Invite created and link copied.", "ok"); } catch (e) { toast(e instanceof Error ? e.message : "Couldn’t create invite."); } }
-  async function copy(row: AdminInvite) { await navigator.clipboard.writeText(`${window.location.origin}/register?invite=${row.code}`); toast("Invite link copied.", "ok"); }
+  const invites = useAdminInvites();
+  const { toast } = useToast();
+  const [open, setOpen] = React.useState(false);
+  const [email, setEmail] = React.useState("");
+  const [note, setNote] = React.useState("");
+  const [expiresAt, setExpiresAt] = React.useState("");
+
+  async function create() {
+    try {
+      const result = await invites.create.mutateAsync({ email, note, expiresAt: expiresAt || undefined });
+      setOpen(false); setEmail(""); setNote(""); setExpiresAt("");
+      if (result.delivery === "sent") toast("Invitation email sent.", "ok");
+      else if (result.delivery === "failed") toast(result.deliveryError ?? "Invite created, but email delivery failed.");
+      else {
+        await navigator.clipboard.writeText(`${window.location.origin}/register?invite=${result.invite.code}`);
+        toast("Invite created and link copied.", "ok");
+      }
+    } catch (error) {
+      toast(error instanceof Error ? error.message : "Couldn’t create invite.");
+    }
+  }
+
+  async function copy(row: AdminInvite) {
+    await navigator.clipboard.writeText(`${window.location.origin}/register?invite=${row.code}`);
+    toast("Invite link copied.", "ok");
+  }
+
+  async function send(row: AdminInvite) {
+    try {
+      await invites.send.mutateAsync(row.id);
+      toast(row.send_count ? "Invitation email sent again." : "Invitation email sent.", "ok");
+    } catch (error) {
+      toast(error instanceof Error ? error.message : "Couldn’t send invitation.");
+    }
+  }
+
   const columns: AdminColumn<AdminInvite>[] = [
-    { key: "code", label: "Code", className: "md:col-span-3 font-medium text-text-hi", render: (row) => row.code }, { key: "recipient", label: "Recipient", className: "md:col-span-3 text-text-lo", render: (row) => row.email ?? row.note ?? "Open invite" }, { key: "uses", label: "Uses", className: "md:col-span-2 tabular-nums text-text-lo", render: (row) => `${row.used_count} / ${row.max_uses}` }, { key: "expiry", label: "Expires", className: "md:col-span-2 tabular-nums text-text-lo", render: (row) => row.revoked_at ? "Revoked" : date(row.expires_at) }, { key: "actions", label: "Actions", className: "md:col-span-2 flex gap-1", render: (row) => <><Button size="icon" variant="ghost" aria-label="Copy invite" onClick={() => void copy(row)}><Copy /></Button>{!row.revoked_at ? <Button size="icon" variant="ghost" aria-label="Revoke invite" onClick={() => void invites.revoke.mutateAsync(row.id).then(() => toast("Invite revoked.", "ok")).catch((e) => toast(e.message))}><X /></Button> : null}</> },
+    { key: "code", label: "Code", className: "md:col-span-2 font-medium text-text-hi", render: (row) => row.code },
+    { key: "recipient", label: "Recipient", className: "md:col-span-3 text-text-lo", render: (row) => row.email ?? row.note ?? "Open invite" },
+    { key: "delivery", label: "Delivery", className: "md:col-span-2", render: (row) => <div><p className={row.last_send_error ? "text-warn" : row.last_sent_at ? "text-ok" : "text-text-lo"}>{row.last_send_error ? "Needs retry" : row.last_sent_at ? "Sent" : "Not sent"}</p>{row.last_sent_at ? <p className="text-[11px] tabular-nums text-text-lo">{date(row.last_sent_at)} · {row.send_count}×</p> : null}</div> },
+    { key: "uses", label: "Uses", className: "md:col-span-1 tabular-nums text-text-lo", render: (row) => `${row.used_count} / ${row.max_uses}` },
+    { key: "expiry", label: "Expires", className: "md:col-span-2 tabular-nums text-text-lo", render: (row) => row.revoked_at ? "Revoked" : date(row.expires_at) },
+    { key: "actions", label: "Actions", className: "md:col-span-2 flex gap-1", render: (row) => <><Button size="icon" variant="ghost" aria-label="Copy invite" onClick={() => void copy(row)}><Copy /></Button>{row.email && !row.revoked_at && row.used_count < row.max_uses ? <Button size="icon" variant="ghost" aria-label={row.send_count ? "Send invitation again" : "Send invitation"} disabled={invites.send.isPending} onClick={() => void send(row)}>{row.send_count ? <RotateCw /> : <Mail />}</Button> : null}{!row.revoked_at ? <Button size="icon" variant="ghost" aria-label="Revoke invite" onClick={() => void invites.revoke.mutateAsync(row.id).then(() => toast("Invite revoked.", "ok")).catch((error) => toast(error.message))}><X /></Button> : null}</> },
   ];
-  return <div className="space-y-5"><PageHeader title="Invites" subtitle="Issue a unique link for each person and revoke access without redeploying." actions={<Button size="sm" onClick={() => setOpen(true)}><Plus /> New invite</Button>} />
-    {invites.isLoading ? <div className="panel h-64 animate-pulse" /> : null}{invites.error ? <div className="panel-quiet p-4 text-sm text-warn">{invites.error.message}</div> : null}{invites.data ? <AdminTable columns={columns} rows={invites.data.invites} rowKey={(row) => row.id} empty="No invites yet." /> : null}
-    <Dialog open={open} onOpenChange={setOpen}><DialogContent title="Create invite" description="Email and expiry are optional. New invites allow one signup." onClose={() => setOpen(false)}><div className="space-y-3"><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email (optional)"/><Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note (optional)"/><Input type="datetime-local" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)}/><div className="flex justify-end gap-2"><Button variant="secondary" onClick={() => setOpen(false)}>Cancel</Button><Button onClick={() => void create()} disabled={invites.create.isPending}>{invites.create.isPending ? "…" : "Create & copy"}</Button></div></div></DialogContent></Dialog>
+
+  return <div className="space-y-5">
+    <PageHeader title="Invites" subtitle="Send a designed, one-click invitation with a unique code—or create a link to share yourself." actions={<Button size="sm" onClick={() => setOpen(true)}><Plus /> New invite</Button>} />
+    {invites.isLoading ? <div className="panel h-64 animate-pulse" /> : null}
+    {invites.error ? <div className="panel-quiet p-4 text-sm text-warn">{invites.error.message}</div> : null}
+    {invites.data ? <AdminTable columns={columns} rows={invites.data.invites} rowKey={(row) => row.id} empty="No invites yet." /> : null}
+    <Dialog open={open} onOpenChange={setOpen}><DialogContent title="Create invitation" description="Add an email to send TEMPO’s invitation automatically. Leave it blank to create a copyable link." onClose={() => setOpen(false)}><div className="space-y-3">
+      <Input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Recipient email" />
+      <Input value={note} onChange={(event) => setNote(event.target.value)} placeholder="Private note (optional)" />
+      <Input type="datetime-local" value={expiresAt} onChange={(event) => setExpiresAt(event.target.value)} />
+      {email ? <div className="well rounded-input p-4"><p className="label-mono text-amber">Email preview</p><p className="mt-3 font-display text-lg text-text-hi">Bring your music into focus.</p><p className="mt-1 text-xs leading-relaxed text-text-lo">A dark TEMPO-branded invitation with their individual code, expiry, and a one-click account button will be sent to <span className="text-text-hi">{email}</span>.</p></div> : null}
+      <div className="flex justify-end gap-2"><Button variant="secondary" onClick={() => setOpen(false)}>Cancel</Button><Button onClick={() => void create()} disabled={invites.create.isPending}>{invites.create.isPending ? "…" : email ? "Create & send" : "Create & copy"}</Button></div>
+    </div></DialogContent></Dialog>
   </div>;
 }

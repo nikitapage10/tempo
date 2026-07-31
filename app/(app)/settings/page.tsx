@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { ArtistsManager } from "@/components/artists/artists-manager";
 import { SpacesManager } from "@/components/spaces/spaces-manager";
 import { Button } from "@/components/ui/button";
+import { SupportReportDialog } from "@/components/support/support-report-dialog";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -47,6 +48,16 @@ export default function SettingsPage() {
         <Button variant="secondary" className="mt-4" asChild>
           <Link href="/import">Import more music</Link>
         </Button>
+      </section>
+
+      <section className="rounded-card border border-line bg-bg-1 p-5">
+        <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+          Help &amp; support
+        </p>
+        <p className="mt-2 text-sm text-text-hi">
+          Report a bug, ask for help, or share feedback with the TEMPO operator.
+        </p>
+        <div className="mt-3"><SupportReportDialog compact /></div>
       </section>
 
       <section className="rounded-card border border-line bg-bg-1 p-5">

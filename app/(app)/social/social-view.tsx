@@ -581,6 +581,7 @@ export default function SocialView() {
                         onLike={() => like.mutate(post.id)}
                         onUnlike={() => unlike.mutate(post.id)}
                         onOpen={() => setPostId(post.id)}
+                        myProfileId={myProfileId}
                       />
                     ))
                   )}

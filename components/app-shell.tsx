@@ -28,6 +28,7 @@ import { useActiveSpace } from "@/components/active-space-provider";
 import { APP_VERSION } from "@/lib/version";
 import { cn } from "@/lib/utils";
 import { SlitDivider } from "@/components/ui/slit";
+import { SupportReportDialog } from "@/components/support/support-report-dialog";
 
 // Artist sits above the space-scoped screens: it rolls up every space the
 // artist owns, so it stays in the rail whatever the active space's focus is.
@@ -180,6 +181,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               />
               Settings
             </Link>
+            <SupportReportDialog />
             <p className="mt-3 px-3 font-mono text-[11px] text-text-lo/70">
               v{APP_VERSION}
             </p>

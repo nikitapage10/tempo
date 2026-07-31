@@ -15,6 +15,7 @@ import { useArtistProfile } from "@/hooks/use-artist-profile";
 import { useMessageMutations } from "@/hooks/use-messages";
 import { canDmProfile } from "@/lib/api/messages";
 import { fetchArtistProfileByHandle } from "@/lib/api/artist-profile";
+import { ModerationReportDialog } from "@/components/social/moderation-report-dialog";
 
 /**
  * Read-only, in-app view of another TEMPO artist's profile, reached from the
@@ -165,6 +166,7 @@ export default function ArtistProfileByHandlePage() {
                 </Button>
               </>
             )}
+            {myProfile && myProfile.id !== profile.id ? <ModerationReportDialog reporterProfileId={myProfile.id} targetType="profile" targetId={profile.id} /> : null}
           </div>
         </div>
 

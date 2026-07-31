@@ -58,6 +58,7 @@ export const ASSISTANT_REPLY_SCHEMA: Record<string, unknown> = {
         "set_track_type",
         "set_track_blocked",
         "set_track_waiting",
+        "create_support_report",
         "navigate",
       ],
     },
@@ -112,6 +113,7 @@ const ACTION_KINDS = new Set<ActionKind>([
   "set_track_type",
   "set_track_blocked",
   "set_track_waiting",
+  "create_support_report",
   "navigate",
 ]);
 
@@ -133,6 +135,7 @@ const CATEGORIES = new Set(TASK_CATEGORIES.map((c) => c.value));
 const MOMENTA = new Set(MOMENTUM_OPTIONS.map((m) => m.value));
 const PROJECT_TYPE_SET = new Set(PROJECT_TYPES.map((p) => p.value));
 const TRACK_TYPE_SET = new Set(TRACK_TYPES.map((t) => t.value));
+const SUPPORT_CATEGORIES = new Set(["bug", "help", "feedback"]);
 
 const HREF_RE =
   /^\/($|board(\/|$)|tracks(\/|$)|track\/|projects(\/|$)|tasks(\/|$)|import(\/|$)|settings(\/|$))/;
@@ -299,6 +302,10 @@ export function validateAssistantOutput(
   }
 
   if (kind === "create_project" && !title) {
+    return drop();
+  }
+
+  if (kind === "create_support_report" && (!title || !category || !SUPPORT_CATEGORIES.has(category))) {
     return drop();
   }
 

@@ -7,7 +7,7 @@ export const PROFILE_PUBLIC_COLUMNS = "id, handle, display_name, visibility";
 export const ACCOUNT_FLAG_COLUMNS =
   "user_id, status, reason, changed_at, changed_by";
 export const INVITE_COLUMNS =
-  "id, code, email, note, created_by, created_at, expires_at, max_uses, used_count, revoked_at";
+  "id, code, email, note, created_by, created_at, expires_at, max_uses, used_count, revoked_at, last_sent_at, send_count, email_provider_id, last_send_error";
 export const INVITE_REDEMPTION_COLUMNS =
   "invite_id, user_id, redeemed_at";
 export const REPORT_COLUMNS =
@@ -29,3 +29,5 @@ export const VERSION_OWNER_STORAGE_COLUMNS = "file_size, tracks!inner(user_id)";
 export const ASSISTANT_USAGE_COLUMNS = "user_id, day, messages, escalations";
 export const ACCOUNT_EVENT_COLUMNS =
   "id, actor_user_id, event_type, created_at";
+export const SUPPORT_REPORT_COLUMNS =
+  "id, user_id, email, category, subject, details, page_url, user_agent, source, status, admin_notes, created_at, updated_at, resolved_at, resolved_by";

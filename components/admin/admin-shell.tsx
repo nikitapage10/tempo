@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, ClipboardList, KeyRound, Shield, Users } from "lucide-react";
+import { Activity, BarChart3, ClipboardList, KeyRound, LifeBuoy, Shield, Users } from "lucide-react";
 import { Wordmark } from "@/components/wordmark";
 import { FlareLine } from "@/components/flare-line";
 import { SlitDivider } from "@/components/ui/slit";
@@ -11,8 +11,10 @@ import { cn } from "@/lib/utils";
 
 const items = [
   { href: "/admin", label: "Overview", icon: BarChart3 },
+  { href: "/admin/analytics", label: "Analytics", icon: Activity },
   { href: "/admin/users", label: "Members", icon: Users },
   { href: "/admin/invites", label: "Invites", icon: KeyRound },
+  { href: "/admin/support", label: "Support", icon: LifeBuoy },
   { href: "/admin/reports", label: "Reports", icon: Shield },
   { href: "/admin/audit", label: "Audit", icon: ClipboardList },
 ];
@@ -43,7 +45,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         <div className="px-5 py-4 text-[10px] text-text-lo">Private operations · v{APP_VERSION}</div>
       </aside>
       <main className="min-w-0 px-4 pb-24 pt-5 sm:px-6 md:px-8 md:pb-8">{children}</main>
-      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-line bg-bg-1 md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-7 border-t border-line bg-bg-1 md:hidden">
         {items.map(({ href, label, icon: Icon }) => {
           const active = href === "/admin" ? pathname === href : pathname.startsWith(href);
           return <Link key={href} href={href} className={cn("flex min-w-0 flex-col items-center gap-1 px-1 py-2 text-[10px]", active ? "text-ice" : "text-text-lo")}><Icon className="size-4"/><span className="truncate">{label}</span></Link>;

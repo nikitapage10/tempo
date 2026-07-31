@@ -9,6 +9,7 @@ const STARTERS = [
   "What needs my attention?",
   "How do stages work?",
   "What's due this week?",
+  "Report a bug",
 ] as const;
 
 export function AssistantEmpty({ onPick, disabled }: Props) {

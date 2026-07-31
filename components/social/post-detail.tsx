@@ -39,6 +39,7 @@ export function PostDetailDialog({
               onLike={() => like.mutate(post.id)}
               onUnlike={() => unlike.mutate(post.id)}
               onOpen={() => {}}
+              myProfileId={myProfileId}
             />
             <div className="space-y-2">
               <p className="label-mono">Comments</p>

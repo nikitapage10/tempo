@@ -16,6 +16,7 @@ import type { ProposedAction, RefMap } from "@/lib/assistant/types";
 import { createProject } from "@/lib/api/projects";
 import { createTask, updateTask } from "@/lib/api/tasks";
 import { createTrack, moveTrackStage, updateTrack } from "@/lib/api/tracks";
+import { createSupportReport } from "@/lib/api/reports";
 
 export type ActionContext = {
   refs: RefMap;
@@ -47,6 +48,7 @@ const ALLOWED = new Set<ProposedAction["kind"]>([
   "set_track_type",
   "set_track_blocked",
   "set_track_waiting",
+  "create_support_report",
   "navigate",
 ]);
 
@@ -252,6 +254,21 @@ export async function executeProposedAction(
       });
       ctx.onWrote?.();
       return { doneLabel: cleared ? "Waiting cleared." : "Waiting set." };
+    }
+
+    case "create_support_report": {
+      if (!action.title) throw new Error("Missing report subject.");
+      if (action.category !== "bug" && action.category !== "help" && action.category !== "feedback") {
+        throw new Error("Missing report category.");
+      }
+      await createSupportReport({
+        category: action.category,
+        subject: action.title,
+        details: action.summary,
+        source: "assistant",
+      });
+      ctx.onWrote?.();
+      return { doneLabel: "Report sent." };
     }
 
     case "navigate": {

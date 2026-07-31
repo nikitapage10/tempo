@@ -27,6 +27,7 @@ export type ActionKind =
   | "set_track_type"
   | "set_track_blocked"
   | "set_track_waiting"
+  | "create_support_report"
   | "navigate";
 
 export type ProposedAction = {

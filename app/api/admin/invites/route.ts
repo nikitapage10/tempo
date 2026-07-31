@@ -5,6 +5,7 @@ import { logAdminAction } from "@/lib/admin/audit";
 import { adminError, adminJson } from "@/lib/admin/http";
 import { INVITE_COLUMNS } from "@/lib/admin/select";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { deliverInvite, type DeliverableInvite } from "@/lib/admin/invite-delivery";
 
 export const dynamic = "force-dynamic";
 function code() { const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; const bytes = randomBytes(8); const group = (start: number) => Array.from(bytes.subarray(start, start + 4), (b) => alphabet[b % alphabet.length]).join(""); return `TEMPO-${group(0)}-${group(4)}`; }
@@ -21,6 +22,22 @@ export async function POST(req: NextRequest) {
   try {
     const service = createAdminClient(); let created = null;
     for (let attempt = 0; attempt < 3 && !created; attempt++) { const { data } = await service.from("invites").insert({ code: code(), email, note, expires_at: expiresAt, max_uses: maxUses, created_by: access.user.id }).select(INVITE_COLUMNS).single(); created = data; }
-    if (!created) throw new Error(); await logAdminAction(access.user.id, "invite.created", { type: "invite", id: created.id }, { email, maxUses, expiresAt }); return adminJson({ invite: created }, 201);
+    if (!created) throw new Error();
+    await logAdminAction(access.user.id, "invite.created", { type: "invite", id: created.id }, { email, maxUses, expiresAt });
+    let delivery: "sent" | "failed" | "not_requested" = "not_requested";
+    let deliveryError: string | null = null;
+    if (email) {
+      try {
+        const result = await deliverInvite(created as DeliverableInvite);
+        created = result.invite;
+        delivery = "sent";
+        await logAdminAction(access.user.id, "invite.sent", { type: "invite", id: created.id }, { email, sendCount: created.send_count });
+      } catch (error) {
+        delivery = "failed";
+        deliveryError = error instanceof Error ? error.message : "Invite delivery failed.";
+        await logAdminAction(access.user.id, "invite.send_failed", { type: "invite", id: created.id }, { email });
+      }
+    }
+    return adminJson({ invite: created, delivery, deliveryError }, 201);
   } catch { return adminError("Couldn’t create an invite.", 500); }
 }

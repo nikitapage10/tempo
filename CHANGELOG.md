@@ -4,6 +4,24 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-30
 
+- Added (v0.59.0): **Report a problem** now sits beside Settings and inside
+  the Settings page. Members can send a bug, ask for help, or share feedback;
+  the report includes only what they type, a privacy-safe page label, and basic
+  browser information. The Admin console has a Support queue for triage,
+  private notes, resolving, and reopening reports.
+
+- Added (v0.59.0): the TEMPO assistant can turn a clearly described bug or
+  help request into a support report. It shows the proposed report first and
+  sends it only after the member confirms.
+
+- Added (v0.59.0): members can report a post directly from the Social feed or
+  report another artist from their published profile. Those reports enter the
+  existing Admin moderation queue with only the specific public post or profile
+  attached—never either person’s private workspace.
+
+- Under the hood (v0.59.0): run migration `035_support_reports.sql` in
+  Supabase before using product support reports.
+
 - Changed (v0.58.1): the Social globe is a bit more willing to show nearby
   pins at full zoom-out — places like London, Amsterdam, and Berlin can sit
   together with a little overlap instead of collapsing to a single face.
