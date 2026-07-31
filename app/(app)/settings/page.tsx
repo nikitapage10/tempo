@@ -39,6 +39,25 @@ export default function SettingsPage() {
 
       <section className="rounded-card border border-line bg-bg-1 p-5">
         <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+          Artist Origin
+        </p>
+        <p className="mt-2 text-sm text-text-hi">
+          The story TEMPO drafted from your introduction — your promise, your
+          compass, and the chapter you&rsquo;re in. Revisit or rewrite it any time.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Button variant="secondary" asChild>
+            {/* Opens straight into the editable story, no film. */}
+            <Link href="/origin?revisit=1">Open Artist Origin</Link>
+          </Button>
+          <Button variant="ghost" asChild>
+            <Link href="/origin">Replay introduction</Link>
+          </Button>
+        </div>
+      </section>
+
+      <section className="rounded-card border border-line bg-bg-1 p-5">
+        <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
           Import
         </p>
         <p className="mt-2 text-sm text-text-hi">

@@ -12,6 +12,13 @@
 
 export const INTRO_DAY_KEY = "tempo.introDay";
 
+/**
+ * Set for one session when ORIGIN hands off into the app, so the artist doesn't
+ * get the boot intro immediately after the onboarding film — two introductions
+ * back to back. Session-scoped: the intro returns to normal on the next visit.
+ */
+export const SUPPRESS_INTRO_KEY = "tempo.suppressBootIntro";
+
 /** Set on <html> before first paint while the intro is still expected. */
 export const INTRO_PENDING_ATTR = "data-intro-pending";
 
@@ -42,6 +49,11 @@ export function introWillPlay(): boolean {
     }
   } catch {
     /* matchMedia unavailable */
+  }
+  try {
+    if (sessionStorage.getItem(SUPPRESS_INTRO_KEY) === "1") return false;
+  } catch {
+    /* private mode */
   }
   try {
     return localStorage.getItem(INTRO_DAY_KEY) !== introDayKey();

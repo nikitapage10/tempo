@@ -108,7 +108,9 @@ function RegisterForm() {
       }
     }
 
-    router.replace(isSafeRedirect(redirectTo) ? redirectTo : "/import");
+    // ORIGIN comes before Import for a brand-new account; Origin itself hands
+    // off to /import when it finishes or is skipped.
+    router.replace(isSafeRedirect(redirectTo) ? redirectTo : "/origin");
     router.refresh();
   }
 

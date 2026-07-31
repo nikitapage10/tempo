@@ -29,8 +29,20 @@ export type Artist = {
   spotify_artist_id: string | null;
   soundcloud_user_id: string | null;
   apple_artist_id: string | null;
+  /** Migration 042. Null on a database that hasn't run it yet. */
+  origin_status: OriginStatus | null;
+  origin_completed_at: string | null;
+  origin_skipped_at: string | null;
   created_at: string;
 };
+
+/** Kept here rather than imported so lib/types stays dependency-free. */
+export type OriginStatus =
+  | "not_started"
+  | "in_progress"
+  | "complete"
+  | "skipped"
+  | "legacy_complete";
 
 export type ArtistUpdate = Partial<{
   name: string;

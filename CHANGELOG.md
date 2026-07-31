@@ -4,6 +4,28 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-31
 
+- Added (v0.67.0): **Origin** — TEMPO's new welcome for a first-time artist.
+  Instead of landing straight in an empty workspace, the app opens with a short
+  film: it asks who you are, then asks you to talk for half a minute about what
+  you make and why. You can speak it or type it, whichever you prefer. TEMPO
+  listens and writes back a first draft of your story — what you seem to
+  promise a listener, what keeps pulling you back, and the chapter you're
+  opening right now. Every word of it is yours to edit, rewrite, or throw out,
+  and you can ask for a different reading without losing the one you have. It
+  ends with your story unfolding as you scroll, and then TEMPO opens up around
+  you. Nothing from Origin is published, and nothing is shared — it's yours,
+  privately, and you can revisit or rewrite it any time from Settings.
+- Added (v0.67.0): if you'd like, Origin can quietly use what you wrote as the
+  start of your private artist profile. It's off unless you tick it, it only
+  fills in blanks — it never overwrites anything you've already written — and
+  it never makes your profile public or turns Social on.
+- Changed (v0.67.0): Origin only ever appears for a brand-new artist. If you
+  already use TEMPO, nothing changes and you'll never be pushed into it, and
+  switching between your artists won't drop you into onboarding either.
+- Under the hood: **run migration `042_artist_origins.sql` in Supabase before
+  this reaches anyone.** Until it's run, TEMPO behaves exactly as it does today
+  — new sign-ups go straight to Bring Your Music In, as before.
+
 - Changed (v0.66.3): the boot video looks sharper. It now plays at its full
   original resolution instead of a shrunken copy — and it actually got
   *smaller* to download, not bigger. A fine film grain sits over the top,

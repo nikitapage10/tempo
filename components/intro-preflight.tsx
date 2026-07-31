@@ -1,4 +1,4 @@
-import { INTRO_DAY_KEY, INTRO_PENDING_ATTR } from "@/lib/intro";
+import { INTRO_DAY_KEY, INTRO_PENDING_ATTR, SUPPRESS_INTRO_KEY } from "@/lib/intro";
 
 /**
  * Pre-paint intro gate.
@@ -17,6 +17,7 @@ import { INTRO_DAY_KEY, INTRO_PENDING_ATTR } from "@/lib/intro";
 const SCRIPT = `(function(){try{
 var m=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 if(m)return;
+try{if(sessionStorage.getItem(${JSON.stringify(SUPPRESS_INTRO_KEY)})==="1")return}catch(e){}
 var d=new Date();
 var k=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 var seen=null;try{seen=localStorage.getItem(${JSON.stringify(INTRO_DAY_KEY)})}catch(e){}

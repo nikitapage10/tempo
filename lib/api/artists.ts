@@ -21,6 +21,11 @@ export async function fetchArtists(): Promise<Artist[]> {
     spotify_artist_id: row.spotify_artist_id ?? null,
     soundcloud_user_id: row.soundcloud_user_id ?? null,
     apple_artist_id: row.apple_artist_id ?? null,
+    // Null until migration 042 — treated as legacy-complete by the Origin
+    // guard, so an un-migrated database never forces anyone into onboarding.
+    origin_status: row.origin_status ?? null,
+    origin_completed_at: row.origin_completed_at ?? null,
+    origin_skipped_at: row.origin_skipped_at ?? null,
   }));
 }
 
