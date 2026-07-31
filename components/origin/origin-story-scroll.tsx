@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { Music4 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { OriginScrim } from "@/components/origin/origin-copy-layer";
 import { useOriginScrollScrub } from "@/hooks/use-origin-scroll-scrub";
@@ -20,18 +21,68 @@ import { cn } from "@/lib/utils";
  */
 
 /** Chapter boundaries as fractions of the scroll range — §20. */
-export const CHAPTER_STOPS = [0, 0.18, 0.42, 0.66, 0.88];
+export const CHAPTER_STOPS = [0, 0.16, 0.34, 0.52, 0.72, 0.88];
 
 const CHAPTER_TITLES = [
   "The first shape",
   "What came through",
   "Your creative compass",
   "The chapter you are opening",
-  "The beginning",
+  "Bring your music in",
+  "Your story has a tempo",
+];
+
+/**
+ * Where each chapter sits horizontally. The opening shape reads best just left
+ * of centre against the footage; everything after it settles to the middle.
+ */
+const CHAPTER_ALIGN = [
+  "sm:mr-[12%]",
+  "",
+  "",
+  "",
+  "",
+  "",
 ];
 
 /** Scroll distance per chapter. Enough to feel deliberate, not a marathon. */
 const VH_PER_CHAPTER = 90;
+
+/**
+ * The one button in ORIGIN that should feel like an event.
+ *
+ * A slow ice→amber sweep runs across the fill, the flare-line motif sits under
+ * the label, and the whole thing lifts on hover. Both signature hues appear
+ * here deliberately — this is the single terminal action on the screen, so
+ * there is no competing CTA for amber to be confused with.
+ */
+function EnterTempoButton({ onClick, busy }: { onClick: () => void; busy: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={busy}
+      className={cn(
+        "group relative isolate overflow-hidden rounded-full px-8 py-3.5",
+        "font-display text-base tracking-wide text-bg-0",
+        "shadow-2 transition-transform duration-300 ease-out",
+        "hover:-translate-y-0.5 hover:shadow-3 active:translate-y-0",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice focus-visible:ring-offset-2 focus-visible:ring-offset-transparent",
+        "disabled:cursor-wait disabled:opacity-70 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+      )}
+    >
+      <span
+        aria-hidden
+        className="absolute inset-0 -z-10 bg-[linear-gradient(100deg,var(--ice),#ffffff_45%,var(--amber))] bg-[length:220%_100%] bg-[position:0%_0] transition-[background-position] duration-[1400ms] ease-out group-hover:bg-[position:100%_0] motion-reduce:transition-none"
+      />
+      <span className="relative">{busy ? "Opening…" : "Enter TEMPO"}</span>
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-6 bottom-1.5 h-px bg-[linear-gradient(90deg,transparent,rgba(10,10,12,0.5),transparent)] opacity-0 transition-opacity duration-500 group-hover:opacity-100 motion-reduce:transition-none"
+      />
+    </button>
+  );
+}
 
 function ChapterSection({
   index,
@@ -54,7 +105,7 @@ function ChapterSection({
         !staticMode && !active && "pointer-events-none opacity-0"
       )}
     >
-      <OriginScrim className="mx-auto w-full max-w-2xl">
+      <OriginScrim className={cn("mx-auto w-full max-w-2xl", CHAPTER_ALIGN[index])}>
         <h2
           id={`origin-chapter-${index}`}
           className="text-xs uppercase tracking-[0.2em] text-text-lo"
@@ -75,9 +126,9 @@ export function OriginStoryScroll({
   onBack,
   busy,
   error,
-  importPending,
-  useForProfile,
-  onUseForProfileChange,
+  onOpenImport,
+  onSkipImport,
+  importChoice,
 }: {
   interpretation: ArtistOriginInterpretation;
   staticMode: boolean;
@@ -86,9 +137,10 @@ export function OriginStoryScroll({
   onBack: () => void;
   busy: boolean;
   error: string | null;
-  importPending: boolean;
-  useForProfile: boolean;
-  onUseForProfileChange: (v: boolean) => void;
+  onOpenImport: () => void;
+  onSkipImport: () => void;
+  /** Which way the artist went on the import chapter, once they've chosen. */
+  importChoice: "import" | "empty" | null;
 }) {
   const scrollerRef = React.useRef<HTMLDivElement>(null);
 
@@ -134,23 +186,39 @@ export function OriginStoryScroll({
       </p>
     </div>,
 
-    <div key="final" className="flex flex-col gap-5">
-      <p className="font-display text-xl text-text-hi">This can change as you do.</p>
+    // Import lives inside the story rather than as a page you get sent to, so
+    // the onboarding never breaks character. Skipping is fine — it stays under
+    // Settings afterwards.
+    <div key="import" className="flex flex-col gap-4">
+      <p className="text-sm leading-relaxed text-text-lo">
+        Whatever you already have — a spreadsheet, screenshots of project folders, a
+        voice note, a list in your phone — TEMPO can read it and propose a workspace.
+        Nothing is added until you approve it.
+      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button type="button" variant="secondary" onClick={onOpenImport} disabled={busy}>
+          <Music4 /> Bring my music in
+        </Button>
+        <Button type="button" variant="ghost" size="sm" onClick={onSkipImport} disabled={busy}>
+          Start empty
+        </Button>
+      </div>
+      {importChoice ? (
+        <p className="text-xs text-ice">
+          {importChoice === "import"
+            ? "Good — that opens as soon as you enter."
+            : "Starting empty. You can bring music in any time from Settings."}
+        </p>
+      ) : null}
+    </div>,
 
-      <label className="flex items-start gap-3 text-sm text-text-lo">
-        <input
-          type="checkbox"
-          checked={useForProfile}
-          onChange={(e) => onUseForProfileChange(e.target.checked)}
-          className="mt-0.5 size-4 accent-[var(--ice)]"
-        />
-        <span>
-          Use this as the beginning of my private artist profile.
-          <span className="mt-1 block text-xs text-text-lo/70">
-            Nothing is published. Your profile stays exactly as visible as it is now.
-          </span>
-        </span>
-      </label>
+    <div key="final" className="flex flex-col gap-5">
+      <p className="font-display text-xl leading-relaxed text-text-hi">
+        This is where it starts keeping time with you.
+      </p>
+      <p className="text-sm leading-relaxed text-text-lo">
+        None of it is fixed. Your story changes as you do, and TEMPO changes with it.
+      </p>
 
       {error ? (
         <p role="alert" className="text-xs text-warn">
@@ -158,20 +226,12 @@ export function OriginStoryScroll({
         </p>
       ) : null}
 
-      <div className="flex flex-wrap items-center gap-2">
-        <Button type="button" onClick={onEnter} disabled={busy}>
-          {busy ? "Saving…" : "Enter TEMPO"}
-        </Button>
+      <div className="flex flex-wrap items-center gap-3">
+        <EnterTempoButton onClick={onEnter} busy={busy} />
         <Button type="button" variant="ghost" size="sm" onClick={onBack} disabled={busy}>
           Back
         </Button>
       </div>
-
-      <p className="text-xs text-text-lo/70">
-        {importPending
-          ? "Next, TEMPO will help you bring your music in."
-          : "Your workspace is ready when you are."}
-      </p>
     </div>,
   ];
 

@@ -18,8 +18,16 @@ import { cn } from "@/lib/utils";
  * environment changing state, not a dissolve between two scenes.
  */
 
-/** Short enough to read as continuous; long enough to hide a decode hitch. */
-const HANDOFF_MS = 140;
+/**
+ * Long enough to read as one clip melting into the next rather than a cut.
+ *
+ * This only blends properly because the experience advances the phase *before*
+ * the outgoing transition ends (see CROSSFADE_LEAD_MS in origin-experience) —
+ * so the outgoing clip is still moving underneath for the whole blend. Swapping
+ * on `ended` instead would crossfade from a frozen last frame, which is what
+ * made the old handoff read as a stop-start.
+ */
+const HANDOFF_MS = 620;
 /** If a frame never paints, swap anyway rather than freezing the flow. */
 const PAINT_TIMEOUT_MS = 2500;
 
@@ -71,6 +79,11 @@ export type OriginMediaStageProps = {
   posterSrc?: string;
   /** Static mode renders the poster only — no video is loaded or played. */
   staticMode?: boolean;
+  /**
+   * Play with audio. Only ever true after the artist's opening tap, since
+   * browsers reject audible playback without a user gesture.
+   */
+  soundOn?: boolean;
   onEnded?: () => void;
   onVisible?: (key: OriginMediaKey) => void;
   onError?: (key: OriginMediaKey) => void;
@@ -84,6 +97,7 @@ export function OriginMediaStage({
   clip,
   posterSrc,
   staticMode = false,
+  soundOn = false,
   onEnded,
   onVisible,
   onError,
@@ -107,6 +121,18 @@ export function OriginMediaStage({
 
   const cbRef = React.useRef({ onEnded, onVisible, onError, onActiveElement });
   cbRef.current = { onEnded, onVisible, onError, onActiveElement };
+  // Read inside the handoff without making it a dependency — flipping sound on
+  // must not restart a clip that is already playing.
+  const soundOnRef = React.useRef(soundOn);
+  soundOnRef.current = soundOn;
+
+  /** Unmute whatever is already on screen the moment sound is switched on. */
+  React.useEffect(() => {
+    const el = (activeSlotRef.current === "a" ? aRef.current : bRef.current) ?? null;
+    if (!el) return;
+    el.muted = !soundOn;
+    if (soundOn) el.volume = 1;
+  }, [soundOn]);
 
   const clipKey = clip?.key ?? null;
   const clipLoop = clip?.loop ?? false;
@@ -128,7 +154,11 @@ export function OriginMediaStage({
     // check can be sequenced against each other.
     incoming.src = asset.src;
     incoming.loop = clipLoop;
-    incoming.muted = true;
+    // Always starts silent: it is playing underneath the outgoing clip, and two
+    // audible tracks at once would be worse than none. Volume is ramped up
+    // across the blend below.
+    incoming.muted = !soundOnRef.current;
+    incoming.volume = soundOnRef.current ? 0 : 1;
     incoming.playsInline = true;
     incoming.load();
 
@@ -150,17 +180,31 @@ export function OriginMediaStage({
         cbRef.current.onVisible?.(clipKey);
         cbRef.current.onActiveElement?.(incoming, clipKey);
 
-        // Released only after the swap has finished, so it stays underneath for
-        // the whole blend.
+        const outgoing = (current === "a" ? aRef.current : bRef.current) ?? null;
+
+        // Ramp audio across the same window as the opacity blend, so sound and
+        // picture arrive together instead of the track snapping over.
+        if (soundOnRef.current) {
+          const startedAt = performance.now();
+          const ramp = () => {
+            if (cancelled) return;
+            const t = Math.min(1, (performance.now() - startedAt) / HANDOFF_MS);
+            incoming.volume = t;
+            if (outgoing && !outgoing.paused) outgoing.volume = 1 - t;
+            if (t < 1) requestAnimationFrame(ramp);
+          };
+          requestAnimationFrame(ramp);
+        }
+
+        // Released only after the blend has finished, so it stays underneath —
+        // and still playing — for the whole of it.
         window.setTimeout(() => {
-          if (cancelled) return;
-          const outgoing = (current === "a" ? aRef.current : bRef.current) ?? null;
-          if (!outgoing) return;
+          if (cancelled || !outgoing) return;
           outgoing.pause();
           slotKeyRef.current = { ...slotKeyRef.current, [current]: null };
           outgoing.removeAttribute("src");
           outgoing.load();
-        }, HANDOFF_MS + 40);
+        }, HANDOFF_MS + 60);
       } catch {
         if (!cancelled) cbRef.current.onError?.(clipKey);
       }
@@ -240,7 +284,9 @@ export function OriginMediaStage({
                 opacity: activeSlot === slot ? 1 : 0,
                 transition: `opacity ${HANDOFF_MS}ms linear`,
               }}
-              muted
+              // `muted` is managed imperatively during the handoff (and by the
+              // sound effect above); declaring it here would let a re-render
+              // silence a clip mid-blend.
               playsInline
               preload="auto"
               tabIndex={-1}

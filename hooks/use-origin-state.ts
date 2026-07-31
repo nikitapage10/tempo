@@ -42,7 +42,7 @@ export type OriginController = {
   setInterpretation: (i: ArtistOriginInterpretation) => void;
 };
 
-export function useOriginState(revisit = false): OriginController {
+export function useOriginState(revisit = false, replay = false): OriginController {
   const { activeArtist } = useActiveArtist() as {
     activeArtist: { id: string; name: string } | null;
   };
@@ -76,7 +76,11 @@ export function useOriginState(revisit = false): OriginController {
       dispatch({
         type: "boot",
         staticMode,
-        resume: revisit
+        // Replay deliberately ignores any saved draft so the film runs from the
+        // very top — that is the whole point of the action.
+        resume: replay
+          ? null
+          : revisit
           ? // Revisit opens straight into the editable story with the confirmed
             // content — the opening film only plays if deliberately asked for.
             resume
@@ -97,7 +101,7 @@ export function useOriginState(revisit = false): OriginController {
     return () => {
       cancelled = true;
     };
-  }, [artistId, activeArtist?.name, revisit]);
+  }, [artistId, activeArtist?.name, revisit, replay]);
 
   /** Debounced draft save whenever meaningful content changes. */
   React.useEffect(() => {

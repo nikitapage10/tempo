@@ -10,6 +10,7 @@ import {
   TimedCopy,
   useClipProgress,
 } from "@/components/origin/origin-copy-layer";
+import { OriginAwakenStep } from "@/components/origin/origin-awaken-step";
 import { OriginNameStep } from "@/components/origin/origin-name-step";
 import { OriginIntroductionStep } from "@/components/origin/origin-introduction-step";
 import {
@@ -53,14 +54,26 @@ const OPENING_LINES = [
  * enough that the panel is settled before the loop begins, late enough that it
  * never competes with the film's own moment.
  */
-const PRELUDE_AT = 0.66;
+const PRELUDE_AT = 0.6;
+
+/**
+ * How long before a transition's end the next phase is entered.
+ *
+ * The stage crossfades on phase change, so advancing early means the outgoing
+ * clip is still *moving* underneath the incoming one for the whole blend.
+ * Waiting for `ended` would blend out of a frozen final frame, which is what
+ * made every handoff read as a stop rather than a dissolve.
+ */
+const CROSSFADE_LEAD_MS = 700;
 
 export function OriginExperience({
   importPending,
   revisit = false,
+  replay = false,
 }: {
   importPending: boolean;
   revisit?: boolean;
+  replay?: boolean;
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -75,10 +88,16 @@ export function OriginExperience({
     complete,
     skip,
     setInterpretation,
-  } = useOriginState(revisit);
+  } = useOriginState(revisit, replay);
 
   const media = useOriginMedia(state.phase);
-  const [useForProfile, setUseForProfile] = React.useState(false);
+  /** Set by the opening tap — the gesture browsers require for audible video. */
+  const [soundOn, setSoundOn] = React.useState(false);
+  /**
+   * Chosen in the import chapter. Defaults to importing when Import is still
+   * owed, so an artist who scrolls straight past still lands somewhere useful.
+   */
+  const [importChoice, setImportChoice] = React.useState<"import" | "empty" | null>(null);
 
   /** The element currently on screen, so copy timing and scrubbing can read it. */
   const activeVideoRef = React.useRef<HTMLVideoElement | null>(null);
@@ -96,13 +115,28 @@ export function OriginExperience({
   /** True once the current transition is far enough along to show what's next. */
   const prelude = media.staticMode || clipProgress >= PRELUDE_AT;
 
-  // Each step is mounted during its incoming transition and faded up, so the
-  // panel is already in place when the destination loop starts.
+  /*
+   * Two flags per step, and the distinction matters.
+   *
+   * `mount` puts the panel in the DOM at opacity 0 as soon as its incoming
+   * transition starts; `show` fades it up later. Collapsing these into one
+   * condition is what made the name box appear to pop — an element that mounts
+   * with the final opacity already applied has nothing to transition from, so
+   * the CSS never animates.
+   */
+  const mountName = state.phase === "opening" || state.phase === "name_idle";
   const showName = state.phase === "name_idle" || (state.phase === "opening" && prelude);
+
+  const mountIntroduction =
+    state.phase === "recognizing" ||
+    state.phase === "introduction_idle" ||
+    state.phase === "recording";
   const showIntroduction =
     state.phase === "introduction_idle" ||
     state.phase === "recording" ||
     (state.phase === "recognizing" && prelude);
+
+  const mountReview = state.phase === "resolving" || state.phase === "review";
   const showReview = state.phase === "review" || (state.phase === "resolving" && prelude);
 
   /** Kick off interpretation the moment the artist finishes speaking — in
@@ -141,6 +175,42 @@ export function OriginExperience({
     }
   }, [state.phase, dispatch]);
 
+  // Kept in a ref so the early-advance listener below never has to re-bind just
+  // because the callback identity changed.
+  const handleEndedRef = React.useRef(handleEnded);
+  handleEndedRef.current = handleEnded;
+
+  /**
+   * Advance a transition shortly before it ends, so the destination fades up
+   * over live motion. `onEnded` below stays as the backstop for anything that
+   * never reaches this point.
+   */
+  const advancedRef = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    advancedRef.current = null;
+  }, [state.phase]);
+
+  React.useEffect(() => {
+    if (media.staticMode) return;
+    if (!clip || clip.loop) return;
+    const video = activeVideoRef.current;
+    if (!video) return;
+
+    const onTime = () => {
+      if (!Number.isFinite(video.duration) || video.duration <= 0) return;
+      const remainingMs = (video.duration - video.currentTime) * 1000;
+      if (remainingMs > CROSSFADE_LEAD_MS) return;
+      if (advancedRef.current === state.phase) return;
+      advancedRef.current = state.phase;
+      handleEndedRef.current();
+    };
+
+    video.addEventListener("timeupdate", onTime);
+    return () => video.removeEventListener("timeupdate", onTime);
+    // clipProgress re-runs this once the stage has swapped in the new element.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.phase, clip?.key, clip?.loop, media.staticMode, clipProgress > 0]);
+
   /** A failed asset must not strand the artist mid-flow — advance as if it played. */
   const handleMediaError = React.useCallback(
     (key: OriginMediaKey) => {
@@ -158,8 +228,10 @@ export function OriginExperience({
     const ok = await complete();
     if (!ok) return;
 
-    if (useForProfile && artistId) {
-      // Never blocks entry, and never changes visibility — see profile-mapping.
+    if (artistId) {
+      // Always applied now, rather than offered as a checkbox: it only fills
+      // blank fields and never changes visibility, so there was nothing for the
+      // artist to weigh up. Never blocks entry — see profile-mapping.
       await applyOriginToProfile(artistId, state.interpretation, state.name).catch(
         () => {}
       );
@@ -169,7 +241,10 @@ export function OriginExperience({
     await queryClient.invalidateQueries({ queryKey: ["artist-profile", artistId] });
 
     markFirstOpenPending();
-    router.replace(importPending ? IMPORT_ROUTE : HOME_ROUTE);
+    // The import chapter decides where Enter TEMPO lands; falling back to
+    // whether Import is still owed when they scrolled past without choosing.
+    const wantsImport = importChoice ? importChoice === "import" : importPending;
+    router.replace(wantsImport ? IMPORT_ROUTE : HOME_ROUTE);
   }
 
   async function handleSkip() {
@@ -191,6 +266,7 @@ export function OriginExperience({
       clip={clip}
       posterSrc={poster}
       staticMode={media.staticMode}
+      soundOn={soundOn}
       onEnded={handleEnded}
       onError={handleMediaError}
       onActiveElement={handleActiveElement}
@@ -207,13 +283,25 @@ export function OriginExperience({
             onBack={() => dispatch({ type: "back_to_review" })}
             busy={state.busy}
             error={state.error}
-            importPending={importPending}
-            useForProfile={useForProfile}
-            onUseForProfileChange={setUseForProfile}
+            onOpenImport={() => setImportChoice("import")}
+            onSkipImport={() => setImportChoice("empty")}
+            importChoice={importChoice}
           />
         </div>
       ) : (
         <OriginOverlay>
+          {state.phase === "awaiting_start" ? (
+            <OriginAwakenStep
+              staticMode={media.staticMode}
+              onBegin={() => {
+                // Order matters: sound is enabled in the same tick as the
+                // gesture, so the first play() call is already allowed audio.
+                setSoundOn(true);
+                dispatch({ type: "begin" });
+              }}
+            />
+          ) : null}
+
           {state.phase === "opening" ? (
             <TimedCopy
               lines={OPENING_LINES}
@@ -222,7 +310,7 @@ export function OriginExperience({
             />
           ) : null}
 
-          {showName ? (
+          {mountName ? (
             <StepFade show={showName} className="w-full max-w-md">
               <OriginNameStep
                 name={state.name}
@@ -249,7 +337,7 @@ export function OriginExperience({
             />
           ) : null}
 
-          {showIntroduction ? (
+          {mountIntroduction ? (
             <StepFade show={showIntroduction} className="w-full max-w-xl">
               <OriginIntroductionStep
               introduction={state.introduction}
@@ -280,7 +368,7 @@ export function OriginExperience({
             />
           ) : null}
 
-          {showReview ? (
+          {mountReview ? (
             <StepFade show={showReview} className="w-full max-w-2xl">
               <OriginReviewStep
               interpretation={state.interpretation}

@@ -18,7 +18,7 @@ export const metadata = {
 export default async function OriginPage({
   searchParams,
 }: {
-  searchParams: { revisit?: string };
+  searchParams: { revisit?: string; replay?: string };
 }) {
   const supabase = createClient();
   const {
@@ -37,6 +37,10 @@ export default async function OriginPage({
   const importPending = (imports?.length ?? 0) === 0;
 
   return (
-    <OriginRoot importPending={importPending} revisit={searchParams.revisit === "1"} />
+    <OriginRoot
+      importPending={importPending}
+      revisit={searchParams.revisit === "1"}
+      replay={searchParams.replay === "1"}
+    />
   );
 }

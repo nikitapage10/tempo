@@ -21,6 +21,10 @@ import { EMPTY_INTERPRETATION } from "@/lib/origin/types";
 
 export type OriginPhase =
   | "booting"
+  // Holds on the first poster with the waking copy until the artist taps.
+  // That tap is also the user gesture browsers require before video may play
+  // with sound, so ORIGIN cannot start itself — see §13.
+  | "awaiting_start"
   | "opening"
   | "name_idle"
   | "recognizing"
@@ -62,6 +66,7 @@ export type OriginState = {
 
 export type OriginAction =
   | { type: "boot"; staticMode: boolean; resume: ArtistOrigin | null }
+  | { type: "begin" }
   | { type: "opening_ended" }
   | { type: "set_name"; name: string }
   | { type: "submit_name" }
@@ -160,8 +165,8 @@ export function originReducer(state: OriginState, action: OriginAction): OriginS
         return {
           ...state,
           staticMode,
-          // Static mode has no opening film to play.
-          phase: staticMode ? "name_idle" : "opening",
+          // Static mode has no opening film to play or gesture to collect.
+          phase: staticMode ? "name_idle" : "awaiting_start",
         };
       }
       const savedStep = resume.currentStep;
@@ -178,6 +183,9 @@ export function originReducer(state: OriginState, action: OriginAction): OriginS
         phase: RESUME_PHASE[savedStep],
       };
     }
+
+    case "begin":
+      return state.phase === "awaiting_start" ? { ...state, phase: "opening" } : state;
 
     case "opening_ended":
       return state.phase === "opening" ? { ...state, phase: "name_idle" } : state;

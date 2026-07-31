@@ -155,7 +155,7 @@ export function TimedCopy({
   }, [videoRef, showAll]);
 
   return (
-    <div className={cn("flex flex-col items-center gap-3 text-center", className)}>
+    <div className={cn("flex flex-col items-end gap-3 text-right", className)}>
       {lines.map((line) => {
         const visible =
           showAll || (progress >= line.at && (line.until === undefined || progress < line.until));
@@ -176,7 +176,13 @@ export function TimedCopy({
   );
 }
 
-/** The layer that holds interactive content above the film. */
+/**
+ * The layer that holds interactive content above the film.
+ *
+ * Right-middle, not centred: the supplied footage carries its subject on the
+ * left, so copy sitting centre-screen lands on top of it. On narrow screens it
+ * falls back to full width, where there is no room to sit to one side.
+ */
 export function OriginOverlay({
   children,
   className,
@@ -188,8 +194,10 @@ export function OriginOverlay({
     <div
       className={cn(
         // Pointer events are re-enabled per panel so the video never swallows clicks.
-        "pointer-events-none absolute inset-0 flex flex-col items-center justify-center",
-        "px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))]",
+        "pointer-events-none absolute inset-0 flex flex-col justify-center",
+        "items-stretch sm:items-end",
+        "px-5 sm:pr-[max(3rem,6vw)]",
+        "pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))]",
         className
       )}
     >

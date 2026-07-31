@@ -4,6 +4,28 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-31
 
+- Added (v0.69.0): Origin now opens with sound. It waits on a still frame while
+  a few lines surface — "Something is listening", "A pulse, finding its
+  footing" — and starts when you tap. That tap is also what lets the film play
+  with its audio; browsers won't allow sound before you've touched the page.
+- Changed (v0.69.0): the clips now genuinely dissolve into one another instead
+  of one stopping and the next starting. The outgoing shot keeps moving
+  underneath the incoming one for the whole blend, and the sound crosses with
+  it.
+- Changed (v0.69.0): the panels now sit to the right of the screen rather than
+  the middle, so they stop covering the subject of the footage, and they fade
+  in properly instead of appearing all at once.
+- Changed (v0.69.0): "Bring your music in" is now a chapter of the Origin story
+  rather than somewhere you get sent afterwards — you choose there, and Enter
+  TEMPO takes you where you chose.
+- Changed (v0.69.0): the closing of Origin has a proper Enter TEMPO button, and
+  your story now always seeds your private profile rather than asking — it only
+  ever fills blanks and still never publishes anything.
+- Changed (v0.69.0): your artist name is now required rather than skippable —
+  everything after it is built from it.
+- Fixed (v0.69.0): "Replay introduction" in Settings did nothing. It now
+  replays the whole thing from the first frame.
+
 - Fixed (v0.68.0): the story at the end of Origin didn't respond to scrolling,
   which also meant "Enter TEMPO" was out of reach and there was no way to
   finish. Scrolling now moves through your story as intended, and there's a

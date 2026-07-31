@@ -51,7 +51,7 @@ export default function SettingsPage() {
             <Link href="/origin?revisit=1">Open Artist Origin</Link>
           </Button>
           <Button variant="ghost" asChild>
-            <Link href="/origin">Replay introduction</Link>
+            <Link href="/origin?replay=1">Replay introduction</Link>
           </Button>
         </div>
       </section>

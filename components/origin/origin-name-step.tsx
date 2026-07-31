@@ -104,17 +104,9 @@ export function OriginNameStep({
           ) : null}
         </div>
 
-        <div className="flex items-center justify-between gap-3">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={onSkip}
-            className="text-text-lo hover:text-text-hi"
-          >
-            Skip for now
-          </Button>
-
+        {/* No skip here: everything after this point is built from the name,
+            so there is nothing meaningful to skip *to*. */}
+        <div className="flex items-center justify-end gap-3">
           <Button type="submit" disabled={busy} className={cn(waiting && "cursor-wait")}>
             {waiting ? "One moment…" : "Continue"}
           </Button>
