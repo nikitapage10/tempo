@@ -4,6 +4,14 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-31
 
+- Added (v0.65.0): the boot moment has a new look. Opening TEMPO (or the
+  sign-in screen) now plays a short video — a spark igniting into the app's
+  ice/white/amber light — with the TEMPO wordmark revealing letter by letter
+  over it, before the whole frame dissolves into the app. It plays once per
+  day per device rather than every time you open a tab, and it's skipped
+  automatically if you prefer reduced motion (click or press any key to
+  jump straight past it).
+
 - Fixed (v0.64.1): re-running the messaging inbox database update no longer
   stops with an error partway through. It now skips work that's already been
   done, like the other updates do.
