@@ -33,6 +33,12 @@ Three environment variables, set in BOTH places:
   instead of leaking data.
 
 ## Database changes (migrations)
+
+For v0.60.0, run `migrations/036_support_conversations.sql` before deploying
+the matching support-reply code. For invitation email, production also needs
+both `RESEND_API_KEY` and `INVITE_FROM_EMAIL`; the latter must use a domain
+whose sending status is **Verified** in Resend. Redeploy after changing either
+environment variable.
 The Supabase database is production from day one — it holds real music data.
 
 1. Cursor writes schema changes as numbered SQL files in `/migrations`

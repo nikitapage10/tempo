@@ -4,6 +4,27 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-30
 
+- Changed (v0.60.0): the Admin overview is now an operating dashboard rather
+  than a flat set of totals. It highlights work needing attention, 30-day
+  member activation, growth, membership health, storage, and direct shortcuts
+  into the support and moderation queues.
+
+- Changed (v0.60.0): Usage analytics now has 7-, 30-, and 90-day views, richer
+  metric cards, real area/line charts, useful zero-activity states, and a
+  creation snapshot for tracks, projects, and AI users.
+
+- Added (v0.60.0): Admins can reply to a support ticket as **TEMPO Support**.
+  The member receives a private, two-way support conversation inside Messages,
+  even if they have not joined the artist network. Member replies automatically
+  reopen resolved tickets.
+
+- Fixed (v0.60.0): invitation delivery now preserves Resend's safe rejection
+  reason and shows deployment/sender health in Admin Invites, distinguishing an
+  invalid key, testing-mode restriction, and an unverified sender domain.
+
+- Under the hood (v0.60.0): run migration
+  `036_support_conversations.sql` before using two-way support replies.
+
 - Added (v0.59.0): **Calendar** is now its own desktop and mobile tab. It
   combines task due dates, track targets and next moves, project deadlines,
   releases, and pitching deadlines in Month and Agenda views. You can filter

@@ -103,6 +103,14 @@
 
 ### Admin privacy boundary (explicit)
 
+Support conversations use a dedicated `support_messages` table rather than the
+artist messaging tables. It has RLS enabled with no browser-facing policies.
+Member support APIs first authenticate the caller and verify that the ticket's
+`user_id` matches before a server-only service client reads or writes replies;
+admin routes independently require the admin guard. Provider errors retain only
+a short Resend error name/message and HTTP class, never request headers, API
+keys, or provider response metadata.
+
 **May see:** auth email, provider, account creation and last sign-in times; published profile handle, display name, and visibility; aggregate track/project counts, storage bytes, and assistant usage totals; invite redemption; account-event types and timestamps; and the exact public post, public comment, or published profile attached to a moderation report.
 
 For support reports, an admin may additionally see the subject/details the member intentionally submitted, its bug/help/feedback category, a UUID-masked page path, browser identification, submission source, and support status/notes.

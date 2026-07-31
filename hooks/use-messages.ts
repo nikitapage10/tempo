@@ -9,6 +9,14 @@ import {
   sendMessage,
   startDirectConversation,
 } from "@/lib/api/messages";
+import { fetchSupportThreads, replyToSupportThread } from "@/lib/api/support-messages";
+
+export function useSupportThreads() {
+  const qc = useQueryClient();
+  const query = useQuery({ queryKey: ["support-threads"], queryFn: fetchSupportThreads, staleTime: 10_000, refetchInterval: 20_000 });
+  const reply = useMutation({ mutationFn: ({ id, body }: { id: string; body: string }) => replyToSupportThread(id, body), onSuccess: () => qc.invalidateQueries({ queryKey: ["support-threads"] }) });
+  return { ...query, reply };
+}
 
 export function useConversations(myProfileId: string | null) {
   return useQuery({

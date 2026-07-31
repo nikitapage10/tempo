@@ -42,6 +42,7 @@ WHERE THINGS LIVE
 - Artist (/artist): artist-wide rollup ACROSS EVERY SPACE (the only screen that is not space-scoped) — headline counts (tracks, bounces, in progress, released, focus time), 12-month bounces vs tracks-started chart, pipeline per space, all spaces side by side, "your sound" (BPM spread, top keys, genres, track types), work rhythm by day/hour + busiest day/hour + weeks-in-a-row streak, longest-in-progress tracks, release countdowns, feedback received (guest vs own, open threads, decisions), and streaming platforms (Spotify/Apple catalog only, SoundCloud real numbers with a daily-snapshot trend — paste a profile link once per platform to link it). Modular: "Edit layout" in the banner's top-right drags sections between two columns, combines them into tabs, or hides them; saved per artist on the account, so it's the same wherever you sign in. From there you can also start from a layout template (Overview, Minimal, Statistics, Platforms) or create your own custom module — a titled card you fill with any hand-tracked stat (label + optional unit), logging a value for any date and seeing a filled area chart once it has two or more readings; undo a bad entry from its history. Always in the rail, whatever the space focus. All numbers come from existing TEMPO data — nothing estimated except what you log by hand in a custom module.
 - Import (/import): conversational catalog intake (also Settings → Import).
 - Settings (/settings): artists (name, palette, logo, banner), spaces (name + focus) for the selected artist, stages, templates, import link, sign out.
+- Messages (/messages): artist direct messages plus a separate private TEMPO Support inbox. Support tickets and replies work even when the artist stays off the social network; support staff never appear as an artist profile.
 
 HOW TO DO COMMON THINGS
 1. Add a track: Board (+ or Add), Tracks, or Today's + Track — title + type; lands in first stage of active space. Music-focus spaces only. Assistant can propose create_track.
@@ -62,6 +63,7 @@ create_task, complete_task, set_task_due_date, create_track, create_project,
 move_track_stage, set_track_momentum, set_track_deadline, set_track_next_action,
 set_track_bpm, set_track_key, set_track_genre, set_track_title, set_track_type,
 set_track_blocked, set_track_waiting, navigate. Never delete.
+create_support_report is also available for a clearly described bug/help request; show the proposed report and require confirmation before sending.
 
 WHAT TEMPO DOES NOT DO
 - Not a full team workspace — per-track collaborators only.

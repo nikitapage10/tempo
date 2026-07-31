@@ -3,9 +3,11 @@ export type AdminAnalytics = { totals: { aiMessages: number; aiMessages30: numbe
 export type AdminMember = { id: string; email: string; createdAt: string; lastSignInAt: string | null; provider: string; status: "active" | "suspended"; publicProfile: { id: string; handle: string | null; display_name: string; visibility: string } | null; trackCount: number; projectCount: number; storageBytes: number };
 export type AdminUserDetail = AdminMember & { emailConfirmedAt: string | null; assistant: { messages: number; escalations: number }; invite: { code: string; redeemedAt: string } | null; accountEvents: { id: string; event_type: string; created_at: string }[] };
 export type AdminInvite = { id: string; code: string; email: string | null; note: string | null; created_at: string; expires_at: string | null; max_uses: number; used_count: number; revoked_at: string | null; last_sent_at: string | null; send_count: number; email_provider_id: string | null; last_send_error: string | null };
+export type InviteDeliveryConfig = { configured: boolean; apiKeyPresent: boolean; fromPresent: boolean; from: string | null; domain: string | null };
 export type AdminReport = { id: string; target_type: "post" | "post_comment" | "profile"; target_id: string; reason: string; details: string | null; status: string; created_at: string; target: Record<string, unknown> | null };
 export type AdminAuditEntry = { id: string; admin_user_id: string | null; action: string; target_type: string; target_id: string; meta: Record<string, unknown>; created_at: string };
-export type AdminSupportReport = { id: string; user_id: string; email: string | null; category: "bug" | "help" | "feedback"; subject: string; details: string; page_url: string | null; user_agent: string | null; source: "manual" | "assistant"; status: "open" | "in_progress" | "resolved"; admin_notes: string | null; created_at: string; updated_at: string; resolved_at: string | null; resolved_by: string | null };
+export type AdminSupportMessage = { id: string; report_id: string; sender_role: "member" | "support"; sender_user_id: string | null; body: string; created_at: string };
+export type AdminSupportReport = { id: string; user_id: string; email: string | null; category: "bug" | "help" | "feedback"; subject: string; details: string; page_url: string | null; user_agent: string | null; source: "manual" | "assistant"; status: "open" | "in_progress" | "resolved"; admin_notes: string | null; created_at: string; updated_at: string; resolved_at: string | null; resolved_by: string | null; last_message_at: string | null; last_admin_reply_at: string | null; messages: AdminSupportMessage[] };
 
 export async function adminFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, { ...init, headers: { "Content-Type": "application/json", ...init?.headers }, cache: "no-store" });
@@ -21,7 +23,7 @@ export const getAdminUser = (id: string) => adminFetch<AdminUserDetail>(`/api/ad
 export const suspendAdminUser = (id: string, reason: string) => adminFetch(`/api/admin/users/${id}/suspend`, { method: "POST", body: JSON.stringify({ reason }) });
 export const reactivateAdminUser = (id: string) => adminFetch(`/api/admin/users/${id}/reactivate`, { method: "POST", body: "{}" });
 export const deleteAdminUser = (id: string, email: string) => adminFetch(`/api/admin/users/${id}`, { method: "DELETE", body: JSON.stringify({ email }) });
-export const getAdminInvites = () => adminFetch<{ invites: AdminInvite[] }>("/api/admin/invites");
+export const getAdminInvites = () => adminFetch<{ invites: AdminInvite[]; deliveryConfig: InviteDeliveryConfig }>("/api/admin/invites");
 export const createAdminInvite = (input: { email?: string; note?: string; expiresAt?: string; maxUses?: number }) => adminFetch<{ invite: AdminInvite; delivery: "sent" | "failed" | "not_requested"; deliveryError: string | null }>("/api/admin/invites", { method: "POST", body: JSON.stringify(input) });
 export const revokeAdminInvite = (id: string) => adminFetch(`/api/admin/invites/${id}/revoke`, { method: "POST", body: "{}" });
 export const sendAdminInvite = (id: string) => adminFetch<{ invite: AdminInvite }>(`/api/admin/invites/${id}/send`, { method: "POST", body: "{}" });
@@ -29,4 +31,4 @@ export const getAdminReports = (status = "open") => adminFetch<{ reports: AdminR
 export const actOnAdminReport = (id: string, action: "hide" | "dismiss" | "suspend_author") => adminFetch(`/api/admin/reports/${id}`, { method: "POST", body: JSON.stringify({ action }) });
 export const getAdminAudit = (page: number) => adminFetch<{ entries: AdminAuditEntry[]; page: number; totalPages: number }>(`/api/admin/audit?page=${page}`);
 export const getAdminSupport = (status: string) => adminFetch<{ reports: AdminSupportReport[] }>(`/api/admin/support?status=${encodeURIComponent(status)}`);
-export const updateAdminSupport = (id: string, input: { status: AdminSupportReport["status"]; adminNotes?: string }) => adminFetch(`/api/admin/support/${id}`, { method: "POST", body: JSON.stringify(input) });
+export const updateAdminSupport = (id: string, input: { status: AdminSupportReport["status"]; adminNotes?: string; reply?: string }) => adminFetch(`/api/admin/support/${id}`, { method: "POST", body: JSON.stringify(input) });

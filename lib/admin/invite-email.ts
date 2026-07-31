@@ -12,6 +12,25 @@ export function inviteLink(code: string) {
   return `${siteUrl()}/register?invite=${encodeURIComponent(code)}`;
 }
 
+export function inviteDeliveryConfig() {
+  const from = process.env.INVITE_FROM_EMAIL?.trim() ?? "";
+  const address = from.match(/<([^>]+)>/)?.[1] ?? from;
+  const domain = address.includes("@") ? address.split("@").at(-1) ?? null : null;
+  return { configured: Boolean(process.env.RESEND_API_KEY?.trim() && from), apiKeyPresent: Boolean(process.env.RESEND_API_KEY?.trim()), fromPresent: Boolean(from), from: from || null, domain };
+}
+
+function providerError(status: number, body: unknown) {
+  const result = body && typeof body === "object" ? body as { name?: unknown; message?: unknown } : null;
+  const name = typeof result?.name === "string" ? result.name : "";
+  const raw = typeof result?.message === "string" ? result.message.replace(/\s+/g, " ").trim().slice(0, 240) : "";
+  if (name === "invalid_api_key" || status === 401) return "Resend rejected the API key. Replace RESEND_API_KEY in the production environment and redeploy.";
+  if (/only send testing emails/i.test(raw)) return "Resend is still in testing mode. Verify a sending domain, then set INVITE_FROM_EMAIL to an address on that domain.";
+  if (/domain.+not verified/i.test(raw)) return `${raw} Set INVITE_FROM_EMAIL to an address on a verified Resend domain.`;
+  if (/from/i.test(raw) || name === "validation_error") return `Resend rejected the sender configuration: ${raw || "check INVITE_FROM_EMAIL and its verified domain."}`;
+  if (status === 429) return "Resend rate-limited this request. Wait a moment, then retry.";
+  return raw ? `Resend rejected the invitation: ${raw}` : `Resend rejected the invitation (HTTP ${status}).`;
+}
+
 export function renderInviteEmail(input: Omit<InviteEmail, "idempotencyKey">) {
   const link = inviteLink(input.code);
   const expiry = input.expiresAt ? new Intl.DateTimeFormat("en-US", { dateStyle: "long", timeZone: "UTC" }).format(new Date(input.expiresAt)) : null;
@@ -34,6 +53,6 @@ export async function sendInviteEmail(input: InviteEmail) {
     body: JSON.stringify({ from, to: [input.email], subject: message.subject, html: message.html, text: message.text }),
   });
   const body = await response.json().catch(() => null);
-  if (!response.ok || typeof body?.id !== "string") throw new Error("The email provider did not accept this invitation.");
+  if (!response.ok || typeof body?.id !== "string") throw new Error(providerError(response.status, body));
   return { providerId: body.id as string, link: message.link };
 }
