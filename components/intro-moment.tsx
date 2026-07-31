@@ -7,10 +7,16 @@ import {
   FRAGMENT_SHADER,
   VERTEX_SHADER,
 } from "@/lib/intro-shader-glsl";
+import {
+  INTRO_DAY_KEY,
+  INTRO_POSTER,
+  INTRO_SOURCES,
+  clearIntroPending,
+  introDayKey,
+  introWillPlay,
+} from "@/lib/intro";
 import { LfWindow } from "@/components/lf-windows";
 import { cn } from "@/lib/utils";
-
-const INTRO_DAY_KEY = "tempo.introDay";
 
 const WORDMARK_START = 2.2; // s — per-character reveal begins
 const WORDMARK_STAGGER = 0.09; // s between characters
@@ -22,17 +28,12 @@ const MELT_DURATION_MS = 1100;
 const MELT_FADE_DELAY_MS = 350;
 const SKIP_HINT_AFTER_MS = 1200;
 const SAFETY_TIMEOUT_MS = 12000;
+/** Longest we'll sit on black waiting for enough video to play smoothly. */
+const BUFFER_WAIT_MS = 2500;
 const DPR_CAP = 1.5;
 const MAX_INTERNAL_PIXELS = 1280 * 720;
 
 const CHARS = ["T", "E", "M", "P", "O"];
-
-function todayKey() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-    d.getDate()
-  ).padStart(2, "0")}`;
-}
 
 /**
  * Boot intro: the TEMPO INTRO video plays full-bleed, the wordmark reveals
@@ -67,6 +68,7 @@ export function IntroMoment({
 
   const finish = React.useCallback(() => {
     setIntroActive(false);
+    clearIntroPending();
     setPhase((p) => (p === "done" ? p : "done"));
     onDone?.();
   }, [onDone]);
@@ -84,26 +86,17 @@ export function IntroMoment({
     if (gateRanRef.current) return;
     gateRanRef.current = true;
     if (typeof window === "undefined") return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+
+    if (!introWillPlay()) {
+      clearIntroPending();
       setPhase("done");
       onDone?.();
       return;
     }
-    try {
-      if (sessionStorage.getItem("tempo.introPlayed") === "1") {
-        sessionStorage.removeItem("tempo.introPlayed");
-      }
-      if (localStorage.getItem(INTRO_DAY_KEY) === todayKey()) {
-        setPhase("done");
-        onDone?.();
-        return;
-      }
-    } catch {
-      /* private mode */
-    }
+
     setPhase("playing");
     try {
-      localStorage.setItem(INTRO_DAY_KEY, todayKey());
+      localStorage.setItem(INTRO_DAY_KEY, introDayKey());
     } catch {
       /* private mode */
     }
@@ -175,18 +168,42 @@ export function IntroMoment({
     video.addEventListener("ended", onEnded);
     video.addEventListener("error", onError);
 
-    video.play().catch(() => {
-      if (!cancelled) finish();
-    });
+    // Don't start into a stall — the overlay is already opaque black, so
+    // waiting here is invisible, whereas playing unbuffered stutters through
+    // the ignition. The login-screen preloader usually makes this instant.
+    let started = false;
+    let bufferTimer: number | null = null;
 
-    hintTimer = window.setTimeout(() => setShowSkipHint(true), SKIP_HINT_AFTER_MS);
+    const start = () => {
+      if (started || cancelled) return;
+      started = true;
+      if (bufferTimer) window.clearTimeout(bufferTimer);
+      video.removeEventListener("canplaythrough", start);
+      video.play().catch(() => {
+        if (!cancelled) finish();
+      });
+      hintTimer = window.setTimeout(
+        () => setShowSkipHint(true),
+        SKIP_HINT_AFTER_MS
+      );
+    };
+
+    if (video.readyState >= 4 /* HAVE_ENOUGH_DATA */) {
+      start();
+    } else {
+      video.addEventListener("canplaythrough", start);
+      // Slow connection: go anyway rather than hold a black screen.
+      bufferTimer = window.setTimeout(start, BUFFER_WAIT_MS);
+    }
 
     return () => {
       cancelled = true;
       video.removeEventListener("timeupdate", onTimeUpdate);
       video.removeEventListener("ended", onEnded);
       video.removeEventListener("error", onError);
+      video.removeEventListener("canplaythrough", start);
       if (hintTimer) window.clearTimeout(hintTimer);
+      if (bufferTimer) window.clearTimeout(bufferTimer);
     };
   }, [phase, finish]);
 
@@ -194,6 +211,9 @@ export function IntroMoment({
   React.useEffect(() => {
     if (phase !== "melting") return;
     setIntroActive(false);
+    // Must drop with the chrome — the pre-paint cover is opaque, so leaving
+    // it up would block the app from showing through the dissolve.
+    clearIntroPending();
 
     const start = performance.now();
     let raf = 0;
@@ -360,10 +380,11 @@ export function IntroMoment({
         muted
         playsInline
         preload="auto"
-        poster="/intro/tempo-intro-poster.jpg"
+        poster={INTRO_POSTER}
       >
-        <source src="/intro/tempo-intro.webm" type="video/webm" />
-        <source src="/intro/tempo-intro.mp4" type="video/mp4" />
+        {INTRO_SOURCES.map((s) => (
+          <source key={s.src} src={s.src} type={s.type} />
+        ))}
       </video>
 
       {!glFailed ? (

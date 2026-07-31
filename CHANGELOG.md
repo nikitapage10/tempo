@@ -4,6 +4,12 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-31
 
+- Fixed (v0.66.1): the boot moment is smooth now. The video starts loading
+  quietly while you're on the sign-in screen, so it's ready to go the moment
+  you're through, and it waits until it actually has enough to play instead
+  of stuttering through the opening. You also no longer catch a glimpse of
+  the app for a split second before the video takes over.
+
 - Changed (v0.66.0): the boot video now plays *after* you sign in, not before.
   The sign-in screen is plain again, and the video runs as the loading screen
   while your workspace loads behind it. The ending is a true dissolve now —

@@ -5,6 +5,7 @@ import { ActiveSpaceProvider } from "@/components/active-space-provider";
 import { AppShell } from "@/components/app-shell";
 import { ArtistThemeProvider } from "@/components/artist-theme-provider";
 import { LightfieldDriver } from "@/components/lightfield-driver";
+import { IntroPreflight } from "@/components/intro-preflight";
 import { GlobalPlayerProvider } from "@/components/player/global-player-provider";
 
 export default function AppLayout({
@@ -14,15 +15,18 @@ export default function AppLayout({
 }) {
   // Artist resolves first — spaces bootstrap against the active artist.
   return (
-    <ActiveArtistProvider>
-      <ArtistThemeProvider>
-        <ActiveSpaceProvider>
-          <LightfieldDriver />
-          <GlobalPlayerProvider>
-            <AppShell>{children}</AppShell>
-          </GlobalPlayerProvider>
-        </ActiveSpaceProvider>
-      </ArtistThemeProvider>
-    </ActiveArtistProvider>
+    <>
+      <IntroPreflight />
+      <ActiveArtistProvider>
+        <ArtistThemeProvider>
+          <ActiveSpaceProvider>
+            <LightfieldDriver />
+            <GlobalPlayerProvider>
+              <AppShell>{children}</AppShell>
+            </GlobalPlayerProvider>
+          </ActiveSpaceProvider>
+        </ArtistThemeProvider>
+      </ActiveArtistProvider>
+    </>
   );
 }
