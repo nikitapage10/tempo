@@ -19,7 +19,8 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       memberAggregates([user.id]), getAssistantTotals(user.id), getInviteForUser(user.id),
       service.from("activity_events").select(ACCOUNT_EVENT_COLUMNS).eq("actor_user_id", user.id).order("created_at", { ascending: false }).limit(20),
     ]);
-    return adminJson({ id: user.id, email: user.email ?? "", createdAt: user.created_at, lastSignInAt: user.last_sign_in_at ?? null, emailConfirmedAt: user.email_confirmed_at ?? null, provider: userProvider(user), status: aggregates.flags.get(user.id)?.status ?? "active", publicProfile: aggregates.profiles.get(user.id) ?? null, trackCount: aggregates.tracks.get(user.id) ?? 0, projectCount: aggregates.projects.get(user.id) ?? 0, storageBytes: aggregates.storage.get(user.id) ?? 0, assistant, invite, accountEvents: events.data ?? [] });
+    const profile = aggregates.profiles.get(user.id);
+    return adminJson({ id: user.id, email: user.email ?? "", createdAt: user.created_at, lastSignInAt: user.last_sign_in_at ?? null, emailConfirmedAt: user.email_confirmed_at ?? null, provider: userProvider(user), status: aggregates.flags.get(user.id)?.status ?? "active", publicProfile: profile ? { id: profile.id, handle: profile.handle, display_name: profile.display_name, visibility: profile.visibility } : null, trackCount: aggregates.tracks.get(user.id) ?? 0, projectCount: aggregates.projects.get(user.id) ?? 0, storageBytes: aggregates.storage.get(user.id) ?? 0, assistant, invite, accountEvents: events.data ?? [] });
   } catch { return adminError("Couldn’t load this member.", 500); }
 }
 

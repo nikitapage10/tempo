@@ -2,7 +2,8 @@
 export const PLATFORM_ADMIN_COLUMNS =
   "user_id, email, granted_at, granted_by, note";
 export const USER_PROFILE_COLUMNS =
-  "id, owner_user_id, handle, display_name, visibility, published_at, created_at";
+  "id, owner_user_id, handle, display_name, visibility";
+export const PROFILE_PUBLIC_COLUMNS = "id, handle, display_name, visibility";
 export const ACCOUNT_FLAG_COLUMNS =
   "user_id, status, reason, changed_at, changed_by";
 export const INVITE_COLUMNS =
@@ -12,7 +13,7 @@ export const INVITE_REDEMPTION_COLUMNS =
 export const REPORT_COLUMNS =
   "id, reporter_profile_id, target_type, target_id, reason, details, status, reviewed_by, reviewed_at, action_taken, created_at";
 export const REPORT_POST_COLUMNS =
-  "id, author_profile_id, body, media, attachment_snapshot, visibility, created_at, deleted_at";
+  "id, author_profile_id, body, media, visibility, created_at, deleted_at";
 export const REPORT_COMMENT_COLUMNS =
   "id, post_id, author_profile_id, body, created_at, deleted_at";
 export const AUDIT_COLUMNS =
@@ -21,6 +22,9 @@ export const ID_COLUMN = "id";
 export const USER_ID_COLUMN = "user_id";
 export const OWNER_USER_ID_COLUMN = "owner_user_id";
 export const FILE_SIZE_COLUMN = "file_size";
+export const FILE_USAGE_COLUMNS = "file_size, created_at";
+export const CREATED_AT_COLUMNS = "id, created_at";
+export const SESSION_USAGE_COLUMNS = "id, created_at, elapsed_sec, status";
 export const VERSION_OWNER_STORAGE_COLUMNS = "file_size, tracks!inner(user_id)";
 export const ASSISTANT_USAGE_COLUMNS = "user_id, day, messages, escalations";
 export const ACCOUNT_EVENT_COLUMNS =

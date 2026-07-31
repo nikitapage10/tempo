@@ -89,6 +89,7 @@ end;
 $$;
 
 revoke execute on function redeem_platform_invite(uuid, uuid) from public, anon, authenticated;
+grant execute on function redeem_platform_invite(uuid, uuid) to service_role;
 
 alter table platform_admins enable row level security;
 alter table invites enable row level security;

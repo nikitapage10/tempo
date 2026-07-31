@@ -1,7 +1,7 @@
 import { type NextRequest } from "next/server";
 import { requireAdmin } from "@/lib/admin/guard";
 import { adminError, adminJson } from "@/lib/admin/http";
-import { REPORT_COLUMNS, REPORT_COMMENT_COLUMNS, REPORT_POST_COLUMNS, USER_PROFILE_COLUMNS } from "@/lib/admin/select";
+import { PROFILE_PUBLIC_COLUMNS, REPORT_COLUMNS, REPORT_COMMENT_COLUMNS, REPORT_POST_COLUMNS } from "@/lib/admin/select";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
       let target: unknown = null;
       if (report.target_type === "post") { const result = await service.from("posts").select(REPORT_POST_COLUMNS).eq("id", report.target_id).maybeSingle(); target = result.data; }
       if (report.target_type === "post_comment") { const result = await service.from("post_comments").select(REPORT_COMMENT_COLUMNS).eq("id", report.target_id).maybeSingle(); target = result.data; }
-      if (report.target_type === "profile") { const result = await service.from("artist_profiles").select(USER_PROFILE_COLUMNS).eq("id", report.target_id).neq("visibility", "private").maybeSingle(); target = result.data; }
+      if (report.target_type === "profile") { const result = await service.from("artist_profiles").select(PROFILE_PUBLIC_COLUMNS).eq("id", report.target_id).neq("visibility", "private").maybeSingle(); target = result.data; }
       return { ...report, target };
     }));
     return adminJson({ reports });

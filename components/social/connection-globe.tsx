@@ -51,9 +51,12 @@ const PIN_R = 1.02;
 const THETA = 0.3;
 /** Slow, ambient drift — about one rotation every ~3.5 minutes. */
 const BASE_SPEED = 0.0008;
-/** Fraction of the (square) canvas kept visible — the crest above the fold.
- *  Just over half, so the equator (where most pins land) clears the crop. */
-const VISIBLE = 0.54;
+/** Fraction of the (square) canvas kept visible — a bit more than half, so
+ *  the lower latitudes still read before the horizon fade takes over. */
+const VISIBLE = 0.58;
+/** Room above the sphere crest for the atmosphere glow — without this the
+ *  halo clips against the container and reads as a flat square top. */
+const GLOW_PAD = 52;
 
 type Projected = { x: number; y: number; z: number };
 
@@ -171,7 +174,7 @@ export function ConnectionGlobe({
     if (!el) return;
     const ro = new ResizeObserver(([entry]) => {
       const w = entry.contentRect.width;
-      if (w > 0) setSize(Math.round(Math.min(Math.max(w * 0.92, 420), 660)));
+      if (w > 0) setSize(Math.round(Math.min(Math.max(w * 1.08, 520), 820)));
     });
     ro.observe(el);
     const io = new IntersectionObserver(
@@ -315,13 +318,21 @@ export function ConnectionGlobe({
     else if (m.personId) onOpenPerson?.(m.personId);
   }
 
-  const height = Math.round(size * VISIBLE);
+  const height = GLOW_PAD + Math.round(size * VISIBLE);
 
   return (
     <div
       ref={rootRef}
       className={cn("relative w-full overflow-hidden touch-none select-none", className)}
-      style={{ height: height || undefined }}
+      style={{
+        height: height || undefined,
+        // Gentle falloff toward the crop — keeps most of the visible disc
+        // solid, then softens only near the bottom edge.
+        WebkitMaskImage:
+          "linear-gradient(to bottom, #000 0%, #000 58%, rgba(0,0,0,0.75) 82%, transparent 100%)",
+        maskImage:
+          "linear-gradient(to bottom, #000 0%, #000 58%, rgba(0,0,0,0.75) 82%, transparent 100%)",
+      }}
       onMouseLeave={() => setHoverId(null)}
       onPointerMove={onPointerMoveDrag}
       onPointerDown={onPointerDown}
@@ -329,95 +340,96 @@ export function ConnectionGlobe({
       onPointerCancel={onPointerUp}
     >
       <div
-        className="absolute left-1/2 top-0 -translate-x-1/2"
-        style={{ width: size, height: size, cursor: dragging ? "grabbing" : "grab" }}
+        className="absolute left-1/2 -translate-x-1/2"
+        style={{
+          width: size,
+          height: size,
+          top: GLOW_PAD,
+          cursor: dragging ? "grabbing" : "grab",
+        }}
       >
-        {/* Atmosphere — a box-shadow on the sphere-sized circle rather than a
-            blurred gradient square. A blurred rect bleeds to the container's
-            straight edges and reads as a glowing box; box-shadow follows the
-            border-radius, so the falloff stays perfectly circular and dies
-            out well before the crop. Sits BEHIND the canvas: the globe is
-            opaque inside its disc, so only the halo past the limb shows, and
-            nothing additive ever lands on the planet's face. */}
+        {/* Atmosphere — soft outer glow only. Box-shadow on a circle that
+            matches the sphere disc, sitting BEHIND the clipped globe so
+            nothing additive lands on the planet face and there's no rim
+            stroke between glow and surface. */}
         <div
           className={cn(
             "pointer-events-none absolute inset-[10%] rounded-full",
             !reduced && "globe-atmosphere"
           )}
           style={{
-            boxShadow: `0 0 50px 2px rgb(${iceCss} / 0.16), 0 0 110px 12px rgb(${iceCss} / 0.07)`,
+            boxShadow: `0 0 48px 6px rgb(${iceCss} / 0.14), 0 0 100px 20px rgb(${iceCss} / 0.06)`,
             opacity: ready ? 1 : 0,
             transition: "opacity 700ms",
           }}
           aria-hidden
         />
 
-        {/* `contrast` crushes the sphere body to true black. cobe lights the
-            whole globe from one `baseColor`, so the "water" between dots
-            comes back a dark gray rather than black — and `color` blend
-            below happily tints any non-black pixel, which is what was
-            washing the oceans blue/amber. Boosting contrast pivots around
-            mid-gray: the dark base clamps to 0 (immune to the color layer,
-            since `color` preserves luminance) while the dots stay at full
-            white and remain colorable. `saturate(0)` drops cobe's own tint
-            first so the ramp below is the only source of hue. */}
-        <canvas
-          ref={canvasRef}
-          width={size * 2}
-          height={size * 2}
-          className="absolute inset-0 size-full transition-opacity duration-700"
-          style={{
-            opacity: ready ? 1 : 0,
-            contain: "layout paint size",
-            filter: "saturate(0) contrast(2.4) brightness(1.1)",
-          }}
-          aria-hidden
-        />
-
-        {/* The color source for the continent dots — the ONLY layer allowed
-            over the sphere face. `color` blend mode takes hue/saturation from
-            here but keeps the backdrop's luminance, so black water (luminance
-            0) stays black no matter what color sits above it, and only the
-            white dots take on color. Because it's a gradient that slides,
-            dots pick up different hues by position — the color washes across
-            the continents dot by dot rather than the whole globe changing at
-            once. Inset 10% + rounded-full clips it to the sphere (which
-            occupies the middle 80% of the square canvas). The ramp is
-            ice → white → amber, the same one ArtistMark uses, so it never
-            leaves the artist's palette. */}
+        {/* Globe disc — clipped to the sphere so canvas AA / overlay edges
+            can't draw a black or white ring at the limb. Everything inside
+            is the planet; atmosphere lives only outside via the glow above. */}
         <div
-          className={cn(
-            "pointer-events-none absolute inset-[10%] rounded-full",
-            !reduced && "globe-color-sweep"
-          )}
+          className="absolute inset-[10%] overflow-hidden rounded-full"
           style={{
-            background: `linear-gradient(115deg, rgb(${iceCss}) 0%, #ffffff 40%, rgb(${amberCss}) 75%, rgb(${iceCss}) 100%)`,
-            backgroundSize: "300% 300%",
-            mixBlendMode: "color",
             opacity: ready ? 1 : 0,
             transition: "opacity 700ms",
           }}
-          aria-hidden
-        />
+        >
+          {/* `contrast` crushes the sphere body to true black. cobe lights the
+              whole globe from one `baseColor`, so the "water" between dots
+              comes back a dark gray rather than black — and `color` blend
+              below happily tints any non-black pixel, which is what was
+              washing the oceans blue/amber. Boosting contrast pivots around
+              mid-gray: the dark base clamps to 0 (immune to the color layer,
+              since `color` preserves luminance) while the dots stay at full
+              white and remain colorable. `saturate(0)` drops cobe's own tint
+              first so the ramp below is the only source of hue.
+              Canvas is scaled up so cobe's 0.8-radius sphere fills this
+              clipped disc edge-to-edge. */}
+          <canvas
+            ref={canvasRef}
+            width={size * 2}
+            height={size * 2}
+            className="absolute"
+            style={{
+              /* Sphere is 80% of the square canvas; scale so it fills the
+                 clipped disc (which is already that 80%). */
+              top: "-12.5%",
+              left: "-12.5%",
+              width: "125%",
+              height: "125%",
+              contain: "layout paint size",
+              filter: "saturate(0) contrast(2.4) brightness(1.1)",
+            }}
+            aria-hidden
+          />
 
-        {/* Ocean fill. Pure black read as a hole punched in the page, so this
-            lifts the water to a Spectra surface tone. `lighten` takes the
-            per-channel max, so it raises the crushed-black ocean to this
-            color while leaving the bright dots untouched — and it has to sit
-            ABOVE the color layer, since blending is bottom-up and the color
-            layer needs a genuinely black backdrop to leave the water alone.
-            A gentle top-to-bottom ramp keeps the sphere from looking flat. */}
-        <div
-          className="pointer-events-none absolute inset-[10%] rounded-full"
-          style={{
-            background:
-              "linear-gradient(160deg, rgb(30 33 46) 0%, rgb(22 24 34) 45%, rgb(14 15 21) 100%)",
-            mixBlendMode: "lighten",
-            opacity: ready ? 1 : 0,
-            transition: "opacity 700ms",
-          }}
-          aria-hidden
-        />
+          {/* Color wash for continent dots — `color` blend keeps luminance
+              so black water stays black. */}
+          <div
+            className={cn(
+              "pointer-events-none absolute inset-0 rounded-full",
+              !reduced && "globe-color-sweep"
+            )}
+            style={{
+              background: `linear-gradient(115deg, rgb(${iceCss}) 0%, #ffffff 40%, rgb(${amberCss}) 75%, rgb(${iceCss}) 100%)`,
+              backgroundSize: "300% 300%",
+              mixBlendMode: "color",
+            }}
+            aria-hidden
+          />
+
+          {/* Ocean fill — lifts crushed-black water to a Spectra surface. */}
+          <div
+            className="pointer-events-none absolute inset-0 rounded-full"
+            style={{
+              background:
+                "linear-gradient(160deg, rgb(30 33 46) 0%, rgb(22 24 34) 45%, rgb(14 15 21) 100%)",
+              mixBlendMode: "lighten",
+            }}
+            aria-hidden
+          />
+        </div>
 
         {markers.map((m) => {
           const hovered = hoverId === m.id;
@@ -485,9 +497,13 @@ export function ConnectionGlobe({
         })}
       </div>
 
-      {/* Horizon scrim — the globe sinks into the page instead of being cut. */}
+      {/* Horizon scrim — light dissolve near the crop, not a heavy wipe. */}
       <div
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-bg-0 to-transparent"
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%]"
+        style={{
+          background:
+            "linear-gradient(to top, var(--bg-0) 0%, transparent 100%)",
+        }}
         aria-hidden
       />
     </div>

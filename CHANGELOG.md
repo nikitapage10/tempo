@@ -4,6 +4,18 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-30
 
+- Changed (v0.56.3): Social globe shows a little more of the lower half, with
+  a gentler fade into the page, and the atmosphere glow no longer clips flat
+  against the top edge.
+
+- Changed (v0.56.2): the Social globe is back to showing mostly the upper
+  half of the earth, with a longer fade into the page at the bottom, and no
+  ring — black or white — around the planet’s edge.
+
+- Changed (v0.56.1): the Social globe is larger, and the hard black ring
+  between the planet and its glow is gone — the edge softens into the
+  atmosphere instead.
+
 - Added (v0.56.0): a private Admin console for running TEMPO’s invited
   program. Platform admins can see member accounts and aggregate usage,
   suspend or reactivate access, remove an account with strong confirmation,
