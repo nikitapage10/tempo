@@ -4,6 +4,9 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-30
 
+- Changed (v0.53.9): the thin animated light strip along the very top of the
+  app is smaller now — more of a subtle accent than a bold band.
+
 - Fixed (v0.53.8): the search bar's glow was bleeding down onto the row of
   buttons below it on Board and Projects (Sort/Filter/Stages/Track), making
   things look blurry and crowded. It now sits with proper clearance on every

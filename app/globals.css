@@ -18,7 +18,7 @@
     --warn: #ff7a6b;
 
     /* Top Spectra lightfield strip — visible animated sliver */
-    --edge-strip-h: 14px;
+    --edge-strip-h: 6px;
 
     /* --- Depth layer (v0.13) ---------------------------------------------
      * Spectra shipped with flat fills and no elevation, which read as an
