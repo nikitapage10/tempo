@@ -10,6 +10,7 @@
 import * as React from "react";
 import { playbackCoordinator } from "@/lib/playback-coordinator";
 import { getSignedUrl } from "@/lib/storage";
+import { useCurrentUser } from "@/hooks/use-current-user";
 
 export type PlayerTrack = {
   id: string;
@@ -36,7 +37,40 @@ type GlobalPlayerContextValue = {
 
 const GlobalPlayerContext = React.createContext<GlobalPlayerContextValue | null>(null);
 const PLAYBACK_ID = "global-player";
-const PERSIST_KEY = "tempo:global-player:v1";
+/**
+ * Per-user, deliberately.
+ *
+ * This was a single global key, which meant signing out and into a different
+ * account restored the previous account's queue — their track titles and
+ * artwork, sitting in the player bar of someone who should never see them.
+ * Scoping by user id keeps each account's playback to itself; the sweep in
+ * `forgetOtherUsers` clears anything left behind by the old shared key or by a
+ * previous occupant of the browser.
+ */
+const PERSIST_PREFIX = "tempo:global-player:v1";
+
+function persistKey(userId: string): string {
+  return `${PERSIST_PREFIX}:${userId}`;
+}
+
+/** Drop the legacy shared key and any other account's saved queue. */
+function forgetOtherUsers(userId: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    const keep = persistKey(userId);
+    const doomed: string[] = [];
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      if (!key) continue;
+      if (key === PERSIST_PREFIX || (key.startsWith(`${PERSIST_PREFIX}:`) && key !== keep)) {
+        doomed.push(key);
+      }
+    }
+    doomed.forEach((key) => localStorage.removeItem(key));
+  } catch {
+    /* storage unavailable — nothing to clean */
+  }
+}
 
 type PersistedPlayerState = {
   queue: PlayerTrack[];
@@ -44,10 +78,10 @@ type PersistedPlayerState = {
   time: number;
 };
 
-function readPersistedState(): PersistedPlayerState | null {
-  if (typeof window === "undefined") return null;
+function readPersistedState(userId: string | null): PersistedPlayerState | null {
+  if (typeof window === "undefined" || !userId) return null;
   try {
-    const raw = localStorage.getItem(PERSIST_KEY);
+    const raw = localStorage.getItem(persistKey(userId));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as PersistedPlayerState;
     if (!parsed || !Array.isArray(parsed.queue) || parsed.queue.length === 0) return null;
@@ -58,10 +92,11 @@ function readPersistedState(): PersistedPlayerState | null {
   }
 }
 
-function writePersistedState(state: PersistedPlayerState): void {
-  if (typeof window === "undefined") return;
+function writePersistedState(userId: string | null, state: PersistedPlayerState): void {
+  // No user, no write: an unattributed queue is exactly what leaked before.
+  if (typeof window === "undefined" || !userId) return;
   try {
-    localStorage.setItem(PERSIST_KEY, JSON.stringify(state));
+    localStorage.setItem(persistKey(userId), JSON.stringify(state));
   } catch {
     /* storage full or unavailable — resuming across sessions just won't work */
   }
@@ -81,13 +116,19 @@ export function GlobalPlayerProvider({ children }: { children: React.ReactNode }
   const [currentTime, setCurrentTime] = React.useState(0);
   const [duration, setDuration] = React.useState(0);
 
+  const currentUser = useCurrentUser();
+  const userId = currentUser?.id ?? null;
+  const userIdRef = React.useRef<string | null>(null);
+
   React.useEffect(() => {
     currentTimeRef.current = currentTime;
   }, [currentTime]);
 
+  // The account-binding effect lives below loadIndex, which it depends on.
+
   const persist = React.useCallback(() => {
     if (queueRef.current.length === 0 || indexRef.current < 0) return;
-    writePersistedState({
+    writePersistedState(userIdRef.current, {
       queue: queueRef.current,
       index: indexRef.current,
       time: currentTimeRef.current,
@@ -125,10 +166,56 @@ export function GlobalPlayerProvider({ children }: { children: React.ReactNode }
       if (q.length === 0) return;
       const nextIndex = (indexRef.current + delta + q.length) % q.length;
       loadIndex(nextIndex, true);
-      writePersistedState({ queue: q, index: nextIndex, time: 0 });
+      writePersistedState(userIdRef.current, { queue: q, index: nextIndex, time: 0 });
     },
     [loadIndex]
   );
+
+  /**
+   * Bind playback to the signed-in account.
+   *
+   * Runs whenever the user resolves or changes. Switching account tears the
+   * player down completely before touching storage — the previous occupant's
+   * queue must not survive the switch even in memory, and their signed audio
+   * URL must stop being loaded.
+   */
+  React.useEffect(() => {
+    // `undefined` means auth hasn't resolved yet; don't act on a guess.
+    if (currentUser === undefined) return;
+
+    const previous = userIdRef.current;
+    if (previous === userId) return;
+    userIdRef.current = userId;
+
+    const audio = audioRef.current;
+    if (previous !== null) {
+      if (audio) {
+        audio.pause();
+        audio.removeAttribute("src");
+        audio.load();
+      }
+      queueRef.current = [];
+      indexRef.current = -1;
+      resumeTimeRef.current = null;
+      setQueue([]);
+      setCurrentIndex(-1);
+      setPlaying(false);
+      setCurrentTime(0);
+      setDuration(0);
+    }
+
+    if (!userId) return;
+    forgetOtherUsers(userId);
+
+    // Resume this account's own queue — loaded, not autoplayed, since browsers
+    // block unprompted autoplay anyway.
+    const persisted = readPersistedState(userId);
+    if (!persisted) return;
+    queueRef.current = persisted.queue;
+    setQueue(persisted.queue);
+    resumeTimeRef.current = persisted.time;
+    loadIndex(persisted.index, false);
+  }, [currentUser, userId, loadIndex]);
 
   React.useEffect(() => {
     const audio = new Audio();
@@ -169,15 +256,8 @@ export function GlobalPlayerProvider({ children }: { children: React.ReactNode }
     audio.addEventListener("ended", onEnded);
     window.addEventListener("beforeunload", persist);
 
-    // Resume whatever was playing last session — loaded but not autoplayed,
-    // since browsers block unprompted autoplay anyway.
-    const persisted = readPersistedState();
-    if (persisted) {
-      queueRef.current = persisted.queue;
-      setQueue(persisted.queue);
-      resumeTimeRef.current = persisted.time;
-      loadIndex(persisted.index, false);
-    }
+    // Resuming happens in the effect below instead: it has to wait until the
+    // signed-in user is known, because the saved queue is per-account.
 
     return () => {
       unregister();
@@ -199,7 +279,7 @@ export function GlobalPlayerProvider({ children }: { children: React.ReactNode }
       queueRef.current = q;
       setQueue(q);
       loadIndex(idx >= 0 ? idx : 0, true);
-      writePersistedState({ queue: q, index: idx >= 0 ? idx : 0, time: 0 });
+      writePersistedState(userIdRef.current, { queue: q, index: idx >= 0 ? idx : 0, time: 0 });
     },
     [loadIndex]
   );

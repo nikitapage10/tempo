@@ -4,6 +4,17 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-31
 
+- Fixed (v0.70.0): signing into a different account on the same computer could
+  leave the previous account's track sitting in the player at the bottom of the
+  screen — their song title and artwork, visible to someone who shouldn't see
+  them. Playback is now kept per account, switching accounts clears the player
+  immediately, and anything left behind by the old behaviour is wiped.
+- Changed (v0.70.0): "Bring your music in" now runs inside Origin itself. The
+  film stays behind it and finishing returns you to your story, instead of
+  dropping you onto a separate page mid-onboarding.
+- Fixed (v0.70.0): the opening chapter of your story sat slightly right of
+  centre instead of left, where it was meant to be.
+
 - Added (v0.69.0): Origin now opens with sound. It waits on a still frame while
   a few lines surface — "Something is listening", "A pulse, finding its
   footing" — and starts when you tap. That tap is also what lets the film play

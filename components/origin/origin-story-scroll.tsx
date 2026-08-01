@@ -33,11 +33,15 @@ const CHAPTER_TITLES = [
 ];
 
 /**
- * Where each chapter sits horizontally. The opening shape reads best just left
- * of centre against the footage; everything after it settles to the middle.
+ * Where each chapter sits horizontally.
+ *
+ * The opening shape reads best just left of centre against the footage;
+ * everything after it settles dead centre. A translate rather than a margin —
+ * with `mx-auto` in play, overriding one side's margin pushes the block the
+ * *opposite* way to what you'd expect.
  */
 const CHAPTER_ALIGN = [
-  "sm:mr-[12%]",
+  "sm:-translate-x-[10%]",
   "",
   "",
   "",
@@ -140,7 +144,7 @@ export function OriginStoryScroll({
   onOpenImport: () => void;
   onSkipImport: () => void;
   /** Which way the artist went on the import chapter, once they've chosen. */
-  importChoice: "import" | "empty" | null;
+  importChoice: "imported" | "empty" | null;
 }) {
   const scrollerRef = React.useRef<HTMLDivElement>(null);
 
@@ -203,12 +207,13 @@ export function OriginStoryScroll({
           Start empty
         </Button>
       </div>
-      {importChoice ? (
+      {importChoice === "empty" ? (
         <p className="text-xs text-ice">
-          {importChoice === "import"
-            ? "Good — that opens as soon as you enter."
-            : "Starting empty. You can bring music in any time from Settings."}
+          Starting empty. You can bring music in any time from Settings.
         </p>
+      ) : null}
+      {importChoice === "imported" ? (
+        <p className="text-xs text-ice">Your workspace is built. It&rsquo;s waiting for you.</p>
       ) : null}
     </div>,
 

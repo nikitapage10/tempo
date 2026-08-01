@@ -19,6 +19,7 @@ import {
 } from "@/components/origin/origin-processing-step";
 import { OriginReviewStep } from "@/components/origin/origin-review-step";
 import { OriginStoryScroll } from "@/components/origin/origin-story-scroll";
+import { ImportExperience } from "@/components/import/import-experience";
 import { markFirstOpenPending } from "@/components/origin/first-open-reveal";
 import { PHASE_GATES, useOriginMedia } from "@/hooks/use-origin-media";
 import { useOriginState } from "@/hooks/use-origin-state";
@@ -97,7 +98,11 @@ export function OriginExperience({
    * Chosen in the import chapter. Defaults to importing when Import is still
    * owed, so an artist who scrolls straight past still lands somewhere useful.
    */
-  const [importChoice, setImportChoice] = React.useState<"import" | "empty" | null>(null);
+  const [importChoice, setImportChoice] = React.useState<"imported" | "empty" | null>(
+    null
+  );
+  /** Import runs as an overlay over the story, still inside the Origin shell. */
+  const [importOpen, setImportOpen] = React.useState(false);
 
   /** The element currently on screen, so copy timing and scrubbing can read it. */
   const activeVideoRef = React.useRef<HTMLVideoElement | null>(null);
@@ -243,7 +248,9 @@ export function OriginExperience({
     markFirstOpenPending();
     // The import chapter decides where Enter TEMPO lands; falling back to
     // whether Import is still owed when they scrolled past without choosing.
-    const wantsImport = importChoice ? importChoice === "import" : importPending;
+    // Import now happens inside the story, so having imported (or chosen to
+    // start empty) means there is nothing left to send them to.
+    const wantsImport = importChoice === null && importPending;
     router.replace(wantsImport ? IMPORT_ROUTE : HOME_ROUTE);
   }
 
@@ -283,10 +290,27 @@ export function OriginExperience({
             onBack={() => dispatch({ type: "back_to_review" })}
             busy={state.busy}
             error={state.error}
-            onOpenImport={() => setImportChoice("import")}
+            onOpenImport={() => setImportOpen(true)}
             onSkipImport={() => setImportChoice("empty")}
             importChoice={importChoice}
           />
+
+          {/* Import, still inside ORIGIN: the film keeps running behind it and
+              finishing returns to the story rather than navigating away. */}
+          {importOpen ? (
+            <div className="absolute inset-0 z-20 overflow-y-auto bg-bg-0/85 backdrop-blur-md">
+              <div className="mx-auto w-full max-w-3xl px-5 py-10">
+                <ImportExperience
+                  embedded
+                  onComplete={() => {
+                    setImportChoice("imported");
+                    setImportOpen(false);
+                  }}
+                  onDiscard={() => setImportOpen(false)}
+                />
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : (
         <OriginOverlay>
