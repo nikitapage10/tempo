@@ -30,6 +30,14 @@ closing arrival is ready to crossfade. Opening **Bring your music in** settles
 the complete Import chapter at full clarity immediately; longer Import content
 scrolls inside the chapter while the outer story stays locked.
 
+Every later story chapter carries its own numbered light rail, ambient geometry
+and content-specific composition rather than falling back to a plain text box.
+The chapter-opening film begins dissolving into its exported final still before
+it ends; the scroll film then rises over that still slowly, so neither decoder
+timing nor an ended-video rewind can flash through. Entering the workspace uses
+a persistent horizon-and-aperture reveal that begins before navigation and
+holds until the dashboard is ready beneath it.
+
 **Messaging inbox.** Notifications, Messages, and Search sit together in the
 global top-right toolbar. The Messages icon carries an unread badge and opens a
 mini-inbox for recent artist and TEMPO Support conversations, including quick

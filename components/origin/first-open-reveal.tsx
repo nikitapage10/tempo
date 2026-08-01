@@ -20,7 +20,7 @@ export const FIRST_OPEN_FLAG = "tempo.originFirstOpen";
 /** Suppresses the daily boot intro so two introductions never stack up. */
 export const SUPPRESS_INTRO_FLAG = SUPPRESS_INTRO_KEY;
 
-const ARRIVAL_MS = 2100;
+const ARRIVAL_MS = 3000;
 
 export function markFirstOpenPending() {
   try {
@@ -101,25 +101,12 @@ export function FirstOpenReveal() {
         }}
       />
       <div className="origin-first-open__veil absolute inset-0" />
-      <div className="absolute inset-0 overflow-hidden mix-blend-screen">
-        {[9, 18, 29, 43, 57, 68, 79, 90].map((left, index) => (
-          <span
-            key={left}
-            className="origin-first-open__slit absolute inset-y-0"
-            style={
-              {
-                left: `${left}%`,
-                animationDelay: `${index * 45}ms`,
-                "--origin-arrival-color":
-                  index % 3 === 0
-                    ? "var(--ice)"
-                    : index % 3 === 1
-                      ? "rgba(255,255,255,0.9)"
-                      : "var(--amber)",
-              } as React.CSSProperties
-            }
-          />
-        ))}
+      <div className="absolute inset-0 overflow-hidden">
+        <span className="origin-first-open__horizon absolute left-1/2 top-1/2 h-px w-[min(74vw,72rem)] -translate-x-1/2" />
+        <span className="origin-first-open__iris absolute left-1/2 top-1/2 aspect-[1.8/1] w-[min(72vw,68rem)] -translate-x-1/2 -translate-y-1/2 rounded-[50%]" />
+        <span className="origin-first-open__mark absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 font-display text-sm tracking-[0.42em] text-text-hi">
+          TEMPO
+        </span>
       </div>
     </div>
   );

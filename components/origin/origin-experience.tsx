@@ -68,7 +68,7 @@ const NAME_PRELUDE_AT = 0.82;
  * Waiting for `ended` would blend out of a frozen final frame, which is what
  * made every handoff read as a stop rather than a dissolve.
  */
-const CROSSFADE_LEAD_MS = 700;
+const CROSSFADE_LEAD_MS = 1200;
 
 export function OriginExperience({
   importPending,

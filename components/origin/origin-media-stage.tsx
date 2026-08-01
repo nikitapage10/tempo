@@ -27,21 +27,21 @@ import { cn } from "@/lib/utils";
  * on `ended` instead would crossfade from a frozen last frame, which is what
  * made the old handoff read as a stop-start.
  */
-const HANDOFF_MS = 620;
+const HANDOFF_MS = 1100;
 /**
  * The first clip is not a handoff — there is nothing underneath it. It comes up
  * out of the poster slowly, so the film reads as light arriving rather than a
  * cut to a playing video.
  */
 const FIRST_FADE_MS = 2000;
-/** The transition-to-scrub handoff, where neither side is moving. */
-// The supplied transition's final frame and the scrub film's opening frame are
-// a frame-matched pair. A short dissolve preserves that seam; a long one only
-// makes the matched frame feel like a freeze before scrolling becomes active.
-const SCRUB_FADE_MS = 280;
+/** The transition-to-scrub handoff is intentionally slow and starts over a
+ * held true final frame, so decoder/compositor timing cannot read as a jump. */
+const SCRUB_FADE_MS = 1800;
+const FINAL_STILL_FADE_MS = 1050;
+const FINAL_STILL_LEAD_SECONDS = 1.35;
 /** Audio reaches silence before a clip is paused or naturally ends. */
-const AUDIO_FADE_MS = 700;
-const AUDIO_TAIL_SECONDS = 0.75;
+const AUDIO_FADE_MS = 1100;
+const AUDIO_TAIL_SECONDS = 1.5;
 /** If a frame never paints, swap anyway rather than freezing the flow. */
 const PAINT_TIMEOUT_MS = 2500;
 
@@ -170,7 +170,9 @@ export function OriginMediaStage({
   const [handoffStill, setHandoffStill] = React.useState<{
     src: string;
     visible: boolean;
+    fadeMs: number;
   } | null>(null);
+  const finalStillPrimedRef = React.useRef<string | null>(null);
 
   const activeSlotRef = React.useRef(activeSlot);
   activeSlotRef.current = activeSlot;
@@ -204,6 +206,7 @@ export function OriginMediaStage({
   /** Warm the final still before the transition ends so it can take over in
    * the same paint where an ended video might otherwise snap back to frame 0. */
   React.useEffect(() => {
+    finalStillPrimedRef.current = null;
     if (!clipKey) return;
     const src = originAsset(clipKey).finalPoster;
     if (!src) return;
@@ -275,12 +278,9 @@ export function OriginMediaStage({
         setActiveSlot(incomingSlot);
         setPainted(true);
         if (asset.mode === "scrub") {
-          requestAnimationFrame(() => {
-            setHandoffStill((currentStill) =>
-              currentStill ? { ...currentStill, visible: false } : null
-            );
-          });
-          window.setTimeout(() => setHandoffStill(null), SCRUB_FADE_MS + 80);
+          // The incoming scrub video rises above the opaque final still. Only
+          // release that still once the much slower dissolve is complete.
+          window.setTimeout(() => setHandoffStill(null), SCRUB_FADE_MS + 120);
         }
         if (isFirst) {
           window.setTimeout(() => {
@@ -346,9 +346,9 @@ export function OriginMediaStage({
   }, [clipLoop, activeSlot]);
 
   /**
-   * The final transition has no early handoff to hide its audio ending. Ease
-   * every transition to silence over its last frames so `ended`, pause, and src
-   * removal can never cut a non-zero waveform.
+   * Ease every transition to silence over its last frames. If it owns a true
+   * final still, begin dissolving into that still before `ended`, so the browser
+   * never gets one paint in which it can rewind the video to frame zero.
    */
   React.useEffect(() => {
     if (staticMode || clipLoop) return;
@@ -356,17 +356,30 @@ export function OriginMediaStage({
     const el = (slot === "a" ? aRef.current : bRef.current) ?? null;
     const key = slotKeyRef.current[slot];
     if (!el || !key || originAsset(key).mode !== "transition") return;
+    const finalPoster = originAsset(key).finalPoster;
 
     let raf = 0;
     const softenTail = () => {
-      if (
-        !el.muted &&
-        Number.isFinite(el.duration) &&
-        el.duration > 0 &&
-        !el.ended
-      ) {
+      if (Number.isFinite(el.duration) && el.duration > 0 && !el.ended) {
         const remaining = el.duration - el.currentTime;
-        if (remaining <= AUDIO_TAIL_SECONDS) {
+        if (
+          finalPoster &&
+          remaining <= FINAL_STILL_LEAD_SECONDS &&
+          finalStillPrimedRef.current !== key
+        ) {
+          finalStillPrimedRef.current = key;
+          setHandoffStill({ src: finalPoster, visible: false, fadeMs: FINAL_STILL_FADE_MS });
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              setHandoffStill((currentStill) =>
+                currentStill?.src === finalPoster
+                  ? { ...currentStill, visible: true }
+                  : currentStill
+              );
+            });
+          });
+        }
+        if (!el.muted && remaining <= AUDIO_TAIL_SECONDS) {
           const t = Math.max(0, Math.min(1, remaining / AUDIO_TAIL_SECONDS));
           const ceiling = t * t * (3 - 2 * t);
           el.volume = Math.min(el.volume, ceiling);
@@ -413,7 +426,11 @@ export function OriginMediaStage({
     if (slot !== activeSlotRef.current) return;
     const key = slotKeyRef.current[slot];
     const finalPoster = key ? originAsset(key).finalPoster : undefined;
-    if (finalPoster) setHandoffStill({ src: finalPoster, visible: true });
+    if (finalPoster) {
+      setHandoffStill((currentStill) =>
+        currentStill ?? { src: finalPoster, visible: true, fadeMs: 0 }
+      );
+    }
     cbRef.current.onEnded?.();
   };
   const handleError = (slot: "a" | "b") => () => {
@@ -451,7 +468,7 @@ export function OriginMediaStage({
                 opacity: activeSlot === slot || holdSlot === slot ? 1 : 0,
                 // The incoming layer must sit above the held one, otherwise it
                 // would fade in underneath an opaque clip and never be seen.
-                zIndex: activeSlot === slot ? 2 : 1,
+                zIndex: activeSlot === slot ? (slowBlend ? 3 : 2) : 1,
                 // Only the incoming layer animates; the held one is static
                 // until it is dropped.
                 transition:
@@ -480,7 +497,7 @@ export function OriginMediaStage({
           style={{
             backgroundImage: `url(${handoffStill.src})`,
             opacity: handoffStill.visible ? 1 : 0,
-            transitionDuration: `${SCRUB_FADE_MS}ms`,
+            transitionDuration: `${handoffStill.fadeMs}ms`,
           }}
         />
       ) : null}

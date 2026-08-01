@@ -4,6 +4,17 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-31
 
+- Fixed (v0.74.1): the chapter-opening film now begins dissolving into its true
+  final still before playback ends, then lets the scroll film rise above it over
+  a longer fade. This removes the remaining flash and stop-start seam.
+- Changed (v0.74.1): every audible Origin transition now starts its sound tail
+  earlier, the opening copy aligns to the film's central light, and review copy
+  uses higher contrast over bright frames.
+- Changed (v0.74.1): later story chapters now carry the numbered light rails,
+  layered glass, ambient geometry and richer content treatments introduced by
+  The First Shape. Entering TEMPO now uses a persistent aperture-and-horizon
+  reveal instead of the disappearing slit animation.
+
 - Changed (v0.74.0): Origin now carries one continuous colour grade from its
   opening invitation into the first film, and its name and backstory moments
   use distinctive editorial glass compositions instead of standard form cards.

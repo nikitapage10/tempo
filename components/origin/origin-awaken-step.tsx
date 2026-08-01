@@ -73,20 +73,21 @@ export function OriginAwakenStep({
 
       <span
         className={cn(
-          "absolute inset-0 flex flex-col justify-center items-stretch px-5 sm:items-end sm:pr-[14vw]",
+          "absolute inset-0 flex flex-col items-stretch justify-center px-5",
+          "sm:left-[calc(50%+1.75rem)] sm:right-auto sm:w-[min(42rem,calc(50%-3.5rem))] sm:items-start sm:px-0",
           "transition-opacity ease-in-out motion-reduce:transition-none",
           leaving ? "opacity-0" : started ? "opacity-100" : "opacity-0"
         )}
         style={{ transitionDuration: leaving ? `${EXIT_MS}ms` : "1200ms" }}
       >
-        <span className="flex w-full max-w-2xl flex-col items-end gap-6 text-right">
+        <span className="flex w-full max-w-2xl flex-col items-start gap-6 text-left">
           {started ? (
             <MorphingText
               as="h1"
               texts={staticMode ? [LINES[LINES.length - 1]] : LINES}
               loop={false}
               onSettled={() => setSettled(true)}
-              className="font-display whitespace-normal text-[clamp(1.2rem,6vw,1.875rem)] leading-snug text-text-hi min-[360px]:whitespace-nowrap sm:text-3xl [&>span]:text-right"
+              className="font-display whitespace-normal text-[clamp(1.2rem,6vw,1.875rem)] leading-snug text-text-hi min-[360px]:whitespace-nowrap sm:text-3xl [&>span]:text-left"
             />
           ) : (
             <span className="h-14" />

@@ -203,6 +203,9 @@ seeked back to its first frame, and confirmed painted before a 280ms seam blend.
 Its first frame is matched to the ended transition. Once that scrub frame is
 confirmed painted, it fades over the held final still, covering compositor
 timing and ended-video rewinds without introducing a mismatched frozen frame.
+The held still starts fading in during the transition's final 1.35 seconds,
+before `ended` can rewind the element. The decoded scrub frame then rises above
+that opaque still over 1.8 seconds; the still is released only after the blend.
 
 Audible transitions use an equal-power handoff and a final 750ms tail envelope.
 Outgoing sound reaches zero before an element is paused, detached or allowed to
@@ -238,6 +241,9 @@ The first chapter uses an asymmetrical light-rail composition and signal chips
 instead of a generic text card. Later chapters use the interpretation's
 evidence where available so they expand on the compact review rather than
 reading it back verbatim.
+Every subsequent chapter also has its own numbered rail, ambient geometry and
+content-specific interior treatment, preserving the film-language established
+by The First Shape rather than returning to a generic copy panel.
 
 ## Import inside the story
 

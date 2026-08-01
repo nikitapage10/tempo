@@ -838,9 +838,21 @@
   animation: origin-first-shape-arrive 900ms cubic-bezier(0.2, 0.72, 0.2, 1) both;
 }
 
+.origin-story-chapter::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: -40% auto -40% 22%;
+  width: 14%;
+  transform: rotate(11deg);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.045), transparent);
+  animation: origin-first-shape-scan 6.2s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .origin-first-shape::after,
-  .origin-first-shape__content {
+  .origin-first-shape__content,
+  .origin-story-chapter::after {
     animation: none;
   }
 }
@@ -854,54 +866,80 @@
   position: fixed;
   inset: 0;
   z-index: 99;
-  background: var(--bg-0);
+  background-color: var(--bg-0);
+  background-image: url("/onboarding/origin/frame-06-final.jpg");
+  background-position: center;
+  background-size: cover;
 }
 
 @keyframes origin-first-open-shell {
-  0%, 72% { opacity: 1; }
+  0%, 80% { opacity: 1; }
   100% { opacity: 0; }
 }
 
 @keyframes origin-first-open-frame {
-  0%, 52% { opacity: 1; transform: scale(1); filter: brightness(1); }
-  78% { opacity: 0.16; transform: scale(1.018); filter: brightness(0.48) contrast(1.2); }
-  100% { opacity: 0; transform: scale(1.025); filter: brightness(0.38) contrast(1.25); }
+  0%, 54% { opacity: 1; transform: scale(1); filter: brightness(1) blur(0); }
+  78% { opacity: 0.88; transform: scale(1.018); filter: brightness(0.62) blur(1px); }
+  100% { opacity: 0; transform: scale(1.035); filter: brightness(0.38) blur(3px); }
 }
 
 @keyframes origin-first-open-veil {
-  0%, 46% { opacity: 0; }
-  76%, 100% { opacity: 0.94; }
+  0%, 56% { opacity: 0; }
+  84%, 100% { opacity: 0.92; }
 }
 
-@keyframes origin-first-open-slit {
-  0%, 12% { opacity: 0; transform: scaleY(0.05); }
-  38% { opacity: 0.95; transform: scaleY(1); }
-  68% { opacity: 0.48; transform: scaleY(1); }
-  100% { opacity: 0; transform: scaleY(0.72); }
+@keyframes origin-first-open-horizon {
+  0%, 8% { opacity: 0; transform: translateX(-50%) scaleX(0.015); }
+  34% { opacity: 1; transform: translateX(-50%) scaleX(1); }
+  64% { opacity: 0.72; transform: translateX(-50%) scaleX(1.12); }
+  100% { opacity: 0; transform: translateX(-50%) scaleX(1.32); }
+}
+
+@keyframes origin-first-open-iris {
+  0%, 18% { opacity: 0; transform: translate(-50%, -50%) scale(0.08, 0.015); }
+  52% { opacity: 0.9; transform: translate(-50%, -50%) scale(0.84, 0.46); }
+  80% { opacity: 0.34; transform: translate(-50%, -50%) scale(1.08, 1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.28, 1.2); }
+}
+
+@keyframes origin-first-open-mark {
+  0%, 28% { opacity: 0; letter-spacing: 0.62em; filter: blur(7px); }
+  52%, 72% { opacity: 1; letter-spacing: 0.42em; filter: blur(0); }
+  100% { opacity: 0; letter-spacing: 0.3em; filter: blur(2px); }
 }
 
 .origin-first-open {
-  animation: origin-first-open-shell 2050ms cubic-bezier(0.22, 0.7, 0.2, 1) forwards;
+  animation: origin-first-open-shell 2950ms cubic-bezier(0.22, 0.7, 0.2, 1) forwards;
 }
 
 .origin-first-open__frame {
   background-color: var(--bg-0);
-  animation: origin-first-open-frame 2050ms cubic-bezier(0.22, 0.7, 0.2, 1) forwards;
+  animation: origin-first-open-frame 2950ms cubic-bezier(0.22, 0.7, 0.2, 1) forwards;
   will-change: opacity, transform, filter;
 }
 
 .origin-first-open__veil {
   background: radial-gradient(circle at 50% 52%, transparent 0%, rgb(10 10 12 / 0.9) 72%);
-  animation: origin-first-open-veil 2050ms ease-out forwards;
+  animation: origin-first-open-veil 2950ms ease-out forwards;
 }
 
-.origin-first-open__slit {
-  width: clamp(1px, 0.16vw, 3px);
-  background: linear-gradient(to bottom, transparent, var(--origin-arrival-color), transparent);
-  box-shadow: 0 0 18px 2px var(--origin-arrival-color);
+.origin-first-open__horizon {
+  background: linear-gradient(90deg, transparent, var(--ice), white 48%, var(--amber), transparent);
+  box-shadow: 0 0 18px 3px rgb(154 211 255 / 0.24), 0 0 34px 6px rgb(255 181 92 / 0.1);
   transform-origin: center;
-  animation: origin-first-open-slit 1750ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
-  opacity: 0;
+  animation: origin-first-open-horizon 2550ms cubic-bezier(0.2, 0.72, 0.2, 1) forwards;
+}
+
+.origin-first-open__iris {
+  border: 1px solid rgb(214 235 255 / 0.72);
+  background: radial-gradient(ellipse, rgb(255 255 255 / 0.12), rgb(154 211 255 / 0.035) 42%, transparent 70%);
+  box-shadow: inset 0 0 48px rgb(154 211 255 / 0.08), 0 0 32px rgb(255 181 92 / 0.08);
+  animation: origin-first-open-iris 2700ms cubic-bezier(0.18, 0.72, 0.2, 1) forwards;
+}
+
+.origin-first-open__mark {
+  text-shadow: 0 0 22px rgb(154 211 255 / 0.5);
+  animation: origin-first-open-mark 2650ms ease-in-out forwards;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -912,7 +950,9 @@
   }
   .origin-first-open__frame,
   .origin-first-open__veil,
-  .origin-first-open__slit {
+  .origin-first-open__horizon,
+  .origin-first-open__iris,
+  .origin-first-open__mark {
     animation: none;
   }
 }

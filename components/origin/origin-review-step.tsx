@@ -164,13 +164,13 @@ export function OriginReviewStep({
         className="no-scrollbar flex max-h-[82vh] flex-col gap-5 overflow-y-auto p-6 pb-16"
       >
       <div className="flex flex-col gap-2">
-        <p className="text-[10px] uppercase tracking-[0.28em] text-text-lo/70">
+        <p className="text-[10px] uppercase tracking-[0.28em] text-text-hi/80">
           A reading, not a verdict
         </p>
         <h1 className="font-display text-3xl text-text-hi sm:text-4xl">
           Does this feel true?
         </h1>
-        <p className="max-w-xl text-sm leading-relaxed text-text-lo">
+        <p className="max-w-xl text-sm leading-relaxed text-text-hi/90">
           I found these threads in what you said. Tune anything that feels off,
           then let the full story unfold in the film.
         </p>
@@ -200,7 +200,7 @@ export function OriginReviewStep({
           aria-hidden
           className="absolute inset-y-0 left-0 w-px bg-[linear-gradient(to_bottom,transparent,var(--ice),var(--amber),transparent)]"
         />
-        <p className="text-xs uppercase tracking-[0.22em] text-text-lo/60">
+        <p className="text-xs uppercase tracking-[0.22em] text-text-hi/80">
           The threads I heard
         </p>
         <div className="mt-4 flex flex-wrap gap-2">

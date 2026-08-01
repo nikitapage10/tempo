@@ -7,7 +7,6 @@ import {
   ImportExperience,
   type ImportStep,
 } from "@/components/import/import-experience";
-import { OriginScrim } from "@/components/origin/origin-copy-layer";
 import { useOriginScrollScrub } from "@/hooks/use-origin-scroll-scrub";
 import type { ArtistOriginInterpretation } from "@/lib/origin/types";
 import { cn } from "@/lib/utils";
@@ -35,6 +34,8 @@ const CHAPTER_TITLES = [
   "Bring your music in",
   "Your story has a tempo",
 ];
+
+const CHAPTER_KICKERS = ["Origin", "Signal", "Compass", "Now", "Intake", "Tempo"];
 
 /**
  * Where each chapter sits horizontally.
@@ -149,22 +150,50 @@ function ChapterSection({
     >
       {/* Middle-left, opposite the earlier steps: the scroll footage opens out
           from the right, so the copy sits on the quieter side of the frame. */}
-      <OriginScrim
-        tone="story"
+      <div
         className={cn(
-          "w-full transition-[max-width,transform] duration-700 motion-reduce:transition-none",
+          "origin-story-chapter relative w-full overflow-hidden rounded-[26px] border bg-[linear-gradient(125deg,rgb(9_10_13/0.9),rgb(21_25_32/0.76),rgb(10_10_13/0.86))] shadow-3 backdrop-blur-xl",
+          index % 2 === 0 ? "border-amber/25" : "border-ice/30",
+          "transition-[max-width,transform] duration-700 motion-reduce:transition-none",
           wide ? "max-w-5xl" : "max-w-xl",
           alignClass ?? CHAPTER_ALIGN[index]
         )}
       >
-        <h2
-          id={`origin-chapter-${index}`}
-          className="text-xs uppercase tracking-[0.2em] text-text-hi"
-        >
-          {title ?? CHAPTER_TITLES[index]}
-        </h2>
-        <div className="mt-4">{children}</div>
-      </OriginScrim>
+        <span
+          aria-hidden
+          className={cn(
+            "absolute -right-20 -top-24 size-56 rounded-full border opacity-70",
+            index % 2 === 0
+              ? "border-amber/15 bg-amber/[0.025]"
+              : "border-ice/15 bg-ice/[0.03]"
+          )}
+        />
+        <span
+          aria-hidden
+          className={cn(
+            "absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-transparent to-transparent",
+            index % 2 === 0 ? "via-amber/70" : "via-ice/70"
+          )}
+        />
+        <div className="relative grid grid-cols-[2.5rem_1fr] gap-5 px-6 py-7 sm:grid-cols-[3rem_1fr] sm:gap-7 sm:px-8 sm:py-8">
+          <div className="flex flex-col items-center gap-3 pt-0.5 text-[9px] uppercase tracking-[0.2em] text-text-lo/70">
+            <span className={cn("font-mono", index % 2 === 0 ? "text-amber" : "text-ice")}>
+              {String(index + 1).padStart(2, "0")}
+            </span>
+            <span className="h-10 w-px bg-[linear-gradient(to_bottom,var(--line),transparent)]" />
+            <span className="[writing-mode:vertical-rl]">{CHAPTER_KICKERS[index]}</span>
+          </div>
+          <div className="min-w-0">
+            <h2
+              id={`origin-chapter-${index}`}
+              className="text-xs uppercase tracking-[0.24em] text-text-hi/90"
+            >
+              {title ?? CHAPTER_TITLES[index]}
+            </h2>
+            <div className="mt-5">{children}</div>
+          </div>
+        </div>
+      </div>
     </section>
   );
 }
@@ -347,28 +376,43 @@ export function OriginStoryScroll({
       ) : null}
     </div>,
 
-    <ul key="signals" className="flex flex-col gap-4">
-      {interpretation.identitySignals.map((s) => (
-        <li key={s.label}>
-          <h3 className="font-display text-base text-text-hi">{s.label}</h3>
-          <p className="mt-1 border-l border-ice/35 pl-3 text-sm italic leading-relaxed text-text-lo">
+    <ul key="signals" className="grid gap-3 sm:grid-cols-2">
+      {interpretation.identitySignals.map((s, index) => (
+        <li
+          key={s.label}
+          className="relative overflow-hidden rounded-2xl border border-line/60 bg-white/[0.025] px-4 py-3.5"
+        >
+          <span className="absolute right-3 top-2 font-mono text-[10px] text-ice/55">
+            {String(index + 1).padStart(2, "0")}
+          </span>
+          <h3 className="pr-7 font-display text-base text-text-hi">{s.label}</h3>
+          <p className="mt-2 border-l border-ice/35 pl-3 text-sm italic leading-relaxed text-text-lo">
             {s.evidence || s.explanation}
           </p>
         </li>
       ))}
     </ul>,
 
-    <p key="compass" className="text-sm leading-relaxed text-text-lo">
-      {interpretation.creativeCompass}
-    </p>,
+    <div key="compass" className="relative py-2 pl-7">
+      <span
+        aria-hidden
+        className="absolute inset-y-0 left-0 w-px bg-[linear-gradient(to_bottom,var(--amber),var(--ice),transparent)]"
+      />
+      <span aria-hidden className="font-display text-5xl leading-none text-amber/30">“</span>
+      <p className="-mt-4 max-w-lg font-display text-xl leading-relaxed text-text-hi">
+        {interpretation.creativeCompass}
+      </p>
+    </div>,
 
-    <div key="chapter">
-      <h3 className="font-display text-lg text-text-hi">
+    <div key="chapter" className="relative overflow-hidden rounded-2xl border border-line/60 bg-white/[0.025] p-5">
+      <span className="text-[10px] uppercase tracking-[0.24em] text-ice/80">Current direction</span>
+      <h3 className="mt-3 font-display text-2xl text-text-hi">
         {interpretation.currentChapter.title}
       </h3>
-      <p className="mt-2 text-sm leading-relaxed text-text-lo">
+      <p className="mt-3 max-w-lg text-sm leading-relaxed text-text-hi/80">
         {interpretation.currentChapter.premise}
       </p>
+      <span aria-hidden className="absolute -bottom-10 -right-8 size-28 rounded-full border border-amber/15" />
     </div>,
 
     // Import lives inside the story rather than as a page you get sent to, so
@@ -430,7 +474,8 @@ export function OriginStoryScroll({
       )}
     </div>,
 
-    <div key="final" className="flex flex-col gap-5">
+    <div key="final" className="relative flex flex-col gap-5 pl-6">
+      <span aria-hidden className="absolute inset-y-0 left-0 w-px bg-[linear-gradient(to_bottom,var(--ice),white,var(--amber),transparent)] shadow-[0_0_16px_var(--ice)]" />
       <p className="font-display text-xl leading-relaxed text-text-hi">
         This is where it starts keeping time with you.
       </p>
