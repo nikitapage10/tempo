@@ -3,6 +3,10 @@
 import * as React from "react";
 import { Music4 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  ImportExperience,
+  type ImportStep,
+} from "@/components/import/import-experience";
 import { OriginScrim } from "@/components/origin/origin-copy-layer";
 import { useOriginScrollScrub } from "@/hooks/use-origin-scroll-scrub";
 import type { ArtistOriginInterpretation } from "@/lib/origin/types";
@@ -85,10 +89,16 @@ function ChapterSection({
   index,
   staticMode,
   children,
+  title,
+  wide = false,
+  alignClass,
 }: {
   index: number;
   staticMode: boolean;
   children: React.ReactNode;
+  title?: string;
+  wide?: boolean;
+  alignClass?: string;
 }) {
   return (
     <section
@@ -97,12 +107,19 @@ function ChapterSection({
     >
       {/* Middle-left, opposite the earlier steps: the scroll footage opens out
           from the right, so the copy sits on the quieter side of the frame. */}
-      <OriginScrim className={cn("w-full max-w-xl", CHAPTER_ALIGN[index])}>
+      <OriginScrim
+        tone="story"
+        className={cn(
+          "w-full transition-[max-width,transform] duration-700 motion-reduce:transition-none",
+          wide ? "max-w-5xl" : "max-w-xl",
+          alignClass ?? CHAPTER_ALIGN[index]
+        )}
+      >
         <h2
           id={`origin-chapter-${index}`}
           className="text-xs uppercase tracking-[0.2em] text-text-hi"
         >
-          {CHAPTER_TITLES[index]}
+          {title ?? CHAPTER_TITLES[index]}
         </h2>
         <div className="mt-4">{children}</div>
       </OriginScrim>
@@ -118,9 +135,10 @@ export function OriginStoryScroll({
   onBack,
   busy,
   error,
-  onOpenImport,
   onSkipImport,
+  onImportComplete,
   importChoice,
+  importPending,
 }: {
   interpretation: ArtistOriginInterpretation;
   staticMode: boolean;
@@ -129,13 +147,28 @@ export function OriginStoryScroll({
   onBack: () => void;
   busy: boolean;
   error: string | null;
-  onOpenImport: () => void;
   onSkipImport: () => void;
+  onImportComplete: () => void;
   /** Which way the artist went on the import chapter, once they've chosen. */
   importChoice: "imported" | "empty" | null;
+  importPending: boolean;
 }) {
   const scrollerRef = React.useRef<HTMLDivElement>(null);
   const sectionRefs = React.useRef<Array<HTMLDivElement | null>>([]);
+  const [importStarted, setImportStarted] = React.useState(false);
+  const [importStep, setImportStep] = React.useState<ImportStep>("intake");
+
+  const importTitle: Record<ImportStep, string> = {
+    intake: "Bring your music in",
+    processing: "Reading what you brought",
+    review: "Shape the workspace",
+    confirm: "Before anything is added",
+    done: "Your studio is ready",
+  };
+  const importAlign =
+    importStep === "processing" || importStep === "confirm"
+      ? "sm:ml-auto sm:mr-[4%]"
+      : "sm:ml-[4%]";
 
   /**
    * Drive each chapter's transform straight from scroll progress.
@@ -267,27 +300,59 @@ export function OriginStoryScroll({
     // the onboarding never breaks character. Skipping is fine — it stays under
     // Settings afterwards.
     <div key="import" className="flex flex-col gap-4">
-      <p className="text-sm leading-relaxed text-text-lo">
-        Whatever you already have — a spreadsheet, screenshots of project folders, a
-        voice note, a list in your phone — TEMPO can read it and propose a workspace.
-        Nothing is added until you approve it.
-      </p>
-      <div className="flex flex-wrap items-center gap-2">
-        <Button type="button" variant="secondary" onClick={onOpenImport} disabled={busy}>
-          <Music4 /> Bring my music in
-        </Button>
-        <Button type="button" variant="ghost" size="sm" onClick={onSkipImport} disabled={busy}>
-          Start empty
-        </Button>
-      </div>
-      {importChoice === "empty" ? (
-        <p className="text-xs text-ice">
-          Starting empty. You can bring music in any time from Settings.
-        </p>
-      ) : null}
-      {importChoice === "imported" ? (
-        <p className="text-xs text-ice">Your workspace is built. It&rsquo;s waiting for you.</p>
-      ) : null}
+      {importStarted ? (
+        <div className="no-scrollbar max-h-[72dvh] overflow-y-auto overscroll-contain pr-1">
+          <ImportExperience
+            embedded
+            onStepChange={setImportStep}
+            onComplete={() => {
+              onImportComplete();
+              setImportStarted(false);
+            }}
+            onDiscard={() => {
+              onSkipImport();
+              setImportStarted(false);
+            }}
+          />
+        </div>
+      ) : (
+        <>
+          <p className="text-sm leading-relaxed text-text-lo">
+            Whatever you already have — a spreadsheet, screenshots of project folders,
+            a voice note, a list in your phone — TEMPO can read it and propose a
+            workspace. Nothing is added until you approve it.
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setImportStarted(true)}
+              disabled={busy}
+            >
+              <Music4 /> Bring my music in
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onSkipImport}
+              disabled={busy}
+            >
+              {importPending ? "Start empty" : "Not now"}
+            </Button>
+          </div>
+          {importChoice === "empty" ? (
+            <p className="text-xs text-ice">
+              Starting empty. You can bring music in any time from Settings.
+            </p>
+          ) : null}
+          {importChoice === "imported" ? (
+            <p className="text-xs text-ice">
+              Your workspace is built. It&rsquo;s waiting for you.
+            </p>
+          ) : null}
+        </>
+      )}
     </div>,
 
     <div key="final" className="flex flex-col gap-5">
@@ -315,9 +380,16 @@ export function OriginStoryScroll({
 
   if (staticMode) {
     return (
-      <div className="relative z-10 mx-auto w-full max-w-3xl px-5 py-16">
+      <div className="relative z-10 mx-auto w-full max-w-6xl px-5 py-16">
         {sections.map((content, i) => (
-          <ChapterSection key={i} index={i} staticMode>
+          <ChapterSection
+            key={i}
+            index={i}
+            staticMode
+            title={i === 4 && importStarted ? importTitle[importStep] : undefined}
+            wide={i === 4 && importStarted}
+            alignClass={i === 4 && importStarted ? importAlign : undefined}
+          >
             {content}
           </ChapterSection>
         ))}
@@ -349,7 +421,13 @@ export function OriginStoryScroll({
               className="absolute inset-x-5 will-change-[transform,opacity]"
               style={{ opacity: 0, transition: "opacity 900ms ease-out" }}
             >
-              <ChapterSection index={i} staticMode={false}>
+              <ChapterSection
+                index={i}
+                staticMode={false}
+                title={i === 4 && importStarted ? importTitle[importStep] : undefined}
+                wide={i === 4 && importStarted}
+                alignClass={i === 4 && importStarted ? importAlign : undefined}
+              >
                 {content}
                 {i === 0 ? <ScrollCue /> : null}
               </ChapterSection>

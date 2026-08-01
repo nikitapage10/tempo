@@ -81,6 +81,34 @@ function whenPainted(video: HTMLVideoElement): Promise<void> {
   });
 }
 
+/** Seek a paused video and wait until the target frame reaches the compositor. */
+function seekToPaintedFrame(video: HTMLVideoElement, time: number): Promise<void> {
+  return new Promise((resolve) => {
+    let settled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const done = () => {
+      if (settled) return;
+      settled = true;
+      if (timer !== undefined) clearTimeout(timer);
+      video.removeEventListener("seeked", onSeeked);
+      resolve();
+    };
+    const onSeeked = () => {
+      const v = video as VideoWithFrameCallback;
+      if (typeof v.requestVideoFrameCallback === "function") {
+        v.requestVideoFrameCallback(() => done());
+      } else {
+        requestAnimationFrame(() => requestAnimationFrame(done));
+      }
+    };
+
+    timer = setTimeout(done, PAINT_TIMEOUT_MS);
+    video.addEventListener("seeked", onSeeked, { once: true });
+    video.currentTime = time;
+  });
+}
+
 export type OriginMediaStageProps = {
   clip: { key: OriginMediaKey; loop: boolean } | null;
   /** Poster shown beneath both layers until a frame is confirmed visible. */
@@ -193,14 +221,26 @@ export function OriginMediaStage({
     void (async () => {
       try {
         if (incoming.currentTime !== 0) incoming.currentTime = 0;
-        // A scrub asset is positioned by the scroll driver, never auto-played.
         if (asset.mode !== "scrub") {
           await incoming.play().catch(() => {
             /* muted + playsInline is permitted; ignore autoplay races */
           });
+          if (cancelled) return;
+          await whenPainted(incoming);
+        } else {
+          // A seek-only element does not reliably paint before it is visible.
+          // Prime the decoder invisibly, then return to an explicitly painted
+          // opening frame before the transition's held last frame blends away.
+          incoming.muted = true;
+          await incoming.play().catch(() => {});
+          if (cancelled) return;
+          await whenPainted(incoming);
+          incoming.pause();
+          if (cancelled) return;
+          // 1ms is still the first 24fps frame, but unlike assigning zero to an
+          // already-zero playhead it reliably fires a seek/decode cycle.
+          await seekToPaintedFrame(incoming, 0.001);
         }
-        if (cancelled) return;
-        await whenPainted(incoming);
         if (cancelled) return;
 
         // Nothing to hold under the first clip — it rises out of the poster.
@@ -209,7 +249,8 @@ export function OriginMediaStage({
         // to blend with. Given a longer, slower blend it reads as the frozen
         // final frame of the transition resolving into it, rather than a cut
         // with a hitch in the middle.
-        if (asset.mode === "scrub") setSlowBlend(true);
+        const blendMs = asset.mode === "scrub" ? SCRUB_FADE_MS : HANDOFF_MS;
+        setSlowBlend(asset.mode === "scrub");
         if (!isFirst) setHoldSlot(current);
         setActiveSlot(incomingSlot);
         setPainted(true);
@@ -248,7 +289,7 @@ export function OriginMediaStage({
           slotKeyRef.current = { ...slotKeyRef.current, [current]: null };
           outgoing.removeAttribute("src");
           outgoing.load();
-        }, (slowBlend ? SCRUB_FADE_MS : HANDOFF_MS) + 60);
+        }, blendMs + 60);
       } catch {
         if (!cancelled) cbRef.current.onError?.(clipKey);
       }

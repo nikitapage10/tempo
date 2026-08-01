@@ -8,8 +8,9 @@ import { SUPPRESS_INTRO_KEY } from "@/lib/intro";
  * The seam between ORIGIN and the product.
  *
  * Origin ends on the chapter's final frame; the real app mounts underneath an
- * opaque layer showing that same image, which then fades to deep black and
- * away. The artist never sees a hard cut into a half-rendered workspace.
+ * overlay holding that exact image. Spectra-like light slits assemble across
+ * it while the frame opens away, so the workspace feels formed out of the film
+ * instead of arriving by a plain fade.
  *
  * One session only — the flag is cleared on first use, so a refresh or any
  * later navigation goes straight to the app.
@@ -19,8 +20,7 @@ export const FIRST_OPEN_FLAG = "tempo.originFirstOpen";
 /** Suppresses the daily boot intro so two introductions never stack up. */
 export const SUPPRESS_INTRO_FLAG = SUPPRESS_INTRO_KEY;
 
-const REVEAL_MS = 850;
-const HOLD_MS = 260;
+const ARRIVAL_MS = 1500;
 
 export function markFirstOpenPending() {
   try {
@@ -62,7 +62,7 @@ export function clearBootIntroSuppression() {
  * session just came out of Origin.
  */
 export function FirstOpenReveal() {
-  const [phase, setPhase] = React.useState<"idle" | "image" | "black" | "done">("idle");
+  const [phase, setPhase] = React.useState<"idle" | "running" | "done">("idle");
   const ranRef = React.useRef(false);
 
   React.useEffect(() => {
@@ -73,39 +73,46 @@ export function FirstOpenReveal() {
       return;
     }
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      // A short opacity change rather than a staged reveal.
-      setPhase("black");
-      const t = setTimeout(() => setPhase("done"), 200);
+      setPhase("running");
+      const t = setTimeout(() => setPhase("done"), 180);
       return () => clearTimeout(t);
     }
-    setPhase("image");
-    const toBlack = setTimeout(() => setPhase("black"), HOLD_MS);
-    const toDone = setTimeout(() => setPhase("done"), HOLD_MS + REVEAL_MS);
-    return () => {
-      clearTimeout(toBlack);
-      clearTimeout(toDone);
-    };
+    setPhase("running");
+    const toDone = setTimeout(() => setPhase("done"), ARRIVAL_MS);
+    return () => clearTimeout(toDone);
   }, []);
 
   if (phase === "done" || phase === "idle") return null;
 
   return (
-    <div
-      aria-hidden
-      className="pointer-events-none fixed inset-0 z-[100] bg-[var(--bg-0)]"
-      style={{
-        opacity: phase === "black" ? 0 : 1,
-        transition: `opacity ${REVEAL_MS}ms ease-out`,
-      }}
-    >
+    <div aria-hidden className="origin-first-open pointer-events-none fixed inset-0 z-[100]">
       <div
-        className="absolute inset-0 bg-cover bg-center"
+        className="origin-first-open__frame absolute inset-0 bg-cover bg-center"
         style={{
-          backgroundImage: `url(${ORIGIN_MEDIA.scroll06.poster})`,
-          opacity: phase === "image" ? 1 : 0,
-          transition: `opacity ${REVEAL_MS * 0.7}ms ease-out`,
+          backgroundImage: `url(${ORIGIN_MEDIA.scroll06.finalPoster ?? ORIGIN_MEDIA.scroll06.poster})`,
         }}
       />
+      <div className="origin-first-open__veil absolute inset-0" />
+      <div className="absolute inset-0 overflow-hidden mix-blend-screen">
+        {[9, 18, 29, 43, 57, 68, 79, 90].map((left, index) => (
+          <span
+            key={left}
+            className="origin-first-open__slit absolute inset-y-0"
+            style={
+              {
+                left: `${left}%`,
+                animationDelay: `${index * 45}ms`,
+                "--origin-arrival-color":
+                  index % 3 === 0
+                    ? "var(--ice)"
+                    : index % 3 === 1
+                      ? "rgba(255,255,255,0.9)"
+                      : "var(--amber)",
+              } as React.CSSProperties
+            }
+          />
+        ))}
+      </div>
     </div>
   );
 }

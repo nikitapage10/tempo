@@ -57,6 +57,8 @@ export type OriginState = {
   transitionSettled: boolean;
   /** Set when the interpretation request has returned. */
   interpretationReady: boolean;
+  /** Set after frame 4 has completed one visible loop. */
+  processingDwellSettled: boolean;
 
   error: string | null;
   /** Guards every irreversible or duplicate-prone action. */
@@ -76,6 +78,7 @@ export type OriginAction =
   | { type: "stop_recording" }
   | { type: "finish_introduction" }
   | { type: "transition_ended" }
+  | { type: "processing_dwell_ended" }
   | { type: "interpretation_ok"; interpretation: ArtistOriginInterpretation }
   | { type: "interpretation_failed"; message: string }
   | { type: "write_manually" }
@@ -104,6 +107,7 @@ export const INITIAL_ORIGIN_STATE: OriginState = {
   undoStack: [],
   transitionSettled: false,
   interpretationReady: false,
+  processingDwellSettled: false,
   error: null,
   busy: false,
   savedStep: "name",
@@ -153,7 +157,13 @@ function pushUndo(state: OriginState): ArtistOriginInterpretation[] {
  */
 function maybeResolve(state: OriginState): OriginState {
   if (state.phase !== "processing") return state;
-  if (!state.transitionSettled || !state.interpretationReady) return state;
+  if (
+    !state.transitionSettled ||
+    !state.interpretationReady ||
+    !state.processingDwellSettled
+  ) {
+    return state;
+  }
   return { ...state, phase: "resolving" };
 }
 
@@ -177,6 +187,9 @@ export function originReducer(state: OriginState, action: OriginAction): OriginS
         introduction: resume.introductionText ?? "",
         interpretation: resume.interpretation ?? EMPTY_INTERPRETATION,
         interpretationReady: resume.interpretation !== null,
+        // A resumed processing step still deserves the full frame-4 hold. In
+        // static mode there is no media cycle to wait for.
+        processingDwellSettled: staticMode,
         // Resuming lands on a stable loop, so nothing is mid-transition.
         transitionSettled: true,
         savedStep,
@@ -226,6 +239,7 @@ export function originReducer(state: OriginState, action: OriginAction): OriginS
         savedStep: "processing",
         transitionSettled: state.staticMode,
         interpretationReady: false,
+        processingDwellSettled: state.staticMode,
         error: null,
       };
 
@@ -235,6 +249,9 @@ export function originReducer(state: OriginState, action: OriginAction): OriginS
       }
       return state;
     }
+
+    case "processing_dwell_ended":
+      return maybeResolve({ ...state, processingDwellSettled: true });
 
     case "interpretation_ok": {
       // Arriving during the transition is normal and must not interrupt it.
@@ -259,6 +276,7 @@ export function originReducer(state: OriginState, action: OriginAction): OriginS
         error: null,
         interpretationReady: true,
         transitionSettled: true,
+        processingDwellSettled: true,
       };
 
     case "resolve_ended":

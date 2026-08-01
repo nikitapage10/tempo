@@ -92,20 +92,23 @@ it needs the product owner's eye.
 `frame-01` … `frame-06` are first frames extracted with ffmpeg (`-frames:v 1`,
 no modification to any video stream); `frame-06` is the first frame of
 `scroll-06`, which is the frame the chapter opens on anyway.
+`frame-06-final` is the last frame of that same scroll film and holds the
+visual seam while the app opens.
 
 ## First-run routing
 
 Before: REGISTER → BRING YOUR MUSIC IN → TEMPO
-Now: **REGISTER → ORIGIN → BRING YOUR MUSIC IN → TEMPO**
+Now: **REGISTER → ORIGIN (including Import) → TEMPO**
 
 `/origin` lives in the `(onboarding)` route group, outside the app shell — no
 rail, no toolbar, no search, no notifications, no assistant, no boot intro.
 Origin *is* the introduction.
 
 Whether Import is still owed is read server-side from `onboarding_imports`: a
-row with status `completed` or `cancelled` means dealt with. There is no
-separate skip flag, so Origin does not invent one — it routes into Import unless
-Import has already been handled.
+row with status `completed` or `cancelled` means dealt with. Origin presents
+Import as chapters of its own scrolling story. The artist may start empty
+without losing any Origin draft; skipping Origin itself still follows the
+standalone Import route when Import is owed.
 
 - **Existing users are never redirected.** Artists predating the feature are
   backfilled to `legacy_complete`.
@@ -147,10 +150,11 @@ interrupts the experience, because nothing is lost from memory.
 `processing`, `resolving`, `review`, `chapter_opening`, `story_scroll`,
 `saving`, `complete`, `recoverable_error`.
 
-**Media timing and API timing are separate clocks.** Leaving the processing loop
-requires *both* `transitionSettled` (the covering transition played to its end)
-and `interpretationReady` (the request returned). A fast model response is
-therefore harmless — the transition is never cut short.
+**Transition timing, API timing and processing dwell are separate clocks.**
+Leaving the processing loop requires `transitionSettled` (the covering
+transition reached its handoff), `interpretationReady` (the request returned)
+and `processingDwellSettled` (frame 4 visibly completed one full media cycle).
+A fast model response therefore cannot skip the processing loop.
 
 **Resume never lands mid-transition.** Saved steps map to stable loops: name →
 `loop-02`, introduction → `loop-03`, processing → `loop-04`, review →
@@ -188,8 +192,10 @@ asset counts as settled, so a broken file cannot deadlock the flow.
 identical full-screen geometry, over an opaque poster floor. The destination is
 loaded into the standby, played while invisible, and only swapped once
 `requestVideoFrameCallback` confirms a painted frame (2.5s timeout fallback).
-The outgoing element is released 180ms later, after the 140ms crossfade — so the
-page background is never exposed and no black frame appears between clips.
+The outgoing element stays fully opaque underneath while the incoming one fades
+over it. The scrub destination is briefly decoded while invisible, paused,
+seeked back to its first frame, and confirmed painted before its 1.4s blend;
+the ended transition remains held underneath for that whole window.
 
 ## Scroll-scrubbed story
 
@@ -200,8 +206,19 @@ maps to `currentTime` inside one `requestAnimationFrame` loop with passive
 listeners. Continuous progress lives in a ref and never enters React state;
 React is told only when the chapter changes. `fastSeek()` where supported.
 
-Five chapters at 0 / 18 / 42 / 66 / 88 %: The first shape · What came through ·
-Your creative compass · The chapter you are opening · The beginning.
+Six chapters at 0 / 16 / 34 / 52 / 72 / 88 %: The first shape · What came
+through · Your creative compass · The chapter you are opening · Bring your
+music in · Your story has a tempo.
+
+## Import inside the story
+
+The Import APIs, AI routes, review data and commit endpoint are shared unchanged
+with the standalone Import screen. Inside Origin, intake, reading, review and
+final confirmation retitle and reposition the story panel over the same film;
+they never open a separate full-screen Import overlay. Long interactive content
+scrolls inside that panel without moving the outer story. The commit endpoint is
+still called only from the final approval action. Leaving Import discards its
+temporary session but does not touch the in-memory or autosaved Origin draft.
 
 ## AI grounding
 
@@ -241,7 +258,7 @@ static mode so nothing waits on a file that will never load.
 
 ## Profile mapping
 
-Opt-in, unchecked by default. Fills **only empty** fields — promise → `tagline`,
+Applied on completion. Fills **only empty** fields — promise → `tagline`,
 compass + chapter premise → `bio`. Never passes `visibility`, never touches
 handle, location, pronouns, links, or messaging settings, never enables Social,
 and does not write genres or roles (those need their own confirmation). A
@@ -251,8 +268,9 @@ from entering by an optional nicety.
 ## The seam into the product
 
 `first-open-reveal.tsx` sets two session flags on completion. The app shell
-mounts an opaque layer showing the chapter's final frame, lets the destination
-render underneath, fades to deep black over ~850ms, and clears itself. The daily
+mounts a pointer-transparent layer showing the chapter film's actual final
+frame while the destination renders underneath. A brief CSS-only Spectra-light
+sequence assembles and clears that frame without delaying app interaction. The daily
 boot intro is suppressed for that session in all three places that gate it
 (`introWillPlay`, the pre-paint inline script, and `IntroMoment`) so the artist
 never gets two introductions back to back.
@@ -274,13 +292,14 @@ Not yet executed — needs a signed-in session against a migrated database.
 - [ ] Name validates; draft survives refresh
 - [ ] Live dictation, record-and-transcribe, and typing all work
 - [ ] Microphone denial is recoverable; transcript preserved
-- [ ] Fast AI response does not interrupt the transition
+- [ ] Fast AI response still leaves frame 4 visible for one full loop
 - [ ] AI failure preserves transcript; retry and manual both work
 - [ ] Regeneration preserves current version until accepted; undo works
 - [ ] "Open the chapter" waits for scroll readiness with restrained copy
 - [ ] Scroll advances and reverses; pausing freezes the frame
 - [ ] Final save is idempotent; no profile becomes public
-- [ ] Import opens next; product opens without replaying the intro
+- [ ] Import intake, reading, review and confirmation stay inside the story
+- [ ] Starting empty preserves the Origin draft; product opens without replaying the intro
 - [ ] Existing account is not forced into Origin; switching artists is safe
 - [ ] Another user cannot read or edit Origin by UUID
 - [ ] Reduced motion completes fully with no autoplay

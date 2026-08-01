@@ -70,18 +70,23 @@ export function StepFade({
   show,
   children,
   className,
+  enterMs = 1500,
+  exitMs = 650,
 }: {
   show: boolean;
   children: React.ReactNode;
   className?: string;
+  enterMs?: number;
+  exitMs?: number;
 }) {
   return (
     <div
       className={cn(
-        "transition-opacity duration-[900ms] ease-out motion-reduce:transition-none",
+        "transition-opacity ease-out motion-reduce:transition-none",
         show ? "opacity-100" : "pointer-events-none opacity-0",
         className
       )}
+      style={{ transitionDuration: `${show ? enterMs : exitMs}ms` }}
       // Hidden from assistive tech until it is actually the live step.
       aria-hidden={!show}
     >
@@ -95,19 +100,24 @@ export function OriginScrim({
   children,
   className,
   tone = "panel",
+  onScroll,
 }: {
   children: React.ReactNode;
   className?: string;
-  tone?: "panel" | "veil";
+  tone?: "panel" | "veil" | "story";
+  onScroll?: React.UIEventHandler<HTMLDivElement>;
 }) {
   return (
     <div
       className={cn(
         tone === "panel"
           ? "rounded-panel border border-line/60 bg-bg-0/90 p-6 shadow-3 backdrop-blur-xl"
-          : "rounded-panel bg-gradient-to-b from-bg-0/85 via-bg-0/70 to-transparent p-6",
+          : tone === "story"
+            ? "rounded-panel border border-line/80 bg-[rgb(10_10_12/0.97)] p-6 shadow-3"
+            : "rounded-panel bg-gradient-to-b from-bg-0/85 via-bg-0/70 to-transparent p-6",
         className
       )}
+      onScroll={onScroll}
     >
       {children}
     </div>
@@ -126,31 +136,34 @@ export function TimedCopy({
   /** Static mode has no playhead — show everything at once. */
   showAll = false,
   className,
+  resetKey = "timed-copy",
+  matches = true,
+  tick = 0,
 }: {
   lines: TimedLine[];
   videoRef?: React.MutableRefObject<HTMLVideoElement | null>;
   showAll?: boolean;
   className?: string;
+  resetKey?: string;
+  matches?: boolean;
+  tick?: number;
 }) {
-  const [progress, setProgress] = React.useState(0);
-
-  React.useEffect(() => {
-    if (showAll) return;
-    const video = videoRef?.current;
-    if (!video) return;
-    const onTime = () => {
-      if (!Number.isFinite(video.duration) || video.duration <= 0) return;
-      setProgress(video.currentTime / video.duration);
-    };
-    video.addEventListener("timeupdate", onTime);
-    return () => video.removeEventListener("timeupdate", onTime);
-  }, [videoRef, showAll]);
+  const fallbackRef = React.useRef<HTMLVideoElement | null>(null);
+  const progress = useClipProgress(
+    videoRef ?? fallbackRef,
+    resetKey,
+    !showAll && matches,
+    tick
+  );
 
   return (
     <div className={cn("flex flex-col items-end gap-3 text-right", className)}>
       {lines.map((line) => {
         const visible =
-          showAll || (progress >= line.at && (line.until === undefined || progress < line.until));
+          showAll ||
+          (matches &&
+            progress >= line.at &&
+            (line.until === undefined || progress < line.until));
         return (
           <p
             key={line.text}
@@ -193,8 +206,8 @@ export function OriginOverlay({
         // panel behind the film and made them look as though they had never
         // rendered. Anything layered over the stage needs an explicit z above 3
         // (the grain).
-        "pointer-events-none absolute inset-0 z-20 flex flex-col justify-center",
-        "items-stretch sm:items-end",
+        "pointer-events-none absolute inset-0 z-20 grid place-items-center",
+        "[&>*]:col-start-1 [&>*]:row-start-1 justify-items-stretch sm:justify-items-end",
         // Middle-right: inset from the edge so the panel sits in the right half
         // rather than hugging the frame.
         "px-5 sm:pr-[14vw]",

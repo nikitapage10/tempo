@@ -4,6 +4,25 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-31
 
+- Changed (v0.73.0): Origin now lets every panel arrive slowly and leave
+  gracefully instead of popping on and vanishing. The opening copy stays on one
+  line, the name panel holds still, the artist's name gets a readable
+  acknowledgement, and the processing message fades in with the rest.
+- Fixed (v0.73.0): a quick AI answer can no longer skip the processing scene.
+  Its film now completes a full loop before the story resolves.
+- Fixed (v0.73.0): the review panel now hints that there is more below without
+  bringing back its scrollbar, story panels stay solid and legible over the
+  brightest film frames, and the final transition decodes the scrolling film's
+  first frame before blending into it.
+- Changed (v0.73.0): bringing music in is now built into the scrolling Origin
+  story. Intake, reading, review and final approval become chapters over the
+  film; starting empty remains available, and nothing reaches the catalog until
+  the artist approves the final plan.
+- Changed (v0.73.0): entering TEMPO now resolves the film's actual final frame
+  into the app through a brief Spectra light sequence. The workspace is
+  interactive underneath immediately, and reduced-motion users get a direct
+  handoff.
+
 - Fixed (v0.72.0): Origin was skipping its transition films. Each panel and each
   scene change was being timed against the *previous* clip, and because that's
   usually a loop, the next step fired almost immediately. Transitions now play

@@ -26,12 +26,13 @@ import {
 import { DEFAULT_STAGE_NAMES } from "@/lib/constants";
 import type { WorkspaceImportPlan } from "@/lib/ai/import-plan-schema";
 
-type Step = "intake" | "processing" | "review" | "confirm" | "done";
+export type ImportStep = "intake" | "processing" | "review" | "confirm" | "done";
 
 export function ImportExperience({
   onComplete,
   onDiscard,
   embedded = false,
+  onStepChange,
 }: {
   /** Called once a workspace has actually been built. */
   onComplete: () => void;
@@ -39,6 +40,8 @@ export function ImportExperience({
   onDiscard: () => void;
   /** Inside ORIGIN: drop the page chrome, the film supplies the frame. */
   embedded?: boolean;
+  /** Lets ORIGIN title and place each import stage like a story chapter. */
+  onStepChange?: (step: ImportStep) => void;
 }) {
   // Navigation is the caller's job: the same flow runs as a page and as a
   // chapter inside ORIGIN, which finish in different places.
@@ -48,7 +51,7 @@ export function ImportExperience({
 
   const [importId, setImportId] = React.useState<string | null>(null);
   const [startupError, setStartupError] = React.useState<string | null>(null);
-  const [step, setStep] = React.useState<Step>("intake");
+  const [step, setStep] = React.useState<ImportStep>("intake");
   const [sources, setSources] = React.useState<ImportSource[]>([]);
   const [plan, setPlan] = React.useState<WorkspaceImportPlan | null>(null);
   const [selection, setSelection] = React.useState<ReviewSelection>({
@@ -62,6 +65,10 @@ export function ImportExperience({
   const [answering, setAnswering] = React.useState(false);
   const [confirmDiscard, setConfirmDiscard] = React.useState(false);
   const [stagesBySpaceId, setStagesBySpaceId] = React.useState<Record<string, string[]>>({});
+
+  React.useEffect(() => {
+    onStepChange?.(step);
+  }, [step, onStepChange]);
 
   // One import session per visit to this page.
   React.useEffect(() => {
@@ -226,7 +233,15 @@ export function ImportExperience({
       {embedded ? (
         <div className="mb-4 flex justify-end">
           {step !== "done" ? (
-            <Button type="button" variant="ghost" size="sm" onClick={onDiscard}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                if (sources.length > 0) setConfirmDiscard(true);
+                else void handleDiscard();
+              }}
+            >
               Not now
             </Button>
           ) : null}
@@ -272,9 +287,15 @@ export function ImportExperience({
             and an OpenAI key needs adding to the server. Everything else in TEMPO
             works in the meantime.
           </p>
-          <Button className="mt-5" asChild>
-            <Link href="/">Go to Today</Link>
-          </Button>
+          {embedded ? (
+            <Button className="mt-5" type="button" onClick={onDiscard}>
+              Keep going without import
+            </Button>
+          ) : (
+            <Button className="mt-5" asChild>
+              <Link href="/">Go to Today</Link>
+            </Button>
+          )}
         </div>
       ) : !importId ? (
         <div className="panel h-48 animate-pulse" />
@@ -285,6 +306,7 @@ export function ImportExperience({
           onSourcesChanged={() => void refreshSources()}
           onReady={() => void handleProcess()}
           busy={busy}
+          embedded={embedded}
         />
       ) : step === "processing" ? (
         <ProcessingView sources={sources} phase={phase} warnings={warnings} />

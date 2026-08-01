@@ -70,7 +70,7 @@ export function OriginNameStep({
   }, [attempted, mediaReady, error, onSubmit]);
 
   return (
-    <OriginScrim className="pointer-events-auto w-full max-w-md text-left">
+    <OriginScrim className="pointer-events-auto min-h-[17.5rem] w-full max-w-md text-left">
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
         <div className="flex flex-col gap-2">
           <MorphingText

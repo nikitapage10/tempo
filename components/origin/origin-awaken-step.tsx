@@ -86,14 +86,14 @@ export function OriginAwakenStep({
         )}
         style={{ transitionDuration: leaving ? `${EXIT_MS}ms` : "1200ms" }}
       >
-        <span className="flex w-full max-w-md flex-col items-end gap-6 text-right">
+        <span className="flex w-full max-w-2xl flex-col items-end gap-6 text-right">
           {started ? (
             <MorphingText
               as="h1"
               texts={staticMode ? [LINES[LINES.length - 1]] : LINES}
               loop={false}
               onSettled={() => setSettled(true)}
-              className="font-display text-3xl leading-snug text-text-hi sm:text-4xl [&>span]:text-right"
+              className="font-display whitespace-normal text-[clamp(1.2rem,6vw,1.875rem)] leading-snug text-text-hi min-[360px]:whitespace-nowrap sm:text-3xl [&>span]:text-right"
             />
           ) : (
             <span className="h-14" />

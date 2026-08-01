@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, Pencil, Undo2, X } from "lucide-react";
+import { Check, ChevronDown, Pencil, Undo2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -149,6 +149,7 @@ export function OriginReviewStep({
   error: string | null;
 }) {
   const [attempted, setAttempted] = React.useState(false);
+  const [hasScrolled, setHasScrolled] = React.useState(false);
   const waiting = attempted && !mediaReady;
 
   React.useEffect(() => {
@@ -159,7 +160,13 @@ export function OriginReviewStep({
     onChange({ ...interpretation, ...p });
 
   return (
-    <OriginScrim className="no-scrollbar pointer-events-auto flex max-h-[82vh] w-full max-w-2xl flex-col gap-5 overflow-y-auto">
+    <OriginScrim className="pointer-events-auto relative max-h-[82vh] w-full max-w-2xl overflow-hidden p-0">
+      <div
+        className="no-scrollbar flex max-h-[82vh] flex-col gap-5 overflow-y-auto p-6 pb-16"
+        onScroll={(event) => {
+          if (event.currentTarget.scrollTop > 16) setHasScrolled(true);
+        }}
+      >
       <h1 className="font-display text-2xl text-text-hi sm:text-3xl">
         Here is the beginning I heard.
       </h1>
@@ -318,6 +325,21 @@ export function OriginReviewStep({
             </div>
           ) : null}
         </div>
+      </div>
+      </div>
+
+      <div
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute inset-x-0 bottom-0 z-10 flex h-16 items-end justify-center",
+          "bg-gradient-to-t from-bg-0 via-bg-0/95 to-transparent pb-3",
+          "transition-opacity duration-500 motion-reduce:transition-none",
+          hasScrolled ? "opacity-0" : "opacity-100"
+        )}
+      >
+        <span className="flex items-center gap-1 text-[11px] text-text-lo">
+          More below <ChevronDown className="size-3.5 motion-safe:animate-bounce" />
+        </span>
       </div>
     </OriginScrim>
   );

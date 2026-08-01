@@ -30,6 +30,8 @@ export type OriginMediaAsset = {
   mode: OriginMediaMode;
   src: string;
   poster?: string;
+  /** Optional held image for a clip's last frame, used at an exit seam. */
+  finalPoster?: string;
   preload: "auto" | "metadata" | "none";
   /** Filename as delivered, before normalization. Audit trail only. */
   sourceName: string;
@@ -125,6 +127,7 @@ export const ORIGIN_MEDIA = {
     // the delivered folder, so this poster is the first frame of scroll-06
     // itself — which is the frame the chapter opens on anyway.
     poster: `${DIR}/frame-06.jpg`,
+    finalPoster: `${DIR}/frame-06-final.jpg`,
     preload: "metadata",
     sourceName: "6 scroll.mp4",
     duration: 10.05,

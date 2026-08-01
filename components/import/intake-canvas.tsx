@@ -37,6 +37,7 @@ type IntakeCanvasProps = {
   onSourcesChanged: () => void;
   onReady: () => void;
   busy: boolean;
+  embedded?: boolean;
 };
 
 const KIND_ICON: Record<ImportSourceKind, React.ComponentType<{ className?: string }>> = {
@@ -83,6 +84,7 @@ export function IntakeCanvas({
   onSourcesChanged,
   onReady,
   busy,
+  embedded = false,
 }: IntakeCanvasProps) {
   const { toast } = useToast();
   const [text, setText] = React.useState("");
@@ -216,7 +218,12 @@ export function IntakeCanvas({
   return (
     <Dropzone
       multiple
-      className="flex h-[calc(100vh-13rem)] min-h-[30rem] flex-col overflow-hidden !rounded-panel !border-solid !border-line bg-gradient-to-b from-bg-1 to-bg-0 shadow-e3"
+      className={cn(
+        "flex flex-col overflow-hidden !rounded-panel !border-solid !border-line bg-gradient-to-b from-bg-1 to-bg-0 shadow-e3",
+        embedded
+          ? "h-[min(66dvh,42rem)] min-h-[28rem]"
+          : "h-[calc(100vh-13rem)] min-h-[30rem]"
+      )}
       accept={`${IMPORT_IMAGE_ACCEPT},${IMPORT_DOCUMENT_ACCEPT}`}
       disabled={disabled}
       onFiles={(files) => void handleFiles(files)}

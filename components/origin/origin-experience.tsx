@@ -19,7 +19,6 @@ import {
 } from "@/components/origin/origin-processing-step";
 import { OriginReviewStep } from "@/components/origin/origin-review-step";
 import { OriginStoryScroll } from "@/components/origin/origin-story-scroll";
-import { ImportExperience } from "@/components/import/import-experience";
 import { markFirstOpenPending } from "@/components/origin/first-open-reveal";
 import { PHASE_GATES, useOriginMedia } from "@/hooks/use-origin-media";
 import { useOriginState } from "@/hooks/use-origin-state";
@@ -55,7 +54,7 @@ const OPENING_LINES = [
  * enough that the panel is settled before the loop begins, late enough that it
  * never competes with the film's own moment.
  */
-const PRELUDE_AT = 0.6;
+const PRELUDE_AT = 0.58;
 
 /**
  * How long before a transition's end the next phase is entered.
@@ -101,8 +100,6 @@ export function OriginExperience({
   const [importChoice, setImportChoice] = React.useState<"imported" | "empty" | null>(
     null
   );
-  /** Import runs as an overlay over the story, still inside the Origin shell. */
-  const [importOpen, setImportOpen] = React.useState(false);
 
   /**
    * The element currently on screen, so copy timing and scrubbing can read it.
@@ -149,20 +146,67 @@ export function OriginExperience({
    * with the final opacity already applied has nothing to transition from, so
    * the CSS never animates.
    */
-  const mountName = state.phase === "opening" || state.phase === "name_idle";
+  const mountName =
+    state.phase === "opening" ||
+    state.phase === "name_idle" ||
+    state.phase === "recognizing";
   const showName = state.phase === "name_idle" || (state.phase === "opening" && prelude);
 
   const mountIntroduction =
     state.phase === "recognizing" ||
     state.phase === "introduction_idle" ||
-    state.phase === "recording";
+    state.phase === "recording" ||
+    state.phase === "interpreting_transition";
   const showIntroduction =
     state.phase === "introduction_idle" ||
     state.phase === "recording" ||
     (state.phase === "recognizing" && prelude);
 
-  const mountReview = state.phase === "resolving" || state.phase === "review";
+  const mountProcessing =
+    state.phase === "interpreting_transition" ||
+    state.phase === "processing" ||
+    state.phase === "resolving";
+  const showProcessing =
+    state.phase === "processing" ||
+    (state.phase === "interpreting_transition" && prelude);
+
+  const mountReview =
+    state.phase === "resolving" ||
+    state.phase === "review" ||
+    state.phase === "chapter_opening";
   const showReview = state.phase === "review" || (state.phase === "resolving" && prelude);
+
+  /**
+   * A fast interpretation must still leave room for frame 4 to breathe. Count
+   * a real media cycle rather than a wall-clock timeout: playback pauses in a
+   * hidden tab, so only a wrap of the visible loop satisfies the dwell.
+   */
+  React.useEffect(() => {
+    if (state.phase !== "processing" || state.processingDwellSettled) return;
+    if (media.staticMode) {
+      dispatch({ type: "processing_dwell_ended" });
+      return;
+    }
+    const video = activeVideoRef.current;
+    if (!video || activeKeyRef.current !== "loop04") return;
+
+    let previous = video.currentTime;
+    const onTime = () => {
+      const current = video.currentTime;
+      const duration = video.duration;
+      if (
+        Number.isFinite(duration) &&
+        duration > 0 &&
+        previous > duration * 0.72 &&
+        current < duration * 0.28
+      ) {
+        dispatch({ type: "processing_dwell_ended" });
+      }
+      previous = current;
+    };
+    video.addEventListener("timeupdate", onTime);
+    return () => video.removeEventListener("timeupdate", onTime);
+  }, [state.phase, state.processingDwellSettled, media.staticMode, activeTick, dispatch]);
 
   /** Kick off interpretation the moment the artist finishes speaking — in
    *  parallel with the transition, never gated on it. */
@@ -276,7 +320,6 @@ export function OriginExperience({
     // whether Import is still owed when they scrolled past without choosing.
     // Import now happens inside the story, so having imported (or chosen to
     // start empty) means there is nothing left to send them to.
-    const wantsImport = importChoice === null && importPending;
     // Import now runs inside the story, so Enter TEMPO always opens the app.
     router.replace(HOME_ROUTE);
   }
@@ -317,27 +360,11 @@ export function OriginExperience({
             onBack={() => dispatch({ type: "back_to_review" })}
             busy={state.busy}
             error={state.error}
-            onOpenImport={() => setImportOpen(true)}
             onSkipImport={() => setImportChoice("empty")}
+            onImportComplete={() => setImportChoice("imported")}
             importChoice={importChoice}
+            importPending={importPending}
           />
-
-          {/* Import, still inside ORIGIN: the film keeps running behind it and
-              finishing returns to the story rather than navigating away. */}
-          {importOpen ? (
-            <div className="absolute inset-0 z-20 overflow-y-auto bg-bg-0/85 backdrop-blur-md">
-              <div className="mx-auto w-full max-w-3xl px-5 py-10">
-                <ImportExperience
-                  embedded
-                  onComplete={() => {
-                    setImportChoice("imported");
-                    setImportOpen(false);
-                  }}
-                  onDiscard={() => setImportOpen(false)}
-                />
-              </div>
-            </div>
-          ) : null}
         </div>
       ) : (
         <OriginOverlay>
@@ -358,6 +385,9 @@ export function OriginExperience({
               lines={OPENING_LINES}
               videoRef={activeVideoRef}
               showAll={media.staticMode}
+              resetKey={state.phase}
+              matches={activeKeyRef.current === clip?.key}
+              tick={activeTick}
             />
           ) : null}
 
@@ -380,11 +410,14 @@ export function OriginExperience({
           {state.phase === "recognizing" ? (
             <TimedCopy
               lines={[
-                { text: `${state.name}.`, at: 0.08, until: 0.5 },
-                { text: "Good. I can see you now.", at: 0.54 },
+                { text: `${state.name}.`, at: 0.16, until: 0.46 },
+                { text: "Good. I can see you now.", at: 0.48 },
               ]}
               videoRef={activeVideoRef}
               showAll={media.staticMode}
+              resetKey={state.phase}
+              matches={activeKeyRef.current === clip?.key}
+              tick={activeTick}
             />
           ) : null}
 
@@ -403,8 +436,10 @@ export function OriginExperience({
             </StepFade>
           ) : null}
 
-          {state.phase === "interpreting_transition" || state.phase === "processing" ? (
-            <OriginProcessingStep announce={state.interpretationReady} />
+          {mountProcessing ? (
+            <StepFade show={showProcessing} className="w-full max-w-md">
+              <OriginProcessingStep announce={state.interpretationReady} />
+            </StepFade>
           ) : null}
 
           {state.phase === "recoverable_error" ? (
