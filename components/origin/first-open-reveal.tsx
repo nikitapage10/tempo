@@ -20,12 +20,13 @@ export const FIRST_OPEN_FLAG = "tempo.originFirstOpen";
 /** Suppresses the daily boot intro so two introductions never stack up. */
 export const SUPPRESS_INTRO_FLAG = SUPPRESS_INTRO_KEY;
 
-const ARRIVAL_MS = 1500;
+const ARRIVAL_MS = 2100;
 
 export function markFirstOpenPending() {
   try {
     sessionStorage.setItem(FIRST_OPEN_FLAG, "1");
     sessionStorage.setItem(SUPPRESS_INTRO_FLAG, "1");
+    document.documentElement.classList.add("origin-arrival-pending");
   } catch {
     /* private mode — the reveal is a nicety, not a requirement */
   }
@@ -69,23 +70,30 @@ export function FirstOpenReveal() {
     if (ranRef.current) return;
     ranRef.current = true;
     if (!consumeFirstOpenFlag()) {
+      document.documentElement.classList.remove("origin-arrival-pending");
       setPhase("done");
       return;
     }
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       setPhase("running");
-      const t = setTimeout(() => setPhase("done"), 180);
+      const t = setTimeout(() => {
+        document.documentElement.classList.remove("origin-arrival-pending");
+        setPhase("done");
+      }, 180);
       return () => clearTimeout(t);
     }
     setPhase("running");
-    const toDone = setTimeout(() => setPhase("done"), ARRIVAL_MS);
+    const toDone = setTimeout(() => {
+      document.documentElement.classList.remove("origin-arrival-pending");
+      setPhase("done");
+    }, ARRIVAL_MS);
     return () => clearTimeout(toDone);
   }, []);
 
   if (phase === "done" || phase === "idle") return null;
 
   return (
-    <div aria-hidden className="origin-first-open pointer-events-none fixed inset-0 z-[100]">
+    <div aria-hidden className="origin-first-open pointer-events-none fixed inset-0 z-[100] bg-bg-0">
       <div
         className="origin-first-open__frame absolute inset-0 bg-cover bg-center"
         style={{

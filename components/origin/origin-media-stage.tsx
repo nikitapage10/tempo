@@ -166,6 +166,11 @@ export function OriginMediaStage({
   const [firstReveal, setFirstReveal] = React.useState(true);
   /** Uses the frame-matched blend length for the scrub handoff. */
   const [slowBlend, setSlowBlend] = React.useState(false);
+  /** A real exported last frame covers browsers that rewind an ended video. */
+  const [handoffStill, setHandoffStill] = React.useState<{
+    src: string;
+    visible: boolean;
+  } | null>(null);
 
   const activeSlotRef = React.useRef(activeSlot);
   activeSlotRef.current = activeSlot;
@@ -195,6 +200,16 @@ export function OriginMediaStage({
 
   const clipKey = clip?.key ?? null;
   const clipLoop = clip?.loop ?? false;
+
+  /** Warm the final still before the transition ends so it can take over in
+   * the same paint where an ended video might otherwise snap back to frame 0. */
+  React.useEffect(() => {
+    if (!clipKey) return;
+    const src = originAsset(clipKey).finalPoster;
+    if (!src) return;
+    const image = new Image();
+    image.src = src;
+  }, [clipKey]);
 
   React.useEffect(() => {
     if (staticMode || !clipKey) return;
@@ -259,6 +274,14 @@ export function OriginMediaStage({
         if (!isFirst) setHoldSlot(current);
         setActiveSlot(incomingSlot);
         setPainted(true);
+        if (asset.mode === "scrub") {
+          requestAnimationFrame(() => {
+            setHandoffStill((currentStill) =>
+              currentStill ? { ...currentStill, visible: false } : null
+            );
+          });
+          window.setTimeout(() => setHandoffStill(null), SCRUB_FADE_MS + 80);
+        }
         if (isFirst) {
           window.setTimeout(() => {
             if (!cancelled) setFirstReveal(false);
@@ -387,7 +410,11 @@ export function OriginMediaStage({
   }, []);
 
   const handleEnded = (slot: "a" | "b") => () => {
-    if (slot === activeSlotRef.current) cbRef.current.onEnded?.();
+    if (slot !== activeSlotRef.current) return;
+    const key = slotKeyRef.current[slot];
+    const finalPoster = key ? originAsset(key).finalPoster : undefined;
+    if (finalPoster) setHandoffStill({ src: finalPoster, visible: true });
+    cbRef.current.onEnded?.();
   };
   const handleError = (slot: "a" | "b") => () => {
     const key = slotKeyRef.current[slot];
@@ -445,6 +472,18 @@ export function OriginMediaStage({
             />
           ))
         : null}
+
+      {handoffStill ? (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 z-[2] bg-cover bg-center transition-opacity ease-out motion-reduce:transition-none"
+          style={{
+            backgroundImage: `url(${handoffStill.src})`,
+            opacity: handoffStill.visible ? 1 : 0,
+            transitionDuration: `${SCRUB_FADE_MS}ms`,
+          }}
+        />
+      ) : null}
 
       <OriginGrain />
       {/* A second, finer pass in screen blend puts actual highlights into the

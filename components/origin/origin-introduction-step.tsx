@@ -100,35 +100,54 @@ export function OriginIntroductionStep({
   const remaining = Math.max(0, MIN_INTRODUCTION_CHARS - introduction.trim().length);
 
   return (
-    <OriginScrim className="pointer-events-auto flex w-full max-w-xl flex-col gap-5">
-      <div className="flex flex-col gap-2">
+    <OriginScrim className="pointer-events-auto relative flex w-full max-w-2xl flex-col gap-6 overflow-hidden p-0">
+      <span
+        aria-hidden
+        className="absolute inset-y-0 left-0 w-px bg-[linear-gradient(to_bottom,transparent,var(--amber),var(--ice),transparent)] opacity-70"
+      />
+      <div className="relative flex flex-col gap-6 px-7 py-8 sm:px-9">
+      <div className="flex flex-col gap-3">
+        <p className="text-[10px] uppercase tracking-[0.28em] text-text-lo/70">
+          Your origin / in your own words
+        </p>
         {voiceStarted ? (
           <MorphingText
             as="h1"
-            texts={["Before the lights come up —", "tell me what I've found."]}
+            texts={[
+              "Tell me the story behind the sound.",
+              "Where did it begin for you?",
+            ]}
             loop={false}
-            className="font-display text-2xl leading-snug text-text-hi sm:text-3xl [&>span]:text-left"
+            holdSeconds={1.8}
+            className="font-display text-3xl leading-tight text-text-hi sm:text-4xl [&>span]:text-left"
           />
         ) : (
           <div aria-hidden className="h-8 sm:h-9" />
         )}
-        <p className="text-sm text-text-lo">
-          Out loud is easier than it looks. Half a minute, or as long as it takes.
+        <p className="max-w-lg text-sm leading-relaxed text-text-lo">
+          Give me the backstory: who you are, what keeps pulling you back, what
+          you are making now, and what you want the room to feel.
         </p>
       </div>
 
       {/* Suggestions, not required questions. */}
-      <MorphingText
-        as="p"
-        texts={PROMPTS}
-        loop
-        holdSeconds={2.7}
-        morphSeconds={0.85}
-        blurPx={2}
-        className="text-sm italic text-text-lo/80 [&>span]:text-left"
-      />
+      <div className="flex items-center gap-3 border-y border-line/50 py-3">
+        <span className="relative flex size-2 shrink-0">
+          <span className="absolute inline-flex size-full animate-ping rounded-full bg-amber/70 motion-reduce:hidden" />
+          <span className="relative inline-flex size-2 rounded-full bg-amber" />
+        </span>
+        <MorphingText
+          as="p"
+          texts={PROMPTS}
+          loop
+          holdSeconds={2.7}
+          morphSeconds={0.85}
+          blurPx={2}
+          className="text-sm italic text-text-lo/85 [&>span]:text-left"
+        />
+      </div>
 
-      <div className="flex flex-col gap-2">
+      <div className="relative flex flex-col gap-2 pl-5 before:absolute before:inset-y-1 before:left-0 before:w-px before:bg-[linear-gradient(to_bottom,var(--ice),var(--amber),transparent)]">
         <label htmlFor="origin-introduction" className="sr-only">
           Your introduction
         </label>
@@ -143,7 +162,7 @@ export function OriginIntroductionStep({
           placeholder={
             canSpeak ? "Talk, or write it — either way it stays yours to edit." : "Write it here."
           }
-          className="resize-none text-base leading-relaxed"
+          className="min-h-40 resize-none rounded-none border-0 bg-transparent px-0 text-base leading-relaxed shadow-none focus-visible:ring-0"
           aria-describedby="origin-intro-status origin-intro-privacy"
         />
 
@@ -198,11 +217,12 @@ export function OriginIntroductionStep({
 
         <Button
           type="button"
+          variant="ghost"
           onClick={handleContinue}
           disabled={busy || speech.listening || speech.transcribing}
-          className="ml-auto"
+          className="ml-auto rounded-full border border-line/80 bg-white/[0.035] px-5 text-text-hi hover:border-ice/50 hover:bg-ice/[0.06] hover:text-text-hi"
         >
-          {waiting ? "One moment…" : "That's me"}
+          {waiting ? "One moment…" : "Shape what you heard →"}
         </Button>
       </div>
 
@@ -210,6 +230,7 @@ export function OriginIntroductionStep({
         Your words are sent to be transcribed and interpreted. The recording itself is not
         kept. Nothing is published without your confirmation.
       </p>
+      </div>
     </OriginScrim>
   );
 }

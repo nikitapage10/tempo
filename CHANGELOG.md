@@ -4,6 +4,18 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-31
 
+- Changed (v0.74.0): Origin now carries one continuous colour grade from its
+  opening invitation into the first film, and its name and backstory moments
+  use distinctive editorial glass compositions instead of standard form cards.
+- Changed (v0.74.0): the speaking invitation asks plainly for the artist's
+  origin, recurring pull, current work and intended feeling; processing holds
+  long enough to register, while review is now a short calibration before the
+  full story unfolds.
+- Fixed (v0.74.0): the chapter transition holds an exported copy of its true
+  final frame, preventing browsers from flashing the video's first frame at
+  the seam. The first story chapter has a richer lit composition, and TEMPO's
+  dashboard stays covered until the final arrival is ready to crossfade.
+
 - Fixed (v0.73.2): the name acknowledgement now leaves completely before the
   speaking panel arrives, removing the remaining overlap between those scenes.
 - Changed (v0.73.2): the speaking prompts now move more quickly and melt from

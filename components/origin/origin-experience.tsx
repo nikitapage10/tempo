@@ -37,7 +37,6 @@ import { applyOriginToProfile } from "@/lib/origin/profile-mapping";
  */
 
 /** Where an artist goes after Origin, depending on whether Import is still due. */
-const IMPORT_ROUTE = "/import";
 const HOME_ROUTE = "/";
 
 /**
@@ -56,6 +55,8 @@ const OPENING_LINES = [
  * never competes with the film's own moment.
  */
 const PRELUDE_AT = 0.58;
+/** Processing speaks later, after the artist's words have had a beat to land. */
+const PROCESSING_PRELUDE_AT = 0.76;
 /** The opening sentence must finish its fade before the name panel begins. */
 const NAME_PRELUDE_AT = 0.82;
 
@@ -89,7 +90,6 @@ export function OriginExperience({
     runInterpretation,
     regenerate,
     complete,
-    skip,
     setInterpretation,
   } = useOriginState(revisit, replay);
 
@@ -129,7 +129,13 @@ export function OriginExperience({
   );
 
   const clip = clipForPhase(state.phase);
-  const poster = clip ? originAsset(clip.key).poster : undefined;
+  // The waking copy and the first film share one exact still, so tapping into
+  // motion changes time rather than changing the page's colour grade.
+  const poster = clip
+    ? originAsset(clip.key).poster
+    : state.phase === "awaiting_start"
+      ? originAsset("opening01To02").poster
+      : undefined;
 
   const clipProgress = useClipProgress(
     activeVideoRef,
@@ -178,7 +184,8 @@ export function OriginExperience({
     state.phase === "resolving";
   const showProcessing =
     state.phase === "processing" ||
-    (state.phase === "interpreting_transition" && prelude);
+    (state.phase === "interpreting_transition" &&
+      (media.staticMode || clipProgress >= PROCESSING_PRELUDE_AT));
 
   const mountReview =
     state.phase === "resolving" ||
@@ -334,12 +341,6 @@ export function OriginExperience({
     router.replace(HOME_ROUTE);
   }
 
-  async function handleSkip() {
-    await skip();
-    markFirstOpenPending();
-    router.replace(importPending ? IMPORT_ROUTE : HOME_ROUTE);
-  }
-
   if (!hydrated) {
     // Deep black rather than a spinner — the film opens from here.
     return <div className="fixed inset-0 bg-[var(--bg-0)]" />;
@@ -407,7 +408,6 @@ export function OriginExperience({
                 name={state.name}
                 onNameChange={(name) => dispatch({ type: "set_name", name })}
                 onSubmit={() => dispatch({ type: "submit_name" })}
-                onSkip={handleSkip}
                 mediaReady={media.gateOpen(gateFor("recognizing"))}
                 busy={state.busy}
                 // Focus waits for the loop; grabbing it mid-film would open a

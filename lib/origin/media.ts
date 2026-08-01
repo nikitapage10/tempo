@@ -115,6 +115,7 @@ export const ORIGIN_MEDIA = {
     id: "transition-05-06",
     mode: "transition",
     src: `${DIR}/transition-05-06.mp4`,
+    finalPoster: `${DIR}/frame-05-06-final.jpg`,
     preload: "metadata",
     sourceName: "fifth trans.mp4",
     duration: 6.06,

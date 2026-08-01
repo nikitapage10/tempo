@@ -32,8 +32,8 @@ export function OriginProcessingStep({
           as="h1"
           texts={["Stay with me a moment.", "Listening back to the shape of it."]}
           loop={false}
-          holdSeconds={1.35}
-          morphSeconds={1.6}
+          holdSeconds={2.8}
+          morphSeconds={1.8}
           className="font-display text-2xl leading-snug text-text-hi sm:text-3xl [&>span]:text-center"
         />
       ) : (

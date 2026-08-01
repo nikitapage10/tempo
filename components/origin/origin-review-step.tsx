@@ -149,7 +149,6 @@ export function OriginReviewStep({
   error: string | null;
 }) {
   const [attempted, setAttempted] = React.useState(false);
-  const [hasScrolled, setHasScrolled] = React.useState(false);
   const waiting = attempted && !mediaReady;
 
   React.useEffect(() => {
@@ -163,13 +162,19 @@ export function OriginReviewStep({
     <OriginScrim className="pointer-events-auto relative max-h-[82vh] w-full max-w-2xl overflow-hidden p-0">
       <div
         className="no-scrollbar flex max-h-[82vh] flex-col gap-5 overflow-y-auto p-6 pb-16"
-        onScroll={(event) => {
-          if (event.currentTarget.scrollTop > 16) setHasScrolled(true);
-        }}
       >
-      <h1 className="font-display text-2xl text-text-hi sm:text-3xl">
-        Here is the beginning I heard.
-      </h1>
+      <div className="flex flex-col gap-2">
+        <p className="text-[10px] uppercase tracking-[0.28em] text-text-lo/70">
+          A reading, not a verdict
+        </p>
+        <h1 className="font-display text-3xl text-text-hi sm:text-4xl">
+          Does this feel true?
+        </h1>
+        <p className="max-w-xl text-sm leading-relaxed text-text-lo">
+          I found these threads in what you said. Tune anything that feels off,
+          then let the full story unfold in the film.
+        </p>
+      </div>
 
       {pending ? (
         <div className="rounded-card border border-ice/40 bg-bg-2/60 p-4">
@@ -190,6 +195,39 @@ export function OriginReviewStep({
         </div>
       ) : null}
 
+      <div className="relative overflow-hidden rounded-card border border-line/70 bg-white/[0.025] px-5 py-6">
+        <span
+          aria-hidden
+          className="absolute inset-y-0 left-0 w-px bg-[linear-gradient(to_bottom,transparent,var(--ice),var(--amber),transparent)]"
+        />
+        <p className="text-xs uppercase tracking-[0.22em] text-text-lo/60">
+          The threads I heard
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {interpretation.identitySignals.slice(0, 5).map((signal, index) => (
+            <span
+              key={`${signal.label}-${index}`}
+              className={cn(
+                "rounded-full border px-3 py-1.5 font-display text-sm",
+                index % 3 === 0
+                  ? "border-ice/35 bg-ice/[0.055] text-ice"
+                  : index % 3 === 1
+                    ? "border-amber/30 bg-amber/[0.045] text-text-hi"
+                    : "border-line/80 bg-white/[0.025] text-text-hi"
+              )}
+            >
+              {signal.label}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <details className="group rounded-card border border-line/60 bg-bg-0/25">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-3 text-sm text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ice">
+          <span>Fine-tune the full reading</span>
+          <ChevronDown className="size-4 text-text-lo transition-transform group-open:rotate-180" />
+        </summary>
+        <div className="flex flex-col gap-5 border-t border-line/60 p-4">
       <section className="flex flex-col gap-2">
         <label htmlFor="origin-promise" className="text-xs uppercase tracking-wide text-text-lo">
           Your promise
@@ -283,6 +321,8 @@ export function OriginReviewStep({
           ))}
         </section>
       ) : null}
+        </div>
+      </details>
 
       {error ? (
         <p role="alert" className="text-xs text-warn">
@@ -307,7 +347,7 @@ export function OriginReviewStep({
             disabled={busy || waiting}
             className={cn(waiting && "cursor-wait")}
           >
-            {waiting ? "Preparing your chapter…" : "Open the chapter"}
+            {waiting ? "Preparing your chapter…" : "Let it unfold"}
           </Button>
           {waiting ? (
             <div
@@ -328,19 +368,6 @@ export function OriginReviewStep({
       </div>
       </div>
 
-      <div
-        aria-hidden
-        className={cn(
-          "pointer-events-none absolute inset-x-0 bottom-0 z-10 flex h-16 items-end justify-center",
-          "bg-gradient-to-t from-bg-0 via-bg-0/95 to-transparent pb-3",
-          "transition-opacity duration-500 motion-reduce:transition-none",
-          hasScrolled ? "opacity-0" : "opacity-100"
-        )}
-      >
-        <span className="flex items-center gap-1 text-[11px] text-text-lo">
-          More below <ChevronDown className="size-3.5 motion-safe:animate-bounce" />
-        </span>
-      </div>
     </OriginScrim>
   );
 }

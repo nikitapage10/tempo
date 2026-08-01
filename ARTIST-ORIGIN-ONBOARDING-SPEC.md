@@ -27,7 +27,7 @@ permanently, research them online, or claim to know them better than they do.
 
 ## Media
 
-Ten videos and six posters live in `public/onboarding/origin/`. The sequence
+Ten videos and eight posters live in `public/onboarding/origin/`. The sequence
 mapping is authoritative and does **not** follow alphabetical order of the
 delivered filenames.
 
@@ -94,6 +94,9 @@ no modification to any video stream); `frame-06` is the first frame of
 `scroll-06`, which is the frame the chapter opens on anyway.
 `frame-06-final` is the last frame of that same scroll film and holds the
 visual seam while the app opens.
+`frame-05-06-final` is the true final frame of the chapter-opening transition.
+It covers browsers that rewind an ended video to its first frame before the
+scroll film has confirmed its first painted frame.
 
 ## First-run routing
 
@@ -189,14 +192,17 @@ Background work never runs while a high-priority asset is in flight. A *failed*
 asset counts as settled, so a broken file cannot deadlock the flow.
 
 **Handoff contract** (`origin-media-stage.tsx`): exactly two `<video>` elements,
-identical full-screen geometry, over an opaque poster floor. The destination is
+identical full-screen geometry, over an opaque poster floor. A transition's
+exported final still may temporarily sit above them after `ended`; it is an
+image, not a third video. The destination is
 loaded into the standby, played while invisible, and only swapped once
 `requestVideoFrameCallback` confirms a painted frame (2.5s timeout fallback).
 The outgoing element stays fully opaque underneath while the incoming one fades
 over it. The scrub destination is briefly decoded while invisible, paused,
 seeked back to its first frame, and confirmed painted before a 280ms seam blend.
-Its first frame is matched to the ended transition, so this covers compositor
-timing without introducing a visible frozen hold.
+Its first frame is matched to the ended transition. Once that scrub frame is
+confirmed painted, it fades over the held final still, covering compositor
+timing and ended-video rewinds without introducing a mismatched frozen frame.
 
 Audible transitions use an equal-power handoff and a final 750ms tail envelope.
 Outgoing sound reaches zero before an element is paused, detached or allowed to
@@ -206,6 +212,14 @@ morphing voice repeats for recognition, listening and processing copy. The
 recognition phase fully exits before the speaking panel can become visible, and
 the optional speaking prompts morph every few seconds rather than sitting for a
 long marquee interval.
+
+The pre-tap invitation and opening film share the same poster floor and grade.
+Identity and backstory use editorial glass layouts rather than conventional
+title/input/button cards, the prompt asks directly for the artist's backstory,
+and the processing phrase holds long enough to register. Review is a
+calibration rather than a second story reveal: it first shows the interpreted
+identity threads, while the complete fields remain editable behind a
+disclosure. The scrolling chapters carry the narrative itself.
 
 ## Scroll-scrubbed story
 
@@ -219,6 +233,11 @@ React is told only when the chapter changes. `fastSeek()` where supported.
 Six chapters at 0 / 16 / 34 / 52 / 72 / 88 %: The first shape · What came
 through · Your creative compass · The chapter you are opening · Bring your
 music in · Your story has a tempo.
+
+The first chapter uses an asymmetrical light-rail composition and signal chips
+instead of a generic text card. Later chapters use the interpretation's
+evidence where available so they expand on the compact review rather than
+reading it back verbatim.
 
 ## Import inside the story
 
@@ -281,8 +300,9 @@ from entering by an optional nicety.
 
 `first-open-reveal.tsx` sets two session flags on completion. The app shell
 mounts a pointer-transparent layer showing the chapter film's actual final
-frame while the destination renders underneath. A brief CSS-only Spectra-light
-sequence assembles and clears that frame without delaying app interaction. The daily
+frame. A pre-navigation document floor prevents the destination dashboard from
+painting first; the brief CSS-only Spectra-light sequence keeps that floor
+opaque through its main movement, then crossfades into the ready workspace. The daily
 boot intro is suppressed for that session in all three places that gate it
 (`introWillPlay`, the pre-paint inline script, and `IntroMoment`) so the artist
 never gets two introductions back to back.

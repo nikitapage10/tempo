@@ -25,8 +25,8 @@ const LINES = [
 
 /** Beat of stillness before anything speaks. The screen should feel dormant. */
 const OPENING_DELAY_MS = 850;
-/** How long the copy takes to clear before the film is allowed to come up. */
-const EXIT_MS = 1100;
+/** How long the copy takes to clear over the held opening frame. */
+const EXIT_MS = 900;
 
 export function OriginAwakenStep({
   onBegin,
@@ -67,15 +67,8 @@ export function OriginAwakenStep({
           feathered hard so it reads as depth in the image, not as a panel. */}
       <span
         aria-hidden
-        className="absolute inset-0 bg-[radial-gradient(ellipse_60%_70%_at_78%_50%,rgba(6,6,9,0.92),rgba(6,6,9,0.72)_45%,transparent_75%)]"
-      />
-      {/* The gradient has a visible edge against the still. On the way out it
-          floods to full black first, so the film comes up from darkness rather
-          than from a half-lit frame with a seam across it. */}
-      <span
-        aria-hidden
-        className="absolute inset-0 bg-[var(--bg-0)] transition-opacity ease-in motion-reduce:transition-none"
-        style={{ opacity: leaving ? 1 : 0, transitionDuration: `${EXIT_MS * 0.8}ms` }}
+        className="absolute inset-0 bg-[radial-gradient(ellipse_60%_70%_at_78%_50%,rgba(6,6,9,0.9),rgba(6,6,9,0.68)_45%,transparent_75%)] transition-opacity ease-in-out motion-reduce:transition-none"
+        style={{ opacity: leaving ? 0 : 1, transitionDuration: `${EXIT_MS}ms` }}
       />
 
       <span

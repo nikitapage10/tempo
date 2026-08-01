@@ -1,26 +1,18 @@
 "use client";
 
 import * as React from "react";
-import { Button } from "@/components/ui/button";
+import { ArrowRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { MorphingText } from "@/components/ui/morphing-text";
 import { OriginScrim } from "@/components/origin/origin-copy-layer";
 import { validateArtistName } from "@/lib/origin/validation";
 import { cn } from "@/lib/utils";
 
-/**
- * Frame 2 — the artist says who they are.
- *
- * The Continue action is gated on the next step's media being ready. When it
- * isn't, the loop simply keeps running and the button shows a restrained
- * pending state; the artist is never shown a browser spinner and never lands on
- * an unbuffered transition.
- */
+/** Frame 2 — the artist gives the room a name to hold onto. */
 export function OriginNameStep({
   name,
   onNameChange,
   onSubmit,
-  onSkip,
   mediaReady,
   busy,
   active = true,
@@ -28,7 +20,6 @@ export function OriginNameStep({
   name: string;
   onNameChange: (v: string) => void;
   onSubmit: () => void;
-  onSkip: () => void;
   mediaReady: boolean;
   busy: boolean;
   /** False while this is fading in under a still-playing transition. */
@@ -39,8 +30,6 @@ export function OriginNameStep({
   const inputRef = React.useRef<HTMLInputElement>(null);
   const errorId = "origin-name-error";
 
-  // Focus lands here once the opening has handed off, not before — otherwise
-  // a mobile keyboard opens over a film the artist is still watching.
   React.useEffect(() => {
     if (!active) return;
     const t = setTimeout(() => inputRef.current?.focus(), 400);
@@ -63,26 +52,44 @@ export function OriginNameStep({
     if (mediaReady) onSubmit();
   }
 
-  // Once the media catches up, an artist who already pressed Continue moves on
-  // without having to press it again.
   React.useEffect(() => {
     if (attempted && mediaReady && !error) onSubmit();
   }, [attempted, mediaReady, error, onSubmit]);
 
   return (
-    <OriginScrim className="pointer-events-auto min-h-[17.5rem] w-full max-w-md text-left">
-      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-        <div className="flex flex-col gap-2">
+    <OriginScrim className="pointer-events-auto relative w-full max-w-lg overflow-hidden p-0 text-left">
+      <span
+        aria-hidden
+        className="absolute inset-y-0 left-0 w-px bg-[linear-gradient(to_bottom,transparent,var(--ice),var(--amber),transparent)] opacity-80 shadow-[0_0_24px_var(--ice)]"
+      />
+      <span
+        aria-hidden
+        className="absolute -right-16 -top-20 size-56 rounded-full border border-ice/10 bg-ice/[0.035] blur-sm"
+      />
+
+      <form
+        onSubmit={handleSubmit}
+        className="relative flex flex-col gap-8 px-7 py-8 sm:px-9 sm:py-10"
+      >
+        <div className="flex items-center justify-between gap-4 text-[10px] uppercase tracking-[0.28em] text-text-lo/70">
+          <span>Identity / 01</span>
+          <span className="h-px flex-1 bg-[linear-gradient(90deg,var(--line),transparent)]" />
+          <span>In your words</span>
+        </div>
+
+        <div className="flex flex-col gap-3">
           <MorphingText
             as="h1"
             texts={["Who are you?"]}
             loop={false}
-            className="font-display text-3xl text-text-hi sm:text-4xl [&>span]:text-left"
+            className="font-display text-4xl leading-none text-text-hi sm:text-5xl [&>span]:text-left"
           />
-          <p className="text-sm text-text-lo">Give me something to call you by.</p>
+          <p className="max-w-sm text-sm leading-relaxed text-text-lo">
+            Not the paperwork. The name that should meet the room first.
+          </p>
         </div>
 
-        <div className="flex flex-col gap-2">
+        <div className="relative flex flex-col gap-2 border-b border-line/80 pb-2 focus-within:border-ice/70">
           <label htmlFor="origin-name" className="sr-only">
             Artist name
           </label>
@@ -99,7 +106,11 @@ export function OriginNameStep({
             maxLength={60}
             aria-invalid={Boolean(error)}
             aria-describedby={error ? errorId : undefined}
-            className="h-11 text-base"
+            className="h-auto rounded-none border-0 bg-transparent px-0 py-2 font-display text-2xl uppercase tracking-[0.06em] text-text-hi shadow-none placeholder:normal-case placeholder:tracking-normal focus-visible:ring-0 sm:text-3xl"
+          />
+          <span
+            aria-hidden
+            className="absolute bottom-[-1px] left-0 h-px w-16 bg-ice shadow-[0_0_12px_var(--ice)]"
           />
           {error ? (
             <p id={errorId} role="alert" className="text-xs text-warn">
@@ -108,12 +119,21 @@ export function OriginNameStep({
           ) : null}
         </div>
 
-        {/* No skip here: everything after this point is built from the name,
-            so there is nothing meaningful to skip *to*. */}
-        <div className="flex items-center justify-end gap-3">
-          <Button type="submit" disabled={busy} className={cn(waiting && "cursor-wait")}>
-            {waiting ? "One moment…" : "Continue"}
-          </Button>
+        <div className="flex items-center justify-between gap-4">
+          <p className="text-xs text-text-lo/60">This can change whenever you do.</p>
+          <button
+            type="submit"
+            disabled={busy}
+            className={cn(
+              "group flex items-center gap-3 rounded-full border border-line/80 bg-white/[0.035] py-1.5 pl-4 pr-1.5 text-sm text-text-hi transition-colors hover:border-ice/50 hover:bg-ice/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice disabled:opacity-60",
+              waiting && "cursor-wait"
+            )}
+          >
+            <span>{waiting ? "One moment…" : "Let it in"}</span>
+            <span className="flex size-9 items-center justify-center rounded-full bg-ice text-bg-0 transition-transform group-hover:translate-x-0.5">
+              <ArrowRight className="size-4" />
+            </span>
+          </button>
         </div>
       </form>
     </OriginScrim>

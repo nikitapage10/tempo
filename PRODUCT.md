@@ -17,13 +17,18 @@ Three kinds of things sit at the center of TEMPO: **tracks** (a musical work wit
 ## Current feature set
 
 **Origin presentation.** Origin's spoken beats clear before the next panel
-arrives, and the optional speaking prompts melt fluidly from one suggestion
-into another. Story copy sits on translucent, backdrop-blurred glass so the
-film remains visible without sacrificing legibility. The final transition
-meets the scrolling film on a matching frame instead of holding on a freeze.
-Opening **Bring your music in** settles the complete Import chapter at full
-clarity immediately; longer Import content scrolls inside the chapter while
-the outer story stays locked.
+arrives, and its optional prompts melt fluidly from one suggestion into
+another. The opening invitation shares the first film's poster and colour
+grade. Identity and backstory use editorial glass compositions instead of
+conventional form cards, and the prompt plainly asks for the artist's origin,
+recurring pull, current work and intended feeling. Review begins as a compact
+calibration of the threads TEMPO heard; its full editable reading is optional,
+leaving the scrolling film to reveal the story. The first chapter uses an
+asymmetrical lit composition, and the final transition holds its true last
+frame until the scroll film is painted. The dashboard stays covered until the
+closing arrival is ready to crossfade. Opening **Bring your music in** settles
+the complete Import chapter at full clarity immediately; longer Import content
+scrolls inside the chapter while the outer story stays locked.
 
 **Messaging inbox.** Notifications, Messages, and Search sit together in the
 global top-right toolbar. The Messages icon carries an unread badge and opens a

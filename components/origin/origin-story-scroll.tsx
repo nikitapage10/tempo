@@ -100,6 +100,48 @@ function ChapterSection({
   wide?: boolean;
   alignClass?: string;
 }) {
+  if (index === 0) {
+    return (
+      <section
+        aria-labelledby="origin-chapter-0"
+        className={cn(staticMode && "py-12")}
+      >
+        <div
+          className={cn(
+            "origin-first-shape relative w-full max-w-2xl overflow-hidden rounded-[28px] border border-line/70",
+            "bg-[linear-gradient(120deg,rgb(10_10_12/0.9),rgb(20_24_31/0.72),rgb(10_10_12/0.84))] shadow-3 backdrop-blur-xl",
+            alignClass ?? CHAPTER_ALIGN[index]
+          )}
+        >
+          <span
+            aria-hidden
+            className="absolute inset-y-0 left-[4.5rem] w-px bg-[linear-gradient(to_bottom,transparent,var(--ice),var(--amber),transparent)] opacity-70"
+          />
+          <span
+            aria-hidden
+            className="absolute -right-24 -top-28 size-72 rounded-full border border-ice/10 bg-ice/[0.035]"
+          />
+          <div className="origin-first-shape__content relative grid grid-cols-[3rem_1fr] gap-6 px-6 py-7 sm:grid-cols-[3.5rem_1fr] sm:gap-8 sm:px-8 sm:py-9">
+            <div className="flex flex-col items-center gap-3 pt-1 text-[10px] uppercase tracking-[0.22em] text-text-lo/60">
+              <span className="font-mono text-ice">01</span>
+              <span className="h-12 w-px bg-line" />
+              <span className="[writing-mode:vertical-rl]">Origin</span>
+            </div>
+            <div>
+              <h2
+                id="origin-chapter-0"
+                className="text-xs uppercase tracking-[0.26em] text-text-hi/85"
+              >
+                {title ?? CHAPTER_TITLES[index]}
+              </h2>
+              <div className="mt-5">{children}</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section
       aria-labelledby={`origin-chapter-${index}`}
@@ -286,15 +328,32 @@ export function OriginStoryScroll({
   }, []);
 
   const sections = [
-    <p key="promise" className="font-display text-xl leading-relaxed text-text-hi sm:text-2xl">
-      {interpretation.artistPromise || "A beginning, in your own words."}
-    </p>,
+    <div key="promise" className="flex flex-col gap-6">
+      <p className="max-w-xl font-display text-2xl leading-snug text-text-hi sm:text-3xl">
+        <span aria-hidden className="mr-1 text-4xl leading-none text-ice/50">“</span>
+        {interpretation.artistPromise || "A beginning, in your own words."}
+      </p>
+      {interpretation.identitySignals.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {interpretation.identitySignals.slice(0, 3).map((signal, index) => (
+            <span
+              key={`${signal.label}-${index}`}
+              className="rounded-full border border-line/70 bg-white/[0.025] px-3 py-1 text-xs text-text-lo"
+            >
+              {signal.label}
+            </span>
+          ))}
+        </div>
+      ) : null}
+    </div>,
 
     <ul key="signals" className="flex flex-col gap-4">
       {interpretation.identitySignals.map((s) => (
         <li key={s.label}>
           <h3 className="font-display text-base text-text-hi">{s.label}</h3>
-          <p className="mt-1 text-sm leading-relaxed text-text-lo">{s.explanation}</p>
+          <p className="mt-1 border-l border-ice/35 pl-3 text-sm italic leading-relaxed text-text-lo">
+            {s.evidence || s.explanation}
+          </p>
         </li>
       ))}
     </ul>,
