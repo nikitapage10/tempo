@@ -28,6 +28,12 @@ import { cn } from "@/lib/utils";
  * made the old handoff read as a stop-start.
  */
 const HANDOFF_MS = 620;
+/**
+ * The first clip is not a handoff — there is nothing underneath it. It comes up
+ * out of the poster slowly, so the film reads as light arriving rather than a
+ * cut to a playing video.
+ */
+const FIRST_FADE_MS = 2000;
 /** If a frame never paints, swap anyway rather than freezing the flow. */
 const PAINT_TIMEOUT_MS = 2500;
 
@@ -120,6 +126,8 @@ export function OriginMediaStage({
    */
   const [holdSlot, setHoldSlot] = React.useState<"a" | "b" | null>(null);
   const [painted, setPainted] = React.useState(false);
+  /** True while the very first clip is rising out of the poster. */
+  const [firstReveal, setFirstReveal] = React.useState(true);
 
   const activeSlotRef = React.useRef(activeSlot);
   activeSlotRef.current = activeSlot;
@@ -191,9 +199,16 @@ export function OriginMediaStage({
         await whenPainted(incoming);
         if (cancelled) return;
 
-        setHoldSlot(current);
+        // Nothing to hold under the first clip — it rises out of the poster.
+        const isFirst = slotKeyRef.current[current] === null;
+        if (!isFirst) setHoldSlot(current);
         setActiveSlot(incomingSlot);
         setPainted(true);
+        if (isFirst) {
+          window.setTimeout(() => {
+            if (!cancelled) setFirstReveal(false);
+          }, FIRST_FADE_MS);
+        }
         cbRef.current.onVisible?.(clipKey);
         cbRef.current.onActiveElement?.(incoming, clipKey);
 
@@ -290,7 +305,13 @@ export function OriginMediaStage({
         <div
           aria-hidden
           className="absolute inset-0 bg-cover bg-center transition-opacity duration-500 motion-reduce:transition-none"
-          style={{ backgroundImage: `url(${posterSrc})`, opacity: painted && !staticMode ? 0 : 1 }}
+          // Held at full strength while the first clip rises over it, so the
+          // reveal is the film gaining light rather than two layers dipping
+          // through each other.
+          style={{
+            backgroundImage: `url(${posterSrc})`,
+            opacity: painted && !staticMode && !firstReveal ? 0 : 1,
+          }}
         />
       ) : null}
 
@@ -308,7 +329,9 @@ export function OriginMediaStage({
                 // Only the incoming layer animates; the held one is static
                 // until it is dropped.
                 transition:
-                  activeSlot === slot ? `opacity ${HANDOFF_MS}ms ease-in-out` : "none",
+                  activeSlot === slot
+                    ? `opacity ${firstReveal ? FIRST_FADE_MS : HANDOFF_MS}ms ease-in-out`
+                    : "none",
               }}
               // `muted` is managed imperatively during the handoff (and by the
               // sound effect above); declaring it here would let a re-render

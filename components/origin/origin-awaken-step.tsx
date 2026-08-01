@@ -23,6 +23,11 @@ const LINES = [
   "Every story begins here.",
 ];
 
+/** Beat of stillness before anything speaks. The screen should feel dormant. */
+const OPENING_DELAY_MS = 1600;
+/** How long the copy takes to clear before the film is allowed to come up. */
+const EXIT_MS = 1100;
+
 export function OriginAwakenStep({
   onBegin,
   staticMode,
@@ -31,11 +36,27 @@ export function OriginAwakenStep({
   staticMode: boolean;
 }) {
   const [settled, setSettled] = React.useState(staticMode);
+  /** Held back so the first line arrives into silence rather than on load. */
+  const [started, setStarted] = React.useState(staticMode);
+  const [leaving, setLeaving] = React.useState(false);
+
+  React.useEffect(() => {
+    if (staticMode) return;
+    const t = setTimeout(() => setStarted(true), OPENING_DELAY_MS);
+    return () => clearTimeout(t);
+  }, [staticMode]);
+
+  const begin = React.useCallback(() => {
+    if (leaving || !started) return;
+    // The copy clears first, then the film comes up into the space it left.
+    setLeaving(true);
+    setTimeout(onBegin, EXIT_MS);
+  }, [leaving, started, onBegin]);
 
   return (
     <button
       type="button"
-      onClick={onBegin}
+      onClick={begin}
       aria-label="Begin"
       // Covers the viewport so the invitation is literally true. Sits under the
       // overlay's own padding, so the copy still lands middle-right.
@@ -49,15 +70,26 @@ export function OriginAwakenStep({
         className="absolute inset-0 bg-[radial-gradient(ellipse_60%_70%_at_78%_50%,rgba(6,6,9,0.92),rgba(6,6,9,0.72)_45%,transparent_75%)]"
       />
 
-      <span className="absolute inset-0 flex flex-col justify-center items-stretch px-5 sm:items-end sm:pr-[14vw]">
+      <span
+        className={cn(
+          "absolute inset-0 flex flex-col justify-center items-stretch px-5 sm:items-end sm:pr-[14vw]",
+          "transition-opacity ease-in-out motion-reduce:transition-none",
+          leaving ? "opacity-0" : started ? "opacity-100" : "opacity-0"
+        )}
+        style={{ transitionDuration: leaving ? `${EXIT_MS}ms` : "1200ms" }}
+      >
         <span className="flex w-full max-w-md flex-col items-end gap-6 text-right">
-          <MorphingText
-            as="h1"
-            texts={staticMode ? [LINES[LINES.length - 1]] : LINES}
-            loop={false}
-            onSettled={() => setSettled(true)}
-            className="h-16 font-display text-2xl leading-snug text-text-hi sm:text-3xl [&>span]:text-right"
-          />
+          {started ? (
+            <MorphingText
+              as="h1"
+              texts={staticMode ? [LINES[LINES.length - 1]] : LINES}
+              loop={false}
+              onSettled={() => setSettled(true)}
+              className="h-16 font-display text-2xl leading-snug text-text-hi sm:text-3xl [&>span]:text-right"
+            />
+          ) : (
+            <span className="h-16" />
+          )}
 
           <span
             className={cn(

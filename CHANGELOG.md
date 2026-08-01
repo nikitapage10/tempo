@@ -4,6 +4,15 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-31
 
+- Fixed (v0.71.2): the opening text never appeared, which left Origin stuck on
+  a still frame with nothing to click and no way to reach the name box. The
+  text effect could stop the words rendering entirely; it can no longer take
+  the text down with it.
+- Changed (v0.71.2): Origin now opens on a held, silent frame for a moment
+  before the first line arrives, rather than speaking the instant it loads.
+  When you tap, the words clear first and the film comes up slowly out of the
+  still — light arriving, rather than a video starting.
+
 - Fixed (v0.71.1): the morphing text wasn't morphing — each line dissolved
   away before the next formed, instead of one becoming the other. The blur was
   scaled for far larger type than TEMPO uses, so the letters were destroyed at

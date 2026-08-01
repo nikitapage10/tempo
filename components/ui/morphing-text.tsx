@@ -144,7 +144,16 @@ function useMorphingText(
  */
 function ThresholdFilter({ id }: { id: string }) {
   return (
-    <svg className="absolute size-0" aria-hidden focusable="false">
+    <svg
+      aria-hidden
+      focusable="false"
+      // Rendered as a *sibling* of the filtered element, never inside it, and
+      // given real dimensions rather than size-0. A filter defined within the
+      // element it filters, or inside a zero-sized SVG, can fail to resolve —
+      // and an unresolved filter reference makes the element not render at all,
+      // which is a blank screen rather than a degraded one.
+      style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", opacity: 0 }}
+    >
       <defs>
         <filter id={id}>
           <feColorMatrix
@@ -195,22 +204,42 @@ export function MorphingText({
     onSettled
   );
 
-  // A single line never morphs, so it needs no threshold — and a filter with an
-  // unresolved reference stops an element rendering at all, which is not a risk
-  // worth taking for a static heading.
-  const morphs = texts.length > 1;
+  // A single line never morphs, so it needs no threshold.
+  const wantsFilter = texts.length > 1;
+
+  /*
+   * Only reference the filter once its <defs> are confirmed present.
+   *
+   * An unresolved `filter: url(#id)` does not degrade — the element stops
+   * rendering entirely, which is a blank panel rather than an unstyled one.
+   * The first paint therefore goes out without the filter, and it is attached
+   * on the next tick if (and only if) the definition really exists. Worst case
+   * the morph reads as a soft crossfade instead of a melt; it can never take
+   * the text with it.
+   */
+  const [filterReady, setFilterReady] = React.useState(false);
+  React.useEffect(() => {
+    if (!wantsFilter) return;
+    setFilterReady(Boolean(document.getElementById(filterId)));
+  }, [wantsFilter, filterId]);
+
+  const morphs = wantsFilter && filterReady;
 
   return (
-    <Tag
-      className={cn("relative w-full", className)}
-      style={morphs ? { filter: `url(#${filterId}) blur(0.3px)` } : undefined}
-    >
-      {/* The live text for assistive tech — the spans below are visual only,
-          and their content is swapped every frame mid-morph. */}
-      <span className="sr-only">{texts[texts.length - 1]}</span>
-      <span aria-hidden ref={text1Ref} className="absolute inset-0 inline-block w-full" />
-      <span aria-hidden ref={text2Ref} className="absolute inset-0 inline-block w-full" />
-      {morphs ? <ThresholdFilter id={filterId} /> : null}
-    </Tag>
+    <>
+      {/* Always rendered when a morph is wanted, so the effect above has
+          something to find. Only the *reference* is deferred. */}
+      {wantsFilter ? <ThresholdFilter id={filterId} /> : null}
+      <Tag
+        className={cn("relative w-full", className)}
+        style={morphs ? { filter: `url(#${filterId}) blur(0.3px)` } : undefined}
+      >
+        {/* The live text for assistive tech — the spans below are visual only,
+            and their content is swapped every frame mid-morph. */}
+        <span className="sr-only">{texts[texts.length - 1]}</span>
+        <span aria-hidden ref={text1Ref} className="absolute inset-0 inline-block w-full" />
+        <span aria-hidden ref={text2Ref} className="absolute inset-0 inline-block w-full" />
+      </Tag>
+    </>
   );
 }
