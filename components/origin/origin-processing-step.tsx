@@ -12,13 +12,33 @@ import { MorphingText } from "@/components/ui/morphing-text";
  * pretending it tracks the model would be a lie the artist can feel. The loop
  * simply runs until there is something to show.
  */
-export function OriginProcessingStep({ announce }: { announce: boolean }) {
+export function OriginProcessingStep({
+  announce,
+  voiceActive,
+}: {
+  announce: boolean;
+  voiceActive: boolean;
+}) {
+  const [voiceStarted, setVoiceStarted] = React.useState(voiceActive);
+
+  React.useEffect(() => {
+    if (voiceActive) setVoiceStarted(true);
+  }, [voiceActive]);
+
   return (
     <OriginScrim tone="veil" className="pointer-events-none max-w-md text-center">
-      <MorphingText as="h1" texts={["Stay with me a moment."]} loop={false} className="font-display text-2xl text-text-hi sm:text-3xl [&>span]:text-center" />
-      <p className="mt-2 text-sm text-text-lo">
-        Listening back to the shape of it.
-      </p>
+      {voiceStarted ? (
+        <MorphingText
+          as="h1"
+          texts={["Stay with me a moment.", "Listening back to the shape of it."]}
+          loop={false}
+          holdSeconds={1.35}
+          morphSeconds={1.6}
+          className="font-display text-2xl leading-snug text-text-hi sm:text-3xl [&>span]:text-center"
+        />
+      ) : (
+        <div aria-hidden className="h-8 sm:h-9" />
+      )}
       {/* Announced once, when the wait actually ends. */}
       <p aria-live="polite" className="sr-only">
         {announce ? "Your interpretation is ready." : ""}

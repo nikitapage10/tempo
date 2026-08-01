@@ -29,6 +29,7 @@ function useMorphingText(
   loop: boolean,
   morphSeconds: number,
   holdSeconds: number,
+  delaySeconds: number,
   blurPx: number,
   onSettled?: () => void
 ) {
@@ -40,6 +41,9 @@ function useMorphingText(
 
   const text1Ref = React.useRef<HTMLSpanElement>(null);
   const text2Ref = React.useRef<HTMLSpanElement>(null);
+  const textsRef = React.useRef(texts);
+  textsRef.current = texts;
+  const textsKey = texts.join("\u0000");
 
   const settledRef = React.useRef(onSettled);
   settledRef.current = onSettled;
@@ -61,10 +65,11 @@ function useMorphingText(
       current1.style.filter = `blur(${Math.min(blurPx / inverted - blurPx, cap)}px)`;
       current1.style.opacity = `${Math.pow(inverted, 0.4) * 100}%`;
 
-      current1.textContent = texts[textIndexRef.current % texts.length];
-      current2.textContent = texts[(textIndexRef.current + 1) % texts.length];
+      const sequence = textsRef.current;
+      current1.textContent = sequence[textIndexRef.current % sequence.length];
+      current2.textContent = sequence[(textIndexRef.current + 1) % sequence.length];
     },
-    [texts, blurPx]
+    [blurPx]
   );
 
   React.useEffect(() => {
@@ -76,10 +81,11 @@ function useMorphingText(
     timeRef.current = Date.now();
 
     // A single line has nothing to morph into — show it and stop.
-    if (texts.length <= 1) {
+    const sequence = textsRef.current;
+    if (sequence.length <= 1) {
       const el = text2Ref.current;
       if (el) {
-        el.textContent = texts[0] ?? "";
+        el.textContent = sequence[0] ?? "";
         el.style.filter = "none";
         el.style.opacity = "100%";
       }
@@ -90,6 +96,7 @@ function useMorphingText(
 
     // The first line starts morphing on frame one otherwise, so it is on screen
     // for a fraction of the time every later line gets. Hold it first.
+    let initialDelay = delaySeconds;
     let initialHold = holdSeconds;
     let seeded = false;
 
@@ -100,6 +107,11 @@ function useMorphingText(
       const now = Date.now();
       const dt = (now - timeRef.current) / 1000;
       timeRef.current = now;
+
+      if (initialDelay > 0) {
+        initialDelay -= dt;
+        return;
+      }
 
       if (initialHold > 0) {
         if (!seeded) {
@@ -128,7 +140,7 @@ function useMorphingText(
       }
 
       // Reached the end of a one-shot sequence: hold the last line forever.
-      if (!loop && textIndexRef.current >= texts.length - 1) {
+      if (!loop && textIndexRef.current >= sequence.length - 1) {
         if (!finishedRef.current) {
           finishedRef.current = true;
           settledRef.current?.();
@@ -149,7 +161,7 @@ function useMorphingText(
 
     animate();
     return () => cancelAnimationFrame(raf);
-  }, [texts, loop, morphSeconds, holdSeconds, setStyles]);
+  }, [textsKey, loop, morphSeconds, holdSeconds, delaySeconds, setStyles]);
 
   return { text1Ref, text2Ref };
 }
@@ -193,6 +205,7 @@ export function MorphingText({
   onSettled,
   morphSeconds = 2.4,
   holdSeconds = 1.8,
+  delaySeconds = 0,
   blurPx = DEFAULT_BLUR_PX,
   as: Tag = "div",
 }: {
@@ -206,6 +219,8 @@ export function MorphingText({
   morphSeconds?: number;
   /** Seconds a fully-formed line is held before the next morph starts. */
   holdSeconds?: number;
+  /** Silence before the first line appears. */
+  delaySeconds?: number;
   /** Peak blur. Scale to the type size — see DEFAULT_BLUR_PX. */
   blurPx?: number;
   as?: "div" | "h1" | "h2" | "p";
@@ -216,6 +231,7 @@ export function MorphingText({
     loop,
     morphSeconds,
     holdSeconds,
+    delaySeconds,
     blurPx,
     onSettled
   );

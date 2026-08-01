@@ -174,8 +174,9 @@ export function OriginStoryScroll({
    * Drive each chapter's transform straight from scroll progress.
    *
    * The scroll footage travels down a tunnel, so the panels move with it:
-   * each one arrives small and soft from the left, resolves as it reaches its
-   * own stop, then scales past the viewer and blurs out as the next takes over.
+   * each one arrives small from the left, resolves as it reaches its own stop,
+   * then scales past the viewer as the next takes over. Blur stays on the
+   * glass panel itself so its backdrop sampling remains intact.
    *
    * Written imperatively inside the scrub loop — routing per-frame transforms
    * through React state would re-render the whole story on every scroll tick.
@@ -184,6 +185,14 @@ export function OriginStoryScroll({
     const stops = CHAPTER_STOPS;
     sectionRefs.current.forEach((el, i) => {
       if (!el) return;
+      // Import is an interaction, not another scroll beat. Once opened it owns
+      // the stage at full clarity until the artist completes or dismisses it.
+      if (i === 4 && importStarted) {
+        el.style.opacity = "1";
+        el.style.transform = "translate3d(0, 0, 0) scale(1)";
+        el.style.pointerEvents = "auto";
+        return;
+      }
       const start = stops[i];
       const end = i + 1 < stops.length ? stops[i + 1] : 1;
       const span = Math.max(0.0001, end - start);
@@ -195,46 +204,53 @@ export function OriginStoryScroll({
       let opacity: number;
       let scale: number;
       let x: number;
-      let blur: number;
-
       if (local < 0) {
-        // Approaching: small and soft, out on the left, growing as it nears.
+        // Approaching: small and out on the left, growing as it nears.
         const t = Math.max(0, 1 + local * 1.4);
         opacity = t;
         scale = 0.62 + 0.38 * t;
         x = -18 * (1 - t);
-        blur = 6 * (1 - t);
       } else if (local < 0.72 || isLast) {
         // Held. The closing chapter never leaves — "Enter TEMPO" must not be
         // something you can scroll past and lose.
         opacity = 1;
         scale = 1;
         x = 0;
-        blur = 0;
       } else {
         // Passing the viewer: keeps growing as it goes by, rather than shrinking.
         const t = Math.min(1, (local - 0.72) / 0.28);
         opacity = 1 - t;
         scale = 1 + 0.75 * t;
         x = 12 * t;
-        blur = 9 * t;
       }
 
       el.style.opacity = String(Math.max(0, Math.min(1, opacity)));
       el.style.transform = `translate3d(${x}%, 0, 0) scale(${scale})`;
-      el.style.filter = blur > 0.05 ? `blur(${blur}px)` : "none";
       // Only the chapter in focus should be clickable.
       el.style.pointerEvents = opacity > 0.6 ? "auto" : "none";
     });
-  }, []);
+  }, [importStarted]);
 
-  const { chapter } = useOriginScrollScrub({
+  const { chapter, progressRef } = useOriginScrollScrub({
     scrollerRef,
     videoRef,
     chapterStops: CHAPTER_STOPS,
     enabled: !staticMode,
     onProgress: paint,
   });
+
+  /** Keep the embedded Import fully present without requiring a second outer
+   * scroll gesture. Its own long content remains independently scrollable. */
+  React.useEffect(() => {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+
+    if (importStarted) {
+      const scrollable = scroller.scrollHeight - scroller.clientHeight;
+      scroller.scrollTo({ top: CHAPTER_STOPS[4] * scrollable, behavior: "auto" });
+    }
+    paint(progressRef.current);
+  }, [importStarted, paint, progressRef]);
 
   /**
    * Fade the opening chapter up once, then hand control to `paint`.
@@ -254,7 +270,7 @@ export function OriginStoryScroll({
       sectionRefs.current.forEach((s) => {
         if (s) s.style.transition = "none";
       });
-    }, 950);
+    }, 560);
     return () => {
       cancelAnimationFrame(raf);
       clearTimeout(t);
@@ -404,7 +420,10 @@ export function OriginStoryScroll({
       // scrolls — this element is the scroller, and the scrub hook reads its
       // scrollTop directly. The bar itself is hidden: it would cut a hard line
       // down the film.
-      className="no-scrollbar absolute inset-0 z-10 overflow-y-auto overscroll-contain"
+      className={cn(
+        "no-scrollbar absolute inset-0 z-10 overscroll-contain",
+        importStarted ? "overflow-y-hidden" : "overflow-y-auto"
+      )}
     >
       {/* The scroll range. The sticky child stays in view across all of it. */}
       <div style={{ height: `${sections.length * VH_PER_CHAPTER + 100}vh` }} className="w-full">
@@ -419,7 +438,7 @@ export function OriginStoryScroll({
               // first chapter starts at zero and is faded up by the mount
               // effect below, so the story opens rather than appearing.
               className="absolute inset-x-5 will-change-[transform,opacity]"
-              style={{ opacity: 0, transition: "opacity 900ms ease-out" }}
+              style={{ opacity: 0, transition: "opacity 520ms ease-out" }}
             >
               <ChapterSection
                 index={i}

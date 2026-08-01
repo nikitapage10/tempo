@@ -28,13 +28,12 @@ const PROMPTS = [
   "What's the thing you haven't made yet?",
 ];
 
-const PROMPT_ROTATE_MS = 9000;
-
 export function OriginIntroductionStep({
   introduction,
   onIntroductionChange,
   onFinish,
   onRecordingChange,
+  voiceActive,
   mediaReady,
   busy,
 }: {
@@ -42,12 +41,18 @@ export function OriginIntroductionStep({
   onIntroductionChange: (v: string) => void;
   onFinish: () => void;
   onRecordingChange: (recording: boolean) => void;
+  /** Starts the entity voice only once the panel's reveal has begun. */
+  voiceActive: boolean;
   mediaReady: boolean;
   busy: boolean;
 }) {
   const [error, setError] = React.useState<string | null>(null);
   const [attempted, setAttempted] = React.useState(false);
-  const [promptIndex, setPromptIndex] = React.useState(0);
+  const [voiceStarted, setVoiceStarted] = React.useState(voiceActive);
+
+  React.useEffect(() => {
+    if (voiceActive) setVoiceStarted(true);
+  }, [voiceActive]);
 
   // Text present before dictation started, so a restart doesn't eat typing.
   const baseTextRef = React.useRef("");
@@ -62,14 +67,6 @@ export function OriginIntroductionStep({
   React.useEffect(() => {
     onRecordingChange(speech.listening);
   }, [speech.listening, onRecordingChange]);
-
-  React.useEffect(() => {
-    const t = setInterval(
-      () => setPromptIndex((i) => (i + 1) % PROMPTS.length),
-      PROMPT_ROTATE_MS
-    );
-    return () => clearInterval(t);
-  }, []);
 
   const waiting = attempted && !mediaReady;
 
@@ -105,24 +102,31 @@ export function OriginIntroductionStep({
   return (
     <OriginScrim className="pointer-events-auto flex w-full max-w-xl flex-col gap-5">
       <div className="flex flex-col gap-2">
-        <MorphingText
-          as="h1"
-          texts={["Before the lights come up —", "tell me what I've found."]}
-          loop={false}
-          className="font-display text-2xl leading-snug text-text-hi sm:text-3xl [&>span]:text-left"
-        />
+        {voiceStarted ? (
+          <MorphingText
+            as="h1"
+            texts={["Before the lights come up —", "tell me what I've found."]}
+            loop={false}
+            className="font-display text-2xl leading-snug text-text-hi sm:text-3xl [&>span]:text-left"
+          />
+        ) : (
+          <div aria-hidden className="h-8 sm:h-9" />
+        )}
         <p className="text-sm text-text-lo">
           Out loud is easier than it looks. Half a minute, or as long as it takes.
         </p>
       </div>
 
       {/* Suggestions, not required questions. */}
-      <p
-        key={promptIndex}
-        className="text-sm italic text-text-lo/80 transition-opacity duration-500 motion-reduce:transition-none"
-      >
-        {PROMPTS[promptIndex]}
-      </p>
+      <MorphingText
+        as="p"
+        texts={PROMPTS}
+        loop
+        holdSeconds={2.7}
+        morphSeconds={0.85}
+        blurPx={2}
+        className="text-sm italic text-text-lo/80 [&>span]:text-left"
+      />
 
       <div className="flex flex-col gap-2">
         <label htmlFor="origin-introduction" className="sr-only">

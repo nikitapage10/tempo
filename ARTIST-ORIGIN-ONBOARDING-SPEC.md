@@ -194,8 +194,18 @@ loaded into the standby, played while invisible, and only swapped once
 `requestVideoFrameCallback` confirms a painted frame (2.5s timeout fallback).
 The outgoing element stays fully opaque underneath while the incoming one fades
 over it. The scrub destination is briefly decoded while invisible, paused,
-seeked back to its first frame, and confirmed painted before its 1.4s blend;
-the ended transition remains held underneath for that whole window.
+seeked back to its first frame, and confirmed painted before a 280ms seam blend.
+Its first frame is matched to the ended transition, so this covers compositor
+timing without introducing a visible frozen hold.
+
+Audible transitions use an equal-power handoff and a final 750ms tail envelope.
+Outgoing sound reaches zero before an element is paused, detached or allowed to
+end, preventing a cut waveform from producing a click or crackle. Opening copy
+finishes its opacity transition before the name panel begins, and the entity’s
+morphing voice repeats for recognition, listening and processing copy. The
+recognition phase fully exits before the speaking panel can become visible, and
+the optional speaking prompts morph every few seconds rather than sitting for a
+long marquee interval.
 
 ## Scroll-scrubbed story
 
@@ -216,7 +226,9 @@ The Import APIs, AI routes, review data and commit endpoint are shared unchanged
 with the standalone Import screen. Inside Origin, intake, reading, review and
 final confirmation retitle and reposition the story panel over the same film;
 they never open a separate full-screen Import overlay. Long interactive content
-scrolls inside that panel without moving the outer story. The commit endpoint is
+opens immediately at full opacity and scrolls inside that panel while the outer
+story is locked in place. Story copy uses translucent backdrop-blurred glass;
+no transform ancestor applies a filter that would flatten it. The commit endpoint is
 still called only from the final approval action. Leaving Import discards its
 temporary session but does not touch the in-memory or autosaved Origin draft.
 

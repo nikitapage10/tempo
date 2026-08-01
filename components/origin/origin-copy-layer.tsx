@@ -113,7 +113,7 @@ export function OriginScrim({
         tone === "panel"
           ? "rounded-panel border border-line/60 bg-bg-0/90 p-6 shadow-3 backdrop-blur-xl"
           : tone === "story"
-            ? "rounded-panel border border-line/80 bg-[rgb(10_10_12/0.97)] p-6 shadow-3"
+            ? "rounded-panel border border-line/80 bg-[linear-gradient(135deg,rgb(10_10_12/0.88),rgb(18_18_22/0.76))] p-6 shadow-3 backdrop-blur-xl"
             : "rounded-panel bg-gradient-to-b from-bg-0/85 via-bg-0/70 to-transparent p-6",
         className
       )}

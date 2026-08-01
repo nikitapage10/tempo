@@ -4,6 +4,24 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-31
 
+- Fixed (v0.73.2): the name acknowledgement now leaves completely before the
+  speaking panel arrives, removing the remaining overlap between those scenes.
+- Changed (v0.73.2): the speaking prompts now move more quickly and melt from
+  one suggestion into the next instead of changing as a slow marquee.
+- Fixed (v0.73.2): the final transition and scrolling film now meet on their
+  matching frame without a long frozen hold, and story copy is back on a
+  readable translucent glass surface instead of a flat black card.
+- Fixed (v0.73.2): opening Bring your music in now locks that chapter at full
+  clarity immediately; only the Import content itself scrolls while it is open.
+
+- Fixed (v0.73.1): the “Who are you?” panel now waits until the opening line
+  has completely faded, so the two moments never sit on top of each other.
+- Fixed (v0.73.1): Origin’s soundtrack now eases fully to silence before a clip
+  ends, pauses or is released, removing the audible crackle at scene changes.
+- Changed (v0.73.1): TEMPO’s melting text voice now carries through the name
+  acknowledgement, the invitation to speak and the processing moment instead
+  of appearing only at the very beginning.
+
 - Changed (v0.73.0): Origin now lets every panel arrive slowly and leave
   gracefully instead of popping on and vanishing. The opening copy stays on one
   line, the name panel holds still, the artist's name gets a readable

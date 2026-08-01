@@ -35,7 +35,13 @@ const HANDOFF_MS = 620;
  */
 const FIRST_FADE_MS = 2000;
 /** The transition-to-scrub handoff, where neither side is moving. */
-const SCRUB_FADE_MS = 1400;
+// The supplied transition's final frame and the scrub film's opening frame are
+// a frame-matched pair. A short dissolve preserves that seam; a long one only
+// makes the matched frame feel like a freeze before scrolling becomes active.
+const SCRUB_FADE_MS = 280;
+/** Audio reaches silence before a clip is paused or naturally ends. */
+const AUDIO_FADE_MS = 700;
+const AUDIO_TAIL_SECONDS = 0.75;
 /** If a frame never paints, swap anyway rather than freezing the flow. */
 const PAINT_TIMEOUT_MS = 2500;
 
@@ -158,7 +164,7 @@ export function OriginMediaStage({
   const [painted, setPainted] = React.useState(false);
   /** True while the very first clip is rising out of the poster. */
   const [firstReveal, setFirstReveal] = React.useState(true);
-  /** Longer blend for the scrub handoff, which has no motion to hide a cut. */
+  /** Uses the frame-matched blend length for the scrub handoff. */
   const [slowBlend, setSlowBlend] = React.useState(false);
 
   const activeSlotRef = React.useRef(activeSlot);
@@ -245,10 +251,9 @@ export function OriginMediaStage({
 
         // Nothing to hold under the first clip — it rises out of the poster.
         const isFirst = slotKeyRef.current[current] === null;
-        // The scrub asset is seeked, not played, so it has no motion of its own
-        // to blend with. Given a longer, slower blend it reads as the frozen
-        // final frame of the transition resolving into it, rather than a cut
-        // with a hitch in the middle.
+        // The scrub asset is seeked, not played. Its opening frame is matched
+        // to the transition's final frame, so the short dissolve only hides
+        // compositor timing without creating a perceptible frozen hold.
         const blendMs = asset.mode === "scrub" ? SCRUB_FADE_MS : HANDOFF_MS;
         setSlowBlend(asset.mode === "scrub");
         if (!isFirst) setHoldSlot(current);
@@ -264,15 +269,25 @@ export function OriginMediaStage({
 
         const outgoing = (current === "a" ? aRef.current : bRef.current) ?? null;
 
-        // Ramp audio across the same window as the opacity blend, so sound and
-        // picture arrive together instead of the track snapping over.
-        if (audible) {
+        // Fade both sides independently. In particular, transition -> silent
+        // loop still needs to ramp the outgoing soundtrack all the way to zero;
+        // pausing or detaching a non-zero signal is what produced the crackle.
+        const outgoingAudible = Boolean(
+          outgoing && !outgoing.muted && outgoing.volume > 0
+        );
+        if (audible || outgoingAudible) {
           const startedAt = performance.now();
+          const outgoingStart = outgoing?.volume ?? 0;
+          const fadeMs = Math.min(blendMs, AUDIO_FADE_MS);
           const ramp = () => {
             if (cancelled) return;
-            const t = Math.min(1, (performance.now() - startedAt) / HANDOFF_MS);
-            incoming.volume = t;
-            if (outgoing && !outgoing.paused) outgoing.volume = 1 - t;
+            const t = Math.min(1, (performance.now() - startedAt) / fadeMs);
+            const eased = t * t * (3 - 2 * t);
+            if (audible) incoming.volume = Math.sin((eased * Math.PI) / 2);
+            if (outgoingAudible && outgoing) {
+              const ceiling = outgoingStart * Math.cos((eased * Math.PI) / 2);
+              outgoing.volume = Math.min(outgoing.volume, ceiling);
+            }
             if (t < 1) requestAnimationFrame(ramp);
           };
           requestAnimationFrame(ramp);
@@ -285,6 +300,7 @@ export function OriginMediaStage({
           // By now the incoming layer is fully opaque on top, so dropping the
           // one underneath is invisible.
           setHoldSlot((s) => (s === current ? null : s));
+          outgoing.volume = 0;
           outgoing.pause();
           slotKeyRef.current = { ...slotKeyRef.current, [current]: null };
           outgoing.removeAttribute("src");
@@ -305,6 +321,39 @@ export function OriginMediaStage({
     const el = (activeSlot === "a" ? aRef.current : bRef.current) ?? null;
     if (el) el.loop = clipLoop;
   }, [clipLoop, activeSlot]);
+
+  /**
+   * The final transition has no early handoff to hide its audio ending. Ease
+   * every transition to silence over its last frames so `ended`, pause, and src
+   * removal can never cut a non-zero waveform.
+   */
+  React.useEffect(() => {
+    if (staticMode || clipLoop) return;
+    const slot = activeSlotRef.current;
+    const el = (slot === "a" ? aRef.current : bRef.current) ?? null;
+    const key = slotKeyRef.current[slot];
+    if (!el || !key || originAsset(key).mode !== "transition") return;
+
+    let raf = 0;
+    const softenTail = () => {
+      if (
+        !el.muted &&
+        Number.isFinite(el.duration) &&
+        el.duration > 0 &&
+        !el.ended
+      ) {
+        const remaining = el.duration - el.currentTime;
+        if (remaining <= AUDIO_TAIL_SECONDS) {
+          const t = Math.max(0, Math.min(1, remaining / AUDIO_TAIL_SECONDS));
+          const ceiling = t * t * (3 - 2 * t);
+          el.volume = Math.min(el.volume, ceiling);
+        }
+        raf = requestAnimationFrame(softenTail);
+      }
+    };
+    raf = requestAnimationFrame(softenTail);
+    return () => cancelAnimationFrame(raf);
+  }, [activeSlot, clipKey, clipLoop, staticMode]);
 
   /** A hidden tab throttles or pauses playback; resume so the loop is running
    *  when the artist returns rather than frozen mid-frame. */

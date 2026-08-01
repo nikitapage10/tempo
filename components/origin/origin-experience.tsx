@@ -19,6 +19,7 @@ import {
 } from "@/components/origin/origin-processing-step";
 import { OriginReviewStep } from "@/components/origin/origin-review-step";
 import { OriginStoryScroll } from "@/components/origin/origin-story-scroll";
+import { MorphingText } from "@/components/ui/morphing-text";
 import { markFirstOpenPending } from "@/components/origin/first-open-reveal";
 import { PHASE_GATES, useOriginMedia } from "@/hooks/use-origin-media";
 import { useOriginState } from "@/hooks/use-origin-state";
@@ -46,7 +47,7 @@ const HOME_ROUTE = "/";
  */
 const OPENING_LINES = [
   { text: "Every story begins with a pulse.", at: 0.04, until: 0.4 },
-  { text: "There's someone in the noise.", at: 0.42, until: 0.72 },
+  { text: "There's someone in the noise.", at: 0.42, until: 0.66 },
 ];
 
 /**
@@ -55,6 +56,8 @@ const OPENING_LINES = [
  * never competes with the film's own moment.
  */
 const PRELUDE_AT = 0.58;
+/** The opening sentence must finish its fade before the name panel begins. */
+const NAME_PRELUDE_AT = 0.82;
 
 /**
  * How long before a transition's end the next phase is entered.
@@ -136,6 +139,7 @@ export function OriginExperience({
   );
   /** True once the current transition is far enough along to show what's next. */
   const prelude = media.staticMode || clipProgress >= PRELUDE_AT;
+  const namePrelude = media.staticMode || clipProgress >= NAME_PRELUDE_AT;
 
   /*
    * Two flags per step, and the distinction matters.
@@ -150,7 +154,8 @@ export function OriginExperience({
     state.phase === "opening" ||
     state.phase === "name_idle" ||
     state.phase === "recognizing";
-  const showName = state.phase === "name_idle" || (state.phase === "opening" && prelude);
+  const showName =
+    state.phase === "name_idle" || (state.phase === "opening" && namePrelude);
 
   const mountIntroduction =
     state.phase === "recognizing" ||
@@ -159,8 +164,13 @@ export function OriginExperience({
     state.phase === "interpreting_transition";
   const showIntroduction =
     state.phase === "introduction_idle" ||
-    state.phase === "recording" ||
-    (state.phase === "recognizing" && prelude);
+    state.phase === "recording";
+
+  const recognitionVisible =
+    state.phase === "recognizing" &&
+    activeKeyRef.current === clip?.key &&
+    clipProgress >= 0.18 &&
+    clipProgress < 0.62;
 
   const mountProcessing =
     state.phase === "interpreting_transition" ||
@@ -407,29 +417,35 @@ export function OriginExperience({
             </StepFade>
           ) : null}
 
-          {state.phase === "recognizing" ? (
-            <TimedCopy
-              lines={[
-                { text: `${state.name}.`, at: 0.16, until: 0.46 },
-                { text: "Good. I can see you now.", at: 0.48 },
-              ]}
-              videoRef={activeVideoRef}
-              showAll={media.staticMode}
-              resetKey={state.phase}
-              matches={activeKeyRef.current === clip?.key}
-              tick={activeTick}
-            />
+          {state.phase === "recognizing" && activeKeyRef.current === clip?.key ? (
+            <StepFade
+              show={recognitionVisible}
+              enterMs={700}
+              exitMs={600}
+              className="w-full max-w-xl"
+            >
+              <MorphingText
+                as="h1"
+                texts={[`${state.name}.`, "Good. I can see you now."]}
+                loop={false}
+                delaySeconds={0.3}
+                holdSeconds={0.95}
+                morphSeconds={0.9}
+                className="font-display text-right text-2xl leading-snug text-text-hi sm:text-3xl [&>span]:text-right"
+              />
+            </StepFade>
           ) : null}
 
           {mountIntroduction ? (
             <StepFade show={showIntroduction} className="w-full max-w-xl">
               <OriginIntroductionStep
-              introduction={state.introduction}
-              onIntroductionChange={(text) => dispatch({ type: "set_introduction", text })}
-              onFinish={() => dispatch({ type: "finish_introduction" })}
-              onRecordingChange={(recording) =>
-                dispatch({ type: recording ? "start_recording" : "stop_recording" })
-              }
+                introduction={state.introduction}
+                onIntroductionChange={(text) => dispatch({ type: "set_introduction", text })}
+                onFinish={() => dispatch({ type: "finish_introduction" })}
+                onRecordingChange={(recording) =>
+                  dispatch({ type: recording ? "start_recording" : "stop_recording" })
+                }
+                voiceActive={showIntroduction}
                 mediaReady={media.gateOpen(gateFor("interpreting_transition"))}
                 busy={state.busy}
               />
@@ -438,7 +454,10 @@ export function OriginExperience({
 
           {mountProcessing ? (
             <StepFade show={showProcessing} className="w-full max-w-md">
-              <OriginProcessingStep announce={state.interpretationReady} />
+              <OriginProcessingStep
+                announce={state.interpretationReady}
+                voiceActive={showProcessing}
+              />
             </StepFade>
           ) : null}
 

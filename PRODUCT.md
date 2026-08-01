@@ -16,6 +16,15 @@ Three kinds of things sit at the center of TEMPO: **tracks** (a musical work wit
 
 ## Current feature set
 
+**Origin presentation.** Origin's spoken beats clear before the next panel
+arrives, and the optional speaking prompts melt fluidly from one suggestion
+into another. Story copy sits on translucent, backdrop-blurred glass so the
+film remains visible without sacrificing legibility. The final transition
+meets the scrolling film on a matching frame instead of holding on a freeze.
+Opening **Bring your music in** settles the complete Import chapter at full
+clarity immediately; longer Import content scrolls inside the chapter while
+the outer story stays locked.
+
 **Messaging inbox.** Notifications, Messages, and Search sit together in the
 global top-right toolbar. The Messages icon carries an unread badge and opens a
 mini-inbox for recent artist and TEMPO Support conversations, including quick
@@ -127,6 +136,11 @@ The page is **modular**, the same way a track workspace is. "Edit layout" in the
 **Workspace customize.** On a track page, Customize lets you pick a layout preset (Writing, Production, Feedback, Mix review, Release prep, or Custom), reorder or hide optional modules, choose the default work-panel tab, and toggle compact mode. Layouts are yours alone — they don’t change what collaborators see. The waveform stays available whenever a bounce exists.
 
 **Checklists & templates.** Arrangement, Mixdown, Master Prep, and Release Prep ship on first login. Apply a template to a track or save any checklist as a new template.
+
+**Origin motion and sound.** TEMPO’s voice melts from one thought into the next
+throughout Origin, not just in its opening lines. Copy and interactive panels
+take separate turns rather than overlapping, and each film soundtrack eases
+fully to silence before its scene is released.
 
 **Look & feel.** Dark Spectra palette (ice for interaction, amber for “current” / status). Two typefaces: a distinct display face for titles and the logo, and one workhorse face for everything else, including all numbers — BPM, keys, timestamps, counts. Anything you can click that represents a track, project, or task — board cards, list rows, the attention queue on Today — glows softly around the cursor in the app's own ice → white → amber colours (amber-warning automatically if it's blocked or overdue). The logo itself is built from that same light rather than a static image. Surfaces are layered and lit — panels sit on the background with a soft top edge and a cast shadow, so what matters on a screen looks like it matters, rather than every section being an identical outlined box. Today opens on a hero carrying an oversized greeting, your active / due / session counts as large readable numerals, and the quick actions. Prismatic light appears as intro, top edge, empty states, and behind the Today hero, where the cover over it fades out toward the edges so the motion is actually visible — never as a full-page background behind dense data. Keyboard focus uses a clear ice ring. Errors surface as short toasts with what to try next.
 
