@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MorphingText } from "@/components/ui/morphing-text";
 import { OriginScrim } from "@/components/origin/origin-copy-layer";
 import { validateArtistName } from "@/lib/origin/validation";
 import { cn } from "@/lib/utils";
@@ -72,10 +73,13 @@ export function OriginNameStep({
     <OriginScrim className="pointer-events-auto w-full max-w-md">
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
         <div className="flex flex-col gap-2">
-          <h1 className="font-display text-3xl text-text-hi">Who are you?</h1>
-          <p className="text-sm text-text-lo">
-            The name you release music under. You can change it whenever you like.
-          </p>
+          <MorphingText
+            as="h1"
+            texts={["Who are you?"]}
+            loop={false}
+            className="h-10 font-display text-3xl text-text-hi [&>span]:text-right"
+          />
+          <p className="text-sm text-text-lo">Give me something to call you by.</p>
         </div>
 
         <div className="flex flex-col gap-2">
@@ -90,7 +94,7 @@ export function OriginNameStep({
               onNameChange(e.target.value);
               if (error) setError(null);
             }}
-            placeholder="Artist name"
+            placeholder="The name on the record"
             autoComplete="off"
             maxLength={60}
             aria-invalid={Boolean(error)}

@@ -40,14 +40,7 @@ const CHAPTER_TITLES = [
  * with `mx-auto` in play, overriding one side's margin pushes the block the
  * *opposite* way to what you'd expect.
  */
-const CHAPTER_ALIGN = [
-  "sm:-translate-x-[10%]",
-  "",
-  "",
-  "",
-  "",
-  "",
-];
+const CHAPTER_ALIGN = ["sm:ml-[8%]", "sm:ml-[8%]", "sm:ml-[8%]", "sm:ml-[8%]", "sm:ml-[8%]", "sm:ml-[8%]"];
 
 /** Scroll distance per chapter. Enough to feel deliberate, not a marathon. */
 const VH_PER_CHAPTER = 90;
@@ -90,29 +83,24 @@ function EnterTempoButton({ onClick, busy }: { onClick: () => void; busy: boolea
 
 function ChapterSection({
   index,
-  active,
   staticMode,
   children,
 }: {
   index: number;
-  active: boolean;
   staticMode: boolean;
   children: React.ReactNode;
 }) {
   return (
     <section
       aria-labelledby={`origin-chapter-${index}`}
-      className={cn(
-        staticMode
-          ? "py-12"
-          : "transition-opacity duration-500 motion-reduce:transition-none",
-        !staticMode && !active && "pointer-events-none opacity-0"
-      )}
+      className={cn(staticMode && "py-12")}
     >
-      <OriginScrim className={cn("mx-auto w-full max-w-2xl", CHAPTER_ALIGN[index])}>
+      {/* Middle-left, opposite the earlier steps: the scroll footage opens out
+          from the right, so the copy sits on the quieter side of the frame. */}
+      <OriginScrim className={cn("w-full max-w-xl", CHAPTER_ALIGN[index])}>
         <h2
           id={`origin-chapter-${index}`}
-          className="text-xs uppercase tracking-[0.2em] text-text-lo"
+          className="text-xs uppercase tracking-[0.2em] text-text-hi"
         >
           {CHAPTER_TITLES[index]}
         </h2>
@@ -147,12 +135,66 @@ export function OriginStoryScroll({
   importChoice: "imported" | "empty" | null;
 }) {
   const scrollerRef = React.useRef<HTMLDivElement>(null);
+  const sectionRefs = React.useRef<Array<HTMLDivElement | null>>([]);
+
+  /**
+   * Drive each chapter's transform straight from scroll progress.
+   *
+   * The scroll footage travels down a tunnel, so the panels move with it:
+   * each one arrives small and soft from the left, resolves as it reaches its
+   * own stop, then scales past the viewer and blurs out as the next takes over.
+   *
+   * Written imperatively inside the scrub loop — routing per-frame transforms
+   * through React state would re-render the whole story on every scroll tick.
+   */
+  const paint = React.useCallback((progress: number) => {
+    const stops = CHAPTER_STOPS;
+    sectionRefs.current.forEach((el, i) => {
+      if (!el) return;
+      const start = stops[i];
+      const end = i + 1 < stops.length ? stops[i + 1] : 1;
+      const span = Math.max(0.0001, end - start);
+      // -1 well before its turn, 0 dead centre on it, +1 once it has passed.
+      const local = (progress - start) / span;
+
+      let opacity: number;
+      let scale: number;
+      let x: number;
+      let blur: number;
+
+      if (local < 0) {
+        const t = Math.max(0, 1 + local * 2.2);
+        opacity = t;
+        scale = 0.82 + 0.18 * t;
+        x = -14 * (1 - t);
+        blur = 7 * (1 - t);
+      } else if (local < 0.62) {
+        opacity = 1;
+        scale = 1;
+        x = 0;
+        blur = 0;
+      } else {
+        const t = Math.min(1, (local - 0.62) / 0.38);
+        opacity = 1 - t;
+        scale = 1 + 0.4 * t;
+        x = 10 * t;
+        blur = 8 * t;
+      }
+
+      el.style.opacity = String(Math.max(0, Math.min(1, opacity)));
+      el.style.transform = `translate3d(${x}%, 0, 0) scale(${scale})`;
+      el.style.filter = blur > 0.05 ? `blur(${blur}px)` : "none";
+      // Only the chapter in focus should be clickable.
+      el.style.pointerEvents = opacity > 0.6 ? "auto" : "none";
+    });
+  }, []);
 
   const { chapter } = useOriginScrollScrub({
     scrollerRef,
     videoRef,
     chapterStops: CHAPTER_STOPS,
     enabled: !staticMode,
+    onProgress: paint,
   });
 
   /** Jump straight to the closing section. A safety valve: if scrubbing ever
@@ -244,7 +286,7 @@ export function OriginStoryScroll({
     return (
       <div className="relative z-10 mx-auto w-full max-w-3xl px-5 py-16">
         {sections.map((content, i) => (
-          <ChapterSection key={i} index={i} active staticMode>
+          <ChapterSection key={i} index={i} staticMode>
             {content}
           </ChapterSection>
         ))}
@@ -257,47 +299,59 @@ export function OriginStoryScroll({
       ref={scrollerRef}
       // ORIGIN sits in a fixed full-screen stage, so the document never
       // scrolls — this element is the scroller, and the scrub hook reads its
-      // scrollTop directly.
-      className="absolute inset-0 z-10 overflow-y-auto overscroll-contain"
+      // scrollTop directly. The bar itself is hidden: it would cut a hard line
+      // down the film.
+      className="no-scrollbar absolute inset-0 z-10 overflow-y-auto overscroll-contain"
     >
       {/* The scroll range. The sticky child stays in view across all of it. */}
       <div style={{ height: `${sections.length * VH_PER_CHAPTER + 100}vh` }} className="w-full">
-        <div className="sticky top-0 flex h-[100dvh] items-center justify-center px-5">
+        <div className="sticky top-0 flex h-[100dvh] items-center px-5">
           {sections.map((content, i) => (
             <div
               key={i}
-              className={cn("absolute inset-x-5", i !== chapter && "pointer-events-none")}
+              ref={(el) => {
+                sectionRefs.current[i] = el;
+              }}
+              // Transforms are written by `paint` on every scroll frame; the
+              // starting values here only matter before the first tick.
+              className="absolute inset-x-5 will-change-[transform,opacity]"
+              style={{ opacity: i === 0 ? 1 : 0 }}
             >
-              <ChapterSection index={i} active={i === chapter} staticMode={false}>
+              <ChapterSection index={i} staticMode={false}>
                 {content}
+                {i === 0 ? <ScrollCue /> : null}
               </ChapterSection>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Always reachable, whatever the scroll position. */}
-      <div className="pointer-events-none sticky bottom-0 flex items-center justify-between gap-3 px-5 pb-[max(1rem,env(safe-area-inset-bottom))]">
-        <p
-          aria-hidden
-          className={cn(
-            "text-xs text-text-lo/70 transition-opacity duration-500",
-            chapter === 0 ? "opacity-100" : "opacity-0"
-          )}
-        >
-          Scroll to read on
-        </p>
+      {/* Always reachable, whatever the scroll position — the way out must
+          never be something you can only reach by scrolling. */}
+      <div className="pointer-events-none sticky bottom-0 flex justify-end px-5 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <Button
           type="button"
           variant="ghost"
           size="sm"
           onClick={chapter === sections.length - 1 ? onEnter : skipToEnd}
           disabled={busy}
-          className="pointer-events-auto bg-bg-0/70 text-text-lo backdrop-blur hover:text-text-hi"
+          className="pointer-events-auto bg-bg-0/60 text-text-lo backdrop-blur hover:text-text-hi"
         >
           {chapter === sections.length - 1 ? "Enter TEMPO" : "Skip to the end"}
         </Button>
       </div>
+    </div>
+  );
+}
+
+/** A small breathing cue under the opening chapter, in place of a footer label. */
+function ScrollCue() {
+  return (
+    <div aria-hidden className="mt-6 flex items-center gap-2 text-xs text-text-lo/70">
+      <span className="relative flex h-6 w-4 items-start justify-center rounded-full border border-line/80">
+        <span className="mt-1 block h-1.5 w-0.5 rounded-full bg-ice motion-safe:animate-[origin-scroll-cue_1.8s_ease-in-out_infinite]" />
+      </span>
+      Scroll
     </div>
   );
 }

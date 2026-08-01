@@ -4,6 +4,7 @@ import * as React from "react";
 import { Mic, Pause, Play, RotateCcw, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { MorphingText } from "@/components/ui/morphing-text";
 import { OriginScrim } from "@/components/origin/origin-copy-layer";
 import { formatElapsed, useOriginSpeech } from "@/hooks/use-origin-speech";
 import { MIN_INTRODUCTION_CHARS, validateIntroduction } from "@/lib/origin/validation";
@@ -16,11 +17,15 @@ import { MIN_INTRODUCTION_CHARS, validateIntroduction } from "@/lib/origin/valid
  * failed transcription costs the artist nothing but the dictation itself.
  */
 
+/**
+ * Suggestions, never a questionnaire. Written to be answerable sideways — an
+ * artist should be able to ignore all four and still say something true.
+ */
 const PROMPTS = [
-  "What do you make?",
-  "What keeps pulling you back to it?",
-  "What do you want someone to feel?",
-  "What are you building toward?",
+  "What does the room sound like when it's working?",
+  "What do you keep circling back to?",
+  "What should it do to someone?",
+  "What's the thing you haven't made yet?",
 ];
 
 const PROMPT_ROTATE_MS = 9000;
@@ -100,11 +105,14 @@ export function OriginIntroductionStep({
   return (
     <OriginScrim className="pointer-events-auto flex w-full max-w-xl flex-col gap-5">
       <div className="flex flex-col gap-2">
-        <h1 className="font-display text-2xl text-text-hi sm:text-3xl">
-          Before the lights come up, tell me who I&rsquo;ve found.
-        </h1>
+        <MorphingText
+          as="h1"
+          texts={["Before the lights come up —", "tell me what I've found."]}
+          loop={false}
+          className="h-9 font-display text-2xl text-text-hi sm:text-3xl [&>span]:text-right"
+        />
         <p className="text-sm text-text-lo">
-          Speak naturally. Thirty seconds is plenty, but take longer if you need it.
+          Out loud is easier than it looks. Half a minute, or as long as it takes.
         </p>
       </div>
 
@@ -129,7 +137,7 @@ export function OriginIntroductionStep({
           }}
           rows={6}
           placeholder={
-            canSpeak ? "Speak, or type here — whichever suits you." : "Type your introduction here."
+            canSpeak ? "Talk, or write it — either way it stays yours to edit." : "Write it here."
           }
           className="resize-none text-base leading-relaxed"
           aria-describedby="origin-intro-status origin-intro-privacy"

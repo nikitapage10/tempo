@@ -4,6 +4,27 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-31
 
+- Changed (v0.71.0): TEMPO's voice in Origin now morphs from one line into the
+  next — the letters melt and reform rather than fading. It's used everywhere
+  the thing talking to you speaks, and nowhere else.
+- Changed (v0.71.0): every clip carries film grain now, and only the transitions
+  have sound — the loops you sit on while typing or talking stay silent.
+- Fixed (v0.71.0): the flash between clips. Both were fading at once, so the
+  midpoint of every handoff dipped dark. The outgoing shot now holds while the
+  next one fades in over the top of it.
+- Changed (v0.71.0): the last transition now freezes on its final frame and the
+  scrolling chapter fades in over it, instead of cutting mid-motion.
+- Changed (v0.71.0): as you scroll your story, each chapter rises toward you
+  from the left, holds, then drifts past — following the movement of the film
+  rather than sitting still on top of it. Chapter titles are white, the panels
+  sit middle-left, the scrollbar is gone, and there's a small scroll cue under
+  the opening chapter.
+- Changed (v0.71.0): panels sit further in from the right edge, "tap anywhere to
+  begin" now genuinely means anywhere, and the writing throughout Origin is less
+  on-the-nose.
+- Changed (v0.71.0): Enter TEMPO always opens your workspace now, since bringing
+  your music in already happened inside the story.
+
 - Fixed (v0.70.0): signing into a different account on the same computer could
   leave the previous account's track sitting in the player at the bottom of the
   screen — their song title and artwork, visible to someone who shouldn't see

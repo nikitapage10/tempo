@@ -196,7 +196,9 @@ export function OriginOverlay({
         // Pointer events are re-enabled per panel so the video never swallows clicks.
         "pointer-events-none absolute inset-0 flex flex-col justify-center",
         "items-stretch sm:items-end",
-        "px-5 sm:pr-[max(3rem,6vw)]",
+        // Middle-right: inset from the edge so the panel sits in the right half
+        // rather than hugging the frame.
+        "px-5 sm:pr-[14vw]",
         "pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))]",
         className
       )}

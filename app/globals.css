@@ -786,3 +786,27 @@
     }
   }
 }
+
+/* ORIGIN film grain — the tile hops each step so the noise shimmers. */
+@keyframes origin-grain {
+  0% { background-position: 0 0; }
+  33% { background-position: -80px 40px; }
+  66% { background-position: 60px -70px; }
+  100% { background-position: 0 0; }
+}
+
+/* Scrollable without the bar. Used by the ORIGIN story, where a visible
+   scrollbar cuts across the film. */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* The scroll cue's dot, drifting down its track. */
+@keyframes origin-scroll-cue {
+  0%, 100% { transform: translateY(0); opacity: 1; }
+  50% { transform: translateY(6px); opacity: 0.3; }
+}

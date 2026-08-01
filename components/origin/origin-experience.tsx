@@ -198,6 +198,11 @@ export function OriginExperience({
   React.useEffect(() => {
     if (media.staticMode) return;
     if (!clip || clip.loop) return;
+    // The chapter opening is the exception: it plays to its very last frame and
+    // freezes there, and the scroll video fades in over that held frame. Cutting
+    // it short would blend out of mid-motion into a static first frame, which is
+    // the one place that reads badly.
+    if (state.phase === "chapter_opening") return;
     const video = activeVideoRef.current;
     if (!video) return;
 
@@ -251,7 +256,8 @@ export function OriginExperience({
     // Import now happens inside the story, so having imported (or chosen to
     // start empty) means there is nothing left to send them to.
     const wantsImport = importChoice === null && importPending;
-    router.replace(wantsImport ? IMPORT_ROUTE : HOME_ROUTE);
+    // Import now runs inside the story, so Enter TEMPO always opens the app.
+    router.replace(HOME_ROUTE);
   }
 
   async function handleSkip() {

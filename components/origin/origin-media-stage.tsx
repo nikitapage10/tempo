@@ -109,6 +109,16 @@ export function OriginMediaStage({
   const bRef = React.useRef<HTMLVideoElement>(null);
 
   const [activeSlot, setActiveSlot] = React.useState<"a" | "b">("a");
+  /**
+   * The outgoing element during a blend. It stays at full opacity underneath
+   * while the incoming one fades in on top.
+   *
+   * Cross-fading both at once is what caused the flash: at the midpoint each
+   * clip sat near 50%, and two half-transparent layers over the black floor
+   * composite darker than either — a dip to black in the middle of every
+   * handoff. Only the incoming layer animates now.
+   */
+  const [holdSlot, setHoldSlot] = React.useState<"a" | "b" | null>(null);
   const [painted, setPainted] = React.useState(false);
 
   const activeSlotRef = React.useRef(activeSlot);
@@ -129,9 +139,12 @@ export function OriginMediaStage({
   /** Unmute whatever is already on screen the moment sound is switched on. */
   React.useEffect(() => {
     const el = (activeSlotRef.current === "a" ? aRef.current : bRef.current) ?? null;
-    if (!el) return;
-    el.muted = !soundOn;
-    if (soundOn) el.volume = 1;
+    const key = slotKeyRef.current[activeSlotRef.current];
+    if (!el || !key) return;
+    // Loops stay silent even after sound is unlocked — see the handoff above.
+    const audible = soundOn && originAsset(key).mode === "transition";
+    el.muted = !audible;
+    if (audible) el.volume = 1;
   }, [soundOn]);
 
   const clipKey = clip?.key ?? null;
@@ -154,11 +167,14 @@ export function OriginMediaStage({
     // check can be sequenced against each other.
     incoming.src = asset.src;
     incoming.loop = clipLoop;
-    // Always starts silent: it is playing underneath the outgoing clip, and two
-    // audible tracks at once would be worse than none. Volume is ramped up
-    // across the blend below.
-    incoming.muted = !soundOnRef.current;
-    incoming.volume = soundOnRef.current ? 0 : 1;
+    // Only transitions carry audio. The loops hold for an unknown length of
+    // time while the artist types or talks, and a bed of sound cycling under
+    // that becomes noise rather than atmosphere.
+    const audible = soundOnRef.current && asset.mode === "transition";
+    // Starts silent regardless: it is playing underneath the outgoing clip, and
+    // two audible tracks at once would be worse than none. Ramped up below.
+    incoming.muted = !audible;
+    incoming.volume = audible ? 0 : 1;
     incoming.playsInline = true;
     incoming.load();
 
@@ -175,6 +191,7 @@ export function OriginMediaStage({
         await whenPainted(incoming);
         if (cancelled) return;
 
+        setHoldSlot(current);
         setActiveSlot(incomingSlot);
         setPainted(true);
         cbRef.current.onVisible?.(clipKey);
@@ -184,7 +201,7 @@ export function OriginMediaStage({
 
         // Ramp audio across the same window as the opacity blend, so sound and
         // picture arrive together instead of the track snapping over.
-        if (soundOnRef.current) {
+        if (audible) {
           const startedAt = performance.now();
           const ramp = () => {
             if (cancelled) return;
@@ -200,6 +217,9 @@ export function OriginMediaStage({
         // and still playing — for the whole of it.
         window.setTimeout(() => {
           if (cancelled || !outgoing) return;
+          // By now the incoming layer is fully opaque on top, so dropping the
+          // one underneath is invisible.
+          setHoldSlot((s) => (s === current ? null : s));
           outgoing.pause();
           slotKeyRef.current = { ...slotKeyRef.current, [current]: null };
           outgoing.removeAttribute("src");
@@ -281,8 +301,14 @@ export function OriginMediaStage({
               ref={slot === "a" ? aRef : bRef}
               className={videoClass}
               style={{
-                opacity: activeSlot === slot ? 1 : 0,
-                transition: `opacity ${HANDOFF_MS}ms linear`,
+                opacity: activeSlot === slot || holdSlot === slot ? 1 : 0,
+                // The incoming layer must sit above the held one, otherwise it
+                // would fade in underneath an opaque clip and never be seen.
+                zIndex: activeSlot === slot ? 2 : 1,
+                // Only the incoming layer animates; the held one is static
+                // until it is dropped.
+                transition:
+                  activeSlot === slot ? `opacity ${HANDOFF_MS}ms ease-in-out` : "none",
               }}
               // `muted` is managed imperatively during the handoff (and by the
               // sound effect above); declaring it here would let a re-render
@@ -298,7 +324,47 @@ export function OriginMediaStage({
           ))
         : null}
 
+      <OriginGrain />
+
       {children}
     </div>
+  );
+}
+
+/**
+ * Film grain over the whole stage.
+ *
+ * Fractal noise baked into a data URI — no extra request, no WebGL context, and
+ * it sits above both video layers so the texture stays constant across a
+ * handoff rather than crossfading with the picture. The animation walks the
+ * tile position so the grain shimmers instead of reading as a static overlay.
+ *
+ * Sits below the copy layer: the point is to sell the footage, not to make text
+ * harder to read.
+ */
+const GRAIN_URI =
+  "data:image/svg+xml;utf8," +
+  encodeURIComponent(
+    `<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'>
+      <filter id='n'>
+        <feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/>
+        <feColorMatrix type='saturate' values='0'/>
+      </filter>
+      <rect width='200' height='200' filter='url(#n)' opacity='0.55'/>
+    </svg>`
+  );
+
+function OriginGrain() {
+  return (
+    <div
+      aria-hidden
+      className="pointer-events-none absolute inset-0 z-[3] opacity-[0.28] mix-blend-overlay motion-reduce:animate-none"
+      style={{
+        backgroundImage: `url("${GRAIN_URI}")`,
+        backgroundRepeat: "repeat",
+        backgroundSize: "200px 200px",
+        animation: "origin-grain 700ms steps(3) infinite",
+      }}
+    />
   );
 }

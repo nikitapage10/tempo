@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { OriginScrim } from "@/components/origin/origin-copy-layer";
+import { MorphingText } from "@/components/ui/morphing-text";
 
 /**
  * Frame 4 — the hold while interpretation runs.
@@ -14,9 +15,9 @@ import { OriginScrim } from "@/components/origin/origin-copy-layer";
 export function OriginProcessingStep({ announce }: { announce: boolean }) {
   return (
     <OriginScrim tone="veil" className="pointer-events-none max-w-md text-center">
-      <h1 className="font-display text-2xl text-text-hi">Stay here for a moment.</h1>
+      <MorphingText as="h1" texts={["Stay with me a moment."]} loop={false} className="h-8 font-display text-2xl text-text-hi [&>span]:text-right" />
       <p className="mt-2 text-sm text-text-lo">
-        I&rsquo;m finding the shape of what you said.
+        Listening back to the shape of it.
       </p>
       {/* Announced once, when the wait actually ends. */}
       <p aria-live="polite" className="sr-only">

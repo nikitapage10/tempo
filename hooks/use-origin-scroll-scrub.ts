@@ -33,6 +33,12 @@ type ScrubOptions = {
   chapterStops: number[];
   /** Off in static mode — the story renders as stacked sections instead. */
   enabled: boolean;
+  /**
+   * Called inside the rAF loop with 0–1 progress. Use it to write styles
+   * directly; anything routed through React state here would re-render on every
+   * scroll frame.
+   */
+  onProgress?: (progress: number) => void;
 };
 
 type VideoWithFastSeek = HTMLVideoElement & { fastSeek?: (t: number) => void };
@@ -45,12 +51,15 @@ export function useOriginScrollScrub({
   videoRef,
   chapterStops,
   enabled,
+  onProgress,
 }: ScrubOptions): { chapter: number; progressRef: React.MutableRefObject<number> } {
   const [chapter, setChapter] = React.useState(0);
   const progressRef = React.useRef(0);
   const rafRef = React.useRef<number | null>(null);
   const lastSeekRef = React.useRef(-1);
   const chapterRef = React.useRef(0);
+  const onProgressRef = React.useRef(onProgress);
+  onProgressRef.current = onProgress;
   const stopsRef = React.useRef(chapterStops);
   stopsRef.current = chapterStops;
 
@@ -79,6 +88,7 @@ export function useOriginScrollScrub({
       const progress =
         scrollable > 0 ? Math.min(1, Math.max(0, scroller.scrollTop / scrollable)) : 0;
       progressRef.current = progress;
+      onProgressRef.current?.(progress);
 
       if (video && video.readyState >= 1 && Number.isFinite(video.duration)) {
         const target = Math.min(video.duration - 0.01, Math.max(0, progress * video.duration));
