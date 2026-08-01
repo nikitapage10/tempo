@@ -194,7 +194,14 @@ export function OriginOverlay({
     <div
       className={cn(
         // Pointer events are re-enabled per panel so the video never swallows clicks.
-        "pointer-events-none absolute inset-0 flex flex-col justify-center",
+        //
+        // z-20 is load-bearing. The two video layers carry z-index 1 and 2 so
+        // the incoming one can blend over the outgoing one; a positioned
+        // element with `z-index: auto` paints *below* both, which put every
+        // panel behind the film and made them look as though they had never
+        // rendered. Anything layered over the stage needs an explicit z above 3
+        // (the grain).
+        "pointer-events-none absolute inset-0 z-20 flex flex-col justify-center",
         "items-stretch sm:items-end",
         // Middle-right: inset from the edge so the panel sits in the right half
         // rather than hugging the frame.

@@ -88,6 +88,11 @@ function useMorphingText(
       return;
     }
 
+    // The first line starts morphing on frame one otherwise, so it is on screen
+    // for a fraction of the time every later line gets. Hold it first.
+    let initialHold = holdSeconds;
+    let seeded = false;
+
     let raf = 0;
     const animate = () => {
       raf = requestAnimationFrame(animate);
@@ -95,6 +100,17 @@ function useMorphingText(
       const now = Date.now();
       const dt = (now - timeRef.current) / 1000;
       timeRef.current = now;
+
+      if (initialHold > 0) {
+        if (!seeded) {
+          // fraction 0 paints line one at full strength, line two invisible.
+          setStyles(0);
+          seeded = true;
+        }
+        initialHold -= dt;
+        return;
+      }
+
       cooldownRef.current -= dt;
 
       if (cooldownRef.current > 0) {

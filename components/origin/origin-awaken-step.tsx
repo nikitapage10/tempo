@@ -24,7 +24,7 @@ const LINES = [
 ];
 
 /** Beat of stillness before anything speaks. The screen should feel dormant. */
-const OPENING_DELAY_MS = 1600;
+const OPENING_DELAY_MS = 850;
 /** How long the copy takes to clear before the film is allowed to come up. */
 const EXIT_MS = 1100;
 

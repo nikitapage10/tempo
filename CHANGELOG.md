@@ -4,6 +4,12 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-31
 
+- Fixed (v0.71.3): the name box, the speaking panel and the review step were
+  rendering *behind* the film, so Origin looked like it had stopped working
+  after the opening. They now sit above it, where they belong.
+- Changed (v0.71.3): the opening line arrives sooner, and stays on screen as
+  long as the lines that follow it instead of being hurried off.
+
 - Fixed (v0.71.2): the opening text never appeared, which left Origin stuck on
   a still frame with nothing to click and no way to reach the name box. The
   text effect could stop the words rendering entirely; it can no longer take
