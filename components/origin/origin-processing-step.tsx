@@ -15,7 +15,7 @@ import { MorphingText } from "@/components/ui/morphing-text";
 export function OriginProcessingStep({ announce }: { announce: boolean }) {
   return (
     <OriginScrim tone="veil" className="pointer-events-none max-w-md text-center">
-      <MorphingText as="h1" texts={["Stay with me a moment."]} loop={false} className="h-8 font-display text-2xl text-text-hi [&>span]:text-right" />
+      <MorphingText as="h1" texts={["Stay with me a moment."]} loop={false} className="font-display text-2xl text-text-hi sm:text-3xl [&>span]:text-center" />
       <p className="mt-2 text-sm text-text-lo">
         Listening back to the shape of it.
       </p>

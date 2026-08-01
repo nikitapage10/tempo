@@ -21,8 +21,15 @@ import type { OriginPhase } from "@/lib/origin/reducer";
 const STAGE_PLAN: Partial<
   Record<OriginPhase, { high: OriginMediaKey[]; low: OriginMediaKey[] }>
 > = {
+  // The waking screen is dead time — several seconds of a still frame and a
+  // tap that hasn't happened yet. Everything the first minute needs is warmed
+  // here, so the film never waits on the network once it starts.
+  awaiting_start: {
+    high: ["opening01To02", "loop02"],
+    low: ["transition02To03", "loop03"],
+  },
   // Nothing else competes with the opening film.
-  opening: { high: ["loop02"], low: [] },
+  opening: { high: ["loop02"], low: ["transition02To03"] },
   // The artist is typing; this normally finishes well before they submit.
   name_idle: { high: ["transition02To03", "loop03"], low: [] },
   // Speaking takes ~30s+ — the budget for the heaviest assets in the flow.

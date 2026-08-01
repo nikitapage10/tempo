@@ -34,6 +34,8 @@ const HANDOFF_MS = 620;
  * cut to a playing video.
  */
 const FIRST_FADE_MS = 2000;
+/** The transition-to-scrub handoff, where neither side is moving. */
+const SCRUB_FADE_MS = 1400;
 /** If a frame never paints, swap anyway rather than freezing the flow. */
 const PAINT_TIMEOUT_MS = 2500;
 
@@ -128,6 +130,8 @@ export function OriginMediaStage({
   const [painted, setPainted] = React.useState(false);
   /** True while the very first clip is rising out of the poster. */
   const [firstReveal, setFirstReveal] = React.useState(true);
+  /** Longer blend for the scrub handoff, which has no motion to hide a cut. */
+  const [slowBlend, setSlowBlend] = React.useState(false);
 
   const activeSlotRef = React.useRef(activeSlot);
   activeSlotRef.current = activeSlot;
@@ -201,6 +205,11 @@ export function OriginMediaStage({
 
         // Nothing to hold under the first clip — it rises out of the poster.
         const isFirst = slotKeyRef.current[current] === null;
+        // The scrub asset is seeked, not played, so it has no motion of its own
+        // to blend with. Given a longer, slower blend it reads as the frozen
+        // final frame of the transition resolving into it, rather than a cut
+        // with a hitch in the middle.
+        if (asset.mode === "scrub") setSlowBlend(true);
         if (!isFirst) setHoldSlot(current);
         setActiveSlot(incomingSlot);
         setPainted(true);
@@ -239,7 +248,7 @@ export function OriginMediaStage({
           slotKeyRef.current = { ...slotKeyRef.current, [current]: null };
           outgoing.removeAttribute("src");
           outgoing.load();
-        }, HANDOFF_MS + 60);
+        }, (slowBlend ? SCRUB_FADE_MS : HANDOFF_MS) + 60);
       } catch {
         if (!cancelled) cbRef.current.onError?.(clipKey);
       }
@@ -330,7 +339,7 @@ export function OriginMediaStage({
                 // until it is dropped.
                 transition:
                   activeSlot === slot
-                    ? `opacity ${firstReveal ? FIRST_FADE_MS : HANDOFF_MS}ms ease-in-out`
+                    ? `opacity ${firstReveal ? FIRST_FADE_MS : slowBlend ? SCRUB_FADE_MS : HANDOFF_MS}ms ease-in-out`
                     : "none",
               }}
               // `muted` is managed imperatively during the handoff (and by the

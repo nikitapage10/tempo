@@ -69,6 +69,14 @@ export function OriginAwakenStep({
         aria-hidden
         className="absolute inset-0 bg-[radial-gradient(ellipse_60%_70%_at_78%_50%,rgba(6,6,9,0.92),rgba(6,6,9,0.72)_45%,transparent_75%)]"
       />
+      {/* The gradient has a visible edge against the still. On the way out it
+          floods to full black first, so the film comes up from darkness rather
+          than from a half-lit frame with a seam across it. */}
+      <span
+        aria-hidden
+        className="absolute inset-0 bg-[var(--bg-0)] transition-opacity ease-in motion-reduce:transition-none"
+        style={{ opacity: leaving ? 1 : 0, transitionDuration: `${EXIT_MS * 0.8}ms` }}
+      />
 
       <span
         className={cn(
@@ -85,10 +93,10 @@ export function OriginAwakenStep({
               texts={staticMode ? [LINES[LINES.length - 1]] : LINES}
               loop={false}
               onSettled={() => setSettled(true)}
-              className="h-16 font-display text-2xl leading-snug text-text-hi sm:text-3xl [&>span]:text-right"
+              className="font-display text-3xl leading-snug text-text-hi sm:text-4xl [&>span]:text-right"
             />
           ) : (
-            <span className="h-16" />
+            <span className="h-14" />
           )}
 
           <span

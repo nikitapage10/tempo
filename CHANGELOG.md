@@ -4,6 +4,24 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-31
 
+- Fixed (v0.72.0): Origin was skipping its transition films. Each panel and each
+  scene change was being timed against the *previous* clip, and because that's
+  usually a loop, the next step fired almost immediately. Transitions now play
+  in full, and the panels fade in over them as intended.
+- Fixed (v0.72.0): headings could overlap the text underneath them when they ran
+  to two lines.
+- Changed (v0.72.0): bigger type in the opening and throughout, the name and
+  speaking panels read left-aligned, and the opening darkens fully to black
+  before the film comes up.
+- Changed (v0.72.0): every video is now warmed while the opening text is on
+  screen, so nothing waits on the network once things start.
+- Changed (v0.72.0): the story chapters move slower and grow as they come toward
+  you, sit on a darker panel so they're actually readable against the film, and
+  the opening one fades in. The closing chapter can no longer be scrolled past
+  and lost — "Enter TEMPO" stays put.
+- Fixed (v0.72.0): the scrollbar on the review step is gone, and the handoff
+  into the scrolling chapter is a slower blend instead of a glitch.
+
 - Fixed (v0.71.3): the name box, the speaking panel and the review step were
   rendering *behind* the film, so Origin looked like it had stopped working
   after the opening. They now sit above it, where they belong.

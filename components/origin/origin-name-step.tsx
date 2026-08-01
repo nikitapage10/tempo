@@ -70,14 +70,14 @@ export function OriginNameStep({
   }, [attempted, mediaReady, error, onSubmit]);
 
   return (
-    <OriginScrim className="pointer-events-auto w-full max-w-md">
+    <OriginScrim className="pointer-events-auto w-full max-w-md text-left">
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
         <div className="flex flex-col gap-2">
           <MorphingText
             as="h1"
             texts={["Who are you?"]}
             loop={false}
-            className="h-10 font-display text-3xl text-text-hi [&>span]:text-right"
+            className="font-display text-3xl text-text-hi sm:text-4xl [&>span]:text-left"
           />
           <p className="text-sm text-text-lo">Give me something to call you by.</p>
         </div>

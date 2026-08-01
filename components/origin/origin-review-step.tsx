@@ -159,7 +159,7 @@ export function OriginReviewStep({
     onChange({ ...interpretation, ...p });
 
   return (
-    <OriginScrim className="pointer-events-auto flex max-h-[82vh] w-full max-w-2xl flex-col gap-5 overflow-y-auto">
+    <OriginScrim className="no-scrollbar pointer-events-auto flex max-h-[82vh] w-full max-w-2xl flex-col gap-5 overflow-y-auto">
       <h1 className="font-display text-2xl text-text-hi sm:text-3xl">
         Here is the beginning I heard.
       </h1>

@@ -34,41 +34,33 @@ export type TimedLine = {
 export function useClipProgress(
   videoRef: React.MutableRefObject<HTMLVideoElement | null>,
   /** Resets progress whenever the phase changes. */
-  resetKey: string
+  resetKey: string,
+  /**
+   * Only bind when the element on screen really is the one we're timing.
+   * Pass `activeKeyRef.current === clip.key`. Without this the hook happily
+   * tracks the previous clip — which, if it loops, reports progress near 1
+   * immediately and reveals the next panel before its transition has played.
+   */
+  matches = true,
+  /** Bumped by the stage when it swaps elements, to re-run the binding. */
+  tick = 0
 ): number {
   const [progress, setProgress] = React.useState(0);
 
   React.useEffect(() => {
     setProgress(0);
-    let raf = 0;
-    let stop = false;
+    if (!matches) return;
+    const video = videoRef.current;
+    if (!video) return;
 
-    // The element arrives via a ref that the stage populates after its own
-    // handoff, so poll briefly for it rather than assuming it is there.
-    const attach = () => {
-      if (stop) return;
-      const video = videoRef.current;
-      if (!video) {
-        raf = requestAnimationFrame(attach);
-        return;
-      }
-      const onTime = () => {
-        if (!Number.isFinite(video.duration) || video.duration <= 0) return;
-        setProgress(Math.min(1, video.currentTime / video.duration));
-      };
-      video.addEventListener("timeupdate", onTime);
-      cleanup = () => video.removeEventListener("timeupdate", onTime);
-      onTime();
+    const onTime = () => {
+      if (!Number.isFinite(video.duration) || video.duration <= 0) return;
+      setProgress(Math.min(1, video.currentTime / video.duration));
     };
-    let cleanup = () => {};
-    attach();
-
-    return () => {
-      stop = true;
-      cancelAnimationFrame(raf);
-      cleanup();
-    };
-  }, [videoRef, resetKey]);
+    video.addEventListener("timeupdate", onTime);
+    onTime();
+    return () => video.removeEventListener("timeupdate", onTime);
+  }, [videoRef, resetKey, matches, tick]);
 
   return progress;
 }
@@ -112,7 +104,7 @@ export function OriginScrim({
     <div
       className={cn(
         tone === "panel"
-          ? "rounded-panel border border-line/60 bg-bg-0/75 p-6 shadow-2 backdrop-blur-md"
+          ? "rounded-panel border border-line/60 bg-bg-0/90 p-6 shadow-3 backdrop-blur-xl"
           : "rounded-panel bg-gradient-to-b from-bg-0/85 via-bg-0/70 to-transparent p-6",
         className
       )}

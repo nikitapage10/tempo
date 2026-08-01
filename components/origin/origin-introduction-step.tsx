@@ -109,7 +109,7 @@ export function OriginIntroductionStep({
           as="h1"
           texts={["Before the lights come up —", "tell me what I've found."]}
           loop={false}
-          className="h-9 font-display text-2xl text-text-hi sm:text-3xl [&>span]:text-right"
+          className="font-display text-2xl leading-snug text-text-hi sm:text-3xl [&>span]:text-left"
         />
         <p className="text-sm text-text-lo">
           Out loud is easier than it looks. Half a minute, or as long as it takes.

@@ -250,6 +250,17 @@ export function MorphingText({
         className={cn("relative w-full", className)}
         style={morphs ? { filter: `url(#${filterId}) blur(0.3px)` } : undefined}
       >
+        {/*
+          Sizer. The two animated spans are absolutely positioned and therefore
+          contribute no height, so without this the element collapses and the
+          copy beneath it renders straight through the text. Rendering the
+          longest line invisibly in normal flow lets the box size itself — no
+          fixed heights to keep in sync with the type scale, and nothing
+          overlaps when a line wraps.
+        */}
+        <span aria-hidden className="invisible block">
+          {texts.reduce((a, b) => (b.length > a.length ? b : a), "")}
+        </span>
         {/* The live text for assistive tech — the spans below are visual only,
             and their content is swapped every frame mid-morph. */}
         <span className="sr-only">{texts[texts.length - 1]}</span>

@@ -104,11 +104,26 @@ export function OriginExperience({
   /** Import runs as an overlay over the story, still inside the Origin shell. */
   const [importOpen, setImportOpen] = React.useState(false);
 
-  /** The element currently on screen, so copy timing and scrubbing can read it. */
+  /**
+   * The element currently on screen, so copy timing and scrubbing can read it.
+   *
+   * The key it belongs to is tracked alongside it, and everything that listens
+   * to this element checks that first. Without it, the moment a phase changed
+   * both the copy timer and the early-advance listener bound to the *previous*
+   * clip — which is usually a loop. A loop is always within 700ms of its end,
+   * so the incoming transition was advanced past instantly and its destination
+   * panel appeared at once.
+   */
   const activeVideoRef = React.useRef<HTMLVideoElement | null>(null);
+  const activeKeyRef = React.useRef<OriginMediaKey | null>(null);
+  const [activeTick, setActiveTick] = React.useState(0);
   const handleActiveElement = React.useCallback(
-    (el: HTMLVideoElement | null) => {
+    (el: HTMLVideoElement | null, key: OriginMediaKey | null) => {
       activeVideoRef.current = el;
+      activeKeyRef.current = key;
+      // Wakes the effects below so they can bind to the element that just
+      // became visible, rather than whatever was there before.
+      setActiveTick((t) => t + 1);
     },
     []
   );
@@ -116,7 +131,12 @@ export function OriginExperience({
   const clip = clipForPhase(state.phase);
   const poster = clip ? originAsset(clip.key).poster : undefined;
 
-  const clipProgress = useClipProgress(activeVideoRef, state.phase);
+  const clipProgress = useClipProgress(
+    activeVideoRef,
+    state.phase,
+    Boolean(clip) && activeKeyRef.current === clip?.key,
+    activeTick
+  );
   /** True once the current transition is far enough along to show what's next. */
   const prelude = media.staticMode || clipProgress >= PRELUDE_AT;
 
@@ -204,7 +224,8 @@ export function OriginExperience({
     // the one place that reads badly.
     if (state.phase === "chapter_opening") return;
     const video = activeVideoRef.current;
-    if (!video) return;
+    // Only ever listen to the element showing *this* clip.
+    if (!video || activeKeyRef.current !== clip.key) return;
 
     const onTime = () => {
       if (!Number.isFinite(video.duration) || video.duration <= 0) return;
@@ -217,9 +238,9 @@ export function OriginExperience({
 
     video.addEventListener("timeupdate", onTime);
     return () => video.removeEventListener("timeupdate", onTime);
-    // clipProgress re-runs this once the stage has swapped in the new element.
+    // activeTick re-runs this once the stage has swapped in the new element.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.phase, clip?.key, clip?.loop, media.staticMode, clipProgress > 0]);
+  }, [state.phase, clip?.key, clip?.loop, media.staticMode, activeTick]);
 
   /** A failed asset must not strand the artist mid-flow — advance as if it played. */
   const handleMediaError = React.useCallback(

@@ -43,7 +43,7 @@ const CHAPTER_TITLES = [
 const CHAPTER_ALIGN = ["sm:ml-[8%]", "sm:ml-[8%]", "sm:ml-[8%]", "sm:ml-[8%]", "sm:ml-[8%]", "sm:ml-[8%]"];
 
 /** Scroll distance per chapter. Enough to feel deliberate, not a marathon. */
-const VH_PER_CHAPTER = 90;
+const VH_PER_CHAPTER = 150;
 
 /**
  * The one button in ORIGIN that should feel like an event.
@@ -157,28 +157,34 @@ export function OriginStoryScroll({
       // -1 well before its turn, 0 dead centre on it, +1 once it has passed.
       const local = (progress - start) / span;
 
+      const isLast = i === stops.length - 1;
+
       let opacity: number;
       let scale: number;
       let x: number;
       let blur: number;
 
       if (local < 0) {
-        const t = Math.max(0, 1 + local * 2.2);
+        // Approaching: small and soft, out on the left, growing as it nears.
+        const t = Math.max(0, 1 + local * 1.4);
         opacity = t;
-        scale = 0.82 + 0.18 * t;
-        x = -14 * (1 - t);
-        blur = 7 * (1 - t);
-      } else if (local < 0.62) {
+        scale = 0.62 + 0.38 * t;
+        x = -18 * (1 - t);
+        blur = 6 * (1 - t);
+      } else if (local < 0.72 || isLast) {
+        // Held. The closing chapter never leaves — "Enter TEMPO" must not be
+        // something you can scroll past and lose.
         opacity = 1;
         scale = 1;
         x = 0;
         blur = 0;
       } else {
-        const t = Math.min(1, (local - 0.62) / 0.38);
+        // Passing the viewer: keeps growing as it goes by, rather than shrinking.
+        const t = Math.min(1, (local - 0.72) / 0.28);
         opacity = 1 - t;
-        scale = 1 + 0.4 * t;
-        x = 10 * t;
-        blur = 8 * t;
+        scale = 1 + 0.75 * t;
+        x = 12 * t;
+        blur = 9 * t;
       }
 
       el.style.opacity = String(Math.max(0, Math.min(1, opacity)));
@@ -196,6 +202,31 @@ export function OriginStoryScroll({
     enabled: !staticMode,
     onProgress: paint,
   });
+
+  /**
+   * Fade the opening chapter up once, then hand control to `paint`.
+   *
+   * The CSS transition set inline is cleared at the same time — from here on
+   * opacity is written every frame from scroll position, and a transition on
+   * top of that would lag the scrub.
+   */
+  React.useEffect(() => {
+    if (staticMode) return;
+    const el = sectionRefs.current[0];
+    if (!el) return;
+    const raf = requestAnimationFrame(() => {
+      el.style.opacity = "1";
+    });
+    const t = setTimeout(() => {
+      sectionRefs.current.forEach((s) => {
+        if (s) s.style.transition = "none";
+      });
+    }, 950);
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(t);
+    };
+  }, [staticMode]);
 
   /** Jump straight to the closing section. A safety valve: if scrubbing ever
    *  fails again, the way out must not be something you can only scroll to. */
@@ -312,10 +343,11 @@ export function OriginStoryScroll({
               ref={(el) => {
                 sectionRefs.current[i] = el;
               }}
-              // Transforms are written by `paint` on every scroll frame; the
-              // starting values here only matter before the first tick.
+              // Transforms are written by `paint` on every scroll frame. The
+              // first chapter starts at zero and is faded up by the mount
+              // effect below, so the story opens rather than appearing.
               className="absolute inset-x-5 will-change-[transform,opacity]"
-              style={{ opacity: i === 0 ? 1 : 0 }}
+              style={{ opacity: 0, transition: "opacity 900ms ease-out" }}
             >
               <ChapterSection index={i} staticMode={false}>
                 {content}
