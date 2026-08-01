@@ -325,6 +325,18 @@ export function OriginMediaStage({
         : null}
 
       <OriginGrain />
+      {/* A second, finer pass in screen blend puts actual highlights into the
+          blacks, which is where grain is visible at all on this footage. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 z-[3] opacity-[0.16] mix-blend-screen"
+        style={{
+          backgroundImage: `url("${GRAIN_URI}")`,
+          backgroundRepeat: "repeat",
+          backgroundSize: "140px 140px",
+          animation: "origin-grain 500ms steps(2) infinite reverse",
+        }}
+      />
 
       {children}
     </div>
@@ -350,7 +362,7 @@ const GRAIN_URI =
         <feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/>
         <feColorMatrix type='saturate' values='0'/>
       </filter>
-      <rect width='200' height='200' filter='url(#n)' opacity='0.55'/>
+      <rect width='200' height='200' filter='url(#n)' opacity='0.9'/>
     </svg>`
   );
 
@@ -358,7 +370,10 @@ function OriginGrain() {
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute inset-0 z-[3] opacity-[0.28] mix-blend-overlay motion-reduce:animate-none"
+      // Overlay alone barely registers on footage this dark — most of the frame
+      // is near black, where overlay leaves the base untouched. The second
+      // soft-light pass in the shadow of this one is what makes it read.
+      className="pointer-events-none absolute inset-0 z-[3] opacity-[0.55] mix-blend-soft-light motion-reduce:animate-none"
       style={{
         backgroundImage: `url("${GRAIN_URI}")`,
         backgroundRepeat: "repeat",

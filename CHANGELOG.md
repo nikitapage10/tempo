@@ -4,6 +4,16 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-07-31
 
+- Fixed (v0.71.1): the morphing text wasn't morphing — each line dissolved
+  away before the next formed, instead of one becoming the other. The blur was
+  scaled for far larger type than TEMPO uses, so the letters were destroyed at
+  the crossover. It's also considerably slower now.
+- Fixed (v0.71.1): the heading inside the name box could fail to render at all,
+  taking the look of the panel with it.
+- Changed (v0.71.1): the opening frame is darkened behind the text so the first
+  lines have something to sit against, and the film grain is much stronger — it
+  was there before, but far too faint to see on footage this dark.
+
 - Changed (v0.71.0): TEMPO's voice in Origin now morphs from one line into the
   next — the letters melt and reform rather than fading. It's used everywhere
   the thing talking to you speaks, and nowhere else.

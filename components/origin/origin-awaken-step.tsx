@@ -41,6 +41,14 @@ export function OriginAwakenStep({
       // overlay's own padding, so the copy still lands middle-right.
       className="pointer-events-auto fixed inset-0 z-10 cursor-pointer focus-visible:outline-none"
     >
+      {/* The opening frame is busy where the copy sits, so the right side is
+          pulled down before the first line arrives. Sized generously and
+          feathered hard so it reads as depth in the image, not as a panel. */}
+      <span
+        aria-hidden
+        className="absolute inset-0 bg-[radial-gradient(ellipse_60%_70%_at_78%_50%,rgba(6,6,9,0.92),rgba(6,6,9,0.72)_45%,transparent_75%)]"
+      />
+
       <span className="absolute inset-0 flex flex-col justify-center items-stretch px-5 sm:items-end sm:pr-[14vw]">
         <span className="flex w-full max-w-md flex-col items-end gap-6 text-right">
           <MorphingText

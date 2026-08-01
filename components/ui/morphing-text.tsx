@@ -15,12 +15,21 @@ import { cn } from "@/lib/utils";
  * the onboarding wants: an entity finishing a thought, not a carousel.
  */
 
-const MORPH_SECONDS = 1.5;
-const COOLDOWN_SECONDS = 0.6;
+/**
+ * Blur is expressed in px, so it has to be sized against the type it is applied
+ * to. The reference implementation used 8px against 40pt display text, where a
+ * glyph stem is far wider than the blur; at UI sizes the same number dissolves
+ * letters completely before they reform, which reads as a fade-out followed by
+ * a fade-in rather than one word becoming another.
+ */
+const DEFAULT_BLUR_PX = 4;
 
 function useMorphingText(
   texts: string[],
   loop: boolean,
+  morphSeconds: number,
+  holdSeconds: number,
+  blurPx: number,
   onSettled?: () => void
 ) {
   const textIndexRef = React.useRef(0);
@@ -41,17 +50,21 @@ function useMorphingText(
       const current2 = text2Ref.current;
       if (!current1 || !current2) return;
 
-      current2.style.filter = `blur(${Math.min(8 / fraction - 8, 100)}px)`;
+      // Capped well below the reference's 100px: past roughly a glyph's width
+      // the letterforms stop being recoverable and the threshold has nothing to
+      // re-harden, which is what turns a morph into a blink.
+      const cap = blurPx * 3;
+      current2.style.filter = `blur(${Math.min(blurPx / fraction - blurPx, cap)}px)`;
       current2.style.opacity = `${Math.pow(fraction, 0.4) * 100}%`;
 
       const inverted = 1 - fraction;
-      current1.style.filter = `blur(${Math.min(8 / inverted - 8, 100)}px)`;
+      current1.style.filter = `blur(${Math.min(blurPx / inverted - blurPx, cap)}px)`;
       current1.style.opacity = `${Math.pow(inverted, 0.4) * 100}%`;
 
       current1.textContent = texts[textIndexRef.current % texts.length];
       current2.textContent = texts[(textIndexRef.current + 1) % texts.length];
     },
-    [texts]
+    [texts, blurPx]
   );
 
   React.useEffect(() => {
@@ -109,9 +122,9 @@ function useMorphingText(
       }
 
       morphRef.current += dt;
-      let fraction = morphRef.current / MORPH_SECONDS;
+      let fraction = morphRef.current / morphSeconds;
       if (fraction >= 1) {
-        cooldownRef.current = COOLDOWN_SECONDS;
+        cooldownRef.current = holdSeconds;
         fraction = 1;
       }
       setStyles(fraction);
@@ -120,7 +133,7 @@ function useMorphingText(
 
     animate();
     return () => cancelAnimationFrame(raf);
-  }, [texts, loop, setStyles]);
+  }, [texts, loop, morphSeconds, holdSeconds, setStyles]);
 
   return { text1Ref, text2Ref };
 }
@@ -153,6 +166,9 @@ export function MorphingText({
   className,
   loop = true,
   onSettled,
+  morphSeconds = 2.4,
+  holdSeconds = 1.8,
+  blurPx = DEFAULT_BLUR_PX,
   as: Tag = "div",
 }: {
   texts: string[];
@@ -161,22 +177,40 @@ export function MorphingText({
   loop?: boolean;
   /** Fires when a one-shot sequence reaches its final line. */
   onSettled?: () => void;
+  /** Seconds spent melting one line into the next. */
+  morphSeconds?: number;
+  /** Seconds a fully-formed line is held before the next morph starts. */
+  holdSeconds?: number;
+  /** Peak blur. Scale to the type size — see DEFAULT_BLUR_PX. */
+  blurPx?: number;
   as?: "div" | "h1" | "h2" | "p";
 }) {
   const filterId = React.useId().replace(/:/g, "");
-  const { text1Ref, text2Ref } = useMorphingText(texts, loop, onSettled);
+  const { text1Ref, text2Ref } = useMorphingText(
+    texts,
+    loop,
+    morphSeconds,
+    holdSeconds,
+    blurPx,
+    onSettled
+  );
+
+  // A single line never morphs, so it needs no threshold — and a filter with an
+  // unresolved reference stops an element rendering at all, which is not a risk
+  // worth taking for a static heading.
+  const morphs = texts.length > 1;
 
   return (
     <Tag
       className={cn("relative w-full", className)}
-      style={{ filter: `url(#${filterId}) blur(0.4px)` }}
+      style={morphs ? { filter: `url(#${filterId}) blur(0.3px)` } : undefined}
     >
       {/* The live text for assistive tech — the spans below are visual only,
           and their content is swapped every frame mid-morph. */}
       <span className="sr-only">{texts[texts.length - 1]}</span>
       <span aria-hidden ref={text1Ref} className="absolute inset-0 inline-block w-full" />
       <span aria-hidden ref={text2Ref} className="absolute inset-0 inline-block w-full" />
-      <ThresholdFilter id={filterId} />
+      {morphs ? <ThresholdFilter id={filterId} /> : null}
     </Tag>
   );
 }
