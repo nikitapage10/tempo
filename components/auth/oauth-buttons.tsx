@@ -42,6 +42,11 @@ export function OAuthButtons({ next = "/" }: OAuthButtonsProps) {
       provider,
       options: {
         redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+        // Supabase requires an email from Azure; without these scopes Microsoft
+        // often completes login then fails with "Error getting user email…".
+        ...(provider === "azure"
+          ? { scopes: "email openid profile offline_access" }
+          : {}),
       },
     });
 

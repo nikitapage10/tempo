@@ -4,6 +4,9 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-02
 
+- Fixed (v0.81.1): Continue with Microsoft now asks Microsoft for your email
+  during sign-in, which Supabase needs to finish the account. (You still need
+  the email permission turned on in the Azure app — see the OAuth setup guide.)
 - Fixed (v0.81.0): the same silent-transparency bug from v0.80.0 also affected
   every ice/amber/violet/green/coral tint with a strength modifier — over 300
   classes app-wide, including the very color tint just added to Tracks groups

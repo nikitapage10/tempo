@@ -71,18 +71,30 @@ Supabase calls this provider **`azure`** — TEMPO’s button already uses that 
 4. Redirect URI — type **Web**, value:
    `https://<YOUR-PROJECT-REF>.supabase.co/auth/v1/callback`
 5. Register. Copy **Application (client) ID**.
-6. **Certificates & secrets → New client secret** — copy the **Value** once.
-7. (Optional) **Authentication** — add `http://localhost:3000` only if you also
-   use a localhost-based flow; the OAuth redirect still goes to Supabase.
+6. **Certificates & secrets → New client secret** — copy the **Value** once
+   (not the Secret ID). If you paste the Secret ID into Supabase you’ll get
+   `Unable to exchange external code`.
+7. **API permissions → Add a permission → Microsoft Graph → Delegated**:
+   `openid`, `email`, `profile`, `offline_access`, `User.Read`. Then
+   **Grant admin consent** if the button is available.
+8. **Token configuration → Optional claims → Add → ID** — add `email`
+   (and optionally `preferred_username`). Save.
+9. Confirm **Authentication** redirect is **Web** (not SPA):
+   `https://<YOUR-PROJECT-REF>.supabase.co/auth/v1/callback`
 
 ### B. Supabase
 1. **Authentication → Providers → Azure** → Enable.
-2. Paste Client ID and Client secret.
-3. Tenant URL / ID: for “any Microsoft account”, Supabase docs usually want
-   `common` (or your tenant id for single-tenant apps). Follow the hint on the
-   Azure provider panel in Supabase.
-4. Save.
-5. Try **Continue with Microsoft** on `/login`.
+2. Paste Client ID and the secret **Value**.
+3. Azure Tenant URL: `https://login.microsoftonline.com/common` for “any
+   Microsoft account” (or your tenant id for single-tenant apps).
+4. Leave **Allow users without an email** off unless you truly need it —
+   TEMPO expects an email. Prefer fixing Azure permissions/scopes instead.
+5. Save.
+6. Try **Continue with Microsoft** on `/login`.
+
+If login reaches Microsoft then fails with **Error getting user email from
+external provider**, re-check steps 7–8 above and that TEMPO is deployed with
+the Azure `email` scope request (v0.81.1+).
 
 ---
 
