@@ -83,6 +83,31 @@ export function bufferedAhead(video: HTMLVideoElement, from = 0): number {
 
 type Listener = () => void;
 
+/**
+ * Where warm-up elements live while they buffer.
+ *
+ * WebKit will not buffer a `<video>` that is not in the document — a detached
+ * element created with `createElement` gets metadata and then stops, so on
+ * Safari every readiness gate stayed shut and the flow sat waiting on assets it
+ * believed were still downloading. The element has to be in the tree and
+ * rendered (not `display: none`, which WebKit throttles the same way), so it is
+ * parked at 1x1 and fully transparent instead.
+ */
+let warmHost: HTMLElement | null = null;
+
+function warmContainer(): HTMLElement | null {
+  if (typeof document === "undefined") return null;
+  if (warmHost?.isConnected) return warmHost;
+  const host = document.createElement("div");
+  host.setAttribute("aria-hidden", "true");
+  host.dataset.originWarm = "";
+  host.style.cssText =
+    "position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none;overflow:hidden;z-index:-1";
+  document.body.appendChild(host);
+  warmHost = host;
+  return host;
+}
+
 class Entry {
   readonly key: OriginMediaKey;
   readiness: MediaReadiness = "idle";
@@ -93,6 +118,7 @@ class Entry {
 
   private el: HTMLVideoElement | null = null;
   private poll: ReturnType<typeof setInterval> | null = null;
+  private detachListeners: (() => void) | null = null;
   private readonly onCategoryChange: Listener;
 
   constructor(key: OriginMediaKey, onCategoryChange: Listener) {
@@ -127,7 +153,8 @@ class Entry {
     };
 
     const evaluate = () => {
-      if (this.readiness === "failed") return;
+      // Both are terminal, and "ready" has already given its element back.
+      if (this.readiness === "failed" || this.readiness === "ready") return;
       const ahead = bufferedAhead(el, 0);
       const target = this.target();
       const ratio = target > 0 ? Math.min(1, ahead / target) : 0;
@@ -135,6 +162,12 @@ class Entry {
       if (ahead >= target && el.readyState >= 3 /* HAVE_FUTURE_DATA */) {
         setState("ready", 1);
         this.stopPolling();
+        // The bytes are in the HTTP cache now, which is the only thing this
+        // element was ever for. Releasing it matters on Safari, which allows
+        // far fewer simultaneous media elements than Chrome — holding all ten
+        // warm assets open alongside the stage's own two starved the clips
+        // that were actually on screen.
+        this.release();
       } else if (el.readyState >= 2 /* HAVE_CURRENT_DATA */) {
         setState("playable", ratio);
       } else if (el.readyState >= 1 /* HAVE_METADATA */) {
@@ -142,18 +175,32 @@ class Entry {
       }
     };
 
-    el.addEventListener("loadedmetadata", evaluate);
-    el.addEventListener("loadeddata", evaluate);
-    el.addEventListener("canplay", evaluate);
-    el.addEventListener("progress", evaluate);
-    el.addEventListener("suspend", evaluate);
-    el.addEventListener("error", () => {
+    const onError = () => {
       if (process.env.NODE_ENV !== "production") {
         console.warn(`[origin] media failed: ${asset.id} (${asset.src})`);
       }
       setState("failed", this.progress);
       this.stopPolling();
-    });
+    };
+
+    el.addEventListener("loadedmetadata", evaluate);
+    el.addEventListener("loadeddata", evaluate);
+    el.addEventListener("canplay", evaluate);
+    el.addEventListener("progress", evaluate);
+    el.addEventListener("suspend", evaluate);
+    el.addEventListener("error", onError);
+
+    // Detached before the element is torn down. Dropping the source and
+    // reloading fires `error`, which would otherwise flip a finished asset to
+    // "failed" and shut the gate it had just opened.
+    this.detachListeners = () => {
+      el.removeEventListener("loadedmetadata", evaluate);
+      el.removeEventListener("loadeddata", evaluate);
+      el.removeEventListener("canplay", evaluate);
+      el.removeEventListener("progress", evaluate);
+      el.removeEventListener("suspend", evaluate);
+      el.removeEventListener("error", onError);
+    };
 
     // `progress` goes quiet once a browser decides it has buffered enough, and
     // is skipped entirely on cache hits, so readiness cannot rely on it alone.
@@ -161,6 +208,7 @@ class Entry {
 
     setState("loading-metadata", 0);
     el.src = asset.src;
+    warmContainer()?.appendChild(el);
     el.load();
   }
 
@@ -171,13 +219,21 @@ class Entry {
     }
   }
 
+  /** Give the decoder slot back. Readiness state is kept. */
+  private release() {
+    const el = this.el;
+    if (!el) return;
+    this.el = null;
+    this.detachListeners?.();
+    this.detachListeners = null;
+    el.removeAttribute("src");
+    el.load();
+    el.remove();
+  }
+
   destroy() {
     this.stopPolling();
-    if (this.el) {
-      this.el.removeAttribute("src");
-      this.el.load();
-      this.el = null;
-    }
+    this.release();
   }
 }
 
@@ -306,6 +362,10 @@ export class OriginMediaPool {
     this.entries.clear();
     this.order.length = 0;
     this.listeners.clear();
+    if (warmHost && warmHost.childElementCount === 0) {
+      warmHost.remove();
+      warmHost = null;
+    }
   }
 }
 

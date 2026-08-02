@@ -39,7 +39,9 @@ import {
   TrackGroupSection,
   UNGROUPED_DROP_ID,
   groupDropId,
+  groupSortId,
   parseGroupDropId,
+  parseGroupSortId,
 } from "@/components/tracks/track-group-section";
 import {
   useGlobalPlayer,
@@ -229,9 +231,11 @@ function buildTrackSections(
     name: g.name,
     tracks: byGroup.get(g.id)!,
   }));
+  // No heading: these tracks aren't in a container, so labelling them invents
+  // one. They simply sit under the named groups.
   sections.push({
     groupId: null,
-    name: "Ungrouped",
+    name: "",
     tracks: byGroup.get(null)!,
   });
   return sections;
@@ -479,7 +483,14 @@ export default function TracksPage() {
       setOverGroupId(undefined);
       return;
     }
-    setOverGroupId(resolveDropGroup(String(overId), tracks, groups));
+    const target = resolveDropGroup(String(overId), tracks, groups);
+    // A group can only land on another group — highlighting the ungrouped run
+    // would suggest a drop that does nothing.
+    if (parseGroupSortId(String(event.active.id)) && target === null) {
+      setOverGroupId(undefined);
+      return;
+    }
+    setOverGroupId(target);
   }
 
   function handleDragEnd(event: DragEndEvent) {
@@ -489,6 +500,21 @@ export default function TracksPage() {
 
     const activeId = String(active.id);
     const overId = String(over.id);
+
+    // A whole group was dragged by its handle: reorder the groups themselves
+    // rather than anything inside them.
+    const draggedGroupId = parseGroupSortId(activeId);
+    if (draggedGroupId) {
+      const overGroup = resolveDropGroup(overId, tracks, groups);
+      // Dropped on the ungrouped run, or on nothing recognisable.
+      if (!overGroup || overGroup === draggedGroupId) return;
+      const from = groups.findIndex((g) => g.id === draggedGroupId);
+      const to = groups.findIndex((g) => g.id === overGroup);
+      if (from < 0 || to < 0 || from === to) return;
+      const next = arrayMove(groups, from, to);
+      reorderGroups.mutate(next.map((g, sort) => ({ id: g.id, sort })));
+      return;
+    }
 
     if (!showGroups) {
       const visibleIds = displayed.map((t) => t.id);
@@ -1140,7 +1166,8 @@ export default function TracksPage() {
                       <TrackGroupSection
                         key={dropId}
                         dropId={dropId}
-                        title={section.name}
+                        title={section.name || undefined}
+                        sortId={group ? groupSortId(group.id) : undefined}
                         count={section.tracks.length}
                         canDrag={canDrag}
                         densityClass={densityListClass}

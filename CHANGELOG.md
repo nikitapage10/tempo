@@ -2,6 +2,28 @@
 
 Plain-English history of what changed in TEMPO, newest first.
 
+## 2026-08-02
+
+- Fixed (v0.75.0): the intro copy now sits on the film's centre line. The whole
+  picture is nudged once against the text rather than per scene, and the opening
+  lines no longer drift up or down depending on how many of them there are.
+- Changed (v0.75.0): panels now arrive quickly on an already-solid surface and
+  rise slightly into place, instead of spending a long moment half-transparent
+  with the film reading through the words.
+- Fixed (v0.75.0): the story chapters no longer pile up. Each one owns its own
+  stretch of the scroll and hands over across a short crossfade, and opening
+  Bring your music in now clears every other chapter off the screen instead of
+  leaving them underneath it.
+- Fixed (v0.75.0): Enter TEMPO plays its arrival film again. The handoff was
+  being claimed too late, so the app could open before the film knew to run.
+- Fixed (v0.75.0): Origin's videos should behave on Safari. Clips were being
+  warmed up in a way Safari refuses to download, and too many were held open at
+  once for it to cope with — please let me know how it looks on your Mac now.
+- Added (v0.75.0): groups on the Tracks page can be dragged into a new order by
+  the handle beside their name, as well as moved with the arrows.
+- Changed (v0.75.0): tracks that aren't in a group no longer sit under an
+  "Ungrouped" heading — only real groups are named now.
+
 ## 2026-07-31
 
 - Fixed (v0.74.1): the chapter-opening film now begins dissolving into its true

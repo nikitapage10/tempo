@@ -787,6 +787,26 @@
   }
 }
 
+/* ORIGIN — the one place the film's vertical position is tuned.
+
+   The supplied footage carries its subject (the light streak) slightly below
+   the optical centre of the frame, while every line of intro copy is centred in
+   the viewport. Rather than nudging each slide, the whole media layer is
+   shifted once here and every step inherits it.
+
+   The layer is grown vertically by `--origin-media-bleed` so the shift can
+   never expose the page background at the top or bottom edge. */
+:root {
+  --origin-media-offset-y: -2.4vh;
+  --origin-media-bleed: 6vh;
+}
+
+.origin-media-layer {
+  position: absolute;
+  inset: calc(-1 * var(--origin-media-bleed)) 0;
+  transform: translateY(var(--origin-media-offset-y));
+}
+
 /* ORIGIN film grain — the tile hops each step so the noise shimmers. */
 @keyframes origin-grain {
   0% { background-position: 0 0; }

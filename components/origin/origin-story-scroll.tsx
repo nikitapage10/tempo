@@ -51,6 +51,19 @@ const CHAPTER_ALIGN = ["sm:ml-[8%]", "sm:ml-[8%]", "sm:ml-[8%]", "sm:ml-[8%]", "
 const VH_PER_CHAPTER = 150;
 
 /**
+ * Each chapter owns its scroll range outright, and hands over across one short
+ * band at the seam.
+ *
+ * A chapter exits between `EXIT_AT` and the end of its own range; the next one
+ * enters over the last `ENTER_BAND` of that same stretch. Both are ~10% of a
+ * chapter, so the crossfade is a beat rather than an overlap — the previous
+ * settings let a chapter start arriving 70% before its turn, which is how three
+ * of them ended up stacked on screen at once.
+ */
+const EXIT_AT = 0.9;
+const ENTER_BAND = 0.1;
+
+/**
  * The one button in ORIGIN that should feel like an event.
  *
  * A slow ice→amber sweep runs across the fill, the flare-line motif sits under
@@ -257,11 +270,15 @@ export function OriginStoryScroll({
     sectionRefs.current.forEach((el, i) => {
       if (!el) return;
       // Import is an interaction, not another scroll beat. Once opened it owns
-      // the stage at full clarity until the artist completes or dismisses it.
-      if (i === 4 && importStarted) {
-        el.style.opacity = "1";
+      // the stage on its own — every other chapter is taken off the screen
+      // outright rather than left at whatever opacity the scroll had reached,
+      // which is what put the compass quote underneath the import panel.
+      if (importStarted) {
+        const own = i === 4;
+        el.style.opacity = own ? "1" : "0";
         el.style.transform = "translate3d(0, 0, 0) scale(1)";
-        el.style.pointerEvents = "auto";
+        el.style.pointerEvents = own ? "auto" : "none";
+        el.style.zIndex = own ? "40" : "0";
         return;
       }
       const start = stops[i];
@@ -276,12 +293,14 @@ export function OriginStoryScroll({
       let scale: number;
       let x: number;
       if (local < 0) {
-        // Approaching: small and out on the left, growing as it nears.
-        const t = Math.max(0, 1 + local * 1.4);
+        // Approaching. The enter band is short and lands exactly where the
+        // previous chapter's exit band ends, so at most two chapters are ever
+        // on screen together and only across a narrow crossfade.
+        const t = Math.max(0, 1 + local / ENTER_BAND);
         opacity = t;
-        scale = 0.62 + 0.38 * t;
-        x = -18 * (1 - t);
-      } else if (local < 0.72 || isLast) {
+        scale = 0.72 + 0.28 * t;
+        x = -14 * (1 - t);
+      } else if (local < EXIT_AT || isLast) {
         // Held. The closing chapter never leaves — "Enter TEMPO" must not be
         // something you can scroll past and lose.
         opacity = 1;
@@ -289,16 +308,21 @@ export function OriginStoryScroll({
         x = 0;
       } else {
         // Passing the viewer: keeps growing as it goes by, rather than shrinking.
-        const t = Math.min(1, (local - 0.72) / 0.28);
+        const t = Math.min(1, (local - EXIT_AT) / (1 - EXIT_AT));
         opacity = 1 - t;
-        scale = 1 + 0.75 * t;
-        x = 12 * t;
+        scale = 1 + 0.6 * t;
+        x = 10 * t;
       }
 
-      el.style.opacity = String(Math.max(0, Math.min(1, opacity)));
+      const clamped = Math.max(0, Math.min(1, opacity));
+      el.style.opacity = String(clamped);
       el.style.transform = `translate3d(${x}%, 0, 0) scale(${scale})`;
-      // Only the chapter in focus should be clickable.
-      el.style.pointerEvents = opacity > 0.6 ? "auto" : "none";
+      // Only the chapter in focus should be clickable, and a chapter that is
+      // all but invisible must never intercept a click meant for the one above.
+      el.style.pointerEvents = clamped > 0.6 ? "auto" : "none";
+      // Deterministic ordering for the brief moment two chapters coexist: the
+      // later one is always the one arriving, so it belongs on top.
+      el.style.zIndex = String(10 + i);
     });
   }, [importStarted]);
 

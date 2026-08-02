@@ -444,6 +444,13 @@ export function OriginMediaStage({
     <div className={cn("fixed inset-0 overflow-hidden bg-[var(--bg-0)]", className)}>
       {/* Opaque floor — the page background is never what shows through. */}
       <div className="absolute inset-0 bg-[var(--bg-0)]" aria-hidden />
+
+      {/* Every picture layer lives in one wrapper so the film can be nudged
+          against the centred copy in a single place (--origin-media-offset-y in
+          globals.css). Grain included: it belongs to the picture, not the page.
+          The wrapper is taller than the viewport by --origin-media-bleed, so the
+          shift never reveals an edge. */}
+      <div className="origin-media-layer" aria-hidden>
       {posterSrc ? (
         <div
           aria-hidden
@@ -515,6 +522,7 @@ export function OriginMediaStage({
           animation: "origin-grain 500ms steps(2) infinite reverse",
         }}
       />
+      </div>
 
       {children}
     </div>

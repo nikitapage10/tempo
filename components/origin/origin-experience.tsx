@@ -320,6 +320,17 @@ export function OriginExperience({
     const ok = await complete();
     if (!ok) return;
 
+    // Claimed the instant the save lands, before anything that can await.
+    //
+    // This used to sit just above `router.replace`, after the profile write and
+    // two cache invalidations. Invalidating ["artists"] refetches the artist —
+    // which now reads `origin_status: complete` — and OriginRoot's own guard
+    // navigates to "/" the moment it sees that. The app shell could therefore
+    // mount, look for the arrival flag, and find nothing, so the handoff film
+    // never played. Setting it here means whichever navigation wins, the flag
+    // and the pre-paint floor are already in place.
+    markFirstOpenPending();
+
     if (artistId) {
       // Always applied now, rather than offered as a checkbox: it only fills
       // blank fields and never changes visibility, so there was nothing for the
@@ -332,11 +343,6 @@ export function OriginExperience({
     await queryClient.invalidateQueries({ queryKey: ["artists"] });
     await queryClient.invalidateQueries({ queryKey: ["artist-profile", artistId] });
 
-    markFirstOpenPending();
-    // The import chapter decides where Enter TEMPO lands; falling back to
-    // whether Import is still owed when they scrolled past without choosing.
-    // Import now happens inside the story, so having imported (or chosen to
-    // start empty) means there is nothing left to send them to.
     // Import now runs inside the story, so Enter TEMPO always opens the app.
     router.replace(HOME_ROUTE);
   }

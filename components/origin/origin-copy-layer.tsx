@@ -65,13 +65,26 @@ export function useClipProgress(
   return progress;
 }
 
-/** Fades a step in without unmounting it, so it can settle before it is needed. */
+/**
+ * Fades a step in without unmounting it, so it can settle before it is needed.
+ *
+ * Only this wrapper animates, and only `opacity` and `transform`. The panel
+ * inside keeps its background, border and backdrop blur at full strength for
+ * every frame of the move — animating those directly is what made a panel look
+ * washed out and half-dissolved while it arrived, with the film's own streaks
+ * reading straight through the words.
+ *
+ * The wrapper also stays `hidden` until it has been painted once at opacity 0.
+ * Mounting straight into the transition gives the browser a frame in which the
+ * glass is composited before it has anything to composite against, which is the
+ * other half of that same artefact.
+ */
 export function StepFade({
   show,
   children,
   className,
-  enterMs = 1500,
-  exitMs = 650,
+  enterMs = 620,
+  exitMs = 480,
 }: {
   show: boolean;
   children: React.ReactNode;
@@ -79,14 +92,37 @@ export function StepFade({
   enterMs?: number;
   exitMs?: number;
 }) {
+  const [primed, setPrimed] = React.useState(false);
+
+  React.useEffect(() => {
+    // Two frames: the first paints the panel at rest, the second is the one the
+    // transition can actually start from.
+    let second = 0;
+    const first = requestAnimationFrame(() => {
+      second = requestAnimationFrame(() => setPrimed(true));
+    });
+    return () => {
+      cancelAnimationFrame(first);
+      cancelAnimationFrame(second);
+    };
+  }, []);
+
+  const visible = show && primed;
+
   return (
     <div
       className={cn(
-        "transition-opacity ease-out motion-reduce:transition-none",
-        show ? "opacity-100" : "pointer-events-none opacity-0",
+        "transition-[opacity,transform] ease-out motion-reduce:transition-none",
+        !visible && "pointer-events-none",
         className
       )}
-      style={{ transitionDuration: `${show ? enterMs : exitMs}ms` }}
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? "translate3d(0,0,0)" : "translate3d(0,14px,0)",
+        transitionDuration: `${visible ? enterMs : exitMs}ms`,
+        visibility: primed ? "visible" : "hidden",
+        willChange: "opacity, transform",
+      }}
       // Hidden from assistive tech until it is actually the live step.
       aria-hidden={!show}
     >
@@ -110,10 +146,13 @@ export function OriginScrim({
   return (
     <div
       className={cn(
+        // Near-solid on purpose. A panel carrying body copy has to stay
+        // readable over raw spectral movement at every frame of its arrival,
+        // not only once it has settled.
         tone === "panel"
-          ? "rounded-panel border border-line/60 bg-bg-0/90 p-6 shadow-3 backdrop-blur-xl"
+          ? "rounded-panel border border-line/60 bg-bg-0/95 p-6 shadow-3 backdrop-blur-xl"
           : tone === "story"
-            ? "rounded-panel border border-line/80 bg-[linear-gradient(135deg,rgb(10_10_12/0.88),rgb(18_18_22/0.76))] p-6 shadow-3 backdrop-blur-xl"
+            ? "rounded-panel border border-line/80 bg-[linear-gradient(135deg,rgb(10_10_12/0.95),rgb(18_18_22/0.9))] p-6 shadow-3 backdrop-blur-xl"
             : "rounded-panel bg-gradient-to-b from-bg-0/85 via-bg-0/70 to-transparent p-6",
         className
       )}
@@ -157,7 +196,15 @@ export function TimedCopy({
   );
 
   return (
-    <div className={cn("flex flex-col items-end gap-3 text-right", className)}>
+    // One grid cell for every line. Stacking them in normal flow made each line
+    // sit half the block's height off the film's centre, which is what put the
+    // opening copy out of line with the streak.
+    <div
+      className={cn(
+        "grid justify-items-end text-right [&>*]:col-start-1 [&>*]:row-start-1",
+        className
+      )}
+    >
       {lines.map((line) => {
         const visible =
           showAll ||

@@ -80,7 +80,11 @@ export function OriginAwakenStep({
         )}
         style={{ transitionDuration: leaving ? `${EXIT_MS}ms` : "1200ms" }}
       >
-        <span className="flex w-full max-w-2xl flex-col items-start gap-6 text-left">
+        {/* The heading alone is what should sit on the film's centre line, so
+            it is the only thing in the centred box. The cue hangs below it
+            absolutely — inside the flow it would push the line that matters up
+            by half its own height, which is what threw the alignment off. */}
+        <span className="relative flex w-full max-w-2xl flex-col items-start text-left">
           {started ? (
             <MorphingText
               as="h1"
@@ -95,7 +99,7 @@ export function OriginAwakenStep({
 
           <span
             className={cn(
-              "flex items-center gap-2 text-sm text-text-lo",
+              "absolute left-0 top-full mt-6 flex items-center gap-2 text-sm text-text-lo",
               "transition-opacity duration-[1500ms] ease-out motion-reduce:transition-none",
               settled ? "opacity-100" : "opacity-0"
             )}
