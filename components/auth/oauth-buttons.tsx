@@ -3,10 +3,10 @@
 import * as React from "react";
 import { useToast } from "@/components/ui/toast";
 import { createClient } from "@/lib/supabase/client";
-import { AppleMark, GoogleMark, MicrosoftMark } from "@/components/auth/provider-marks";
+import { GoogleMark, MicrosoftMark } from "@/components/auth/provider-marks";
 
 /** Supabase's own provider ids — "azure" is how it names Microsoft/Entra ID. */
-type Provider = "google" | "azure" | "apple";
+type Provider = "google" | "azure";
 
 const PROVIDERS: {
   id: Provider;
@@ -15,7 +15,6 @@ const PROVIDERS: {
 }[] = [
   { id: "google", label: "Google", Icon: GoogleMark },
   { id: "azure", label: "Microsoft", Icon: MicrosoftMark },
-  { id: "apple", label: "Apple", Icon: AppleMark },
 ];
 
 type OAuthButtonsProps = {
@@ -24,7 +23,7 @@ type OAuthButtonsProps = {
 };
 
 /**
- * "Continue with…" buttons for Google, Microsoft, and Apple.
+ * "Continue with…" buttons for Google and Microsoft.
  *
  * Each provider has to be turned on in Supabase → Authentication → Providers
  * (and have its own app registered with that vendor) before its button will

@@ -1,9 +1,12 @@
-# TEMPO — connecting Google, Microsoft, and Apple sign-in
+# TEMPO — connecting Google and Microsoft sign-in
 
-The login and register screens already show **Continue with Google /
-Microsoft / Apple**. Those buttons call Supabase OAuth. Until each provider is
-turned on in Supabase (and registered with that vendor), the button will toast
-something like “sign-in isn’t turned on yet.”
+The login screen shows **Continue with Google** and **Continue with Microsoft**.
+Those buttons call Supabase OAuth. Until each provider is turned on in Supabase
+(and registered with that vendor), the button will toast something like
+“sign-in isn’t turned on yet.”
+
+Apple Sign In is not offered in the UI right now; the Apple section below is
+kept only as a reference if you add it later.
 
 Production site: `https://tempo-ten-sigma.vercel.app`  
 Auth callback TEMPO uses: `https://tempo-ten-sigma.vercel.app/auth/callback`

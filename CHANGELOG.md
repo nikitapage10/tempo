@@ -4,6 +4,8 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-02
 
+- Removed (v0.80.1): Continue with Apple is no longer on the sign-in screen —
+  Google and Microsoft remain.
 - Fixed (v0.80.0): translucent surfaces across the whole app were painting
   nothing at all — panels, menus and toolbars were see-through and held up only
   by their blur and borders. They now have the fills they were always meant to.
