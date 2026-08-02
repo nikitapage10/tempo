@@ -4,6 +4,18 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-02
 
+- Added (v0.76.0): Settings → Your data lets you export your catalog metadata
+  (tracks, notes, projects, tasks, calendar, and related text), restore from a
+  file, save a snapshot now, and merge back from automatic snapshots. Audio
+  bounces are not included — keep those in your own archives.
+- Added (v0.76.0): Import recognizes a TEMPO catalog export and offers a direct
+  merge restore instead of treating it like a random spreadsheet. Messy or older
+  JSON can still be reshaped with the same AI used for Import.
+- Added (v0.76.0): TEMPO takes nightly metadata snapshots for every account so
+  you (and support) have a short time machine of the text side of the catalog.
+- Under the hood (v0.76.0): set `CRON_SECRET` in Vercel for the nightly job; see
+  the backup runbook. Confirm Supabase Pro daily database backups are on.
+
 - Fixed (v0.75.0): the intro copy now sits on the film's centre line. The whole
   picture is nudged once against the text rather than per scene, and the opening
   lines no longer drift up or down depending on how many of them there are.

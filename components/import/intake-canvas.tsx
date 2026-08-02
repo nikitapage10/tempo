@@ -19,6 +19,12 @@ import {
   type ImportSource,
   type ImportSourceKind,
 } from "@/lib/api/onboarding-imports";
+import {
+  confirmCatalogImport,
+  previewCatalogImport,
+  type CatalogPreview,
+} from "@/lib/api/catalog-backup";
+import { looksLikeTempoCatalog } from "@/lib/catalog-backup/detect";
 import { cn } from "@/lib/utils";
 
 type ArtistTurn = { kind: "artist"; sourceId: string };
@@ -96,6 +102,11 @@ export function IntakeCanvas({
   const [turns, setTurns] = React.useState<Turn[]>([]);
   const [thinking, setThinking] = React.useState(false);
   const [enough, setEnough] = React.useState(false);
+  const [catalogPreview, setCatalogPreview] = React.useState<CatalogPreview | null>(
+    null,
+  );
+  const [catalogText, setCatalogText] = React.useState<string | null>(null);
+  const [catalogBusy, setCatalogBusy] = React.useState(false);
   const endRef = React.useRef<HTMLDivElement>(null);
   const textRef = React.useRef<HTMLTextAreaElement>(null);
   // What was already typed when dictation started, so speech appends to it
@@ -161,7 +172,42 @@ export function IntakeCanvas({
   );
 
   async function handleFiles(files: File[]) {
+    const regular: File[] = [];
     for (const file of files) {
+      const lower = file.name.toLowerCase();
+      if (lower.endsWith(".json") || file.type === "application/json") {
+        try {
+          const text = await file.text();
+          const parsed = JSON.parse(text) as unknown;
+          if (looksLikeTempoCatalog(parsed)) {
+            setCatalogBusy(true);
+            try {
+              const preview = await previewCatalogImport(text, false);
+              setCatalogText(text);
+              setCatalogPreview(preview);
+              toast("That’s a TEMPO catalog export — preview ready below.", "ok");
+            } catch (err) {
+              toast(
+                err instanceof Error
+                  ? err.message
+                  : "Couldn’t preview that catalog export.",
+              );
+            } finally {
+              setCatalogBusy(false);
+            }
+            continue;
+          }
+          // Not a TEMPO dump — fall through as a normal import source.
+          regular.push(new File([text], file.name, { type: file.type || "application/json" }));
+          continue;
+        } catch {
+          /* treat as opaque document */
+        }
+      }
+      regular.push(file);
+    }
+
+    for (const file of regular) {
       setUploading(file.name);
       setProgress(0);
       try {
@@ -173,7 +219,31 @@ export function IntakeCanvas({
     }
     setUploading(null);
     setProgress(null);
-    void requestFollowups(true);
+    if (regular.length) void requestFollowups(true);
+  }
+
+  async function handleCatalogRestore() {
+    if (!catalogText) return;
+    setCatalogBusy(true);
+    try {
+      const result = await confirmCatalogImport(catalogText, false);
+      const inserted = Object.values(result.result.inserted).reduce(
+        (a, b) => a + (b ?? 0),
+        0,
+      );
+      toast(
+        inserted
+          ? `Restored ${inserted} rows into your catalog.`
+          : "Nothing new to add — those rows were already there.",
+        "ok",
+      );
+      setCatalogPreview(null);
+      setCatalogText(null);
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Couldn’t restore that catalog.");
+    } finally {
+      setCatalogBusy(false);
+    }
   }
 
   async function handleVoice(file: File) {
@@ -246,10 +316,45 @@ export function IntakeCanvas({
                 <p className="mt-2 text-sm leading-relaxed text-text-lo">
                   Type it, say it out loud, or drop in whatever you already have —
                   screenshots of your project folders, a release spreadsheet, a PDF,
-                  your notes. Rough is fine. Nothing gets added to your catalog until
+                  your notes. A TEMPO catalog export (.json from Settings) restores
+                  directly. Rough is fine. Nothing gets added to your catalog until
                   you&rsquo;ve looked it over.
                 </p>
               </Bubble>
+
+              {catalogPreview ? (
+                <Bubble from="tempo">
+                  <p className="text-sm leading-relaxed text-text-hi">
+                    This looks like a TEMPO catalog backup
+                    {catalogPreview.normalized ? " (reshaped)" : ""}. Ready to merge:{" "}
+                    {catalogPreview.summary}.
+                  </p>
+                  <p className="mt-2 text-xs text-text-lo">
+                    Existing rows with the same ids stay put. Audio files are not in
+                    the backup.
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      disabled={catalogBusy}
+                      onClick={() => void handleCatalogRestore()}
+                    >
+                      {catalogBusy ? "Restoring…" : "Merge catalog"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      disabled={catalogBusy}
+                      onClick={() => {
+                        setCatalogPreview(null);
+                        setCatalogText(null);
+                      }}
+                    >
+                      Dismiss
+                    </Button>
+                  </div>
+                </Bubble>
+              ) : null}
 
               {turns.map((turn, index) => {
                 if (turn.kind === "artist") {

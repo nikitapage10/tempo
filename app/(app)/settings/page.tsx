@@ -6,6 +6,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { ArtistsManager } from "@/components/artists/artists-manager";
 import { SpacesManager } from "@/components/spaces/spaces-manager";
+import { CatalogBackupPanel } from "@/components/settings/catalog-backup-panel";
 import { Button } from "@/components/ui/button";
 import { SupportReportDialog } from "@/components/support/support-report-dialog";
 
@@ -37,6 +38,8 @@ export default function SettingsPage() {
 
       <SpacesManager />
 
+      <CatalogBackupPanel />
+
       <section className="rounded-card border border-line bg-bg-1 p-5">
         <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
           Artist Origin
@@ -62,7 +65,8 @@ export default function SettingsPage() {
         </p>
         <p className="mt-2 text-sm text-text-hi">
           Drop in a spreadsheet, screenshots, or a voice note and TEMPO will
-          propose what to add. Nothing changes until you approve it.
+          propose what to add. Nothing changes until you approve it. A TEMPO
+          catalog export can also be restored from Your data above.
         </p>
         <Button variant="secondary" className="mt-4" asChild>
           <Link href="/import">Import more music</Link>

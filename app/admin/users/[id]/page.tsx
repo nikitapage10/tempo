@@ -22,6 +22,22 @@ export default function AdminUserPage({ params }: { params: { id: string } }) {
     <section className="panel p-5"><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{details.map(([label, value]) => <div key={String(label)}><p className="label-mono">{label}</p><p className="mt-1 break-words text-sm text-text-hi tabular-nums">{value}</p></div>)}</div></section>
     {user.publicProfile ? <section className="panel-quiet p-5"><p className="label-mono">Published profile</p><p className="mt-2 text-sm text-text-hi">{user.publicProfile.display_name}{user.publicProfile.handle ? ` · @${user.publicProfile.handle}` : ""}</p><p className="mt-1 text-xs text-text-lo">Visibility: {user.publicProfile.visibility}</p></section> : null}
     <section className="panel-quiet p-5"><p className="label-mono">Invite</p><p className="mt-2 text-sm text-text-hi">{user.invite ? `${user.invite.code} · ${date(user.invite.redeemedAt)}` : "Legacy or no recorded invite"}</p></section>
+    <section className="panel-quiet p-5">
+      <p className="label-mono">Catalog backups</p>
+      <p className="mt-2 text-sm text-text-lo">
+        Metadata-only export for support recovery. Audio files are not included.
+      </p>
+      <div className="mt-3">
+        <Button
+          variant="secondary"
+          onClick={() => {
+            window.open(`/api/admin/users/${params.id}/catalog?download=1`, "_blank", "noopener");
+          }}
+        >
+          Download catalog JSON
+        </Button>
+      </div>
+    </section>
     <section className="panel-quiet p-5"><p className="label-mono">Recent account activity</p><div className="mt-3 space-y-2">{user.accountEvents.length ? user.accountEvents.map((event) => <div key={event.id} className="well flex items-center justify-between rounded-input px-3 py-2 text-xs"><span className="text-text-hi">{event.event_type.replaceAll("_", " ")}</span><span className="tabular-nums text-text-lo">{date(event.created_at)}</span></div>) : <p className="text-sm text-text-lo">No recent account events.</p>}</div></section>
     <div className="flex flex-wrap gap-2">{user.status === "suspended" ? <Button onClick={() => void reactivate()} disabled={actions.reactivate.isPending}>{actions.reactivate.isPending ? "…" : "Reactivate"}</Button> : <Button variant="destructive" onClick={() => setConfirm("suspend")}>Suspend member</Button>}<Button variant="destructive" onClick={() => setConfirm("delete")}>Delete account</Button></div>
     <ConfirmDialog open={confirm === "suspend"} onOpenChange={(o) => setConfirm(o ? "suspend" : null)} title="Suspend this member?" description="Their sessions will stop and sign-in will be refused until an admin reactivates the account." confirmLabel="Suspend" typedValue={user.email} busy={actions.suspend.isPending} onConfirm={suspend} />
