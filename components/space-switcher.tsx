@@ -85,7 +85,7 @@ export function SpaceSwitcher() {
           </ul>
           <div className="border-t border-line">
             <Link
-              href="/settings#spaces"
+              href="/settings?tab=studio#spaces"
               onClick={() => setOpen(false)}
               className="flex items-center gap-2 px-3 py-2 text-sm text-text-lo transition-colors duration-hover hover:bg-bg-2/60 hover:text-text-hi"
             >
@@ -93,7 +93,7 @@ export function SpaceSwitcher() {
               Manage spaces
             </Link>
             <Link
-              href="/settings#spaces"
+              href="/settings?tab=studio#spaces"
               onClick={() => setOpen(false)}
               className="flex items-center gap-2 px-3 py-2 text-sm text-ice transition-colors duration-hover hover:bg-bg-2/60"
             >

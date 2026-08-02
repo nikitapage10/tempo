@@ -4,6 +4,8 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-02
 
+- Changed (v0.77.1): Settings Studio / Catalog / Account are real tabs now —
+  each one shows only that section instead of scrolling the whole page.
 - Changed (v0.77.0): Settings is no longer one long stack of identical boxes.
   It opens with the shared page header, a jump nav for Studio / Catalog /
   Account, and grouped sections with clearer hierarchy.

@@ -114,7 +114,7 @@ export function ArtistSwitcher() {
               Stats
             </Link>
             <Link
-              href="/settings#artists"
+              href="/settings?tab=studio#artists"
               onClick={() => setOpen(false)}
               className="flex items-center gap-2 px-3 py-2 text-sm text-text-lo transition-colors duration-hover hover:bg-bg-2/60 hover:text-text-hi"
             >
@@ -122,7 +122,7 @@ export function ArtistSwitcher() {
               Manage artists
             </Link>
             <Link
-              href="/settings#artists"
+              href="/settings?tab=studio#artists"
               onClick={() => setOpen(false)}
               className="flex items-center gap-2 px-3 py-2 text-sm text-ice transition-colors duration-hover hover:bg-bg-2/60"
             >
