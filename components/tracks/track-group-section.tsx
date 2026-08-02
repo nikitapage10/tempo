@@ -2,7 +2,7 @@
 
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { ChevronDown, ChevronUp, GripVertical, Pencil, Trash2 } from "lucide-react";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { SignedImage } from "@/components/ui/signed-image";
 import type { TrackGroupAccent } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -14,8 +14,11 @@ import { cn } from "@/lib/utils";
  * the colour reads as a label on the group, not as a coloured box. The left
  * rule is what actually does the distinguishing at a glance — the background is
  * only there to bind the tracks to their header.
+ *
+ * "custom" has no entry here — a free color can't be a Tailwind class, so it's
+ * painted with inline styles built by accentInlineStyle() below instead.
  */
-const ACCENT_SURFACE: Record<TrackGroupAccent, string> = {
+const ACCENT_SURFACE: Record<Exclude<TrackGroupAccent, "custom">, string> = {
   ice: "border-ice/25 bg-ice/[0.045]",
   amber: "border-amber/25 bg-amber/[0.045]",
   violet: "border-violet/25 bg-violet/[0.045]",
@@ -23,13 +26,29 @@ const ACCENT_SURFACE: Record<TrackGroupAccent, string> = {
   warn: "border-warn/25 bg-warn/[0.045]",
 };
 
-const ACCENT_RULE: Record<TrackGroupAccent, string> = {
+const ACCENT_RULE: Record<Exclude<TrackGroupAccent, "custom">, string> = {
   ice: "bg-ice/70",
   amber: "bg-amber/70",
   violet: "bg-violet/70",
   ok: "bg-ok/70",
   warn: "bg-warn/70",
 };
+
+/** "#rrggbb" -> "r g b", for building the same low-alpha washes inline that
+ *  the fixed palette gets from Tailwind classes. */
+function hexToRgbChannels(hex: string): string {
+  const clean = hex.replace("#", "");
+  const n = parseInt(clean, 16);
+  return `${(n >> 16) & 255} ${(n >> 8) & 255} ${n & 255}`;
+}
+
+function accentInlineStyle(hex: string): CSSProperties {
+  const rgb = hexToRgbChannels(hex);
+  return {
+    borderColor: `rgb(${rgb} / 0.25)`,
+    backgroundColor: `rgb(${rgb} / 0.045)`,
+  };
+}
 
 export const UNGROUPED_DROP_ID = "drop:ungrouped";
 
@@ -75,6 +94,8 @@ type TrackGroupSectionProps = {
   /** Optional album/EP image, as a storage path. */
   coverUrl?: string | null;
   accent?: TrackGroupAccent | null;
+  /** Set only when accent === "custom". */
+  accentHex?: string | null;
   count: number;
   canDrag: boolean;
   densityClass?: string;
@@ -92,6 +113,7 @@ export function TrackGroupSection({
   sortId,
   coverUrl,
   accent,
+  accentHex,
   count,
   canDrag,
   densityClass = "space-y-2",
@@ -120,26 +142,36 @@ export function TrackGroupSection({
   });
 
   const highlight = isOver || droppableOver;
+  const isCustom = accent === "custom" && Boolean(accentHex);
+  const fixedAccent = accent && accent !== "custom" ? accent : null;
 
   return (
     <section
       ref={setNodeRef}
+      style={isCustom ? accentInlineStyle(accentHex!) : undefined}
       className={cn(
         "relative rounded-card border border-transparent transition-colors duration-hover",
         // A tinted group is a container you can see the edges of; an untinted
         // one keeps the old flush look so nothing changes for existing groups.
-        accent ? cn("px-3 py-2.5", ACCENT_SURFACE[accent]) : null,
+        (fixedAccent || isCustom) && "px-3 py-2.5",
+        fixedAccent ? ACCENT_SURFACE[fixedAccent] : null,
         highlight && "border-ice/30 bg-ice/[0.03]",
         isDragging && "opacity-40"
       )}
     >
-      {accent ? (
+      {fixedAccent ? (
         <span
           aria-hidden
           className={cn(
             "absolute inset-y-2 left-0 w-[2px] rounded-full",
-            ACCENT_RULE[accent]
+            ACCENT_RULE[fixedAccent]
           )}
+        />
+      ) : isCustom ? (
+        <span
+          aria-hidden
+          className="absolute inset-y-2 left-0 w-[2px] rounded-full"
+          style={{ backgroundColor: accentHex! }}
         />
       ) : null}
       {title ? (

@@ -88,8 +88,12 @@ import type {
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-/** Solid swatches for the colour picker — the surfaces themselves are washes. */
-const ACCENT_SWATCH: Record<TrackGroupAccent, string> = {
+/**
+ * Solid swatches for the color picker — the group surfaces themselves are
+ * washes. "custom" has no fixed class since it's whatever hex was picked;
+ * it's rendered separately with an inline background.
+ */
+const ACCENT_SWATCH: Record<Exclude<TrackGroupAccent, "custom">, string> = {
   ice: "bg-ice",
   amber: "bg-amber",
   violet: "bg-violet",
@@ -369,6 +373,8 @@ export default function TracksPage() {
   const [groupName, setGroupName] = React.useState("");
   const [groupAccent, setGroupAccent] =
     React.useState<TrackGroupAccent | null>(null);
+  /** Live only while groupAccent === "custom". */
+  const [groupAccentHex, setGroupAccentHex] = React.useState("#7fb4ff");
   const [savingGroup, setSavingGroup] = React.useState(false);
   const [coverBusy, setCoverBusy] = React.useState(false);
   const coverInputRef = React.useRef<HTMLInputElement>(null);
@@ -739,12 +745,14 @@ export default function TracksPage() {
   function openCreateGroup() {
     setGroupName("");
     setGroupAccent(null);
+    setGroupAccentHex("#7fb4ff");
     setGroupDialog({ mode: "create" });
   }
 
   function openRenameGroup(group: TrackGroup) {
     setGroupName(group.name);
     setGroupAccent(group.accent_color);
+    if (group.accent_hex) setGroupAccentHex(group.accent_hex);
     setGroupDialog({ mode: "rename", group });
   }
 
@@ -787,7 +795,11 @@ export default function TracksPage() {
       if (groupDialog.mode === "create") {
         const group = await createGroup.mutateAsync(name);
         if (groupAccent) {
-          await updateGroup.mutateAsync({ id: group.id, accentColor: groupAccent });
+          await updateGroup.mutateAsync({
+            id: group.id,
+            accentColor: groupAccent,
+            accentHex: groupAccent === "custom" ? groupAccentHex : null,
+          });
         }
         toast(`Created “${group.name}”. Drag tracks into it.`, "ok");
       } else {
@@ -795,6 +807,7 @@ export default function TracksPage() {
           id: groupDialog.group.id,
           name,
           accentColor: groupAccent,
+          accentHex: groupAccent === "custom" ? groupAccentHex : null,
         });
         toast(`Saved “${name}”.`, "ok");
       }
@@ -1273,6 +1286,7 @@ export default function TracksPage() {
                         sortId={group ? groupSortId(group.id) : undefined}
                         coverUrl={group?.cover_url ?? null}
                         accent={group?.accent_color ?? null}
+                        accentHex={group?.accent_hex ?? null}
                         count={section.tracks.length}
                         canDrag={canDrag}
                         densityClass={densityListClass}
@@ -1436,7 +1450,7 @@ export default function TracksPage() {
           </label>
 
           <div className="mt-4">
-            <span className="label-mono">Colour</span>
+            <span className="label-mono">Color</span>
             <p className="mt-1 text-[11px] text-text-lo/70">
               Optional. Tints the group so it stands apart from the others.
             </p>
@@ -1471,6 +1485,36 @@ export default function TracksPage() {
                   )}
                 />
               ))}
+              {/* The swatch itself shows the picked hex — its own color is the
+                  clearest label a "custom" option can have. The actual native
+                  picker sits directly on top of it (opacity 0) rather than
+                  behind a separate trigger, so one click both selects "custom"
+                  and opens the OS color dialog instead of taking two clicks. */}
+              <span className="relative inline-flex">
+                <button
+                  type="button"
+                  aria-pressed={groupAccent === "custom"}
+                  aria-label="Custom color"
+                  title="Custom color"
+                  style={{ backgroundColor: groupAccentHex }}
+                  className={cn(
+                    "size-6 rounded-full border-2 transition-transform",
+                    groupAccent === "custom"
+                      ? "scale-110 border-text-hi"
+                      : "border-transparent hover:scale-105"
+                  )}
+                />
+                <input
+                  type="color"
+                  aria-label="Pick a custom color"
+                  value={groupAccentHex}
+                  onChange={(e) => {
+                    setGroupAccentHex(e.target.value);
+                    setGroupAccent("custom");
+                  }}
+                  className="absolute inset-0 size-6 cursor-pointer opacity-0"
+                />
+              </span>
             </div>
           </div>
 

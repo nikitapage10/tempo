@@ -151,14 +151,20 @@ export function OriginScrim({
   return (
     <div
       className={cn(
-        // Near-solid on purpose. A panel carrying body copy has to stay
-        // readable over raw spectral movement at every frame of its arrival,
-        // not only once it has settled.
+        // Alpha modifiers on TEMPO's theme colours were silently compiling to
+        // nothing until recently (see the --bg-*-rgb / --ice-rgb notes in
+        // globals.css) — every one of these classes has been rendering as
+        // pure `backdrop-blur` with no tint underneath since ORIGIN shipped.
+        // That accidental look is the "glass" this is restoring: low enough
+        // alpha that the blurred film reads through, with just enough fill
+        // that body copy stays legible over its brightest frames.
         tone === "panel"
-          ? "rounded-panel border border-line/60 bg-bg-0/95 p-6 shadow-3 backdrop-blur-xl"
+          ? "rounded-panel border border-line/60 bg-bg-0/40 p-6 shadow-3 backdrop-blur-xl"
           : tone === "story"
-            ? "rounded-panel border border-line/80 bg-[linear-gradient(135deg,rgb(10_10_12/0.95),rgb(18_18_22/0.9))] p-6 shadow-3 backdrop-blur-xl"
-            : "rounded-panel bg-gradient-to-b from-bg-0/85 via-bg-0/70 to-transparent p-6",
+            ? "rounded-panel border border-line/80 bg-[linear-gradient(135deg,rgb(10_10_12/0.45),rgb(18_18_22/0.32))] p-6 shadow-3 backdrop-blur-xl"
+            : // Veil carries no fill at all — it sits directly over the film
+              // with nothing behind the words but the awaken step's own vignette.
+              "rounded-panel p-6",
         className
       )}
       onScroll={onScroll}

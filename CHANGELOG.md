@@ -4,6 +4,26 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-02
 
+- Fixed (v0.81.0): the same silent-transparency bug from v0.80.0 also affected
+  every ice/amber/violet/green/coral tint with a strength modifier — over 300
+  classes app-wide, including the very color tint just added to Tracks groups
+  in v0.80.0, which is why picking one appeared to do nothing.
+- Changed (v0.81.0): Origin's panels are glass again — a soft, blurred tint
+  over the film rather than a flat card. The "Listening back to the shape of
+  it" moment during processing no longer sits on a background at all.
+- Fixed (v0.81.0): "Good. I can see you now." had almost no time on screen —
+  its reveal was quietly running from the moment the panel mounted, not from
+  when it actually became visible, so most of its short window burned away
+  unseen. It now starts its clock on the first visible frame instead.
+- Fixed (v0.81.0): Enter TEMPO's arrival film could still be cut short. A
+  second, independent redirect could fire mid-completion using a stale "is
+  Import still owed" flag from when the page first loaded — sending the
+  artist to the wrong screen and then, a moment later, colliding with the
+  intended one, aborting the reveal. That redirect now only ever acts on
+  arrival, never mid-flow.
+- Added (v0.81.0): a custom color option for track groups, alongside the fixed
+  palette — pick any color rather than one of the five presets. Needs
+  migrations/045_track_group_custom_color.sql in Supabase.
 - Removed (v0.80.1): Continue with Apple is no longer on the sign-in screen —
   Google and Microsoft remain.
 - Fixed (v0.80.0): translucent surfaces across the whole app were painting

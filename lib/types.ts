@@ -381,8 +381,11 @@ export type TrackUpdate = Partial<
 >;
 
 /** Named Tracks-page group (album / EP / playlist / etc). Migration 041. */
-/** One of the fixed tints a group can carry (migration 044). */
-export type TrackGroupAccent = "ice" | "amber" | "violet" | "ok" | "warn";
+/**
+ * One of the fixed tints a group can carry (migration 044), plus "custom" —
+ * a free color, stored in `accent_hex` (migration 045).
+ */
+export type TrackGroupAccent = "ice" | "amber" | "violet" | "ok" | "warn" | "custom";
 
 export type TrackGroup = {
   id: string;
@@ -393,6 +396,8 @@ export type TrackGroup = {
   /** Storage path of the optional album/EP image. Private bucket. */
   cover_url: string | null;
   accent_color: TrackGroupAccent | null;
+  /** Set only when accent_color is "custom". `#RRGGBB`. */
+  accent_hex: string | null;
   created_at: string;
   updated_at: string;
 };

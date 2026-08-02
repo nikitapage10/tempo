@@ -101,6 +101,12 @@ function hexToRgb(hex: string): [number, number, number] {
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 
+/** hex -> "R G B", the bare-channel form Tailwind's opacity modifier needs —
+ *  see the --ice-rgb note in globals.css. */
+function hexToRgbTriple(hex: string): string {
+  return hexToRgb(hex).join(" ");
+}
+
 /** hex -> "H S% L%" for the shadcn HSL-triple custom properties. */
 function hexToHslTriple(hex: string): string {
   const [r8, g8, b8] = hexToRgb(hex);
@@ -143,6 +149,11 @@ export function artistThemeCssVars(
   return {
     "--ice": ice,
     "--amber": amber,
+    // Every `ice/N` and `amber/N` opacity class reads these, not --ice/--amber
+    // directly — without them a custom palette would recolor solid fills
+    // correctly but leave every translucent one on the default hue.
+    "--ice-rgb": hexToRgbTriple(ice),
+    "--amber-rgb": hexToRgbTriple(amber),
     "--primary": hexToHslTriple(ice),
     "--ring": hexToHslTriple(ice),
   };

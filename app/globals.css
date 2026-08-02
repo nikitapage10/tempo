@@ -29,6 +29,24 @@
     --ok: #6fd99a;
     --warn: #ff7a6b;
 
+    /* Same bug, same fix, for every other theme colour: `border-ice/30`,
+     * `bg-amber/10`, `text-text-lo/70` and 300+ classes like them across the
+     * app were compiling to nothing for the same reason bg-0/1/2/3 did — see
+     * the note above. Every colour token that is ever combined with an
+     * opacity modifier needs a bare-channel companion.
+     *
+     * --ice-rgb and --amber-rgb are also written per-artist by
+     * artistThemeCssVars() (lib/artist-theme.ts) whenever a custom palette is
+     * active — keep that in sync with any change here. */
+    --line-rgb: 38 38 46;
+    --text-hi-rgb: 242 240 235;
+    --text-lo-rgb: 139 139 150;
+    --ice-rgb: 127 180 255;
+    --amber-rgb: 255 181 107;
+    --violet-rgb: 157 140 255;
+    --ok-rgb: 111 217 154;
+    --warn-rgb: 255 122 107;
+
     /* Top Spectra lightfield strip — visible animated sliver */
     --edge-strip-h: 6px;
 

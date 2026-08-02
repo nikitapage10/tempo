@@ -18,11 +18,21 @@ export const maxDuration = 300;
 
 const MAX_SPOTIFY_ARTWORK_BYTES = 15 * 1024 * 1024;
 
+function isSpotifyArtworkHostname(hostname: string): boolean {
+  const normalized = hostname.toLowerCase();
+  return (
+    normalized === "i.scdn.co" ||
+    /^image-cdn-[a-z0-9-]+\.spotifycdn\.com$/.test(normalized)
+  );
+}
+
 function safeSpotifyArtworkUrl(value: string | null): URL | null {
   if (!value) return null;
   try {
     const url = new URL(value);
-    return url.protocol === "https:" && url.hostname === "i.scdn.co" ? url : null;
+    return url.protocol === "https:" && isSpotifyArtworkHostname(url.hostname)
+      ? url
+      : null;
   } catch {
     return null;
   }

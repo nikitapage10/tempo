@@ -42,12 +42,14 @@ export function useTrackGroupMutations(spaceId: string | null) {
       name,
       sort,
       accentColor,
+      accentHex,
     }: {
       id: string;
       name?: string;
       sort?: number;
       accentColor?: TrackGroupAccent | null;
-    }) => updateTrackGroup(id, { name, sort, accentColor }),
+      accentHex?: string | null;
+    }) => updateTrackGroup(id, { name, sort, accentColor, accentHex }),
     onSuccess: (group) => {
       qc.setQueryData<TrackGroup[]>(key, (prev) =>
         prev ? prev.map((g) => (g.id === group.id ? group : g)) : [group]

@@ -175,8 +175,21 @@ export function OriginExperience({
   const recognitionVisible =
     state.phase === "recognizing" &&
     activeKeyRef.current === clip?.key &&
-    clipProgress >= 0.18 &&
-    clipProgress < 0.62;
+    clipProgress >= 0.05 &&
+    clipProgress < 0.95;
+  /**
+   * Latches true the first frame the panel is actually shown, and stays true
+   * for the rest of this "recognizing" occurrence.
+   *
+   * MorphingText's own clock is gated on this (via its `active` prop) rather
+   * than running from mount, which is what made "Name." → "Good. I can see
+   * you now." blow past in a blink: the panel mounts the instant the phase
+   * begins, so a clock tied to mount had already burned through most of its
+   * delay and hold before `recognitionVisible` even turned the panel on.
+   */
+  const recognitionStartedRef = React.useRef(false);
+  if (state.phase !== "recognizing") recognitionStartedRef.current = false;
+  else if (recognitionVisible) recognitionStartedRef.current = true;
 
   const mountProcessing =
     state.phase === "interpreting_transition" ||
@@ -434,9 +447,10 @@ export function OriginExperience({
                 as="h1"
                 texts={[`${state.name}.`, "Good. I can see you now."]}
                 loop={false}
-                delaySeconds={0.3}
-                holdSeconds={0.95}
-                morphSeconds={0.9}
+                active={recognitionStartedRef.current}
+                delaySeconds={0.15}
+                holdSeconds={1.05}
+                morphSeconds={0.75}
                 className="font-display text-right text-2xl leading-snug text-text-hi sm:text-3xl [&>span]:text-right"
               />
             </StepFade>

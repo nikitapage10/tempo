@@ -2,9 +2,12 @@ import { createClient } from "@/lib/supabase/client";
 import { deleteFile, sanitizeFilename, uploadFile } from "@/lib/storage";
 import type { TrackGroup, TrackGroupAccent } from "@/lib/types";
 
-/** The tints a group can be given. Fixed, so they stay in the Spectra family. */
+/**
+ * The fixed swatches, in the Spectra family. "custom" is offered separately
+ * in the UI — a free color, not part of this curated set.
+ */
 export const TRACK_GROUP_ACCENTS: {
-  value: TrackGroupAccent;
+  value: Exclude<TrackGroupAccent, "custom">;
   label: string;
 }[] = [
   { value: "ice", label: "Ice" },
@@ -17,6 +20,26 @@ export const TRACK_GROUP_ACCENTS: {
 function mapGroupError(error: { message?: string; code?: string }): Error {
   const message = (error.message ?? "").trim();
   const lower = message.toLowerCase();
+  // Checked before the broader 041 pattern below: Postgres's own missing-column
+  // message ("column accent_hex of relation track_groups does not exist") and
+  // PostgREST's ("Could not find the 'accent_hex' column ... in the schema
+  // cache") both contain "relation"/"does not exist" or get caught by the
+  // generic table-missing check, so the specific column has to be matched first
+  // or the artist is told the wrong migration is missing.
+  if (lower.includes("accent_hex")) {
+    return new Error(
+      "Custom group colors need migration 045 in Supabase — run that SQL, then try again."
+    );
+  }
+  if (
+    lower.includes("cover_url") ||
+    lower.includes("accent_color") ||
+    lower.includes("ungrouped_sort")
+  ) {
+    return new Error(
+      "Group covers and colors need migration 044 in Supabase — run that SQL, then try again."
+    );
+  }
   if (
     error.code === "42P01" ||
     error.code === "PGRST205" ||
@@ -27,11 +50,6 @@ function mapGroupError(error: { message?: string; code?: string }): Error {
   ) {
     return new Error(
       "Track groups need migration 041 in Supabase — run that SQL, then try again."
-    );
-  }
-  if (lower.includes("cover_url") || lower.includes("accent_color") || lower.includes("ungrouped_sort")) {
-    return new Error(
-      "Group covers and colours need migration 044 in Supabase — run that SQL, then try again."
     );
   }
   if (lower.includes("jwt") || lower.includes("auth") || error.code === "401") {
@@ -97,6 +115,8 @@ export async function createTrackGroup(input: {
   return normalizeGroup(data);
 }
 
+const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
+
 export async function updateTrackGroup(
   id: string,
   patch: {
@@ -104,6 +124,8 @@ export async function updateTrackGroup(
     sort?: number;
     /** `null` clears the tint back to the plain surface. */
     accentColor?: TrackGroupAccent | null;
+    /** Required alongside `accentColor: "custom"`; ignored otherwise. */
+    accentHex?: string | null;
     /** `null` clears the cover. The stored object is removed separately. */
     coverUrl?: string | null;
   }
@@ -119,7 +141,19 @@ export async function updateTrackGroup(
   }
   if (patch.sort != null) body.sort = patch.sort;
   // `undefined` means "leave alone"; `null` means "clear".
-  if (patch.accentColor !== undefined) body.accent_color = patch.accentColor;
+  if (patch.accentColor !== undefined) {
+    body.accent_color = patch.accentColor;
+    if (patch.accentColor === "custom") {
+      if (!patch.accentHex || !HEX_COLOR.test(patch.accentHex)) {
+        throw new Error("Pick a custom color first.");
+      }
+      body.accent_hex = patch.accentHex;
+    } else {
+      // Leaving custom for a fixed swatch (or "none") drops the hex too, so
+      // the two never disagree about which color is actually in force.
+      body.accent_hex = null;
+    }
+  }
   if (patch.coverUrl !== undefined) body.cover_url = patch.coverUrl;
 
   const { data, error } = await supabase
@@ -227,5 +261,6 @@ function normalizeGroup(row: TrackGroup): TrackGroup {
     sort: typeof row.sort === "number" ? row.sort : 0,
     cover_url: row.cover_url ?? null,
     accent_color: row.accent_color ?? null,
+    accent_hex: row.accent_hex ?? null,
   };
 }

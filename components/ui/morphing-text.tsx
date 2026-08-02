@@ -31,7 +31,8 @@ function useMorphingText(
   holdSeconds: number,
   delaySeconds: number,
   blurPx: number,
-  onSettled?: () => void
+  onSettled: (() => void) | undefined,
+  active: boolean
 ) {
   const textIndexRef = React.useRef(0);
   const morphRef = React.useRef(0);
@@ -79,6 +80,23 @@ function useMorphingText(
     cooldownRef.current = 0;
     finishedRef.current = false;
     timeRef.current = Date.now();
+
+    if (!active) {
+      // Paused before its first visible frame: paint the opening line at rest
+      // and don't start the clock. Without this a sequence mounted ahead of
+      // when it is actually shown — the usual case for a panel that fades in
+      // over a still-playing transition — spends its delay and hold ticking
+      // away unseen, so by the time it appears there is barely any of the
+      // sequence left to read.
+      const el2 = text2Ref.current;
+      if (el2) {
+        el2.textContent = textsRef.current[0] ?? "";
+        el2.style.filter = "none";
+        el2.style.opacity = "100%";
+      }
+      if (text1Ref.current) text1Ref.current.style.opacity = "0%";
+      return;
+    }
 
     // A single line has nothing to morph into — show it and stop.
     const sequence = textsRef.current;
@@ -161,7 +179,7 @@ function useMorphingText(
 
     animate();
     return () => cancelAnimationFrame(raf);
-  }, [textsKey, loop, morphSeconds, holdSeconds, delaySeconds, setStyles]);
+  }, [textsKey, loop, morphSeconds, holdSeconds, delaySeconds, setStyles, active]);
 
   return { text1Ref, text2Ref };
 }
@@ -207,6 +225,7 @@ export function MorphingText({
   holdSeconds = 1.8,
   delaySeconds = 0,
   blurPx = DEFAULT_BLUR_PX,
+  active = true,
   as: Tag = "div",
 }: {
   texts: string[];
@@ -223,6 +242,12 @@ export function MorphingText({
   delaySeconds?: number;
   /** Peak blur. Scale to the type size — see DEFAULT_BLUR_PX. */
   blurPx?: number;
+  /**
+   * False holds the sequence on its opening line with the clock stopped —
+   * for a component that mounts before it's actually visible. Flip to true
+   * once shown and the delay/hold/morph timeline starts fresh from there.
+   */
+  active?: boolean;
   as?: "div" | "h1" | "h2" | "p";
 }) {
   const filterId = React.useId().replace(/:/g, "");
@@ -233,7 +258,8 @@ export function MorphingText({
     holdSeconds,
     delaySeconds,
     blurPx,
-    onSettled
+    onSettled,
+    active
   );
 
   // A single line never morphs, so it needs no threshold.
