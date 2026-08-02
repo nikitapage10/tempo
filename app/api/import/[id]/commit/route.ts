@@ -40,6 +40,7 @@ function safeSpotifyArtworkUrl(value: string | null): URL | null {
 
 async function copySpotifyArtwork(
   ctx: NonNullable<Awaited<ReturnType<typeof resolveImport>>>,
+  userStorage: ReturnType<typeof createServerClient>,
   trackId: string,
   trackTitle: string,
   source: string
@@ -83,7 +84,10 @@ async function copySpotifyArtwork(
     entityId: assetId,
     filename: `spotify-cover.${extension}`,
   });
-  const { error: uploadError } = await ctx.admin.storage
+  // Upload through the signed-in user's client so Supabase records the object
+  // as user-owned. Service-role uploads can be written successfully while
+  // still being unreadable through the browser's private-bucket policies.
+  const { error: uploadError } = await userStorage.storage
     .from("audio")
     .upload(path, bytes, { contentType, cacheControl: "31536000", upsert: false });
   if (uploadError) throw uploadError;
@@ -366,7 +370,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     for (let i = 0; i < jobs.length; i += 4) {
       const results = await Promise.allSettled(
         jobs.slice(i, i + 4).map((job) =>
-          copySpotifyArtwork(ctx, job.trackId, job.track.title, job.source)
+          copySpotifyArtwork(
+            ctx,
+            supabase,
+            job.trackId,
+            job.track.title,
+            job.source
+          )
         )
       );
       for (const result of results) {

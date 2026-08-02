@@ -20,6 +20,28 @@ function isAbsoluteSrc(path: string): boolean {
   );
 }
 
+async function resolveSignedImage(path: string): Promise<string> {
+  try {
+    return await getSignedUrl(path);
+  } catch (error) {
+    const match = path.match(
+      /^tracks\/([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/assets\//i
+    );
+    if (!match) throw error;
+
+    const response = await fetch(`/api/tracks/${match[1]}/artwork-url`, {
+      cache: "no-store",
+    });
+    const body = (await response.json().catch(() => null)) as
+      | { url?: string; error?: string }
+      | null;
+    if (!response.ok || !body?.url) {
+      throw new Error(body?.error || "Could not create a cover link.");
+    }
+    return body.url;
+  }
+}
+
 /** Resolves a storage path (or absolute URL) to a signed img src. */
 export function SignedImage({
   path,
@@ -51,7 +73,7 @@ export function SignedImage({
     }
 
     setSrc(null);
-    getSignedUrl(path)
+    resolveSignedImage(path)
       .then((url) => {
         if (!cancelled) setSrc(url);
       })
