@@ -79,6 +79,17 @@ async function spotifyGet<T>(path: string): Promise<T> {
   if (res.status === 429) {
     throw new Error("Spotify is rate-limiting us — try again in a minute.");
   }
+  if (res.status === 403) {
+    const detail = await res.text().catch(() => "");
+    console.error("[spotify] catalog request denied", {
+      path,
+      status: res.status,
+      detail: detail.slice(0, 500),
+    });
+    throw new Error(
+      "Spotify denied catalog access. In Development Mode, make sure the app owner has an active Spotify Premium subscription."
+    );
+  }
   if (!res.ok) throw new Error(`Spotify request failed (${res.status}).`);
   return (await res.json()) as T;
 }
@@ -351,7 +362,13 @@ async function inBatches<T, R>(
   return results;
 }
 
-/** Full track records, including ISRC and album artwork, in API-sized batches. */
+/**
+ * Full track records, including ISRC and album artwork.
+ *
+ * Spotify removed the bulk `GET /tracks?ids=...` endpoint from Development
+ * Mode in February 2026. Fetch the supported single-track endpoint instead,
+ * keeping concurrency low enough to avoid a burst against Spotify's quota.
+ */
 export async function fetchSpotifyTracks(
   trackIds: string[]
 ): Promise<SpotifyCatalogTrack[]> {
@@ -359,17 +376,10 @@ export async function fetchSpotifyTracks(
     new Set(trackIds.filter((id) => /^[A-Za-z0-9]{22}$/.test(id)))
   ).slice(0, 500);
   if (ids.length === 0) return [];
-  const chunks: string[][] = [];
-  for (let i = 0; i < ids.length; i += 50) chunks.push(ids.slice(i, i + 50));
-
-  const pages = await inBatches(chunks, 4, async (chunk) =>
-    spotifyGet<{ tracks?: (SpotifyFullTrack | null)[] }>(
-      `/tracks?ids=${encodeURIComponent(chunk.join(","))}`
-    )
+  const tracks = await inBatches(ids, 5, (id) =>
+    spotifyGet<SpotifyFullTrack>(`/tracks/${encodeURIComponent(id)}`)
   );
-  return pages.flatMap((page) =>
-    (page.tracks ?? []).filter((track): track is SpotifyFullTrack => !!track).map(asCatalogTrack)
-  );
+  return tracks.map(asCatalogTrack);
 }
 
 /**
