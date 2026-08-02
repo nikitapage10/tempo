@@ -3,7 +3,33 @@
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { ChevronDown, ChevronUp, GripVertical, Pencil, Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
+import { SignedImage } from "@/components/ui/signed-image";
+import type { TrackGroupAccent } from "@/lib/types";
 import { cn } from "@/lib/utils";
+
+/**
+ * How each tint paints.
+ *
+ * A wash rather than a fill: the surface stays in the Spectra dark family and
+ * the colour reads as a label on the group, not as a coloured box. The left
+ * rule is what actually does the distinguishing at a glance — the background is
+ * only there to bind the tracks to their header.
+ */
+const ACCENT_SURFACE: Record<TrackGroupAccent, string> = {
+  ice: "border-ice/25 bg-ice/[0.045]",
+  amber: "border-amber/25 bg-amber/[0.045]",
+  violet: "border-violet/25 bg-violet/[0.045]",
+  ok: "border-ok/25 bg-ok/[0.045]",
+  warn: "border-warn/25 bg-warn/[0.045]",
+};
+
+const ACCENT_RULE: Record<TrackGroupAccent, string> = {
+  ice: "bg-ice/70",
+  amber: "bg-amber/70",
+  violet: "bg-violet/70",
+  ok: "bg-ok/70",
+  warn: "bg-warn/70",
+};
 
 export const UNGROUPED_DROP_ID = "drop:ungrouped";
 
@@ -46,6 +72,9 @@ type TrackGroupSectionProps = {
   title?: string;
   /** Present only for real groups: the id this section drags under. */
   sortId?: string;
+  /** Optional album/EP image, as a storage path. */
+  coverUrl?: string | null;
+  accent?: TrackGroupAccent | null;
   count: number;
   canDrag: boolean;
   densityClass?: string;
@@ -61,6 +90,8 @@ export function TrackGroupSection({
   dropId,
   title,
   sortId,
+  coverUrl,
+  accent,
   count,
   canDrag,
   densityClass = "space-y-2",
@@ -94,11 +125,23 @@ export function TrackGroupSection({
     <section
       ref={setNodeRef}
       className={cn(
-        "rounded-card border border-transparent transition-colors duration-hover",
+        "relative rounded-card border border-transparent transition-colors duration-hover",
+        // A tinted group is a container you can see the edges of; an untinted
+        // one keeps the old flush look so nothing changes for existing groups.
+        accent ? cn("px-3 py-2.5", ACCENT_SURFACE[accent]) : null,
         highlight && "border-ice/30 bg-ice/[0.03]",
         isDragging && "opacity-40"
       )}
     >
+      {accent ? (
+        <span
+          aria-hidden
+          className={cn(
+            "absolute inset-y-2 left-0 w-[2px] rounded-full",
+            ACCENT_RULE[accent]
+          )}
+        />
+      ) : null}
       {title ? (
       <header className="mb-1.5 flex items-center gap-2 px-0.5">
         {canReorderGroup ? (
@@ -112,6 +155,13 @@ export function TrackGroupSection({
           >
             <GripVertical className="size-3.5" />
           </button>
+        ) : null}
+        {coverUrl ? (
+          <SignedImage
+            path={coverUrl}
+            alt=""
+            className="size-9 shrink-0 rounded-input object-cover"
+          />
         ) : null}
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2">

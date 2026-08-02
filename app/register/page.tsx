@@ -259,6 +259,18 @@ function RegisterForm() {
             </Link>
           </p>
         </form>
+
+        <p className="text-center text-[11px] text-text-lo">
+          By creating an account you agree to the{" "}
+          <Link href="/terms" className="text-ice hover:underline">
+            Terms
+          </Link>{" "}
+          and{" "}
+          <Link href="/privacy" className="text-ice hover:underline">
+            Privacy policy
+          </Link>
+          .
+        </p>
       </div>
     </AuthShell>
   );

@@ -8,6 +8,18 @@
     --bg-0: #0a0a0c;
     --bg-1: #121216;
     --bg-2: #1a1a21;
+
+    /* The same four surfaces as bare RGB channels.
+     *
+     * Tailwind can only apply an opacity modifier (`bg-bg-2/60`) to a custom
+     * colour if the colour is declared as `rgb(<channels> / <alpha-value>)`.
+     * Pointed straight at `var(--bg-2)` — a hex string — it emitted an invalid
+     * declaration that browsers dropped, so every one of those classes across
+     * the app painted nothing at all and the surface was fully transparent.
+     * Keep these in step with the hex values above. */
+    --bg-0-rgb: 10 10 12;
+    --bg-1-rgb: 18 18 22;
+    --bg-2-rgb: 26 26 33;
     --line: #26262e;
     --text-hi: #f2f0eb;
     --text-lo: #8b8b96;
@@ -26,6 +38,7 @@
      * give surfaces a lit top edge + cast shadow. Hues are unchanged.
      */
     --bg-3: #1f1f27;
+    --bg-3-rgb: 31 31 39;
 
     /* Lit top edge — the 1px highlight that sells depth on dark UI */
     --edge-hi: rgb(255 255 255 / 0.055);
@@ -789,15 +802,18 @@
 
 /* ORIGIN — the one place the film's vertical position is tuned.
 
-   The supplied footage carries its subject (the light streak) slightly below
-   the optical centre of the frame, while every line of intro copy is centred in
-   the viewport. Rather than nudging each slide, the whole media layer is
-   shifted once here and every step inherits it.
+   Measured against frame-01: the light streak's luminance centroid sits at
+   0.497 of the frame height, i.e. already on the centre line, and `object-fit:
+   cover` crops symmetrically — so the film needs no correction of its own and
+   this is 0. What was actually throwing the intro out of line was the copy:
+   the "tap anywhere" cue shared a column with the heading and pushed it up by
+   half its own height. That is fixed where it belongs, in the awaken step.
 
-   The layer is grown vertically by `--origin-media-bleed` so the shift can
-   never expose the page background at the top or bottom edge. */
+   The token stays because it is the right place to nudge from if the footage
+   is ever recut. The layer is grown vertically by `--origin-media-bleed` so a
+   non-zero value can never expose the page background at an edge. */
 :root {
-  --origin-media-offset-y: -2.4vh;
+  --origin-media-offset-y: 0vh;
   --origin-media-bleed: 6vh;
 }
 

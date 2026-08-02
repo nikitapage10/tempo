@@ -32,6 +32,13 @@ Three environment variables, set in BOTH places:
   missing, guest review links will fail closed (generic "not available")
   instead of leaking data.
 
+### Social sign-in (Google / Microsoft / Apple)
+The buttons are already in the UI. To make them work, register each provider
+with the vendor and enable it in Supabase — full steps in **`OAUTH-SETUP.md`**.
+Also allow `https://tempo-ten-sigma.vercel.app/auth/callback` (and localhost
+for dev) under Supabase → Authentication → URL Configuration. Password-reset
+emails use that same callback with `next=/reset-password`.
+
 ## Database changes (migrations)
 
 For v0.62.0 messaging, run `migrations/039_messaging_inbox.sql` after the

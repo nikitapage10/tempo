@@ -17,7 +17,18 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { FolderPlus, GripVertical, Pause, Play, Plus, Rows2, Rows3, Trash2, X } from "lucide-react";
+import {
+  FolderPlus,
+  GripVertical,
+  Image as ImageIcon,
+  Pause,
+  Play,
+  Plus,
+  Rows2,
+  Rows3,
+  Trash2,
+  X,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useActiveSpace } from "@/components/active-space-provider";
@@ -56,6 +67,8 @@ import {
   useTrackGroupMutations,
   useTrackGroups,
 } from "@/hooks/use-track-groups";
+import { TRACK_GROUP_ACCENTS } from "@/lib/api/track-groups";
+import { SignedImage } from "@/components/ui/signed-image";
 import { useTrackMutations, useTracks } from "@/hooks/use-tracks";
 import { useVersionsForTracks } from "@/hooks/use-versions";
 import { deriveAttentionSignals } from "@/lib/attention/signals";
@@ -65,8 +78,24 @@ import {
   momentumDotClass,
   typeChipClass,
 } from "@/lib/track-style";
-import type { Track, TrackGroup, TrackInsert, TrackListPreset, TrackType } from "@/lib/types";
+import type {
+  Track,
+  TrackGroup,
+  TrackGroupAccent,
+  TrackInsert,
+  TrackListPreset,
+  TrackType,
+} from "@/lib/types";
 import { cn } from "@/lib/utils";
+
+/** Solid swatches for the colour picker — the surfaces themselves are washes. */
+const ACCENT_SWATCH: Record<TrackGroupAccent, string> = {
+  ice: "bg-ice",
+  amber: "bg-amber",
+  violet: "bg-violet",
+  ok: "bg-ok",
+  warn: "bg-warn",
+};
 
 type BuiltinSort = "custom" | "title" | "stage" | "updated" | "deadline";
 type SortSelection = BuiltinSort | `preset:${string}`;
@@ -207,15 +236,27 @@ function trackGroupKey(track: Track, groups: TrackGroup[]): GroupKey {
 type TrackSection = {
   groupId: GroupKey;
   name: string;
+  /** Position among the other sections. Groups carry their own; the ungrouped
+   *  run borrows the space's `ungrouped_sort`. */
+  sort: number;
   tracks: Track[];
 };
 
+/**
+ * Groups and the ungrouped run, in the order they appear on the page.
+ *
+ * The ungrouped tracks aren't a group, so they have no row and no sort of their
+ * own — their position is `ungroupedSort` on the space, which defaults to -1 so
+ * loose tracks sit above every group. Interleaving here rather than always
+ * appending is what lets a group be moved over the top of them.
+ */
 function buildTrackSections(
   tracks: Track[],
-  groups: TrackGroup[]
+  groups: TrackGroup[],
+  ungroupedSort: number
 ): TrackSection[] {
   if (groups.length === 0) {
-    return [{ groupId: null, name: "", tracks }];
+    return [{ groupId: null, name: "", sort: ungroupedSort, tracks }];
   }
 
   const byGroup = new Map<GroupKey, Track[]>();
@@ -228,17 +269,23 @@ function buildTrackSections(
 
   const sections: TrackSection[] = groups.map((g) => ({
     groupId: g.id,
+    // No heading for the ungrouped run: it isn't a container, so naming it
+    // would invent one.
     name: g.name,
+    sort: g.sort,
     tracks: byGroup.get(g.id)!,
   }));
-  // No heading: these tracks aren't in a container, so labelling them invents
-  // one. They simply sit under the named groups.
   sections.push({
     groupId: null,
     name: "",
+    sort: ungroupedSort,
     tracks: byGroup.get(null)!,
   });
-  return sections;
+
+  // Stable: ties keep groups ahead of the ungrouped run.
+  return sections.sort(
+    (a, b) => a.sort - b.sort || (a.groupId === null ? 1 : -1)
+  );
 }
 
 function resolveDropGroup(
@@ -273,7 +320,9 @@ export default function TracksPage() {
   const {
     create: createGroup,
     update: updateGroup,
-    reorder: reorderGroups,
+    reorderSections,
+    setCover: setGroupCover,
+    clearCover: clearGroupCover,
     remove: removeGroup,
   } = useTrackGroupMutations(activeSpaceId);
   const { toast } = useToast();
@@ -318,7 +367,11 @@ export default function TracksPage() {
     null | { mode: "create" } | { mode: "rename"; group: TrackGroup }
   >(null);
   const [groupName, setGroupName] = React.useState("");
+  const [groupAccent, setGroupAccent] =
+    React.useState<TrackGroupAccent | null>(null);
   const [savingGroup, setSavingGroup] = React.useState(false);
+  const [coverBusy, setCoverBusy] = React.useState(false);
+  const coverInputRef = React.useRef<HTMLInputElement>(null);
   const [deleteGroupTarget, setDeleteGroupTarget] =
     React.useState<TrackGroup | null>(null);
   const [overGroupId, setOverGroupId] = React.useState<GroupKey | undefined>(
@@ -359,9 +412,13 @@ export default function TracksPage() {
     [filtered, sortSelection, stageSort, presets]
   );
 
+  // -1 until migration 044 has been run, which is also the default it installs:
+  // loose tracks above the groups.
+  const ungroupedSort = activeSpace?.ungrouped_sort ?? -1;
+
   const sections = React.useMemo(
-    () => buildTrackSections(displayed, groups),
-    [displayed, groups]
+    () => buildTrackSections(displayed, groups, ungroupedSort),
+    [displayed, groups, ungroupedSort]
   );
 
   const showGroups = groups.length > 0;
@@ -483,14 +540,7 @@ export default function TracksPage() {
       setOverGroupId(undefined);
       return;
     }
-    const target = resolveDropGroup(String(overId), tracks, groups);
-    // A group can only land on another group — highlighting the ungrouped run
-    // would suggest a drop that does nothing.
-    if (parseGroupSortId(String(event.active.id)) && target === null) {
-      setOverGroupId(undefined);
-      return;
-    }
-    setOverGroupId(target);
+    setOverGroupId(resolveDropGroup(String(overId), tracks, groups));
   }
 
   function handleDragEnd(event: DragEndEvent) {
@@ -505,14 +555,15 @@ export default function TracksPage() {
     // rather than anything inside them.
     const draggedGroupId = parseGroupSortId(activeId);
     if (draggedGroupId) {
-      const overGroup = resolveDropGroup(overId, tracks, groups);
-      // Dropped on the ungrouped run, or on nothing recognisable.
-      if (!overGroup || overGroup === draggedGroupId) return;
-      const from = groups.findIndex((g) => g.id === draggedGroupId);
-      const to = groups.findIndex((g) => g.id === overGroup);
+      const overSection = resolveDropGroup(overId, tracks, groups);
+      if (overSection === undefined || overSection === draggedGroupId) return;
+      // The ungrouped run is a valid landing place — dropping a group onto it
+      // is how you move a group above (or below) your loose tracks.
+      const keys = sections.map((s) => s.groupId);
+      const from = keys.indexOf(draggedGroupId);
+      const to = keys.indexOf(overSection);
       if (from < 0 || to < 0 || from === to) return;
-      const next = arrayMove(groups, from, to);
-      reorderGroups.mutate(next.map((g, sort) => ({ id: g.id, sort })));
+      persistSectionOrder(arrayMove(keys, from, to));
       return;
     }
 
@@ -687,12 +738,45 @@ export default function TracksPage() {
 
   function openCreateGroup() {
     setGroupName("");
+    setGroupAccent(null);
     setGroupDialog({ mode: "create" });
   }
 
   function openRenameGroup(group: TrackGroup) {
     setGroupName(group.name);
+    setGroupAccent(group.accent_color);
     setGroupDialog({ mode: "rename", group });
+  }
+
+  /** The cover is saved immediately — it isn't part of the Save/Cancel pair,
+   *  because an upload isn't something to hold in memory until you confirm. */
+  async function handleCoverFile(file: File) {
+    if (groupDialog?.mode !== "rename") return;
+    setCoverBusy(true);
+    try {
+      const updated = await setGroupCover.mutateAsync({
+        group: groupDialog.group,
+        file,
+      });
+      setGroupDialog({ mode: "rename", group: updated });
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Couldn’t upload that image.");
+    } finally {
+      setCoverBusy(false);
+    }
+  }
+
+  async function handleClearCover() {
+    if (groupDialog?.mode !== "rename") return;
+    setCoverBusy(true);
+    try {
+      const updated = await clearGroupCover.mutateAsync(groupDialog.group);
+      setGroupDialog({ mode: "rename", group: updated });
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Couldn’t remove that cover.");
+    } finally {
+      setCoverBusy(false);
+    }
   }
 
   async function handleSaveGroup() {
@@ -702,13 +786,17 @@ export default function TracksPage() {
     try {
       if (groupDialog.mode === "create") {
         const group = await createGroup.mutateAsync(name);
+        if (groupAccent) {
+          await updateGroup.mutateAsync({ id: group.id, accentColor: groupAccent });
+        }
         toast(`Created “${group.name}”. Drag tracks into it.`, "ok");
       } else {
         await updateGroup.mutateAsync({
           id: groupDialog.group.id,
           name,
+          accentColor: groupAccent,
         });
-        toast(`Renamed to “${name}”.`, "ok");
+        toast(`Saved “${name}”.`, "ok");
       }
       setGroupDialog(null);
       setGroupName("");
@@ -731,12 +819,28 @@ export default function TracksPage() {
     }
   }
 
-  function moveGroup(groupId: string, direction: -1 | 1) {
-    const index = groups.findIndex((g) => g.id === groupId);
+  /**
+   * Persist one ordered list of section keys, `null` being the ungrouped run.
+   *
+   * Everything is renumbered from zero on each move so the group sorts and the
+   * space's `ungrouped_sort` can never end up describing two different orders.
+   */
+  function persistSectionOrder(keys: GroupKey[]) {
+    const groupSorts: { id: string; sort: number }[] = [];
+    let ungrouped = -1;
+    keys.forEach((key, sort) => {
+      if (key === null) ungrouped = sort;
+      else groupSorts.push({ id: key, sort });
+    });
+    reorderSections.mutate({ groups: groupSorts, ungroupedSort: ungrouped });
+  }
+
+  function moveSection(groupId: GroupKey, direction: -1 | 1) {
+    const keys = sections.map((s) => s.groupId);
+    const index = keys.indexOf(groupId);
     const swapWith = index + direction;
-    if (index < 0 || swapWith < 0 || swapWith >= groups.length) return;
-    const next = arrayMove(groups, index, swapWith);
-    reorderGroups.mutate(next.map((g, sort) => ({ id: g.id, sort })));
+    if (index < 0 || swapWith < 0 || swapWith >= keys.length) return;
+    persistSectionOrder(arrayMove(keys, index, swapWith));
   }
 
   const loading = spacesLoading || tracksQuery.isLoading;
@@ -1153,10 +1257,9 @@ export default function TracksPage() {
                       section.groupId === null
                         ? UNGROUPED_DROP_ID
                         : groupDropId(section.groupId);
-                    const groupIndex =
-                      section.groupId === null
-                        ? -1
-                        : groups.findIndex((g) => g.id === section.groupId);
+                    const sectionIndex = sections.findIndex(
+                      (s) => s.groupId === section.groupId
+                    );
                     const group =
                       section.groupId === null
                         ? null
@@ -1168,6 +1271,8 @@ export default function TracksPage() {
                         dropId={dropId}
                         title={section.name || undefined}
                         sortId={group ? groupSortId(group.id) : undefined}
+                        coverUrl={group?.cover_url ?? null}
+                        accent={group?.accent_color ?? null}
                         count={section.tracks.length}
                         canDrag={canDrag}
                         densityClass={densityListClass}
@@ -1179,15 +1284,13 @@ export default function TracksPage() {
                           group ? () => setDeleteGroupTarget(group) : undefined
                         }
                         onMoveUp={
-                          group && groupIndex > 0
-                            ? () => moveGroup(group.id, -1)
+                          group && sectionIndex > 0
+                            ? () => moveSection(section.groupId, -1)
                             : undefined
                         }
                         onMoveDown={
-                          group &&
-                          groupIndex >= 0 &&
-                          groupIndex < groups.length - 1
-                            ? () => moveGroup(group.id, 1)
+                          group && sectionIndex < sections.length - 1
+                            ? () => moveSection(section.groupId, 1)
                             : undefined
                         }
                       >
@@ -1306,12 +1409,10 @@ export default function TracksPage() {
         }}
       >
         <DialogContent
-          title={
-            groupDialog?.mode === "rename" ? "Rename group" : "New group"
-          }
+          title={groupDialog?.mode === "rename" ? "Edit group" : "New group"}
           description={
             groupDialog?.mode === "rename"
-              ? "Just the label on the Tracks list — projects stay as they are."
+              ? "Just how this reads on the Tracks list — projects stay as they are."
               : "An album, EP, playlist, or any bucket you want on Tracks. Separate from projects."
           }
           onClose={() => setGroupDialog(null)}
@@ -1333,7 +1434,108 @@ export default function TracksPage() {
               }}
             />
           </label>
-          <div className="mt-4 flex justify-end gap-2">
+
+          <div className="mt-4">
+            <span className="label-mono">Colour</span>
+            <p className="mt-1 text-[11px] text-text-lo/70">
+              Optional. Tints the group so it stands apart from the others.
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setGroupAccent(null)}
+                aria-pressed={groupAccent === null}
+                className={cn(
+                  "rounded-chip border px-2.5 py-1 text-[11px] transition-colors",
+                  groupAccent === null
+                    ? "border-text-hi/60 text-text-hi"
+                    : "border-line text-text-lo hover:text-text-hi"
+                )}
+              >
+                None
+              </button>
+              {TRACK_GROUP_ACCENTS.map(({ value, label }) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setGroupAccent(value)}
+                  aria-pressed={groupAccent === value}
+                  aria-label={label}
+                  title={label}
+                  className={cn(
+                    "size-6 rounded-full border-2 transition-transform",
+                    ACCENT_SWATCH[value],
+                    groupAccent === value
+                      ? "scale-110 border-text-hi"
+                      : "border-transparent hover:scale-105"
+                  )}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Cover art needs a saved group to attach to, so it only appears
+              once the group exists. */}
+          {groupDialog?.mode === "rename" ? (
+            <div className="mt-4">
+              <span className="label-mono">Cover</span>
+              <div className="mt-2 flex items-center gap-3">
+                {groupDialog.group.cover_url ? (
+                  <SignedImage
+                    path={groupDialog.group.cover_url}
+                    alt=""
+                    className="size-14 shrink-0 rounded-card object-cover"
+                  />
+                ) : (
+                  <div
+                    aria-hidden
+                    className="flex size-14 shrink-0 items-center justify-center rounded-card border border-dashed border-line/70 text-text-lo/50"
+                  >
+                    <ImageIcon className="size-4" />
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    disabled={coverBusy}
+                    onClick={() => coverInputRef.current?.click()}
+                  >
+                    {coverBusy
+                      ? "Uploading…"
+                      : groupDialog.group.cover_url
+                        ? "Replace"
+                        : "Add cover"}
+                  </Button>
+                  {groupDialog.group.cover_url ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      disabled={coverBusy}
+                      onClick={() => void handleClearCover()}
+                    >
+                      Remove
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+              <input
+                ref={coverInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = "";
+                  if (file) void handleCoverFile(file);
+                }}
+              />
+            </div>
+          ) : null}
+
+          <div className="mt-5 flex justify-end gap-2">
             <Button
               type="button"
               variant="ghost"

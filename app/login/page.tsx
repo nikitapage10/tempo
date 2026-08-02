@@ -126,6 +126,12 @@ function LoginForm() {
             </div>
           </div>
 
+          <p className="-mt-2 text-right text-xs">
+            <Link href="/forgot-password" className="text-ice hover:underline">
+              Forgot password?
+            </Link>
+          </p>
+
           {error && (
             <p className="text-sm text-warn" role="alert">
               {error}
@@ -156,6 +162,16 @@ function LoginForm() {
         </form>
 
         <OAuthButtons next={isSafeRedirect(redirectTo) ? redirectTo : "/"} />
+
+        <p className="text-center text-[11px] text-text-lo">
+          <Link href="/terms" className="hover:text-text-hi hover:underline">
+            Terms
+          </Link>
+          {" · "}
+          <Link href="/privacy" className="hover:text-text-hi hover:underline">
+            Privacy
+          </Link>
+        </p>
       </div>
     </AuthShell>
   );

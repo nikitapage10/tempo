@@ -18,12 +18,14 @@ import { useActiveArtist } from "@/components/active-artist-provider";
 import { fetchStages } from "@/lib/api/stages";
 import {
   commitImport,
+  bootstrapImportSpotifyCatalog,
   createImport,
   discardImport,
   extractAll,
   fetchImport,
   synthesize,
   type ImportSource,
+  type SpotifyCatalogBootstrap,
   type SpotifyImportPreview,
   type SpotifyImportSelection,
 } from "@/lib/api/onboarding-imports";
@@ -37,6 +39,77 @@ export type ImportStep =
   | "spotify"
   | "confirm"
   | "done";
+
+function normalizedImportTitle(value: string): string {
+  return value
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function mergeSpotifyCatalogPlan(
+  base: WorkspaceImportPlan,
+  spotify: Extract<SpotifyCatalogBootstrap, { found: true }>,
+): { plan: WorkspaceImportPlan; preview: SpotifyImportPreview } {
+  const incomingSpace = spotify.plan.spaces[0];
+  const reusedSpace = incomingSpace
+    ? base.spaces.find(
+        (space) =>
+          space.existingId && space.existingId === incomingSpace.existingId
+      )
+    : null;
+  const targetSpaceRef = reusedSpace?.ref ?? incomingSpace?.ref ?? null;
+  const spaces =
+    incomingSpace && !reusedSpace ? [...base.spaces, incomingSpace] : base.spaces;
+
+  const trackByTitle = new Map(
+    base.tracks.map((track) => [normalizedImportTitle(track.title), track])
+  );
+  const refMap = new Map<string, string>();
+  const spotifyTracks = spotify.plan.tracks.flatMap((track) => {
+    const existing = trackByTitle.get(normalizedImportTitle(track.title));
+    if (existing) {
+      refMap.set(track.ref, existing.ref);
+      return [];
+    }
+    const next = targetSpaceRef ? { ...track, spaceRef: targetSpaceRef } : track;
+    trackByTitle.set(normalizedImportTitle(next.title), next);
+    refMap.set(track.ref, next.ref);
+    return [next];
+  });
+  const tracks = [...base.tracks, ...spotifyTracks];
+  const titleByRef = new Map(tracks.map((track) => [track.ref, track.title]));
+  const seenPreviewRefs = new Set<string>();
+  const matches = spotify.preview.matches.flatMap((match) => {
+    const trackRef = refMap.get(match.trackRef) ?? match.trackRef;
+    if (seenPreviewRefs.has(trackRef)) return [];
+    seenPreviewRefs.add(trackRef);
+    return [
+      {
+        ...match,
+        trackRef,
+        tempoTitle: titleByRef.get(trackRef) ?? match.tempoTitle,
+      },
+    ];
+  });
+
+  const baseHasCatalog = base.tracks.length > 0 || base.projects.length > 0;
+  return {
+    plan: {
+      ...base,
+      spaces,
+      tracks,
+      questions: baseHasCatalog ? base.questions : [],
+      warnings: [...base.warnings, ...spotify.plan.warnings],
+      overview: [spotify.plan.overview, baseHasCatalog ? base.overview : ""]
+        .filter(Boolean)
+        .join(" "),
+    },
+    preview: { ...spotify.preview, matches },
+  };
+}
 
 export function ImportExperience({
   onComplete,
@@ -57,7 +130,7 @@ export function ImportExperience({
   // chapter inside ORIGIN, which finish in different places.
   const qc = useQueryClient();
   const { toast } = useToast();
-  const { spaces } = useActiveSpace();
+  const { spaces, activeSpace } = useActiveSpace();
   const { activeArtist } = useActiveArtist();
 
   const [importId, setImportId] = React.useState<string | null>(null);
@@ -152,6 +225,10 @@ export function ImportExperience({
 
   async function handleProcess() {
     if (!importId) return;
+    const spotifyTargetSpace =
+      activeSpace?.focus === "music"
+        ? activeSpace
+        : spaces.find((space) => space.focus === "music") ?? null;
     setBusy(true);
     setStep("processing");
     setPhase("extracting");
@@ -162,7 +239,39 @@ export function ImportExperience({
       await refreshSources();
 
       setPhase("synthesizing");
-      const nextPlan = await synthesize(importId);
+      const [spotifyBootstrap, synthesized] = await Promise.all([
+        spotifyTargetSpace && activeArtist
+          ? bootstrapImportSpotifyCatalog(
+              importId,
+              spotifyTargetSpace.id,
+              activeArtist.id,
+            )
+          : Promise.resolve({ found: false } as const),
+        synthesize(importId)
+          .then((value) => ({ value, error: null }))
+          .catch((error: unknown) => ({ value: null, error })),
+      ]);
+
+      if (synthesized.error && !spotifyBootstrap.found) throw synthesized.error;
+      let nextPlan =
+        synthesized.value ??
+        ({
+          spaces: [],
+          projects: [],
+          tracks: [],
+          tasks: [],
+          questions: [],
+          warnings: [],
+          overview: "",
+        } satisfies WorkspaceImportPlan);
+
+      if (spotifyBootstrap.found) {
+        const merged = mergeSpotifyCatalogPlan(nextPlan, spotifyBootstrap);
+        nextPlan = merged.plan;
+        setSpotifyPreview(merged.preview);
+      } else {
+        setSpotifyPreview(null);
+      }
 
       if (nextPlan.tracks.length === 0 && nextPlan.projects.length === 0) {
         toast("TEMPO couldn’t find any tracks in that. Try adding more detail.");
@@ -364,7 +473,16 @@ export function ImportExperience({
           tracks={plan.tracks
             .filter((track) => selection.trackRefs.has(track.ref))
             .map((track) => ({ ref: track.ref, title: track.title }))}
-          preview={spotifyPreview}
+          preview={
+            spotifyPreview
+              ? {
+                  ...spotifyPreview,
+                  matches: spotifyPreview.matches.filter((match) =>
+                    selection.trackRefs.has(match.trackRef)
+                  ),
+                }
+              : null
+          }
           onPreviewChange={setSpotifyPreview}
           onBack={() => setStep("review")}
           onSkip={() => {

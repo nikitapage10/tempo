@@ -5,6 +5,7 @@ import {
   resolveImport,
 } from "@/lib/import-server";
 import { askFollowups } from "@/lib/ai/ask-followups";
+import { parseSpotifyArtistId } from "@/lib/platforms/spotify";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -38,6 +39,25 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     return NextResponse.json(
       { observation: "", questions: [], enoughToProceed: false },
       { headers: noStoreHeaders() },
+    );
+  }
+
+  const hasSpotifyArtist = usable.some((source) =>
+    Boolean(parseSpotifyArtistId(String(source.extracted_text ?? "")))
+  );
+  if (hasSpotifyArtist) {
+    const spotifyConfigured = Boolean(
+      process.env.SPOTIFY_CLIENT_ID && process.env.SPOTIFY_CLIENT_SECRET
+    );
+    return NextResponse.json(
+      {
+        observation: spotifyConfigured
+          ? "I found the Spotify artist profile. TEMPO can read its released catalog directly, so you don't need to paste a track list."
+          : "I found the Spotify artist profile, but this TEMPO server still needs its Spotify client ID and secret configured before it can read the catalog.",
+        questions: [],
+        enoughToProceed: spotifyConfigured,
+      },
+      { headers: noStoreHeaders() }
     );
   }
 

@@ -11,7 +11,13 @@ export async function updateSession(request: NextRequest) {
 
   if (!supabaseUrl || !anonKey) {
     const path = request.nextUrl.pathname;
-    if (!path.startsWith("/login") && !path.startsWith("/register")) {
+    if (
+      !path.startsWith("/login") &&
+      !path.startsWith("/register") &&
+      !path.startsWith("/forgot-password") &&
+      !path.startsWith("/terms") &&
+      !path.startsWith("/privacy")
+    ) {
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = "/login";
       return NextResponse.redirect(redirectUrl);
@@ -46,8 +52,13 @@ export async function updateSession(request: NextRequest) {
   const isAuthRoute =
     path.startsWith("/login") ||
     path.startsWith("/register") ||
+    path.startsWith("/forgot-password") ||
     path.startsWith("/auth");
 
+  const isLegalRoute = path === "/terms" || path === "/privacy";
+
+  // Password reset lands here after the email link exchanges a session.
+  const isResetPasswordRoute = path.startsWith("/reset-password");
   // Guest review is intentionally public — exact `/review` and `/api/review`
   // prefixes only (SECURITY-AND-PERMISSIONS.md §4, TECHNICAL-ARCHITECTURE §3).
   // The route handlers under /api/review/* independently validate the guest
@@ -85,20 +96,36 @@ export async function updateSession(request: NextRequest) {
     path === "/api/p" ||
     path.startsWith("/api/p/");
 
+  // Local test sign-in. Reachable without a session for the obvious reason —
+  // creating one is its entire job. Gated here on NODE_ENV so the path is not
+  // even exempt in a deployed build, and gated again on NODE_ENV, a loopback
+  // host and DEV_TEST_EMAIL inside the handler. See app/api/dev/session.
+  const isDevSessionRoute =
+    process.env.NODE_ENV === "development" && path === "/api/dev/session";
+
   if (
     !user &&
     !isAuthRoute &&
+    !isLegalRoute &&
+    !isResetPasswordRoute &&
     !isGuestReviewRoute &&
     !isInviteRoute &&
     !isInviteCodeCheckRoute &&
-    !isPublicProfileRoute
+    !isPublicProfileRoute &&
+    !isDevSessionRoute
   ) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/login";
     return NextResponse.redirect(redirectUrl);
   }
 
-  if (user && (path.startsWith("/login") || path.startsWith("/register"))) {
+  // Recovery sessions need /reset-password; don't bounce them to Today.
+  if (
+    user &&
+    (path.startsWith("/login") ||
+      path.startsWith("/register") ||
+      path.startsWith("/forgot-password"))
+  ) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/";
     return NextResponse.redirect(redirectUrl);

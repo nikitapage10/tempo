@@ -64,6 +64,7 @@ export function useOriginState(revisit = false, replay = false): OriginControlle
 
     const staticMode = prefersReducedMotion() || networkProfile() === "save-data";
     let cancelled = false;
+    let settled = false;
 
     void (async () => {
       let resume = null;
@@ -95,11 +96,22 @@ export function useOriginState(revisit = false, replay = false): OriginControlle
       if (!resume?.artistNameDraft && activeArtist?.name) {
         dispatch({ type: "set_name", name: activeArtist.name });
       }
+      settled = true;
       setHydrated(true);
     })();
 
     return () => {
       cancelled = true;
+      // If the read hadn't landed yet, let the next run redo it.
+      //
+      // Without this, ORIGIN could hang on its black floor forever. The effect
+      // is torn down and re-run whenever its deps change — `activeArtist?.name`
+      // arrives a beat after `artistId` does, and React's dev double-invoke
+      // does the same thing on mount. The re-run then hit the `bootedRef`
+      // guard and returned immediately, while the cancelled first run bailed at
+      // `if (cancelled)` just before setting `hydrated`. Nothing was left to
+      // finish the boot.
+      if (!settled) bootedRef.current = false;
     };
   }, [artistId, activeArtist?.name, revisit, replay]);
 

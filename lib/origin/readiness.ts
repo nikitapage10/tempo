@@ -251,15 +251,29 @@ export class OriginMediaPool {
 
   constructor(profile: NetworkProfile = networkProfile()) {
     this.profile = profile;
-    if (typeof document !== "undefined") {
-      const onVis = () => {
-        this.visible = document.visibilityState === "visible";
-        if (this.visible) this.pump();
-      };
-      document.addEventListener("visibilitychange", onVis);
+    this.arm();
+  }
+
+  /**
+   * Attach the visibility listener and read the current state.
+   *
+   * Split out of the constructor so `destroy()` can be undone. React's dev
+   * double-invoke runs the mount cleanup once and then re-runs the effect
+   * against the *same* pool instance — which used to leave it detached, with
+   * `visible` frozen at whatever it was, so `pump()` returned early forever and
+   * nothing was ever preloaded. Every readiness gate then stayed shut and the
+   * flow stopped at "One moment…". Production never double-invokes, so this
+   * only ever bit `next dev` — which is exactly where the film gets worked on.
+   */
+  private arm() {
+    if (typeof document === "undefined" || this.detach) return;
+    const onVis = () => {
       this.visible = document.visibilityState === "visible";
-      this.detach = () => document.removeEventListener("visibilitychange", onVis);
-    }
+      if (this.visible) this.pump();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    this.visible = document.visibilityState === "visible";
+    this.detach = () => document.removeEventListener("visibilitychange", onVis);
   }
 
   /** Fires only when some asset's readiness category changes. */
@@ -286,6 +300,8 @@ export class OriginMediaPool {
 
   /** Queue an asset. Calling again with "high" promotes without restarting. */
   request(key: OriginMediaKey, priority: LoadPriority = "low") {
+    // A request after `destroy()` means the flow is live again — see arm().
+    this.arm();
     const e = this.entry(key);
     if (priority === "high") e.priority = "high";
     this.pump();
@@ -293,6 +309,7 @@ export class OriginMediaPool {
 
   /** Start now, ignoring queue limits — for the asset about to be seen. */
   demand(key: OriginMediaKey) {
+    this.arm();
     const e = this.entry(key);
     e.priority = "high";
     e.start();

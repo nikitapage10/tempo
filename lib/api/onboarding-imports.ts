@@ -219,6 +219,25 @@ export type SpotifyImportSelection = {
   matches: { trackRef: string; spotifyTrackId: string }[];
 };
 
+export type SpotifyCatalogBootstrap =
+  | { found: false }
+  | {
+      found: true;
+      plan: WorkspaceImportPlan;
+      preview: SpotifyImportPreview;
+    };
+
+export async function bootstrapImportSpotifyCatalog(
+  importId: string,
+  spaceId: string,
+  artistId: string,
+): Promise<SpotifyCatalogBootstrap> {
+  return request<SpotifyCatalogBootstrap>(`/api/import/${importId}/spotify`, {
+    method: "POST",
+    body: JSON.stringify({ action: "bootstrap", spaceId, artistId }),
+  });
+}
+
 export async function searchImportSpotifyArtists(
   importId: string,
   query: string

@@ -287,6 +287,11 @@ export type Space = {
   name: string;
   sort: number;
   accent_color: string | null;
+  /**
+   * Where the run of ungrouped tracks sits among the groups on Tracks
+   * (migration 044). -1 by default, i.e. above every group.
+   */
+  ungrouped_sort: number;
   focus: SpaceFocus;
   created_at: string;
 };
@@ -376,12 +381,18 @@ export type TrackUpdate = Partial<
 >;
 
 /** Named Tracks-page group (album / EP / playlist / etc). Migration 041. */
+/** One of the fixed tints a group can carry (migration 044). */
+export type TrackGroupAccent = "ice" | "amber" | "violet" | "ok" | "warn";
+
 export type TrackGroup = {
   id: string;
   user_id: string;
   space_id: string;
   name: string;
   sort: number;
+  /** Storage path of the optional album/EP image. Private bucket. */
+  cover_url: string | null;
+  accent_color: TrackGroupAccent | null;
   created_at: string;
   updated_at: string;
 };

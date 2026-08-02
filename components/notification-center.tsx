@@ -9,36 +9,8 @@ import {
   useUnreadNotificationCount,
 } from "@/hooks/use-notifications";
 import { formatShortDate } from "@/lib/format";
-import type { AppNotification } from "@/lib/types";
+import { notificationHref } from "@/lib/notifications/href";
 import { cn } from "@/lib/utils";
-
-/** Best-effort deep link — panel tab depends on notification type. */
-function notificationHref(n: AppNotification): string {
-  if (n.link_url) return n.link_url;
-  if (!n.track_id) {
-    if (n.entity_type === "conversation" && n.entity_id) {
-      return `/messages?c=${n.entity_id}`;
-    }
-    if (n.entity_type === "post" && n.entity_id) {
-      return `/social?post=${n.entity_id}`;
-    }
-    if (n.entity_type === "profile" && n.actor_profile_id) {
-      return "/social";
-    }
-    return "/";
-  }
-  switch (n.type) {
-    case "invite_accepted":
-      return `/track/${n.track_id}?panel=people`;
-    case "comment_reply":
-    case "comment_assigned":
-      return `/track/${n.track_id}?panel=comments`;
-    case "new_version":
-      return `/track/${n.track_id}`;
-    default:
-      return `/track/${n.track_id}`;
-  }
-}
 
 export function NotificationCenter() {
   const [open, setOpen] = React.useState(false);
@@ -141,6 +113,16 @@ export function NotificationCenter() {
               })
             )}
           </ul>
+
+          <div className="border-t border-line px-3 py-2">
+            <Link
+              href="/settings?tab=notifications"
+              onClick={() => setOpen(false)}
+              className="block text-center text-[11px] text-ice hover:underline"
+            >
+              View all notifications
+            </Link>
+          </div>
         </div>
       ) : null}
     </div>

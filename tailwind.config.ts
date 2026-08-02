@@ -10,11 +10,14 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // Channel form, not `var(--bg-N)`: it is the only way Tailwind can
+        // build `bg-bg-2/60` and friends. See the --bg-*-rgb note in
+        // globals.css — 116 such classes were silently painting nothing.
         bg: {
-          0: "var(--bg-0)",
-          1: "var(--bg-1)",
-          2: "var(--bg-2)",
-          3: "var(--bg-3)",
+          0: "rgb(var(--bg-0-rgb) / <alpha-value>)",
+          1: "rgb(var(--bg-1-rgb) / <alpha-value>)",
+          2: "rgb(var(--bg-2-rgb) / <alpha-value>)",
+          3: "rgb(var(--bg-3-rgb) / <alpha-value>)",
         },
         line: "var(--line)",
         "text-hi": "var(--text-hi)",

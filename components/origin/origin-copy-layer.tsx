@@ -101,9 +101,14 @@ export function StepFade({
     const first = requestAnimationFrame(() => {
       second = requestAnimationFrame(() => setPrimed(true));
     });
+    // rAF does not run in a tab that isn't compositing, and this gate holds
+    // `visibility: hidden`. Without a timer a panel that mounted in a
+    // backgrounded tab would still be invisible when the artist came back.
+    const fallback = setTimeout(() => setPrimed(true), 120);
     return () => {
       cancelAnimationFrame(first);
       cancelAnimationFrame(second);
+      clearTimeout(fallback);
     };
   }, []);
 

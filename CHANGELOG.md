@@ -4,6 +4,37 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-02
 
+- Fixed (v0.80.0): translucent surfaces across the whole app were painting
+  nothing at all — panels, menus and toolbars were see-through and held up only
+  by their blur and borders. They now have the fills they were always meant to.
+  This is why Origin's panels looked washed out with the film reading through
+  the words; it was never really about the fade.
+- Added (v0.80.0): groups on Tracks can carry a cover image and a colour. The
+  cover shows as a thumbnail beside the name, and the colour tints the group so
+  an EP reads as one block instead of another anonymous list. Both are optional
+  — a group with neither looks exactly as it did.
+- Changed (v0.80.0): tracks that aren't in a group now sit at the top of the
+  list by default, above the groups. You can still move any group above them.
+- Fixed (v0.80.0): Origin could open on a black screen and never start, and its
+  films sometimes never began downloading, leaving it stuck on "One moment…".
+- Under the hood (v0.80.0): run `migrations/044_track_group_identity.sql` in
+  Supabase before using group covers or colours. Until you do, Tracks works
+  exactly as before and says so if you try to reorder.
+
+- Added (v0.79.0): Forgot password on the sign-in screen — TEMPO emails a reset
+  link, then you choose a new password. Also added public Terms of use and
+  Privacy policy pages, linked from sign-in, create-account, and Account
+  settings.
+- Under the hood (v0.79.0): step-by-step Google / Microsoft / Apple setup lives
+  in the OAuth setup guide; allow the production `/auth/callback` URL in
+  Supabase for both social sign-in and password reset.
+- Added (v0.78.0): Settings → Notifications is a full activity inbox — filter by
+  catalog, social, messages, calendar, or support, mark all read, dismiss
+  individual items, and jump into the related place. The bell still shows recent
+  ones and links to View all.
+- Added (v0.78.0): Settings → Account covers email, password, sign-out, links to
+  profile visibility and DM settings on Artist, help, and a typed-confirm
+  delete-account path.
 - Changed (v0.77.1): Settings Studio / Catalog / Account are real tabs now —
   each one shows only that section instead of scrolling the whole page.
 - Changed (v0.77.0): Settings is no longer one long stack of identical boxes.

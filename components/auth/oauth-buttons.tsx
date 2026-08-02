@@ -28,8 +28,9 @@ type OAuthButtonsProps = {
  *
  * Each provider has to be turned on in Supabase → Authentication → Providers
  * (and have its own app registered with that vendor) before its button will
- * actually complete a sign-in — see SECURITY-AND-PERMISSIONS.md. Until then
- * the button still renders; Supabase just returns an error, shown as a toast.
+ * actually complete a sign-in — step-by-step: `OAUTH-SETUP.md` in the repo
+ * root. Until then the button still renders; Supabase just returns an error,
+ * shown as a toast.
  */
 export function OAuthButtons({ next = "/" }: OAuthButtonsProps) {
   const { toast } = useToast();

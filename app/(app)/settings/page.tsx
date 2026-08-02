@@ -3,28 +3,23 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import {
-  HelpCircle,
-  Import,
-  LogOut,
-  Sparkles,
-  UserRound,
-} from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { Import, Sparkles } from "lucide-react";
 import { ArtistsManager } from "@/components/artists/artists-manager";
 import { SpacesManager } from "@/components/spaces/spaces-manager";
+import { AccountPanel } from "@/components/settings/account-panel";
 import { CatalogBackupPanel } from "@/components/settings/catalog-backup-panel";
+import { NotificationsPanel } from "@/components/settings/notifications-panel";
 import { FlareLine } from "@/components/flare-line";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
-import { SupportReportDialog } from "@/components/support/support-report-dialog";
 import { APP_VERSION } from "@/lib/version";
 import { cn } from "@/lib/utils";
 
 const TABS = [
   { id: "studio", label: "Studio", hint: "Artists & spaces" },
   { id: "catalog", label: "Catalog", hint: "Import & backups" },
-  { id: "account", label: "Account", hint: "Help & sign out" },
+  { id: "notifications", label: "Notifications", hint: "Full activity" },
+  { id: "account", label: "Account", hint: "Sign-in & privacy" },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -117,8 +112,6 @@ function SettingsPageInner() {
   const paramTab = searchParams.get("tab");
   const active: TabId = isTabId(paramTab) ? paramTab : "studio";
 
-  const [signingOut, setSigningOut] = React.useState(false);
-
   React.useEffect(() => {
     if (active !== "studio") return;
     const hash = window.location.hash.replace(/^#/, "");
@@ -138,19 +131,11 @@ function SettingsPageInner() {
     router.replace(qs ? `/settings?${qs}` : "/settings", { scroll: false });
   }
 
-  async function handleSignOut() {
-    setSigningOut(true);
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/login");
-    router.refresh();
-  }
-
   return (
     <div className="mx-auto max-w-5xl">
       <PageHeader
         title="Settings"
-        subtitle="Artists, spaces, catalog backups, and your account — stage editing still lives on the board."
+        subtitle="Artists, spaces, notifications, catalog backups, and your account — stage editing still lives on the board."
       />
 
       <div className="lg:grid lg:grid-cols-[11rem_minmax(0,1fr)] lg:gap-8">
@@ -260,6 +245,22 @@ function SettingsPageInner() {
             </div>
           ) : null}
 
+          {active === "notifications" ? (
+            <div
+              role="tabpanel"
+              id="settings-panel-notifications"
+              aria-labelledby="settings-tab-notifications"
+            >
+              <SettingsPanel
+                eyebrow="Notifications"
+                title="Everything that pinged you"
+                description="Browse the full feed by area, mark things read, or dismiss what you don’t need. The bell still keeps the latest close."
+              >
+                <NotificationsPanel />
+              </SettingsPanel>
+            </div>
+          ) : null}
+
           {active === "account" ? (
             <div
               role="tabpanel"
@@ -268,47 +269,10 @@ function SettingsPageInner() {
             >
               <SettingsPanel
                 eyebrow="Account"
-                title="Help & this device"
-                description="Reach the TEMPO operator, or sign out on this browser."
+                title="Sign-in, privacy & this device"
+                description="Manage how you log in, where your profile is visible, and whether this account stays around."
               >
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="panel-quiet p-5">
-                    <div className="flex size-9 items-center justify-center rounded-full border border-ice/20 bg-ice/10">
-                      <HelpCircle className="size-4 text-ice" />
-                    </div>
-                    <p className="mt-4 font-display text-base font-semibold tracking-tight text-text-hi">
-                      Help &amp; support
-                    </p>
-                    <p className="mt-2 text-sm leading-relaxed text-text-lo">
-                      Report a bug, ask for help, or share feedback.
-                    </p>
-                    <div className="mt-4">
-                      <SupportReportDialog compact />
-                    </div>
-                  </div>
-
-                  <div className="panel-quiet p-5">
-                    <div className="flex size-9 items-center justify-center rounded-full border border-line bg-bg-2">
-                      <UserRound className="size-4 text-text-lo" />
-                    </div>
-                    <p className="mt-4 font-display text-base font-semibold tracking-tight text-text-hi">
-                      This device
-                    </p>
-                    <p className="mt-2 text-sm leading-relaxed text-text-lo">
-                      Sign out of TEMPO on this browser. Your catalog stays in
-                      the cloud.
-                    </p>
-                    <Button
-                      variant="secondary"
-                      className="mt-4"
-                      onClick={handleSignOut}
-                      disabled={signingOut}
-                    >
-                      <LogOut className="mr-1.5 size-3.5" />
-                      {signingOut ? "Signing out…" : "Sign out"}
-                    </Button>
-                  </div>
-                </div>
+                <AccountPanel />
               </SettingsPanel>
             </div>
           ) : null}
