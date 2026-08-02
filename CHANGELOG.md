@@ -4,6 +4,14 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-02
 
+- Changed (v0.77.0): Settings is no longer one long stack of identical boxes.
+  It opens with the shared page header, a jump nav for Studio / Catalog /
+  Account, and grouped sections with clearer hierarchy.
+- Changed (v0.76.1): the Admin console no longer lets you download a member’s
+  catalog JSON. You only see backup status (when snapshots ran, sizes, counts)
+  and can save a fresh snapshot without opening their songs or notes. Members
+  still export and restore from Settings → Your data.
+
 - Added (v0.76.0): Settings → Your data lets you export your catalog metadata
   (tracks, notes, projects, tasks, calendar, and related text), restore from a
   file, save a snapshot now, and merge back from automatic snapshots. Audio
@@ -12,7 +20,9 @@ Plain-English history of what changed in TEMPO, newest first.
   merge restore instead of treating it like a random spreadsheet. Messy or older
   JSON can still be reshaped with the same AI used for Import.
 - Added (v0.76.0): TEMPO takes nightly metadata snapshots for every account so
-  you (and support) have a short time machine of the text side of the catalog.
+  you have a short time machine of the text side of the catalog. The Admin
+  console only sees backup status, not the contents — members export and restore
+  from Settings → Your data.
 - Under the hood (v0.76.0): set `CRON_SECRET` in Vercel for the nightly job; see
   the backup runbook. Confirm Supabase Pro daily database backups are on.
 

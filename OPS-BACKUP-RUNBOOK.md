@@ -32,14 +32,21 @@ artists keep those in their own DAW / archives.
    Supabase’s restore flow. Coordinate downtime with members.
 4. Do **not** drop or truncate production tables to “fix” things.
 
-## Support: export one member’s catalog
+## Support: member catalog backups (privacy)
 
-Admin → Users → member → **Download catalog JSON**, or:
-`GET /api/admin/users/{id}/catalog?download=1` (admin session cookie).
+Admin → Users → member → **Catalog backups** shows opaque status only
+(snapshot time, size, track/project counts). There is **no** admin download of
+catalog JSON — titles, notes, and paths stay out of the Admin console.
 
-Listed snapshots: `GET /api/admin/users/{id}/catalog`.
+- **Save snapshot now** writes a metadata snapshot without returning its body
+  (`POST /api/admin/users/{id}/catalog`, audited as `member.catalog_snapshot`).
+- **List status:** `GET /api/admin/users/{id}/catalog`
+- Member-facing export/restore: Settings → Your data
+- Nuclear recovery: Supabase Dashboard → Database → Backups
 
-Actions are written to `admin_audit_log` as `member.catalog_exported`.
+Note: anyone with the Supabase service role or SQL editor can still query live
+tables. Removing Admin download closes the easy peek path in TEMPO; it is not
+full cryptographic privacy against database operators.
 
 ## Snapshot retention
 

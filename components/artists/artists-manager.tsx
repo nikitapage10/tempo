@@ -143,13 +143,8 @@ export function ArtistsManager() {
   }
 
   return (
-    <section
-      id="artists"
-      className="scroll-mt-8 rounded-card border border-line bg-bg-1 p-5"
-    >
-      <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
-        Artists
-      </p>
+    <section id="artists" className="panel scroll-mt-24 p-5">
+      <p className="label-mono">Artists</p>
       <p className="mt-2 text-sm text-text-lo">
         Each artist name you release under gets its own spaces, colors, logo,
         profile image and banner. Switch between them from the rail.

@@ -156,11 +156,9 @@ export function CatalogBackupPanel() {
   }
 
   return (
-    <section className="rounded-card border border-line bg-bg-1 p-5">
-      <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
-        Your data
-      </p>
-      <p className="mt-2 text-sm text-text-hi">
+    <section id="your-data" className="panel scroll-mt-24 p-5">
+      <p className="label-mono">Your data</p>
+      <p className="mt-2 text-sm text-text-lo">
         Export your catalog metadata anytime, restore from a file, or roll back
         to an automatic snapshot. Audio bounces stay in your own archives —
         this covers titles, notes, projects, tasks, and the rest of the text.

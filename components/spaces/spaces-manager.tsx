@@ -119,8 +119,8 @@ export function SpacesManager() {
   }
 
   return (
-    <section id="spaces" className="scroll-mt-8 rounded-card border border-line bg-bg-1 p-5">
-      <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+    <section id="spaces" className="panel scroll-mt-24 p-5">
+      <p className="label-mono">
         {activeArtist ? `Spaces — ${activeArtist.name}` : "Spaces"}
       </p>
       <p className="mt-2 text-sm text-text-lo">
