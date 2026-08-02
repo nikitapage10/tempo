@@ -246,11 +246,12 @@ export function OriginStoryScroll({
     intake: "Bring your music in",
     processing: "Reading what you brought",
     review: "Shape the workspace",
+    spotify: "Find your released music",
     confirm: "Before anything is added",
     done: "Your studio is ready",
   };
   const importAlign =
-    importStep === "processing" || importStep === "confirm"
+    importStep === "processing" || importStep === "spotify" || importStep === "confirm"
       ? "sm:ml-auto sm:mr-[4%]"
       : "sm:ml-[4%]";
 

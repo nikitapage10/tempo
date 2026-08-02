@@ -16,6 +16,7 @@ export type CommitSelection = {
 };
 
 export type CommitPayload = {
+  artistId: string | null;
   spaces: { ref: string; name: string; existingId: string | null }[];
   projects: {
     ref: string;
@@ -46,6 +47,7 @@ export type CommitPayload = {
     tags: string[];
     notes: string | null;
     checklist: string[];
+    spotify: SpotifyCommittedMetadata | null;
   }[];
   tasks: {
     ref: string;
@@ -56,6 +58,23 @@ export type CommitPayload = {
     trackRef: string | null;
     projectRef: string | null;
   }[];
+};
+
+export type SpotifyCommittedMetadata = {
+  trackId: string;
+  trackUrl: string | null;
+  albumId: string;
+  albumName: string;
+  albumUrl: string | null;
+  releaseDate: string | null;
+  releaseDatePrecision: string | null;
+  artworkUrl: string | null;
+  isrc: string | null;
+  durationMs: number | null;
+  explicit: boolean;
+  trackNumber: number | null;
+  discNumber: number | null;
+  artistNames: string[];
 };
 
 /**
@@ -91,6 +110,7 @@ export function toCommitPayload(
   ]);
 
   return {
+    artistId: null,
     spaces: plan.spaces
       .filter((s) => usedSpaceRefs.has(s.ref))
       .map((s) => ({ ref: s.ref, name: s.name, existingId: s.existingId })),
@@ -126,6 +146,7 @@ export function toCommitPayload(
       tags: t.tags,
       notes: mergeNotes(t.notes, t.collaborators),
       checklist: t.checklist,
+      spotify: null,
     })),
 
     tasks: tasks.map((k) => ({

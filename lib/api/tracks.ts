@@ -196,5 +196,23 @@ function normalizeTrack(row: Track): Track {
     stage_entered_at: row.stage_entered_at ?? row.created_at,
     list_sort: typeof row.list_sort === "number" ? row.list_sort : 0,
     list_group_id: row.list_group_id ?? null,
+    spotify_track_id: row.spotify_track_id ?? null,
+    spotify_url: row.spotify_url ?? null,
+    spotify_album_id: row.spotify_album_id ?? null,
+    spotify_album_name: row.spotify_album_name ?? null,
+    spotify_album_url: row.spotify_album_url ?? null,
+    spotify_release_date: row.spotify_release_date ?? null,
+    spotify_release_date_precision: row.spotify_release_date_precision ?? null,
+    spotify_isrc: row.spotify_isrc ?? null,
+    spotify_duration_ms:
+      typeof row.spotify_duration_ms === "number" ? row.spotify_duration_ms : null,
+    spotify_explicit:
+      typeof row.spotify_explicit === "boolean" ? row.spotify_explicit : null,
+    spotify_track_number:
+      typeof row.spotify_track_number === "number" ? row.spotify_track_number : null,
+    spotify_disc_number:
+      typeof row.spotify_disc_number === "number" ? row.spotify_disc_number : null,
+    spotify_artist_names: row.spotify_artist_names ?? [],
+    spotify_synced_at: row.spotify_synced_at ?? null,
   };
 }

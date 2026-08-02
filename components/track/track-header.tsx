@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowLeft, ImagePlus } from "lucide-react";
+import { ArrowLeft, ExternalLink, ImagePlus } from "lucide-react";
 import { FlareLine } from "@/components/flare-line";
 import { SpectraCoverArt } from "@/components/spectra/spectra-cover-art";
 import { useToast } from "@/components/ui/toast";
@@ -173,6 +173,25 @@ export function TrackHeader({
           <p className="mt-1.5 font-mono text-[12px] text-text-lo">
             {metaParts.join(" · ")}
           </p>
+
+          {track.spotify_track_id ? (
+            <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 font-data text-[11px] text-text-lo">
+              <span className="text-[#1DB954]">Spotify</span>
+              {track.spotify_album_name ? <span>{track.spotify_album_name}</span> : null}
+              {track.spotify_release_date ? <span>{track.spotify_release_date}</span> : null}
+              {track.spotify_isrc ? <span>ISRC {track.spotify_isrc}</span> : null}
+              {track.spotify_url ? (
+                <a
+                  href={track.spotify_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 text-[#1DB954] hover:underline"
+                >
+                  Open Spotify <ExternalLink className="size-2.5" />
+                </a>
+              ) : null}
+            </div>
+          ) : null}
 
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <label className="sr-only" htmlFor="track-momentum">

@@ -73,6 +73,21 @@ create table tracks (
   tags text[] not null default '{}',
   notes text,
   artwork_url text,
+  spotify_track_id text,
+  spotify_url text,
+  spotify_album_id text,
+  spotify_album_name text,
+  spotify_album_url text,
+  spotify_release_date text,
+  spotify_release_date_precision text
+    check (spotify_release_date_precision is null or spotify_release_date_precision in ('year','month','day')),
+  spotify_isrc text,
+  spotify_duration_ms integer check (spotify_duration_ms is null or spotify_duration_ms >= 0),
+  spotify_explicit boolean,
+  spotify_track_number integer,
+  spotify_disc_number integer,
+  spotify_artist_names text[] not null default '{}',
+  spotify_synced_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

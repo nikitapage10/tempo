@@ -8,6 +8,9 @@
 
 import type { WorkspaceImportPlan } from "@/lib/ai/import-plan-schema";
 import type { CommitSelection } from "@/lib/ai/commit-payload";
+import type {
+  SpotifyImportTrackMatch,
+} from "@/lib/spotify-import-match";
 import { buildImportSourcePath, uploadFile } from "@/lib/storage";
 
 export type ImportSourceKind = "text" | "voice" | "image" | "document";
@@ -189,17 +192,68 @@ export type CommitSummary = {
   tracks: number;
   tasks: number;
   checklistItems: number;
+  metadataImported?: number;
+  metadataFailed?: number;
+  artworkImported?: number;
+  artworkFailed?: number;
   alreadyCommitted: boolean;
 };
+
+export type SpotifyArtistCandidate = {
+  id: string;
+  name: string;
+  imageUrl: string | null;
+  url: string | null;
+};
+
+export type SpotifyImportPreview = {
+  artist: SpotifyArtistCandidate;
+  catalogTrackCount: number;
+  matches: SpotifyImportTrackMatch[];
+};
+
+export type SpotifyImportSelection = {
+  artistId: string;
+  artistName: string;
+  copyArtwork: boolean;
+  matches: { trackRef: string; spotifyTrackId: string }[];
+};
+
+export async function searchImportSpotifyArtists(
+  importId: string,
+  query: string
+): Promise<SpotifyArtistCandidate[]> {
+  const body = await request<{ results: SpotifyArtistCandidate[] }>(
+    `/api/import/${importId}/spotify`,
+    {
+      method: "POST",
+      body: JSON.stringify({ action: "search", query }),
+    }
+  );
+  return body.results;
+}
+
+export async function matchImportSpotifyCatalog(
+  importId: string,
+  artistId: string,
+  tracks: { ref: string; title: string }[]
+): Promise<SpotifyImportPreview> {
+  return request<SpotifyImportPreview>(`/api/import/${importId}/spotify`, {
+    method: "POST",
+    body: JSON.stringify({ action: "match", artistId, tracks }),
+  });
+}
 
 export async function commitImport(
   importId: string,
   plan: WorkspaceImportPlan,
   selection: CommitSelection,
+  artistId: string,
+  spotify: SpotifyImportSelection | null = null,
 ): Promise<CommitSummary> {
   const body = await request<{ summary: CommitSummary }>(`/api/import/${importId}/commit`, {
     method: "POST",
-    body: JSON.stringify({ plan, selection }),
+    body: JSON.stringify({ plan, selection, artistId, spotify }),
   });
   return body.summary;
 }

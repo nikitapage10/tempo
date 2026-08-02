@@ -23,6 +23,7 @@ const API = "https://api.spotify.com/v1";
  * There are no metrics left to return; see the note at the top of this file.
  */
 export type SpotifyArtistIdentity = {
+  id?: string;
   name: string;
   imageUrl: string | null;
   url: string | null;
@@ -108,6 +109,7 @@ export async function fetchSpotifyArtist(
   }>(`/artists/${artistId}`);
 
   return {
+    id: artistId,
     name: artist.name,
     imageUrl: artist.images?.[0]?.url ?? null,
     url: artist.external_urls?.spotify ?? null,
@@ -190,7 +192,13 @@ export async function fetchSpotifyCatalog(artistId: string): Promise<{
 export async function searchSpotifyArtists(
   query: string
 ): Promise<
-  { id: string; name: string; followers: number | null; imageUrl: string | null }[]
+  {
+    id: string;
+    name: string;
+    followers: number | null;
+    imageUrl: string | null;
+    url: string | null;
+  }[]
 > {
   type SearchRes = {
     artists: {
@@ -199,6 +207,7 @@ export async function searchSpotifyArtists(
         name: string;
         followers: { total: number };
         images: { url: string }[];
+        external_urls?: { spotify?: string };
       }[];
     };
   };
@@ -212,5 +221,183 @@ export async function searchSpotifyArtists(
     name: a.name,
     followers: a.followers?.total ?? null,
     imageUrl: a.images?.[0]?.url ?? null,
+    url: a.external_urls?.spotify ?? null,
   }));
+}
+
+export type SpotifyCatalogTrack = {
+  id: string;
+  title: string;
+  artists: { id: string; name: string }[];
+  album: {
+    id: string;
+    name: string;
+    type: string | null;
+    releaseDate: string | null;
+    releaseDatePrecision: string | null;
+    artworkUrl: string | null;
+    url: string | null;
+  };
+  durationMs: number | null;
+  explicit: boolean;
+  isrc: string | null;
+  trackNumber: number | null;
+  discNumber: number | null;
+  url: string | null;
+};
+
+type SpotifySimpleArtist = { id: string; name: string };
+type SpotifySimpleAlbum = {
+  id: string;
+  name: string;
+  album_type?: string;
+  release_date?: string;
+  release_date_precision?: string;
+  images?: { url: string }[];
+  external_urls?: { spotify?: string };
+  artists?: SpotifySimpleArtist[];
+};
+type SpotifyFullTrack = {
+  id: string;
+  name: string;
+  artists?: SpotifySimpleArtist[];
+  album: SpotifySimpleAlbum;
+  duration_ms?: number;
+  explicit?: boolean;
+  external_ids?: { isrc?: string };
+  track_number?: number;
+  disc_number?: number;
+  external_urls?: { spotify?: string };
+};
+
+function asCatalogTrack(track: SpotifyFullTrack): SpotifyCatalogTrack {
+  return {
+    id: track.id,
+    title: track.name,
+    artists: track.artists ?? [],
+    album: {
+      id: track.album.id,
+      name: track.album.name,
+      type: track.album.album_type ?? null,
+      releaseDate: track.album.release_date ?? null,
+      releaseDatePrecision: track.album.release_date_precision ?? null,
+      artworkUrl: track.album.images?.[0]?.url ?? null,
+      url: track.album.external_urls?.spotify ?? null,
+    },
+    durationMs:
+      typeof track.duration_ms === "number" ? track.duration_ms : null,
+    explicit: track.explicit === true,
+    isrc: track.external_ids?.isrc ?? null,
+    trackNumber:
+      typeof track.track_number === "number" ? track.track_number : null,
+    discNumber: typeof track.disc_number === "number" ? track.disc_number : null,
+    url: track.external_urls?.spotify ?? null,
+  };
+}
+
+async function fetchAllArtistAlbums(artistId: string): Promise<SpotifySimpleAlbum[]> {
+  type AlbumsPage = {
+    items?: SpotifySimpleAlbum[];
+    next?: string | null;
+    total?: number;
+  };
+
+  const market = (process.env.SPOTIFY_MARKET || "US").toUpperCase();
+  const albums: SpotifySimpleAlbum[] = [];
+  // Since February 2026 this endpoint accepts at most ten releases per page.
+  // Two hundred releases is generous for an importer while keeping one request
+  // bounded on very large catalogs.
+  for (let offset = 0; offset < 200; offset += 10) {
+    const page = await spotifyGet<AlbumsPage>(
+      `/artists/${artistId}/albums?include_groups=album,single,appears_on,compilation&market=${encodeURIComponent(market)}&limit=10&offset=${offset}`
+    );
+    albums.push(...(page.items ?? []));
+    if (!page.next || albums.length >= (page.total ?? albums.length)) break;
+  }
+
+  const byId = new Map<string, SpotifySimpleAlbum>();
+  for (const album of albums) byId.set(album.id, album);
+  return Array.from(byId.values());
+}
+
+async function fetchAlbumTrackIds(albumId: string): Promise<string[]> {
+  type TracksPage = {
+    items?: { id?: string; artists?: SpotifySimpleArtist[] }[];
+    next?: string | null;
+    total?: number;
+  };
+  const ids: string[] = [];
+  for (let offset = 0; offset < 500; offset += 50) {
+    const page = await spotifyGet<TracksPage>(
+      `/albums/${albumId}/tracks?limit=50&offset=${offset}`
+    );
+    for (const track of page.items ?? []) {
+      if (track.id) ids.push(track.id);
+    }
+    if (!page.next || ids.length >= (page.total ?? ids.length)) break;
+  }
+  return ids;
+}
+
+async function inBatches<T, R>(
+  values: T[],
+  size: number,
+  work: (value: T) => Promise<R>
+): Promise<R[]> {
+  const results: R[] = [];
+  for (let i = 0; i < values.length; i += size) {
+    results.push(...(await Promise.all(values.slice(i, i + size).map(work))));
+  }
+  return results;
+}
+
+/** Full track records, including ISRC and album artwork, in API-sized batches. */
+export async function fetchSpotifyTracks(
+  trackIds: string[]
+): Promise<SpotifyCatalogTrack[]> {
+  const ids = Array.from(
+    new Set(trackIds.filter((id) => /^[A-Za-z0-9]{22}$/.test(id)))
+  ).slice(0, 500);
+  if (ids.length === 0) return [];
+  const chunks: string[][] = [];
+  for (let i = 0; i < ids.length; i += 50) chunks.push(ids.slice(i, i + 50));
+
+  const pages = await inBatches(chunks, 4, async (chunk) =>
+    spotifyGet<{ tracks?: (SpotifyFullTrack | null)[] }>(
+      `/tracks?ids=${encodeURIComponent(chunk.join(","))}`
+    )
+  );
+  return pages.flatMap((page) =>
+    (page.tracks ?? []).filter((track): track is SpotifyFullTrack => !!track).map(asCatalogTrack)
+  );
+}
+
+/**
+ * Builds the released track catalog behind one confirmed Spotify artist.
+ * Releases and appearances are paginated; only tracks actually crediting the
+ * chosen artist are retained.
+ */
+export async function fetchSpotifyTrackCatalog(artistId: string): Promise<{
+  artist: SpotifyArtistIdentity & { id: string };
+  tracks: SpotifyCatalogTrack[];
+}> {
+  if (!/^[A-Za-z0-9]{22}$/.test(artistId)) {
+    throw new Error("That Spotify artist id isn't valid.");
+  }
+
+  const [identity, albums] = await Promise.all([
+    fetchSpotifyArtist(artistId),
+    fetchAllArtistAlbums(artistId),
+  ]);
+  const idLists = await inBatches(albums, 5, (album) =>
+    fetchAlbumTrackIds(album.id)
+  );
+  const fullTracks = await fetchSpotifyTracks(idLists.flat());
+
+  return {
+    artist: { ...identity, id: artistId },
+    tracks: fullTracks.filter((track) =>
+      track.artists.some((artist) => artist.id === artistId)
+    ),
+  };
 }

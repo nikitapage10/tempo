@@ -10,9 +10,99 @@ import {
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { toCommitPayload } from "@/lib/ai/commit-payload";
 import { validatePlan } from "@/lib/ai/synthesize-plan";
+import { fetchSpotifyTracks } from "@/lib/platforms/spotify";
+import { buildStoragePath } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 300;
+
+const MAX_SPOTIFY_ARTWORK_BYTES = 15 * 1024 * 1024;
+
+function safeSpotifyArtworkUrl(value: string | null): URL | null {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && url.hostname === "i.scdn.co" ? url : null;
+  } catch {
+    return null;
+  }
+}
+
+async function copySpotifyArtwork(
+  ctx: NonNullable<Awaited<ReturnType<typeof resolveImport>>>,
+  trackId: string,
+  trackTitle: string,
+  source: string
+): Promise<void> {
+  const url = safeSpotifyArtworkUrl(source);
+  if (!url) throw new Error("Spotify returned an unexpected artwork address.");
+
+  const response = await fetch(url, {
+    cache: "no-store",
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!response.ok) throw new Error(`Artwork download failed (${response.status}).`);
+  if (!safeSpotifyArtworkUrl(response.url)) {
+    throw new Error("Spotify redirected artwork to an unexpected address.");
+  }
+
+  const contentType = (response.headers.get("content-type") ?? "").split(";")[0];
+  const extension =
+    contentType === "image/png"
+      ? "png"
+      : contentType === "image/webp"
+        ? "webp"
+        : contentType === "image/jpeg"
+          ? "jpg"
+          : null;
+  if (!extension) throw new Error("Spotify returned an unsupported artwork file.");
+
+  const declaredSize = Number(response.headers.get("content-length") ?? 0);
+  if (declaredSize > MAX_SPOTIFY_ARTWORK_BYTES) {
+    throw new Error("That artwork file is too large to copy.");
+  }
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  if (bytes.byteLength === 0 || bytes.byteLength > MAX_SPOTIFY_ARTWORK_BYTES) {
+    throw new Error("That artwork file is empty or too large to copy.");
+  }
+
+  const assetId = crypto.randomUUID();
+  const path = buildStoragePath({
+    trackId,
+    kind: "asset",
+    entityId: assetId,
+    filename: `spotify-cover.${extension}`,
+  });
+  const { error: uploadError } = await ctx.admin.storage
+    .from("audio")
+    .upload(path, bytes, { contentType, cacheControl: "31536000", upsert: false });
+  if (uploadError) throw uploadError;
+
+  const { error: assetError } = await ctx.admin.from("assets").insert({
+    id: assetId,
+    track_id: trackId,
+    kind: "artwork",
+    name: `${trackTitle} — Spotify cover`,
+    file_url: path,
+    file_size: bytes.byteLength,
+  });
+  if (assetError) {
+    await ctx.admin.storage.from("audio").remove([path]);
+    throw assetError;
+  }
+
+  const { error: trackError } = await ctx.admin
+    .from("tracks")
+    .update({ artwork_url: path, updated_at: new Date().toISOString() })
+    .eq("id", trackId)
+    .eq("user_id", ctx.userId);
+
+  if (trackError) {
+    await ctx.admin.from("assets").delete().eq("id", assetId);
+    await ctx.admin.storage.from("audio").remove([path]);
+    throw trackError;
+  }
+}
 
 /**
  * POST /api/import/[id]/commit — build the workspace.
@@ -49,11 +139,78 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const context = await loadWorkspaceContext(ctx.admin, ctx.userId);
   const plan = validatePlan(payload.plan, context);
 
+  const artistId = typeof payload.artistId === "string" ? payload.artistId : "";
+  const { data: artist } = await ctx.admin
+    .from("artists")
+    .select("id")
+    .eq("id", artistId)
+    .eq("user_id", ctx.userId)
+    .maybeSingle();
+  if (!artist) {
+    return NextResponse.json(
+      { error: "Choose an artist before building this import." },
+      { status: 400, headers: noStoreHeaders() },
+    );
+  }
+
   const commitPayload = toCommitPayload(plan, {
     trackRefs: asRefs(selection.trackRefs),
     projectRefs: asRefs(selection.projectRefs),
     taskRefs: asRefs(selection.taskRefs),
   });
+  commitPayload.artistId = artistId;
+
+  const spotifyInput =
+    payload.spotify && typeof payload.spotify === "object" ? payload.spotify : null;
+  const spotifyArtistId = String(spotifyInput?.artistId ?? "");
+  const spotifyMatches = Array.isArray(spotifyInput?.matches)
+    ? spotifyInput.matches
+        .filter(
+          (match: unknown): match is { trackRef: string; spotifyTrackId: string } =>
+            !!match &&
+            typeof match === "object" &&
+            typeof (match as { trackRef?: unknown }).trackRef === "string" &&
+            typeof (match as { spotifyTrackId?: unknown }).spotifyTrackId === "string"
+        )
+        .slice(0, 500)
+    : [];
+
+  const spotifyByTrackRef = new Map<string, Awaited<ReturnType<typeof fetchSpotifyTracks>>[number]>();
+  if (/^[A-Za-z0-9]{22}$/.test(spotifyArtistId) && spotifyMatches.length > 0) {
+    const spotifyTracks = await fetchSpotifyTracks(
+      spotifyMatches.map((match: { spotifyTrackId: string }) => match.spotifyTrackId)
+    );
+    const spotifyById = new Map(spotifyTracks.map((track) => [track.id, track]));
+    for (const match of spotifyMatches) {
+      const spotifyTrack = spotifyById.get(match.spotifyTrackId);
+      if (!spotifyTrack) continue;
+      // A browser cannot smuggle in an unrelated track: the confirmed artist
+      // must actually be credited on the fresh Spotify response.
+      if (!spotifyTrack.artists.some((credit) => credit.id === spotifyArtistId)) continue;
+      spotifyByTrackRef.set(match.trackRef, spotifyTrack);
+    }
+
+    for (const track of commitPayload.tracks) {
+      const spotifyTrack = spotifyByTrackRef.get(track.ref);
+      if (!spotifyTrack) continue;
+      track.spotify = {
+        trackId: spotifyTrack.id,
+        trackUrl: spotifyTrack.url,
+        albumId: spotifyTrack.album.id,
+        albumName: spotifyTrack.album.name,
+        albumUrl: spotifyTrack.album.url,
+        releaseDate: spotifyTrack.album.releaseDate,
+        releaseDatePrecision: spotifyTrack.album.releaseDatePrecision,
+        artworkUrl: spotifyTrack.album.artworkUrl,
+        isrc: spotifyTrack.isrc,
+        durationMs: spotifyTrack.durationMs,
+        explicit: spotifyTrack.explicit,
+        trackNumber: spotifyTrack.trackNumber,
+        discNumber: spotifyTrack.discNumber,
+        artistNames: spotifyTrack.artists.map((credit) => credit.name),
+      };
+    }
+  }
 
   const nothingSelected =
     commitPayload.tracks.length === 0 &&
@@ -88,8 +245,143 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     );
   }
 
+  if (spotifyByTrackRef.size > 0) {
+    await ctx.admin
+      .from("artists")
+      .update({ spotify_artist_id: spotifyArtistId })
+      .eq("id", artistId)
+      .eq("user_id", ctx.userId);
+  }
+
+  let metadataImported = 0;
+  let metadataFailed = 0;
+  let artworkImported = 0;
+  let artworkFailed = 0;
+  const shouldCopyArtwork = spotifyInput?.copyArtwork !== false;
+  const trackIds =
+    data && typeof data === "object" && data.trackIds && typeof data.trackIds === "object"
+      ? (data.trackIds as Record<string, string>)
+      : {};
+  const projectIds =
+    data && typeof data === "object" && data.projectIds && typeof data.projectIds === "object"
+      ? (data.projectIds as Record<string, string>)
+      : {};
+  for (const track of commitPayload.tracks) {
+    const spotify = track.spotify;
+    const trackId = trackIds[track.ref];
+    if (!spotify || !trackId) continue;
+    const { error: metadataError } = await ctx.admin
+      .from("tracks")
+      .update({
+        spotify_track_id: spotify.trackId,
+        spotify_url: spotify.trackUrl,
+        spotify_album_id: spotify.albumId,
+        spotify_album_name: spotify.albumName,
+        spotify_album_url: spotify.albumUrl,
+        spotify_release_date: spotify.releaseDate,
+        spotify_release_date_precision: spotify.releaseDatePrecision,
+        spotify_isrc: spotify.isrc,
+        spotify_duration_ms: spotify.durationMs,
+        spotify_explicit: spotify.explicit,
+        spotify_track_number: spotify.trackNumber,
+        spotify_disc_number: spotify.discNumber,
+        spotify_artist_names: spotify.artistNames,
+        spotify_synced_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", trackId)
+      .eq("user_id", ctx.userId);
+    if (metadataError) {
+      metadataFailed += 1;
+      console.error("[import] Spotify metadata save failed:", metadataError.message);
+    } else {
+      metadataImported += 1;
+      const projectId = track.projectRef ? projectIds[track.projectRef] : null;
+      if (projectId) {
+        const { error: releaseMetaError } = await ctx.admin
+          .from("release_track_metadata")
+          .upsert(
+            {
+              project_id: projectId,
+              track_id: trackId,
+              track_number: spotify.trackNumber,
+              isrc: spotify.isrc,
+              explicit: spotify.explicit,
+              primary_artist: spotify.artistNames[0] ?? null,
+              featured_artists: spotify.artistNames.slice(1),
+            },
+            { onConflict: "project_id,track_id" }
+          );
+        if (releaseMetaError) {
+          console.error(
+            "[import] release metadata mirror failed:",
+            releaseMetaError.message
+          );
+        }
+      }
+    }
+  }
+
+  for (const project of commitPayload.projects) {
+    const projectId = projectIds[project.ref];
+    if (!projectId || !["single", "ep", "album"].includes(project.projectType)) continue;
+    const matched = commitPayload.tracks.filter(
+      (track) => track.projectRef === project.ref && track.spotify
+    );
+    if (matched.length === 0) continue;
+    const albumIds = new Set(matched.map((track) => track.spotify!.albumId));
+    if (albumIds.size !== 1) continue;
+    const spotify = matched[0].spotify!;
+    const fullDate =
+      spotify.releaseDatePrecision === "day" ? spotify.releaseDate : null;
+    const { error: releaseError } = await ctx.admin.from("release_details").upsert({
+      project_id: projectId,
+      release_date: fullDate,
+      live_url: spotify.albumUrl,
+      updated_at: new Date().toISOString(),
+    });
+    if (releaseError) {
+      console.error("[import] release details mirror failed:", releaseError.message);
+    }
+  }
+
+  if (shouldCopyArtwork && !data?.alreadyCommitted) {
+    // A small batch keeps catalog imports fast without creating a burst of
+    // outbound downloads or storage writes.
+    const jobs = commitPayload.tracks.flatMap((track) => {
+      const source = track.spotify?.artworkUrl;
+      const trackId = trackIds[track.ref];
+      return source && trackId ? [{ track, source, trackId }] : [];
+    });
+    for (let i = 0; i < jobs.length; i += 4) {
+      const results = await Promise.allSettled(
+        jobs.slice(i, i + 4).map((job) =>
+          copySpotifyArtwork(ctx, job.trackId, job.track.title, job.source)
+        )
+      );
+      for (const result of results) {
+        if (result.status === "fulfilled") artworkImported += 1;
+        else {
+          artworkFailed += 1;
+          console.error("[import] Spotify artwork copy failed:", result.reason);
+        }
+      }
+    }
+  }
+
   // The catalog is built; the raw source material has done its job.
   await deleteImportFiles(ctx.admin, ctx.imp.id);
 
-  return NextResponse.json({ summary: data }, { headers: noStoreHeaders() });
+  return NextResponse.json(
+    {
+      summary: {
+        ...data,
+        metadataImported,
+        metadataFailed,
+        artworkImported,
+        artworkFailed,
+      },
+    },
+    { headers: noStoreHeaders() }
+  );
 }

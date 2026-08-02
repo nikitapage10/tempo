@@ -12,7 +12,9 @@ import { IntakeCanvas } from "@/components/import/intake-canvas";
 import { ProcessingView } from "@/components/import/processing-view";
 import { PlanReview, type ReviewSelection } from "@/components/import/plan-review";
 import { CommitSummary } from "@/components/import/commit-summary";
+import { SpotifyCatalogStep } from "@/components/import/spotify-catalog-step";
 import { useActiveSpace } from "@/components/active-space-provider";
+import { useActiveArtist } from "@/components/active-artist-provider";
 import { fetchStages } from "@/lib/api/stages";
 import {
   commitImport,
@@ -22,11 +24,19 @@ import {
   fetchImport,
   synthesize,
   type ImportSource,
+  type SpotifyImportPreview,
+  type SpotifyImportSelection,
 } from "@/lib/api/onboarding-imports";
 import { DEFAULT_STAGE_NAMES } from "@/lib/constants";
 import type { WorkspaceImportPlan } from "@/lib/ai/import-plan-schema";
 
-export type ImportStep = "intake" | "processing" | "review" | "confirm" | "done";
+export type ImportStep =
+  | "intake"
+  | "processing"
+  | "review"
+  | "spotify"
+  | "confirm"
+  | "done";
 
 export function ImportExperience({
   onComplete,
@@ -48,12 +58,15 @@ export function ImportExperience({
   const qc = useQueryClient();
   const { toast } = useToast();
   const { spaces } = useActiveSpace();
+  const { activeArtist } = useActiveArtist();
 
   const [importId, setImportId] = React.useState<string | null>(null);
   const [startupError, setStartupError] = React.useState<string | null>(null);
   const [step, setStep] = React.useState<ImportStep>("intake");
   const [sources, setSources] = React.useState<ImportSource[]>([]);
   const [plan, setPlan] = React.useState<WorkspaceImportPlan | null>(null);
+  const [spotifyPreview, setSpotifyPreview] = React.useState<SpotifyImportPreview | null>(null);
+  const [spotifySelection, setSpotifySelection] = React.useState<SpotifyImportSelection | null>(null);
   const [selection, setSelection] = React.useState<ReviewSelection>({
     trackRefs: new Set(),
     projectRefs: new Set(),
@@ -187,11 +200,18 @@ export function ImportExperience({
     if (!importId || !plan) return;
     setBusy(true);
     try {
-      const summary = await commitImport(importId, plan, {
-        trackRefs: Array.from(selection.trackRefs),
-        projectRefs: Array.from(selection.projectRefs),
-        taskRefs: Array.from(selection.taskRefs),
-      });
+      if (!activeArtist) throw new Error("Choose an artist before building this import.");
+      const summary = await commitImport(
+        importId,
+        plan,
+        {
+          trackRefs: Array.from(selection.trackRefs),
+          projectRefs: Array.from(selection.projectRefs),
+          taskRefs: Array.from(selection.taskRefs),
+        },
+        activeArtist.id,
+        spotifySelection,
+      );
 
       // Everything on screen is now stale — the catalog just changed.
       await qc.invalidateQueries();
@@ -200,12 +220,25 @@ export function ImportExperience({
         summary.tracks ? `${summary.tracks} track${summary.tracks === 1 ? "" : "s"}` : null,
         summary.projects ? `${summary.projects} project${summary.projects === 1 ? "" : "s"}` : null,
         summary.tasks ? `${summary.tasks} task${summary.tasks === 1 ? "" : "s"}` : null,
+        summary.artworkImported
+          ? `${summary.artworkImported} cover${summary.artworkImported === 1 ? "" : "s"}`
+          : null,
       ]
         .filter(Boolean)
         .join(", ");
 
       setStep("done");
       toast(`Your studio is ready — ${built}.`, "ok");
+      if (summary.artworkFailed) {
+        toast(
+          `${summary.artworkFailed} cover${summary.artworkFailed === 1 ? "" : "s"} couldn't be copied; the track was still created.`
+        );
+      }
+      if (summary.metadataFailed) {
+        toast(
+          `${summary.metadataFailed} Spotify match${summary.metadataFailed === 1 ? "" : "es"} couldn't save its metadata. Make sure migration 043 is installed.`
+        );
+      }
       onComplete();
     } catch (err) {
       toast(err instanceof Error ? err.message : "Couldn’t build your workspace.");
@@ -256,6 +289,8 @@ export function ImportExperience({
                 ? "Reading through what you gave me."
                 : step === "review"
                   ? "Here's what TEMPO found. Fix anything that's wrong."
+                  : step === "spotify"
+                    ? "Connect the released tracks to their official catalog metadata and artwork."
                   : "Last look before anything is created."
           }
           actions={
@@ -319,13 +354,33 @@ export function ImportExperience({
           stageOptionsForSpaceRef={stageOptionsForSpaceRef}
           onAnswerQuestions={(answers) => void handleAnswers(answers)}
           answering={answering}
-          onContinue={() => setStep("confirm")}
+          onContinue={() => setStep("spotify")}
+        />
+      ) : step === "spotify" && plan && activeArtist ? (
+        <SpotifyCatalogStep
+          importId={importId}
+          artistName={activeArtist.name}
+          linkedSpotifyArtistId={activeArtist.spotify_artist_id}
+          tracks={plan.tracks
+            .filter((track) => selection.trackRefs.has(track.ref))
+            .map((track) => ({ ref: track.ref, title: track.title }))}
+          preview={spotifyPreview}
+          onPreviewChange={setSpotifyPreview}
+          onBack={() => setStep("review")}
+          onSkip={() => {
+            setSpotifySelection(null);
+            setStep("confirm");
+          }}
+          onContinue={(next) => {
+            setSpotifySelection(next);
+            setStep("confirm");
+          }}
         />
       ) : step === "confirm" && plan ? (
         <CommitSummary
           plan={plan}
           selection={selection}
-          onBack={() => setStep("review")}
+          onBack={() => setStep("spotify")}
           onBuild={() => void handleBuild()}
           building={busy}
         />
