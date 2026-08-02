@@ -13,7 +13,7 @@ TEMPO is a single-user (for now) workspace that manages **the entire life of a m
 
 Three object types make this work:
 
-1. **Tracks** — a musical work (original, remix, edit, bootleg, collab) with metadata, a stage in a workflow, versions, stems, and notes.
+1. **Tracks** — a musical work (original, remix, or edit) with metadata, a stage in a workflow, versions, stems, and notes. Collaboration is represented by people/credits rather than by track type.
 2. **Projects** — a work container you define (a campaign, a release push, related tasks and tracks, whatever the goal is). Many tracks and tasks can attach to one project; a track can stand alone with no project. Not a one-track wrapper. (Album/EP/playlist-style buckets on the Tracks list are a separate “groups” concept.)
 3. **Tasks** — anything actionable, attachable to a track, a project, or nothing ("post teaser clip," "email X a remix," "pitch 'Song' to Label Y"). Tasks have their own lightweight workflow independent of track stages.
 
@@ -64,7 +64,7 @@ This three-object model is what makes TEMPO "all-encompassing musician workflow"
 **Spaces & Board**
 - Spaces (workspaces): create, rename, switch. Ships with two defaults: "Originals" and "Edits & Remixes."
 - Kanban board per space with default stages: Idea → Writing → Production → Mixdown → Master → Release Prep → Released. Stages are editable (add/rename/reorder/delete) per space.
-- Track cards: title, artwork thumb (optional), stage, type badge (Original / Remix / Edit / Collab / Bootleg), BPM, key, momentum dot, deadline if set.
+- Track cards: title, artwork thumb (optional), stage, type badge (Original / Remix / Edit), BPM, key, momentum dot, deadline if set.
 - Drag-and-drop between stages.
 
 **Track workspace (detail page)**
@@ -135,7 +135,7 @@ spaces        id, name, sort, accent_color, created_at
 stages        id, space_id, name, sort, color
 projects      id, space_id?, name, description, deadline, status, created_at
 tracks        id, space_id, project_id?, stage_id, title, artist_alias,
-              type ('original'|'remix'|'edit'|'collab'|'bootleg'),
+              type ('original'|'remix'|'edit'),
               bpm, musical_key, genre, destination, deadline,
               momentum ('active'|'simmering'|'stalled'|'parked'),
               tags text[], notes, artwork_url, created_at, updated_at
@@ -200,7 +200,7 @@ Near-black, never pure black, so the flare colors have depth to glow against.
 
 Accent usage rule: **ice is the hand (interaction), amber is the light (status/emphasis).** Buttons, links, focus rings = ice. "Current version," momentum-active dots, the flare-line motif's warm center = amber. Never use both as competing CTAs on one surface. Per-space accent theming (v0.5) recolors only `--ice`.
 
-Semantic chips: track types get muted translucent chips (e.g., Original = ice at 12% alpha bg / ice text; Remix = amber; Edit = violet; Collab = green) — colored text on tinted dark, never solid bright fills.
+Semantic chips: track types get muted translucent chips (Original = ice at 12% alpha bg / ice text; Remix = amber; Edit = violet) — colored text on tinted dark, never solid bright fills.
 
 ## Typography
 

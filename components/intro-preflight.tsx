@@ -1,4 +1,9 @@
-import { INTRO_DAY_KEY, INTRO_PENDING_ATTR, SUPPRESS_INTRO_KEY } from "@/lib/intro";
+import {
+  INTRO_DAY_KEY,
+  INTRO_PENDING_ATTR,
+  ORIGIN_ARRIVAL_KEY,
+  SUPPRESS_INTRO_KEY,
+} from "@/lib/intro";
 
 /**
  * Pre-paint intro gate.
@@ -15,6 +20,8 @@ import { INTRO_DAY_KEY, INTRO_PENDING_ATTR, SUPPRESS_INTRO_KEY } from "@/lib/int
  * Mounted only under app/(app) — never on /login, which has no intro.
  */
 const SCRIPT = `(function(){try{
+try{if(sessionStorage.getItem(${JSON.stringify(ORIGIN_ARRIVAL_KEY)})==="1"){
+document.documentElement.classList.add("origin-arrival-pending");return}}catch(e){}
 var m=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 if(m)return;
 try{if(sessionStorage.getItem(${JSON.stringify(SUPPRESS_INTRO_KEY)})==="1")return}catch(e){}

@@ -20,7 +20,7 @@ export const PRODUCT_KNOWLEDGE = `CORE OBJECTS
 ENUMS (exact values)
 - space focus: music / tasks
 - momentum: active / simmering / stalled / parked
-- track type: original / remix / edit / collab / bootleg
+- track type: original / remix / edit (collaboration is a credit/people relationship, not a track type)
 - task category: social / outreach / pitching / admin / production / other
 - task status: todo / doing / done
 - project type: general / single / ep / album / edit_pack

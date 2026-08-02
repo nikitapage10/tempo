@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { normalizeTrackType } from "@/lib/track-style";
 import type {
   DecisionType,
   Momentum,
@@ -147,7 +148,10 @@ export async function fetchArtistStats(
   }
 
   const stages = (stagesRes.data ?? []) as Stage[];
-  const tracks = (tracksRes.data ?? []) as Track[];
+  const tracks = ((tracksRes.data ?? []) as Track[]).map((track) => ({
+    ...track,
+    type: normalizeTrackType(track.type),
+  }));
   const tasks = (tasksRes.data ?? []) as TaskRow[];
   const projects = (projectsRes.data ?? []) as ProjectRow[];
 

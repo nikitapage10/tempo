@@ -8,6 +8,7 @@
  */
 
 import type { WorkspaceImportPlan } from "@/lib/ai/import-plan-schema";
+import { normalizeTrackType } from "@/lib/track-style";
 
 export type CommitSelection = {
   trackRefs: string[];
@@ -131,7 +132,7 @@ export function toCommitPayload(
       // A track can't point at a project the artist chose not to create.
       projectRef: t.projectRef && keptProjectRefs.has(t.projectRef) ? t.projectRef : null,
       stageName: t.stageName.value,
-      type: t.type.value ?? "original",
+      type: normalizeTrackType(t.type.value),
       momentum: t.momentum.value ?? "active",
       artistAlias: t.artistAlias.value,
       bpm: t.bpm.value,

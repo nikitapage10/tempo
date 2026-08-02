@@ -82,8 +82,6 @@ export const TRACK_TYPES: { value: TrackType; label: string }[] = [
   { value: "original", label: "Original" },
   { value: "remix", label: "Remix" },
   { value: "edit", label: "Edit" },
-  { value: "collab", label: "Collab" },
-  { value: "bootleg", label: "Bootleg" },
 ];
 
 export const MOMENTUM_OPTIONS: { value: Momentum; label: string }[] = [

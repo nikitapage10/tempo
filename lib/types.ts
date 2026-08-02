@@ -1,4 +1,4 @@
-export type TrackType = "original" | "remix" | "edit" | "collab" | "bootleg";
+export type TrackType = "original" | "remix" | "edit";
 
 export type Momentum = "active" | "simmering" | "stalled" | "parked";
 

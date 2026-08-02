@@ -20,10 +20,6 @@ export function typeChipClass(type: TrackType): string {
       return "bg-amber/12 text-amber";
     case "edit":
       return "bg-violet/12 text-violet";
-    case "collab":
-      return "bg-ok/12 text-ok";
-    case "bootleg":
-      return "bg-warn/12 text-warn";
   }
 }
 
@@ -42,4 +38,11 @@ export function momentumDotClass(momentum: Momentum): string {
 
 export function formatTrackType(type: TrackType): string {
   return type.charAt(0).toUpperCase() + type.slice(1);
+}
+
+/** Maps rows/import drafts created before the three-type taxonomy migration. */
+export function normalizeTrackType(type: unknown): TrackType {
+  if (type === "remix") return "remix";
+  if (type === "edit" || type === "bootleg") return "edit";
+  return "original";
 }

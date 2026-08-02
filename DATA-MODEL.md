@@ -61,7 +61,7 @@ RLS: via space ownership. Tracks.stage_id ON DELETE SET NULL.
 | stage_id | uuid → stages SET NULL | |
 | title | text | |
 | artist_alias | text null | |
-| type | text | original\|remix\|edit\|collab\|bootleg |
+| type | text | original\|remix\|edit |
 | bpm | numeric(5,1) null | |
 | musical_key, genre, destination | text null | |
 | deadline | date null | |

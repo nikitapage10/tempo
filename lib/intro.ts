@@ -19,6 +19,9 @@ export const INTRO_DAY_KEY = "tempo.introDay";
  */
 export const SUPPRESS_INTRO_KEY = "tempo.suppressBootIntro";
 
+/** Set just before ORIGIN navigates into the authenticated app. */
+export const ORIGIN_ARRIVAL_KEY = "tempo.originFirstOpen";
+
 /** Set on <html> before first paint while the intro is still expected. */
 export const INTRO_PENDING_ATTR = "data-intro-pending";
 

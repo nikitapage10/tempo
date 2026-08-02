@@ -83,7 +83,7 @@ Allowed actionKind values:
 - set_track_genre — actionRef track (k…); actionTitle is the genre text.
 - set_track_title — actionRef track (k…); actionTitle is the new title.
 - set_track_type — actionRef track (k…); actionTrackType required
-  (original/remix/edit/collab/bootleg).
+  (original/remix/edit).
 - set_track_blocked — actionRef track (k…); actionTitle is the blocked reason,
   or "clear" to remove it.
 - set_track_waiting — actionRef track (k…); actionTitle is who/what they're

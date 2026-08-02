@@ -1485,25 +1485,18 @@ export default function TracksPage() {
                   )}
                 />
               ))}
-              {/* The swatch itself shows the picked hex — its own color is the
-                  clearest label a "custom" option can have. The actual native
-                  picker sits directly on top of it (opacity 0) rather than
-                  behind a separate trigger, so one click both selects "custom"
-                  and opens the OS color dialog instead of taking two clicks. */}
-              <span className="relative inline-flex">
-                <button
-                  type="button"
-                  aria-pressed={groupAccent === "custom"}
-                  aria-label="Custom color"
-                  title="Custom color"
-                  style={{ backgroundColor: groupAccentHex }}
-                  className={cn(
-                    "size-6 rounded-full border-2 transition-transform",
-                    groupAccent === "custom"
-                      ? "scale-110 border-text-hi"
-                      : "border-transparent hover:scale-105"
-                  )}
-                />
+              {/* A text label makes this read as an action instead of a sixth
+                  preset swatch. The native picker covers the chip invisibly,
+                  so clicking Custom opens it immediately. */}
+              <span
+                className={cn(
+                  "relative inline-flex rounded-chip border px-2.5 py-1 text-[11px] transition-colors",
+                  groupAccent === "custom"
+                    ? "border-text-hi/60 text-text-hi"
+                    : "border-line text-text-lo hover:text-text-hi"
+                )}
+              >
+                Custom
                 <input
                   type="color"
                   aria-label="Pick a custom color"
@@ -1512,7 +1505,7 @@ export default function TracksPage() {
                     setGroupAccentHex(e.target.value);
                     setGroupAccent("custom");
                   }}
-                  className="absolute inset-0 size-6 cursor-pointer opacity-0"
+                  className="absolute inset-0 size-full cursor-pointer opacity-0"
                 />
               </span>
             </div>

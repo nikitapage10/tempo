@@ -42,6 +42,10 @@ that same callback with `next=/reset-password`.
 
 ## Database changes (migrations)
 
+For the three-type track taxonomy, run `migrations/046_simplify_track_types.sql`
+before deploying the matching app code. It converts Collab to Original and
+Bootleg to Edit, then narrows the database constraint.
+
 For v0.62.0 messaging, run `migrations/039_messaging_inbox.sql` after the
 support-conversation migration and before deploying the matching app code.
 

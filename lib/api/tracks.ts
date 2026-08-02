@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
 import { logActivity } from "@/lib/api/activity";
+import { normalizeTrackType } from "@/lib/track-style";
 import type { Track, TrackInsert, TrackUpdate } from "@/lib/types";
 
 export async function fetchTracks(spaceId: string): Promise<Track[]> {
@@ -185,6 +186,7 @@ export async function reorderTracks(
 function normalizeTrack(row: Track): Track {
   return {
     ...row,
+    type: normalizeTrackType(row.type),
     tags: row.tags ?? [],
     bpm: row.bpm != null ? Number(row.bpm) : null,
     // Defaults for workflow fields (migration 001) so older rows / pre-migration

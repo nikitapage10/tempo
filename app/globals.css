@@ -912,101 +912,91 @@
 }
 
 /* ORIGIN's one-session arrival into the app. The pending floor is installed
-   before navigation, preventing even a single dashboard paint before the film
-   overlay mounts. */
+   before navigation, preventing even a single dashboard paint before the
+   spectral overlay mounts. */
 .origin-arrival-pending body::after {
   content: "";
   pointer-events: none;
   position: fixed;
   inset: 0;
-  z-index: 99;
+  z-index: 399;
   background-color: var(--bg-0);
-  background-image: url("/onboarding/origin/frame-06-final.jpg");
-  background-position: center;
-  background-size: cover;
 }
 
 @keyframes origin-first-open-shell {
-  0%, 80% { opacity: 1; }
+  0%, 42% { background-color: var(--bg-0); opacity: 1; }
+  72% { background-color: rgb(10 10 12 / 0.76); opacity: 1; }
   100% { opacity: 0; }
 }
 
-@keyframes origin-first-open-frame {
-  0%, 54% { opacity: 1; transform: scale(1); filter: brightness(1) blur(0); }
-  78% { opacity: 0.88; transform: scale(1.018); filter: brightness(0.62) blur(1px); }
-  100% { opacity: 0; transform: scale(1.035); filter: brightness(0.38) blur(3px); }
+@keyframes origin-first-open-ground {
+  0% { opacity: 0; transform: translateY(28%); }
+  42% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-8%); }
 }
 
-@keyframes origin-first-open-veil {
-  0%, 56% { opacity: 0; }
-  84%, 100% { opacity: 0.92; }
+@keyframes origin-first-open-bar {
+  0% { opacity: 0; transform: scaleY(0); }
+  18% { opacity: 0.9; }
+  62% { opacity: 1; transform: scaleY(1); }
+  100% { opacity: 0; transform: translateY(-8vh) scaleY(1.12); }
 }
 
-@keyframes origin-first-open-horizon {
-  0%, 8% { opacity: 0; transform: translateX(-50%) scaleX(0.015); }
-  34% { opacity: 1; transform: translateX(-50%) scaleX(1); }
-  64% { opacity: 0.72; transform: translateX(-50%) scaleX(1.12); }
-  100% { opacity: 0; transform: translateX(-50%) scaleX(1.32); }
-}
-
-@keyframes origin-first-open-iris {
-  0%, 18% { opacity: 0; transform: translate(-50%, -50%) scale(0.08, 0.015); }
-  52% { opacity: 0.9; transform: translate(-50%, -50%) scale(0.84, 0.46); }
-  80% { opacity: 0.34; transform: translate(-50%, -50%) scale(1.08, 1); }
-  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.28, 1.2); }
-}
-
-@keyframes origin-first-open-mark {
-  0%, 28% { opacity: 0; letter-spacing: 0.62em; filter: blur(7px); }
-  52%, 72% { opacity: 1; letter-spacing: 0.42em; filter: blur(0); }
-  100% { opacity: 0; letter-spacing: 0.3em; filter: blur(2px); }
+@keyframes origin-first-open-reduced {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 
 .origin-first-open {
-  animation: origin-first-open-shell 2950ms cubic-bezier(0.22, 0.7, 0.2, 1) forwards;
+  animation: origin-first-open-shell 2050ms cubic-bezier(0.22, 0.7, 0.2, 1) forwards;
 }
 
-.origin-first-open__frame {
-  background-color: var(--bg-0);
-  animation: origin-first-open-frame 2950ms cubic-bezier(0.22, 0.7, 0.2, 1) forwards;
-  will-change: opacity, transform, filter;
+.origin-first-open__ground {
+  background:
+    radial-gradient(ellipse 72% 62% at 38% 100%, rgb(var(--ice-rgb) / 0.2), transparent 72%),
+    radial-gradient(ellipse 68% 58% at 68% 100%, rgb(var(--amber-rgb) / 0.14), transparent 74%);
+  filter: blur(18px);
+  animation: origin-first-open-ground 1750ms cubic-bezier(0.2, 0.72, 0.2, 1) forwards;
 }
 
-.origin-first-open__veil {
-  background: radial-gradient(circle at 50% 52%, transparent 0%, rgb(10 10 12 / 0.9) 72%);
-  animation: origin-first-open-veil 2950ms ease-out forwards;
+.origin-first-open__bars {
+  mask-image: linear-gradient(to right, transparent, #000 5%, #000 95%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 5%, #000 95%, transparent);
 }
 
-.origin-first-open__horizon {
-  background: linear-gradient(90deg, transparent, var(--ice), white 48%, var(--amber), transparent);
-  box-shadow: 0 0 18px 3px rgb(154 211 255 / 0.24), 0 0 34px 6px rgb(255 181 92 / 0.1);
-  transform-origin: center;
-  animation: origin-first-open-horizon 2550ms cubic-bezier(0.2, 0.72, 0.2, 1) forwards;
+.origin-first-open__bar {
+  position: absolute;
+  bottom: -2vh;
+  border-radius: 999px 999px 0 0;
+  opacity: 0;
+  transform: scaleY(0);
+  transform-origin: center bottom;
+  animation: origin-first-open-bar 1350ms cubic-bezier(0.16, 0.78, 0.2, 1) forwards;
+  will-change: opacity, transform;
 }
 
-.origin-first-open__iris {
-  border: 1px solid rgb(214 235 255 / 0.72);
-  background: radial-gradient(ellipse, rgb(255 255 255 / 0.12), rgb(154 211 255 / 0.035) 42%, transparent 70%);
-  box-shadow: inset 0 0 48px rgb(154 211 255 / 0.08), 0 0 32px rgb(255 181 92 / 0.08);
-  animation: origin-first-open-iris 2700ms cubic-bezier(0.18, 0.72, 0.2, 1) forwards;
+.origin-first-open__bar--ice {
+  background: linear-gradient(to top, var(--ice), rgb(225 242 255 / 0.92) 54%, transparent);
+  box-shadow: 0 0 8px 2px rgb(var(--ice-rgb) / 0.34), 0 0 28px 7px rgb(var(--ice-rgb) / 0.12);
 }
 
-.origin-first-open__mark {
-  text-shadow: 0 0 22px rgb(154 211 255 / 0.5);
-  animation: origin-first-open-mark 2650ms ease-in-out forwards;
+.origin-first-open__bar--amber {
+  background: linear-gradient(to top, var(--amber), rgb(255 239 216 / 0.9) 54%, transparent);
+  box-shadow: 0 0 8px 2px rgb(var(--amber-rgb) / 0.3), 0 0 28px 7px rgb(var(--amber-rgb) / 0.1);
+}
+
+.origin-first-open__bar--white {
+  background: linear-gradient(to top, rgb(242 240 235), rgb(255 255 255 / 0.92) 54%, transparent);
+  box-shadow: 0 0 7px 2px rgb(255 255 255 / 0.26), 0 0 24px 6px rgb(255 255 255 / 0.08);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .origin-first-open {
+    animation: origin-first-open-reduced 180ms ease-out forwards;
+  }
+  .origin-first-open__ground,
+  .origin-first-open__bar {
     animation: none;
     opacity: 0;
-    transition: opacity 180ms ease-out;
-  }
-  .origin-first-open__frame,
-  .origin-first-open__veil,
-  .origin-first-open__horizon,
-  .origin-first-open__iris,
-  .origin-first-open__mark {
-    animation: none;
   }
 }

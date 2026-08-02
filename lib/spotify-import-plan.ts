@@ -32,7 +32,6 @@ function trackType(track: SpotifyCatalogTrack): TrackType {
   const title = track.title.toLowerCase();
   if (/\bremix\b/.test(title)) return "remix";
   if (/\bedit\b/.test(title)) return "edit";
-  if (track.artists.length > 1) return "collab";
   return "original";
 }
 

@@ -4,6 +4,7 @@ import { fetchHomeTimeline } from "@/lib/api/feed";
 import { fetchArtistProfile } from "@/lib/api/artist-profile";
 import { fetchConversations } from "@/lib/api/messages";
 import { fetchSupportThreads, type SupportThread } from "@/lib/api/support-messages";
+import { normalizeTrackType } from "@/lib/track-style";
 import type {
   BoardNote,
   Momentum,
@@ -284,7 +285,7 @@ export async function fetchSearchCatalog(
       space_id: t.space_id,
       title: t.title,
       artist_alias: t.artist_alias ?? null,
-      type: (t.type ?? "original") as TrackType,
+      type: normalizeTrackType(t.type),
       bpm: t.bpm != null ? Number(t.bpm) : null,
       musical_key: t.musical_key ?? null,
       genre: t.genre ?? null,
