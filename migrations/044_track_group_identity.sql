@@ -23,12 +23,17 @@ alter table track_groups
   add column if not exists accent_color text;
 
 -- Guard the tint against anything the UI doesn't know how to render.
+--
+-- The migration workflow replays every numbered file against the already-
+-- evolved production schema. Migration 045 adds the `custom` value, so 044
+-- must continue to accept it on later replays; otherwise this temporary
+-- constraint rejects existing custom-colored groups before 045 runs again.
 alter table track_groups
   drop constraint if exists track_groups_accent_color_valid;
 alter table track_groups
   add constraint track_groups_accent_color_valid check (
     accent_color is null
-    or accent_color in ('ice', 'amber', 'violet', 'ok', 'warn')
+    or accent_color in ('ice', 'amber', 'violet', 'ok', 'warn', 'custom')
   );
 
 alter table spaces
