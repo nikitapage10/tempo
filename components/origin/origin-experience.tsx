@@ -20,10 +20,7 @@ import {
 import { OriginReviewStep } from "@/components/origin/origin-review-step";
 import { OriginStoryScroll } from "@/components/origin/origin-story-scroll";
 import { MorphingText } from "@/components/ui/morphing-text";
-import {
-  coverFirstOpenNavigation,
-  markFirstOpenPending,
-} from "@/components/origin/first-open-reveal";
+import { markFirstOpenPending } from "@/components/origin/first-open-reveal";
 import { PHASE_GATES, useOriginMedia } from "@/hooks/use-origin-media";
 import { useOriginState } from "@/hooks/use-origin-state";
 import { clipForPhase } from "@/lib/origin/reducer";
@@ -361,9 +358,9 @@ export function OriginExperience({
       await queryClient.invalidateQueries({ queryKey: ["artist-profile", artistId] });
     })().catch(() => {});
 
-    // Cover only the route swap. Profile work continues behind the animation.
+    // The root-level overlay is already painted over ORIGIN and remains mounted
+    // while the dashboard route replaces it underneath.
     await transitionPainted;
-    coverFirstOpenNavigation();
     router.replace(HOME_ROUTE);
   }
 

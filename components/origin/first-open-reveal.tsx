@@ -6,6 +6,7 @@ import {
   SUPPRESS_INTRO_KEY,
 } from "@/lib/intro";
 import { setLightfieldPaused } from "@/lib/lightfield";
+import { ORIGIN_MEDIA } from "@/lib/origin/media";
 
 const usePrePaintEffect =
   typeof window === "undefined" ? React.useEffect : React.useLayoutEffect;
@@ -13,10 +14,10 @@ const usePrePaintEffect =
 /**
  * The seam between ORIGIN and the product.
  *
- * The app mounts behind an opaque pre-paint floor. The supplied mosaic shader
- * is turned ninety degrees so its layered RGB bands travel horizontally. It
- * starts at the reference's measured pace, accelerates into the final pass,
- * then the entire field dissolves to reveal the dashboard.
+ * The final ORIGIN frame is held above the mounting app. The supplied mosaic
+ * shader is turned ninety degrees and travels with a left-to-right clipping
+ * edge: dashboard behind it on the left, the held film frame on the right.
+ * Both the edge and the light begin offscreen, then accelerate together.
  */
 
 export const FIRST_OPEN_FLAG = ORIGIN_ARRIVAL_KEY;
@@ -27,17 +28,14 @@ const ARRIVAL_MS = 2800;
 const DPR_CAP = 1.5;
 const MAX_INTERNAL_PIXELS = 1280 * 720;
 const FIRST_OPEN_START_EVENT = "tempo:origin-arrival-start";
+const LAST_FRAME_SRC = ORIGIN_MEDIA.scroll06.finalPoster;
 
 const FALLBACK_LINES = [
-  { left: 7, delay: 120, tone: "ice" },
-  { left: 16, delay: 20, tone: "white" },
-  { left: 27, delay: 280, tone: "amber" },
-  { left: 39, delay: 80, tone: "ice" },
-  { left: 51, delay: 220, tone: "white" },
-  { left: 63, delay: 0, tone: "amber" },
-  { left: 74, delay: 320, tone: "ice" },
-  { left: 85, delay: 100, tone: "white" },
-  { left: 94, delay: 250, tone: "amber" },
+  { left: -18, delay: 120, tone: "ice" },
+  { left: -15, delay: 20, tone: "white" },
+  { left: -12, delay: 260, tone: "amber" },
+  { left: -9, delay: 70, tone: "ice" },
+  { left: -6, delay: 190, tone: "white" },
 ] as const;
 
 const VERTEX_SHADER = `
@@ -58,6 +56,7 @@ const FRAGMENT_SHADER = `
   precision highp float;
   uniform vec2 uResolution;
   uniform float uTime;
+  uniform float uProgress;
 
   float random(in float x) {
     return fract(sin(x) * 1e4);
@@ -71,7 +70,8 @@ const FRAGMENT_SHADER = `
     float shortSide = min(uResolution.x, uResolution.y);
     vec2 uv = (gl_FragCoord.xy * 2.0 - uResolution.xy) / shortSide;
 
-    vec2 fMosaicScal = vec2(4.0, 2.0);
+    // Keep the reference mosaic, but sample fewer rows so the seam breathes.
+    vec2 fMosaicScal = vec2(4.0, 6.0);
     vec2 vScreenSize = vec2(256.0, 256.0);
     uv.x = floor(uv.x * vScreenSize.x / fMosaicScal.x)
       / (vScreenSize.x / fMosaicScal.x);
@@ -88,14 +88,21 @@ const FRAGMENT_SHADER = `
 
     vec3 color = vec3(0.0);
     for (int j = 0; j < 3; j++) {
-      for (int i = 0; i < 5; i++) {
+      for (int i = 1; i < 4; i++) {
         color[j] += lineWidth * float(i * i)
           / abs(fract(t - 0.01 * float(j) + float(i) * 0.01)
           - horizontalDistance);
       }
     }
 
-    gl_FragColor = vec4(color[2], color[1], color[0], 1.0);
+    // The light is a narrow moving seam, not a full-screen plate. Its front
+    // begins outside the left edge and accelerates past the right edge.
+    float travel = 0.14 * uProgress + 0.86 * uProgress * uProgress * uProgress;
+    float front = mix(-0.24, 1.22, travel);
+    float seam = 1.0 - smoothstep(0.025, 0.19, abs(horizontalDistance - front));
+    color *= seam;
+    float alpha = clamp(max(max(color.r, color.g), color.b) * 1.35, 0.0, 1.0);
+    gl_FragColor = vec4(color[2], color[1], color[0], alpha);
   }
 `;
 
@@ -112,12 +119,6 @@ export function markFirstOpenPending(): Promise<void> {
   return new Promise((resolve) => {
     requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
   });
-}
-
-/** Install the no-flash floor only for navigation, never while the artist is
- * still looking at ORIGIN's final story frame. */
-export function coverFirstOpenNavigation() {
-  document.documentElement.classList.add("origin-arrival-pending");
 }
 
 export function consumeFirstOpenFlag(): boolean {
@@ -155,6 +156,7 @@ export function FirstOpenReveal() {
 
   React.useEffect(() => {
     const start = () => {
+      consumeFirstOpenFlag();
       claimedRef.current = true;
       setShaderReady(false);
       setPhase("running");
@@ -230,6 +232,8 @@ export function FirstOpenReveal() {
       try {
         renderer = new THREE.WebGLRenderer({
           antialias: false,
+          alpha: true,
+          premultipliedAlpha: true,
           powerPreference: "low-power",
         });
       } catch {
@@ -248,19 +252,21 @@ export function FirstOpenReveal() {
       const uniforms = {
         uResolution: { value: new THREE.Vector2(1, 1) },
         uTime: { value: 1 },
+        uProgress: { value: 0 },
       };
 
       material = new THREE.ShaderMaterial({
         uniforms,
         vertexShader: VERTEX_SHADER,
         fragmentShader: FRAGMENT_SHADER,
-        transparent: false,
+        transparent: true,
         depthTest: false,
         depthWrite: false,
       });
       scene.add(new THREE.Mesh(geometry, material));
 
       const canvas = renderer.domElement;
+      renderer.setClearColor(0x000000, 0);
       canvas.style.display = "block";
       canvas.style.width = "100%";
       canvas.style.height = "100%";
@@ -299,6 +305,7 @@ export function FirstOpenReveal() {
         // The supplied component advances time by roughly 8.4 over 2.8s at
         // 60fps. Preserve that distance, but put most of it in the final rush.
         uniforms.uTime.value = 1 + 8.4 * accelerated;
+        uniforms.uProgress.value = progress;
         renderer.render(scene, camera);
         if (elapsed < ARRIVAL_MS) {
           animationId = requestAnimationFrame(draw);
@@ -327,10 +334,14 @@ export function FirstOpenReveal() {
   return (
     <div
       aria-hidden
-      className="origin-first-open pointer-events-none fixed inset-0 z-[400] overflow-hidden bg-bg-0"
+      className="origin-first-open pointer-events-none fixed inset-0 z-[400] overflow-hidden"
     >
       <div
-        className={`origin-first-open__fallback absolute inset-0 ${
+        className="origin-first-open__last-frame absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: `url(${LAST_FRAME_SRC})` }}
+      />
+      <div
+        className={`origin-first-open__fallback absolute inset-0 z-[1] ${
           shaderReady ? "opacity-0" : "opacity-100"
         }`}
       >
@@ -347,7 +358,7 @@ export function FirstOpenReveal() {
       </div>
       <div
         ref={shaderHostRef}
-        className={`origin-first-open__shader absolute inset-0 transition-opacity duration-150 ${
+        className={`origin-first-open__shader absolute inset-0 z-[1] transition-opacity duration-150 ${
           shaderReady ? "opacity-100" : "opacity-0"
         }`}
       />
