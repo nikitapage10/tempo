@@ -534,19 +534,7 @@ export function OriginMediaStage({
         />
       ) : null}
 
-      <OriginGrain />
-      {/* A second, finer pass in screen blend puts actual highlights into the
-          blacks, which is where grain is visible at all on this footage. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 z-[3] opacity-[0.16] mix-blend-screen"
-        style={{
-          backgroundImage: `url("${GRAIN_URI}")`,
-          backgroundRepeat: "repeat",
-          backgroundSize: "140px 140px",
-          animation: "origin-grain 500ms steps(2) infinite reverse",
-        }}
-      />
+      <OriginFilmGrain />
       </div>
 
       {children}
@@ -577,8 +565,9 @@ const GRAIN_URI =
     </svg>`
   );
 
-function OriginGrain() {
+export function OriginFilmGrain() {
   return (
+    <>
     <div
       aria-hidden
       // Overlay alone barely registers on footage this dark — most of the frame
@@ -592,5 +581,16 @@ function OriginGrain() {
         animation: "origin-grain 700ms steps(3) infinite",
       }}
     />
+    <div
+      aria-hidden
+      className="pointer-events-none absolute inset-0 z-[3] opacity-[0.16] mix-blend-screen"
+      style={{
+        backgroundImage: `url("${GRAIN_URI}")`,
+        backgroundRepeat: "repeat",
+        backgroundSize: "140px 140px",
+        animation: "origin-grain 500ms steps(2) infinite reverse",
+      }}
+    />
+    </>
   );
 }

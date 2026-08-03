@@ -7,7 +7,7 @@ import {
   SUPPRESS_INTRO_KEY,
 } from "@/lib/intro";
 import { setLightfieldPaused } from "@/lib/lightfield";
-import { ORIGIN_MEDIA } from "@/lib/origin/media";
+import { OriginFilmGrain } from "@/components/origin/origin-media-stage";
 
 const usePrePaintEffect =
   typeof window === "undefined" ? React.useEffect : React.useLayoutEffect;
@@ -29,7 +29,6 @@ const ARRIVAL_MS = 2800;
 const DPR_CAP = 1.5;
 const MAX_INTERNAL_PIXELS = 1280 * 720;
 const FIRST_OPEN_START_EVENT = "tempo:origin-arrival-start";
-const LAST_FRAME_SRC = ORIGIN_MEDIA.scroll06.finalPoster;
 
 const FALLBACK_LINES = [
   { left: -18, delay: 120, tone: "ice" },
@@ -39,7 +38,7 @@ const FALLBACK_LINES = [
   { left: -6, delay: 190, tone: "white" },
 ] as const;
 
-type FirstOpenStartDetail = { frameSrc: string | null };
+type FirstOpenStartDetail = { frameCanvas: HTMLCanvasElement | null };
 
 const VERTEX_SHADER = `
   void main() {
@@ -86,11 +85,9 @@ const FRAGMENT_SHADER = `
     // long traces whose motion travels horizontally across the view.
     float aspect = uResolution.x / shortSide;
     float horizontalDistance = (uv.x + aspect) / (2.0 * aspect);
-    // One coherent bend runs through every row. The previous random-per-row
-    // offset is what broke each band into disconnected dashes.
-    horizontalDistance += 0.012 * sin(uv.y * 2.2 + uTime * 0.12)
-      + 0.004 * sin(uv.y * 7.0);
-    float t = uTime * 0.06;
+    // Keep the reference's stepped slider rows, but constrain their offset to
+    // a tight cluster so they read as one moving front instead of loose debris.
+    float t = uTime * 0.06 + (random(uv.y) - 0.5) * 0.065;
     float lineWidth = 0.0008;
 
     vec3 color = vec3(0.0);
@@ -113,8 +110,8 @@ const FRAGMENT_SHADER = `
   }
 `;
 
-export function captureOriginFrame(video: HTMLVideoElement | null): string | null {
-  if (!video || video.readyState < 2 || video.videoWidth < 1 || video.videoHeight < 1) {
+export function captureOriginFrame(video: HTMLVideoElement | null): HTMLCanvasElement | null {
+  if (!video || video.videoWidth < 1 || video.videoHeight < 1) {
     return null;
   }
   try {
@@ -124,13 +121,14 @@ export function captureOriginFrame(video: HTMLVideoElement | null): string | nul
     const context = canvas.getContext("2d");
     if (!context) return null;
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL("image/jpeg", 0.92);
+    canvas.className = "absolute inset-0 h-full w-full object-cover";
+    return canvas;
   } catch {
     return null;
   }
 }
 
-export function markFirstOpenPending(frameSrc: string | null): Promise<void> {
+export function markFirstOpenPending(frameCanvas: HTMLCanvasElement | null): Promise<void> {
   try {
     sessionStorage.setItem(FIRST_OPEN_FLAG, "1");
     sessionStorage.setItem(SUPPRESS_INTRO_FLAG, "1");
@@ -141,7 +139,7 @@ export function markFirstOpenPending(frameSrc: string | null): Promise<void> {
   void import("three").catch(() => {});
   window.dispatchEvent(
     new CustomEvent<FirstOpenStartDetail>(FIRST_OPEN_START_EVENT, {
-      detail: { frameSrc },
+      detail: { frameCanvas },
     })
   );
   return new Promise((resolve) => {
@@ -180,16 +178,19 @@ export function FirstOpenReveal() {
   const pathname = usePathname();
   const [phase, setPhase] = React.useState<"idle" | "running" | "done">("idle");
   const [shaderReady, setShaderReady] = React.useState(false);
-  const [heldFrameSrc, setHeldFrameSrc] = React.useState<string | null>(null);
+  const [hasHeldFrame, setHasHeldFrame] = React.useState(false);
   const claimedRef = React.useRef<boolean | null>(null);
   const shaderHostRef = React.useRef<HTMLDivElement>(null);
+  const heldFrameHostRef = React.useRef<HTMLDivElement>(null);
+  const heldFrameCanvasRef = React.useRef<HTMLCanvasElement | null>(null);
 
   React.useEffect(() => {
     const start = (event: Event) => {
       const detail = (event as CustomEvent<FirstOpenStartDetail>).detail;
       consumeFirstOpenFlag();
       claimedRef.current = true;
-      setHeldFrameSrc(detail?.frameSrc ?? null);
+      heldFrameCanvasRef.current = detail?.frameCanvas ?? null;
+      setHasHeldFrame(Boolean(detail?.frameCanvas));
       setShaderReady(false);
       setPhase("running");
     };
@@ -198,11 +199,17 @@ export function FirstOpenReveal() {
   }, []);
 
   usePrePaintEffect(() => {
+    if (pathname === "/origin" || !hasHeldFrame) return;
+    const host = heldFrameHostRef.current;
+    const canvas = heldFrameCanvasRef.current;
+    if (host && canvas) host.replaceChildren(canvas);
+  }, [hasHeldFrame, pathname]);
+
+  usePrePaintEffect(() => {
     // Keep the claim in a ref so React Strict Mode can safely restart this
     // effect without consuming the one-shot session flag twice.
     if (claimedRef.current === null) {
       claimedRef.current = consumeFirstOpenFlag();
-      if (claimedRef.current) setHeldFrameSrc(LAST_FRAME_SRC ?? null);
     }
     if (!claimedRef.current) {
       document.documentElement.classList.remove("origin-arrival-pending");
@@ -369,13 +376,11 @@ export function FirstOpenReveal() {
       aria-hidden
       className="origin-first-open pointer-events-none fixed inset-0 z-[400] overflow-hidden"
     >
-      {pathname !== "/origin" && heldFrameSrc ? (
+      {pathname !== "/origin" && hasHeldFrame ? (
         <div className="origin-first-open__last-frame absolute inset-0">
           <div className="origin-media-layer">
-            <div
-              className="absolute inset-0 bg-cover bg-center"
-              style={{ backgroundImage: `url(${heldFrameSrc})` }}
-            />
+            <div ref={heldFrameHostRef} className="absolute inset-0" />
+            <OriginFilmGrain />
           </div>
         </div>
       ) : null}
