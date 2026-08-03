@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import { LightfieldRoot } from "@/components/lightfield";
+import { FirstOpenReveal } from "@/components/origin/first-open-reveal";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
@@ -57,6 +58,7 @@ export default function RootLayout({
       <body>
         <Providers>
           <LightfieldRoot>{children}</LightfieldRoot>
+          <FirstOpenReveal />
         </Providers>
       </body>
     </html>

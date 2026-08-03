@@ -20,7 +20,10 @@ import {
 import { OriginReviewStep } from "@/components/origin/origin-review-step";
 import { OriginStoryScroll } from "@/components/origin/origin-story-scroll";
 import { MorphingText } from "@/components/ui/morphing-text";
-import { markFirstOpenPending } from "@/components/origin/first-open-reveal";
+import {
+  coverFirstOpenNavigation,
+  markFirstOpenPending,
+} from "@/components/origin/first-open-reveal";
 import { PHASE_GATES, useOriginMedia } from "@/hooks/use-origin-media";
 import { useOriginState } from "@/hooks/use-origin-state";
 import { clipForPhase } from "@/lib/origin/reducer";
@@ -341,22 +344,26 @@ export function OriginExperience({
     // navigates to "/" the moment it sees that. The app shell could therefore
     // mount, look for the arrival flag, and find nothing, so the handoff film
     // never played. Setting it here means whichever navigation wins, the flag
-    // and the pre-paint floor are already in place.
-    markFirstOpenPending();
+    // and the transition claim are already in place.
+    const transitionPainted = markFirstOpenPending();
 
-    if (artistId) {
-      // Always applied now, rather than offered as a checkbox: it only fills
-      // blank fields and never changes visibility, so there was nothing for the
-      // artist to weigh up. Never blocks entry — see profile-mapping.
-      await applyOriginToProfile(artistId, state.interpretation, state.name).catch(
-        () => {}
-      );
-    }
+    void (async () => {
+      if (artistId) {
+        // Always applied now, rather than offered as a checkbox: it only fills
+        // blank fields and never changes visibility, so there was nothing for the
+        // artist to weigh up. Never blocks entry; see profile-mapping.
+        await applyOriginToProfile(artistId, state.interpretation, state.name).catch(
+          () => {}
+        );
+      }
 
-    await queryClient.invalidateQueries({ queryKey: ["artists"] });
-    await queryClient.invalidateQueries({ queryKey: ["artist-profile", artistId] });
+      await queryClient.invalidateQueries({ queryKey: ["artists"] });
+      await queryClient.invalidateQueries({ queryKey: ["artist-profile", artistId] });
+    })().catch(() => {});
 
-    // Import now runs inside the story, so Enter TEMPO always opens the app.
+    // Cover only the route swap. Profile work continues behind the animation.
+    await transitionPainted;
+    coverFirstOpenNavigation();
     router.replace(HOME_ROUTE);
   }
 

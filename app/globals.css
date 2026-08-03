@@ -924,23 +924,15 @@
 }
 
 @keyframes origin-first-open-shell {
-  0%, 72% { background-color: var(--bg-0); opacity: 1; }
-  82% { background-color: rgb(10 10 12 / 0.68); opacity: 0.92; }
+  0%, 74% { opacity: 1; }
   100% { opacity: 0; }
 }
 
-@keyframes origin-first-open-wake {
-  0% { opacity: 0; transform: translateX(-62%) scaleX(0.36); }
-  24% { opacity: 0.36; }
-  72% { opacity: 0.72; transform: translateX(18%) scaleX(0.9); }
-  100% { opacity: 0; transform: translateX(62%) scaleX(1.12); }
-}
-
 @keyframes origin-first-open-fallback-line {
-  0% { opacity: 0; transform: translateX(0); }
-  12% { opacity: 0.72; }
-  58% { opacity: 1; }
-  100% { opacity: 0; transform: translateX(310vw); }
+  0% { opacity: 0.42; transform: translate3d(-9vw, 0, 0) scaleX(0.7); }
+  20% { opacity: 0.78; }
+  62% { opacity: 1; }
+  100% { opacity: 0; transform: translate3d(44vw, 0, 0) scaleX(1.25); }
 }
 
 @keyframes origin-first-open-reduced {
@@ -949,45 +941,37 @@
 }
 
 .origin-first-open {
-  animation: origin-first-open-shell 2750ms cubic-bezier(0.22, 0.7, 0.2, 1) forwards;
-}
-
-.origin-first-open__wake {
-  background:
-    radial-gradient(ellipse 42% 92% at 48% 50%, rgb(var(--ice-rgb) / 0.16), transparent 72%),
-    radial-gradient(ellipse 34% 84% at 58% 50%, rgb(var(--amber-rgb) / 0.1), transparent 76%);
-  filter: blur(24px);
-  animation: origin-first-open-wake 2600ms cubic-bezier(0.62, 0.02, 0.9, 0.42) forwards;
-  will-change: opacity, transform;
+  animation: origin-first-open-shell 2800ms cubic-bezier(0.22, 0.7, 0.2, 1) forwards;
 }
 
 .origin-first-open__fallback {
+  background-color: var(--bg-0);
   transition: opacity 120ms ease-out;
 }
 
 .origin-first-open__fallback-line {
   position: absolute;
-  left: -190vw;
-  height: 1px;
+  inset-block: -8%;
+  width: 1px;
   border-radius: 999px;
-  opacity: 0;
-  animation: origin-first-open-fallback-line 2350ms cubic-bezier(0.66, 0.02, 0.94, 0.42) forwards;
+  opacity: 0.42;
+  animation: origin-first-open-fallback-line 2420ms cubic-bezier(0.72, 0.01, 0.94, 0.38) forwards;
   will-change: opacity, transform;
 }
 
 .origin-first-open__fallback-line--ice {
-  background: linear-gradient(to right, transparent, var(--ice) 18%, rgb(225 242 255) 88%, transparent);
-  box-shadow: 0 0 8px 2px rgb(var(--ice-rgb) / 0.28), 0 0 22px 5px rgb(var(--ice-rgb) / 0.1);
+  background: linear-gradient(to bottom, transparent, var(--ice) 7%, rgb(225 242 255) 93%, transparent);
+  box-shadow: 0 0 7px 2px rgb(var(--ice-rgb) / 0.32), 0 0 20px 5px rgb(var(--ice-rgb) / 0.1);
 }
 
 .origin-first-open__fallback-line--amber {
-  background: linear-gradient(to right, transparent, var(--amber) 18%, rgb(255 239 216) 88%, transparent);
-  box-shadow: 0 0 8px 2px rgb(var(--amber-rgb) / 0.25), 0 0 22px 5px rgb(var(--amber-rgb) / 0.08);
+  background: linear-gradient(to bottom, transparent, var(--amber) 7%, rgb(255 239 216) 93%, transparent);
+  box-shadow: 0 0 7px 2px rgb(var(--amber-rgb) / 0.28), 0 0 20px 5px rgb(var(--amber-rgb) / 0.08);
 }
 
 .origin-first-open__fallback-line--white {
-  background: linear-gradient(to right, transparent, rgb(242 240 235) 18%, white 88%, transparent);
-  box-shadow: 0 0 7px 2px rgb(255 255 255 / 0.22), 0 0 20px 5px rgb(255 255 255 / 0.07);
+  background: linear-gradient(to bottom, transparent, rgb(242 240 235) 7%, white 93%, transparent);
+  box-shadow: 0 0 6px 2px rgb(255 255 255 / 0.24), 0 0 18px 5px rgb(255 255 255 / 0.07);
 }
 
 .origin-first-open__shader canvas {
@@ -1000,7 +984,6 @@
   .origin-first-open {
     animation: origin-first-open-reduced 180ms ease-out forwards;
   }
-  .origin-first-open__wake,
   .origin-first-open__fallback,
   .origin-first-open__shader {
     animation: none;

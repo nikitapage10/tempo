@@ -23,7 +23,6 @@ import { SpaceSwitcher } from "@/components/space-switcher";
 import { NotificationCenter } from "@/components/notification-center";
 import { MessageCenter } from "@/components/message-center";
 import { EdgeStrip, IntroMoment } from "@/components/intro-moment";
-import { FirstOpenReveal } from "@/components/origin/first-open-reveal";
 import { FlareLine } from "@/components/flare-line";
 import { Wordmark } from "@/components/wordmark";
 import { LfWindow } from "@/components/lf-windows";
@@ -99,8 +98,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col" data-lf-chrome>
       <ArtistFavicon />
-      {/* Covers the seam out of ORIGIN. Renders nothing in any other session. */}
-      <FirstOpenReveal />
       <IntroMoment />
       <EdgeStrip />
 
