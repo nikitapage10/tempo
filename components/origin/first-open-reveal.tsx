@@ -25,7 +25,7 @@ export const FIRST_OPEN_FLAG = ORIGIN_ARRIVAL_KEY;
 /** Suppresses the daily boot intro so two introductions never stack up. */
 export const SUPPRESS_INTRO_FLAG = SUPPRESS_INTRO_KEY;
 
-const ARRIVAL_MS = 2800;
+const ARRIVAL_MS = 3200;
 const DPR_CAP = 1.5;
 const MAX_INTERNAL_PIXELS = 1280 * 720;
 const REVEAL_BANDS = 32;
@@ -108,7 +108,6 @@ const FRAGMENT_SHADER = `
 
   precision highp float;
   uniform vec2 uResolution;
-  uniform float uTime;
   uniform float uProgress;
 
   float random(in float x) {
@@ -136,24 +135,24 @@ const FRAGMENT_SHADER = `
     // long traces whose motion travels horizontally across the view.
     float aspect = uResolution.x / shortSide;
     float horizontalDistance = (uv.x + aspect) / (2.0 * aspect);
-    // Keep the reference's stepped slider rows, but constrain their offset to
-    // a tight cluster so they read as one moving front instead of loose debris.
-    float t = uTime * 0.06 + (random(uv.y) - 0.5) * 0.065;
+    // Keep the reference's stepped slider rows, but anchor them to the reveal
+    // front so their light cannot fall behind the dashboard wipe near the end.
+    float travel = 0.14 * uProgress + 0.86 * pow(uProgress, 2.5);
+    float front = mix(-0.24, 1.16, travel);
+    float t = front + (random(uv.y) - 0.5) * 0.065;
     float lineWidth = 0.0008;
 
     vec3 color = vec3(0.0);
     for (int j = 0; j < 3; j++) {
       for (int i = 1; i < 4; i++) {
         color[j] += lineWidth * float(i * i)
-          / abs(fract(t - 0.01 * float(j) + float(i) * 0.01)
+          / abs((t - 0.01 * float(j) + float(i) * 0.01)
           - horizontalDistance);
       }
     }
 
     // The light is a narrow moving seam, not a full-screen plate. Its front
-    // begins outside the left edge and accelerates past the right edge.
-    float travel = 0.14 * uProgress + 0.86 * uProgress * uProgress * uProgress;
-    float front = mix(-0.24, 1.22, travel);
+    // begins outside the left edge and remains visible through the right edge.
     float seam = 1.0 - smoothstep(0.025, 0.19, abs(horizontalDistance - front));
     color *= seam;
     float alpha = clamp(max(max(color.r, color.g), color.b) * 1.35, 0.0, 1.0);
@@ -311,8 +310,11 @@ export function FirstOpenReveal() {
     let animationId = 0;
     const draw = (now: number) => {
       const progress = Math.min(1, (now - startedAtRef.current) / ARRIVAL_MS);
-      const travel = 0.14 * progress + 0.86 * progress ** 3;
-      const front = -24 + (122 - -24) * travel;
+      const travel = 0.14 * progress + 0.86 * progress ** 2.5;
+      const lightFront = -24 + (116 - -24) * travel;
+      // The picture recedes just behind the light, so the wipe can never pass
+      // the visible shader sliders during the final acceleration.
+      const front = lightFront - 4;
       transitionRef.current?.style.setProperty(
         "--origin-arrival-front",
         `${front}%`
@@ -372,7 +374,6 @@ export function FirstOpenReveal() {
 
       const uniforms = {
         uResolution: { value: new THREE.Vector2(1, 1) },
-        uTime: { value: 1 },
         uProgress: { value: 0 },
       };
 
@@ -421,10 +422,6 @@ export function FirstOpenReveal() {
         if (!renderer || cancelled) return;
         const elapsed = now - startedAtRef.current;
         const progress = Math.min(1, elapsed / ARRIVAL_MS);
-        const accelerated = 0.08 * progress + 0.92 * progress ** 4;
-        // The supplied component advances time by roughly 8.4 over 2.8s at
-        // 60fps. Preserve that distance, but put most of it in the final rush.
-        uniforms.uTime.value = 1 + 8.4 * accelerated;
         uniforms.uProgress.value = progress;
         renderer.render(scene, camera);
         if (elapsed < ARRIVAL_MS) {

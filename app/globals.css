@@ -936,7 +936,7 @@
 }
 
 .origin-first-open {
-  --origin-arrival-front: -24%;
+  --origin-arrival-front: -28%;
 }
 
 .origin-first-open__last-frame {
@@ -953,7 +953,7 @@
   width: 1px;
   border-radius: 999px;
   opacity: 0;
-  animation: origin-first-open-fallback-line 2600ms cubic-bezier(0.72, 0.01, 0.94, 0.38) forwards;
+  animation: origin-first-open-fallback-line 3100ms cubic-bezier(0.68, 0.02, 0.88, 0.42) forwards;
   will-change: opacity, transform;
 }
 

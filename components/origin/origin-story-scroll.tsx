@@ -373,14 +373,6 @@ export function OriginStoryScroll({
     };
   }, [staticMode]);
 
-  /** Jump straight to the closing section. A safety valve: if scrubbing ever
-   *  fails again, the way out must not be something you can only scroll to. */
-  const skipToEnd = React.useCallback(() => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-  }, []);
-
   const sections = [
     <div key="promise" className="flex flex-col gap-6">
       <p className="max-w-xl font-display text-2xl leading-snug text-text-hi sm:text-3xl">
@@ -584,20 +576,21 @@ export function OriginStoryScroll({
         </div>
       </div>
 
-      {/* Always reachable, whatever the scroll position — the way out must
-          never be something you can only reach by scrolling. */}
-      <div className="pointer-events-none sticky bottom-0 flex justify-end px-5 pb-[max(1rem,env(safe-area-inset-bottom))]">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={chapter === sections.length - 1 ? onEnter : skipToEnd}
-          disabled={busy}
-          className="pointer-events-auto bg-bg-0/60 text-text-lo backdrop-blur hover:text-text-hi"
-        >
-          {chapter === sections.length - 1 ? "Enter TEMPO" : "Skip to the end"}
-        </Button>
-      </div>
+      {/* The exit appears only once the viewer reaches the closing chapter. */}
+      {chapter === sections.length - 1 ? (
+        <div className="pointer-events-none sticky bottom-0 flex justify-end px-5 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onEnter}
+            disabled={busy}
+            className="pointer-events-auto bg-bg-0/60 text-text-lo backdrop-blur hover:text-text-hi"
+          >
+            Enter TEMPO
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 }
