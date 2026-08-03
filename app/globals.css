@@ -923,14 +923,6 @@
   background-color: var(--bg-0);
 }
 
-@keyframes origin-first-open-last-frame {
-  0%, 46% { clip-path: inset(0 0 0 0); }
-  52% { clip-path: inset(0 0 0 3%); }
-  72% { clip-path: inset(0 0 0 38%); }
-  88% { clip-path: inset(0 0 0 79%); }
-  100% { clip-path: inset(0 0 0 100%); }
-}
-
 @keyframes origin-first-open-fallback-line {
   0% { opacity: 0; transform: translate3d(0, 0, 0) scaleX(0.7); }
   14% { opacity: 0.58; }
@@ -943,9 +935,12 @@
   to { opacity: 0; }
 }
 
+.origin-first-open {
+  --origin-arrival-front: -24%;
+}
+
 .origin-first-open__last-frame {
-  animation: origin-first-open-last-frame 2800ms linear forwards;
-  will-change: clip-path;
+  will-change: mask-image, -webkit-mask-image;
 }
 
 .origin-first-open__fallback {
@@ -988,7 +983,8 @@
     animation: origin-first-open-reduced 180ms ease-out forwards;
   }
   .origin-first-open__last-frame {
-    animation: none;
+    mask-image: none !important;
+    -webkit-mask-image: none !important;
   }
   .origin-first-open__fallback,
   .origin-first-open__shader {

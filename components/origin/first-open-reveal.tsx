@@ -16,9 +16,9 @@ const usePrePaintEffect =
  * The seam between ORIGIN and the product.
  *
  * The final ORIGIN frame is held above the mounting app. The supplied mosaic
- * shader is turned ninety degrees and travels with a left-to-right clipping
- * edge: dashboard behind it on the left, the held film frame on the right.
- * Both the edge and the light begin offscreen, then accelerate together.
+ * shader is turned ninety degrees and travels with a left-to-right, banded
+ * feather mask: dashboard behind it on the left, held film on the right. The
+ * mask and the light share one progress clock and accelerate together.
  */
 
 export const FIRST_OPEN_FLAG = ORIGIN_ARRIVAL_KEY;
@@ -28,6 +28,7 @@ export const SUPPRESS_INTRO_FLAG = SUPPRESS_INTRO_KEY;
 const ARRIVAL_MS = 2800;
 const DPR_CAP = 1.5;
 const MAX_INTERNAL_PIXELS = 1280 * 720;
+const REVEAL_BANDS = 32;
 const FIRST_OPEN_START_EVENT = "tempo:origin-arrival-start";
 
 const FALLBACK_LINES = [
@@ -39,6 +40,56 @@ const FALLBACK_LINES = [
 ] as const;
 
 type FirstOpenStartDetail = { frameCanvas: HTMLCanvasElement | null };
+
+function shaderRandom(value: number) {
+  const raw = Math.sin(value) * 1e4;
+  return raw - Math.floor(raw);
+}
+
+/**
+ * Builds overlapping row masks whose offsets use the same quantized-y random
+ * function as the shader. The generous alpha feather removes any geometric
+ * edge while the small row offsets preserve the stepped slider silhouette.
+ */
+function applyBandedArrivalMask(element: HTMLDivElement) {
+  const width = Math.max(1, window.innerWidth);
+  const height = Math.max(1, window.innerHeight);
+  const shortSide = Math.min(width, height);
+  const bandHeight = Math.ceil(height / REVEAL_BANDS) + 2;
+  const images: string[] = [];
+  const sizes: string[] = [];
+  const positions: string[] = [];
+
+  for (let index = 0; index < REVEAL_BANDS; index += 1) {
+    // WebGL's y-axis begins at the bottom, so mirror the DOM row centre before
+    // applying the shader's exact mosaic quantization and random offset.
+    const cssY = ((index + 0.5) / REVEAL_BANDS) * height;
+    const glY = height - cssY;
+    const uvY = (glY * 2 - height) / shortSide;
+    const mosaicY = Math.floor((uvY * 256) / 6) / (256 / 6);
+    const offset = (shaderRandom(mosaicY) - 0.5) * 6.5;
+    const edge = (extra = 0) =>
+      `calc(var(--origin-arrival-front) + ${(offset + extra).toFixed(3)}vw)`;
+
+    images.push(
+      `linear-gradient(to right, transparent ${edge(-8)}, rgb(0 0 0 / 0.12) ${edge(-3.5)}, rgb(0 0 0 / 0.7) ${edge(2.5)}, #000 ${edge(8)})`
+    );
+    sizes.push(`100% ${bandHeight}px`);
+    positions.push(`0 ${Math.floor((index / REVEAL_BANDS) * height)}px`);
+  }
+
+  const image = images.join(", ");
+  const size = sizes.join(", ");
+  const position = positions.join(", ");
+  element.style.setProperty("mask-image", image);
+  element.style.setProperty("-webkit-mask-image", image);
+  element.style.setProperty("mask-size", size);
+  element.style.setProperty("-webkit-mask-size", size);
+  element.style.setProperty("mask-position", position);
+  element.style.setProperty("-webkit-mask-position", position);
+  element.style.setProperty("mask-repeat", "no-repeat");
+  element.style.setProperty("-webkit-mask-repeat", "no-repeat");
+}
 
 const VERTEX_SHADER = `
   void main() {
@@ -181,8 +232,11 @@ export function FirstOpenReveal() {
   const [hasHeldFrame, setHasHeldFrame] = React.useState(false);
   const claimedRef = React.useRef<boolean | null>(null);
   const shaderHostRef = React.useRef<HTMLDivElement>(null);
+  const transitionRef = React.useRef<HTMLDivElement>(null);
+  const heldFrameLayerRef = React.useRef<HTMLDivElement>(null);
   const heldFrameHostRef = React.useRef<HTMLDivElement>(null);
   const heldFrameCanvasRef = React.useRef<HTMLCanvasElement | null>(null);
+  const startedAtRef = React.useRef(0);
 
   React.useEffect(() => {
     const start = (event: Event) => {
@@ -192,6 +246,7 @@ export function FirstOpenReveal() {
       heldFrameCanvasRef.current = detail?.frameCanvas ?? null;
       setHasHeldFrame(Boolean(detail?.frameCanvas));
       setShaderReady(false);
+      startedAtRef.current = performance.now();
       setPhase("running");
     };
     window.addEventListener(FIRST_OPEN_START_EVENT, start);
@@ -201,8 +256,14 @@ export function FirstOpenReveal() {
   usePrePaintEffect(() => {
     if (pathname === "/origin" || !hasHeldFrame) return;
     const host = heldFrameHostRef.current;
+    const layer = heldFrameLayerRef.current;
     const canvas = heldFrameCanvasRef.current;
     if (host && canvas) host.replaceChildren(canvas);
+    if (!layer) return;
+    applyBandedArrivalMask(layer);
+    const onResize = () => applyBandedArrivalMask(layer);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
   }, [hasHeldFrame, pathname]);
 
   usePrePaintEffect(() => {
@@ -240,6 +301,26 @@ export function FirstOpenReveal() {
       cancelAnimationFrame(innerRaf);
       clearTimeout(toDone);
     };
+  }, [phase]);
+
+  // One clock owns the wipe position. The DOM mask reads this custom property,
+  // while WebGL derives its front from the same start time below.
+  React.useEffect(() => {
+    if (phase !== "running") return;
+    if (!startedAtRef.current) startedAtRef.current = performance.now();
+    let animationId = 0;
+    const draw = (now: number) => {
+      const progress = Math.min(1, (now - startedAtRef.current) / ARRIVAL_MS);
+      const travel = 0.14 * progress + 0.86 * progress ** 3;
+      const front = -24 + (122 - -24) * travel;
+      transitionRef.current?.style.setProperty(
+        "--origin-arrival-front",
+        `${front}%`
+      );
+      if (progress < 1) animationId = requestAnimationFrame(draw);
+    };
+    animationId = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(animationId);
   }, [phase]);
 
   // The root lightfield is invisible during the handoff. Pausing it leaves the
@@ -336,10 +417,9 @@ export function FirstOpenReveal() {
       renderer.render(scene, camera);
       setShaderReady(true);
 
-      const startedAt = performance.now();
       const draw = (now: number) => {
         if (!renderer || cancelled) return;
-        const elapsed = now - startedAt;
+        const elapsed = now - startedAtRef.current;
         const progress = Math.min(1, elapsed / ARRIVAL_MS);
         const accelerated = 0.08 * progress + 0.92 * progress ** 4;
         // The supplied component advances time by roughly 8.4 over 2.8s at
@@ -373,11 +453,15 @@ export function FirstOpenReveal() {
 
   return (
     <div
+      ref={transitionRef}
       aria-hidden
       className="origin-first-open pointer-events-none fixed inset-0 z-[400] overflow-hidden"
     >
       {pathname !== "/origin" && hasHeldFrame ? (
-        <div className="origin-first-open__last-frame absolute inset-0">
+        <div
+          ref={heldFrameLayerRef}
+          className="origin-first-open__last-frame absolute inset-0"
+        >
           <div className="origin-media-layer">
             <div ref={heldFrameHostRef} className="absolute inset-0" />
             <OriginFilmGrain />
