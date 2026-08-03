@@ -391,20 +391,45 @@ export function OriginMediaStage({
     return () => cancelAnimationFrame(raf);
   }, [activeSlot, clipKey, clipLoop, staticMode]);
 
-  /** A hidden tab throttles or pauses playback; resume so the loop is running
-   *  when the artist returns rather than frozen mid-frame. */
+  /**
+   * A hidden tab throttles or pauses playback. Resume the active cinematic
+   * clip when the artist returns so its time-driven copy and phase changes can
+   * continue. Scrub footage is the exception: it is intentionally kept paused
+   * and is driven by scroll position instead.
+   */
   React.useEffect(() => {
-    const onVis = () => {
-      const el = (activeSlotRef.current === "a" ? aRef.current : bRef.current) ?? null;
-      if (!el) return;
-      if (document.visibilityState === "visible") {
-        if (el.paused && el.loop) void el.play().catch(() => {});
-      } else {
-        el.pause();
-      }
+    const activePlayback = () => {
+      const slot = activeSlotRef.current;
+      const el = (slot === "a" ? aRef.current : bRef.current) ?? null;
+      const key = slotKeyRef.current[slot];
+      if (!el || !key || originAsset(key).mode === "scrub" || el.ended) return null;
+      return el;
     };
-    document.addEventListener("visibilitychange", onVis);
-    return () => document.removeEventListener("visibilitychange", onVis);
+
+    const resume = () => {
+      if (document.visibilityState !== "visible") return;
+      const el = activePlayback();
+      if (el?.paused) void el.play().catch(() => {});
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        resume();
+        return;
+      }
+      activePlayback()?.pause();
+    };
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    // Mobile browsers can restore a backgrounded page through either event,
+    // so these are harmless recovery paths for missed visibility transitions.
+    window.addEventListener("pageshow", resume);
+    window.addEventListener("focus", resume);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("pageshow", resume);
+      window.removeEventListener("focus", resume);
+    };
   }, []);
 
   /** Stop all speculative work on unmount. */
