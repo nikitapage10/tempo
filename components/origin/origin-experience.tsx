@@ -20,7 +20,10 @@ import {
 import { OriginReviewStep } from "@/components/origin/origin-review-step";
 import { OriginStoryScroll } from "@/components/origin/origin-story-scroll";
 import { MorphingText } from "@/components/ui/morphing-text";
-import { markFirstOpenPending } from "@/components/origin/first-open-reveal";
+import {
+  captureOriginFrame,
+  markFirstOpenPending,
+} from "@/components/origin/first-open-reveal";
 import { PHASE_GATES, useOriginMedia } from "@/hooks/use-origin-media";
 import { useOriginState } from "@/hooks/use-origin-state";
 import { clipForPhase } from "@/lib/origin/reducer";
@@ -330,6 +333,9 @@ export function OriginExperience({
   const gateFor = (phase: Parameters<typeof clipForPhase>[0]) => PHASE_GATES[phase] ?? [];
 
   async function handleEnter() {
+    // Capture the exact scrub frame already on screen before saving changes any
+    // React state. It stays hidden until the app route replaces ORIGIN.
+    const heldFrame = captureOriginFrame(activeVideoRef.current);
     const ok = await complete();
     if (!ok) return;
 
@@ -342,7 +348,7 @@ export function OriginExperience({
     // mount, look for the arrival flag, and find nothing, so the handoff film
     // never played. Setting it here means whichever navigation wins, the flag
     // and the transition claim are already in place.
-    const transitionPainted = markFirstOpenPending();
+    const transitionPainted = markFirstOpenPending(heldFrame);
 
     void (async () => {
       if (artistId) {
