@@ -26,6 +26,8 @@ type TrackHeaderProps = {
   bare?: boolean;
   /** Routes stage changes through the recipe-aware transition helper instead of a plain patch. */
   onStageChange?: (stageId: string) => void;
+  /** Compact previous/next controls supplied by the track workspace. */
+  navigation?: React.ReactNode;
 };
 
 export function TrackHeader({
@@ -36,6 +38,7 @@ export function TrackHeader({
   hideStage = false,
   bare = false,
   onStageChange,
+  navigation,
 }: TrackHeaderProps) {
   const [title, setTitle] = React.useState(track.title);
   const [editingTitle, setEditingTitle] = React.useState(false);
@@ -133,13 +136,16 @@ export function TrackHeader({
         </div>
 
         <div className="min-w-0 flex-1">
-          <Link
-            href="/board"
-            className="mb-2 inline-flex items-center gap-1.5 text-xs text-text-lo transition-colors duration-hover hover:text-ice"
-          >
-            <ArrowLeft className="size-3.5" />
-            Board
-          </Link>
+          <div className="mb-2 flex min-h-8 items-center justify-between gap-3">
+            <Link
+              href="/board"
+              className="inline-flex items-center gap-1.5 text-xs text-text-lo transition-colors duration-hover hover:text-ice"
+            >
+              <ArrowLeft className="size-3.5" />
+              Board
+            </Link>
+            {navigation}
+          </div>
 
           {editingTitle ? (
             <input

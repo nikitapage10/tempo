@@ -21,6 +21,8 @@ type TrackAmbientHeaderProps = {
    * space of its own.
    */
   actions?: React.ReactNode;
+  /** Previous/next track controls shown opposite the Board link. */
+  navigation?: React.ReactNode;
 };
 
 /**
@@ -36,6 +38,7 @@ export function TrackAmbientHeader({
   showStageDropdown = false,
   onStageChange,
   actions,
+  navigation,
 }: TrackAmbientHeaderProps) {
   const [tint, setTint] = React.useState<string | null>(null);
 
@@ -86,6 +89,7 @@ export function TrackAmbientHeader({
           onPatch={onPatch}
           hideStage={!showStageDropdown}
           onStageChange={onStageChange}
+          navigation={navigation}
           bare
         />
       </div>

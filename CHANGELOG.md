@@ -4,6 +4,9 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-07
 
+- Added (v0.84.1): individual track pages now have compact Previous and Next
+  controls in the header. They follow the current space's track order, making
+  it possible to move through the catalog without returning to Board or Tracks.
 - Changed (v0.84.0): Origin now asks one useful direction question after the
   artist shares their history. The separate recap screen is gone; the scrolling
   reveal is the single place where Origin reflects the story back and lets the

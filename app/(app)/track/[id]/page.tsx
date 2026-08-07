@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import { Suspense } from "react";
-import { Trash2 } from "lucide-react";
+import Link from "next/link";
+import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
@@ -40,6 +41,7 @@ import { useStageTransitionController } from "@/hooks/use-stage-transition";
 import {
   useTrack,
   useTrackMutations,
+  useTracks,
   useVersionCount,
 } from "@/hooks/use-tracks";
 import { useVersions } from "@/hooks/use-versions";
@@ -82,6 +84,7 @@ function TrackDetailContent() {
   const versionQuery = useVersionCount(trackId);
   const versionsQuery = useVersions(trackId);
   const track = trackQuery.data;
+  const siblingTracksQuery = useTracks(track?.space_id ?? null);
   const stagesQuery = useStages(track?.space_id ?? null);
   const { update, remove } = useTrackMutations(track?.space_id ?? null);
   const unresolvedCommentsQuery = useUnresolvedCommentCount(trackId);
@@ -98,6 +101,16 @@ function TrackDetailContent() {
     stageId: track?.stage_id ?? null,
   });
   const layout = effectivePresetShape(prefQuery.data ?? null);
+
+  const adjacentTracks = React.useMemo(() => {
+    const tracks = siblingTracksQuery.data ?? [];
+    const index = tracks.findIndex((item) => item.id === trackId);
+    if (index < 0) return { previous: null, next: null };
+    return {
+      previous: tracks[index - 1] ?? null,
+      next: tracks[index + 1] ?? null,
+    };
+  }, [siblingTracksQuery.data, trackId]);
 
   const [selectedVersionId, setSelectedVersionId] = React.useState<
     string | null
@@ -345,6 +358,17 @@ function TrackDetailContent() {
           stages={stages}
           versionCount={versionQuery.data ?? 0}
           onPatch={onPatch}
+          navigation={
+            siblingTracksQuery.isLoading ||
+            (adjacentTracks.previous == null && adjacentTracks.next == null)
+              ? null
+              : (
+                  <TrackSiblingNavigation
+                    previous={adjacentTracks.previous}
+                    next={adjacentTracks.next}
+                  />
+                )
+          }
           onStageChange={(stageId) =>
             void changeStage(track.id, stageId, {
               trackTitle: track.title,
@@ -517,6 +541,58 @@ function TrackDetailContent() {
       </DialogContent>
     </Dialog>
     </>
+  );
+}
+
+function TrackSiblingNavigation({
+  previous,
+  next,
+}: {
+  previous: { id: string; title: string } | null;
+  next: { id: string; title: string } | null;
+}) {
+  return (
+    <nav aria-label="Move between tracks" className="flex items-center gap-1">
+      {previous ? (
+        <Link
+          href={`/track/${previous.id}`}
+          title={`Previous track: ${previous.title}`}
+          aria-label={`Previous track: ${previous.title}`}
+          className="inline-flex h-8 items-center gap-1 rounded-chip border border-line bg-bg-0/45 px-2 text-xs text-text-lo transition-colors hover:border-ice/40 hover:text-ice focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+        >
+          <ChevronLeft className="size-3.5" />
+          <span className="hidden sm:inline">Previous</span>
+        </Link>
+      ) : (
+        <span
+          aria-hidden="true"
+          className="inline-flex h-8 items-center gap-1 rounded-chip border border-line/50 px-2 text-xs text-text-lo/35"
+        >
+          <ChevronLeft className="size-3.5" />
+          <span className="hidden sm:inline">Previous</span>
+        </span>
+      )}
+
+      {next ? (
+        <Link
+          href={`/track/${next.id}`}
+          title={`Next track: ${next.title}`}
+          aria-label={`Next track: ${next.title}`}
+          className="inline-flex h-8 items-center gap-1 rounded-chip border border-line bg-bg-0/45 px-2 text-xs text-text-lo transition-colors hover:border-ice/40 hover:text-ice focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+        >
+          <span className="hidden sm:inline">Next</span>
+          <ChevronRight className="size-3.5" />
+        </Link>
+      ) : (
+        <span
+          aria-hidden="true"
+          className="inline-flex h-8 items-center gap-1 rounded-chip border border-line/50 px-2 text-xs text-text-lo/35"
+        >
+          <span className="hidden sm:inline">Next</span>
+          <ChevronRight className="size-3.5" />
+        </span>
+      )}
+    </nav>
   );
 }
 
