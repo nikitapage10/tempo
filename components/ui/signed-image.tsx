@@ -24,21 +24,42 @@ async function resolveSignedImage(path: string): Promise<string> {
   try {
     return await getSignedUrl(path);
   } catch (error) {
-    const match = path.match(
+    const trackMatch = path.match(
       /^tracks\/([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/assets\//i
     );
-    if (!match) throw error;
-
-    const response = await fetch(`/api/tracks/${match[1]}/artwork-url`, {
-      cache: "no-store",
-    });
-    const body = (await response.json().catch(() => null)) as
-      | { url?: string; error?: string }
-      | null;
-    if (!response.ok || !body?.url) {
-      throw new Error(body?.error || "Could not create a cover link.");
+    if (trackMatch) {
+      const response = await fetch(`/api/tracks/${trackMatch[1]}/artwork-url`, {
+        cache: "no-store",
+      });
+      const body = (await response.json().catch(() => null)) as
+        | { url?: string; error?: string }
+        | null;
+      if (!response.ok || !body?.url) {
+        throw new Error(body?.error || "Could not create a cover link.");
+      }
+      return body.url;
     }
-    return body.url;
+
+    // A scene banner/emblem/post image uploaded by someone other than the
+    // viewer — storage ownership gates on the uploader, so this goes through
+    // a server route that re-checks scene visibility instead.
+    if (/^scenes\//.test(path)) {
+      const response = await fetch("/api/scenes/media/url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path }),
+        cache: "no-store",
+      });
+      const body = (await response.json().catch(() => null)) as
+        | { url?: string; error?: string }
+        | null;
+      if (!response.ok || !body?.url) {
+        throw new Error(body?.error || "Could not open this image.");
+      }
+      return body.url;
+    }
+
+    throw error;
   }
 }
 

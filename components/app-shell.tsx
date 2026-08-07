@@ -14,6 +14,7 @@ import {
   Disc3,
   Orbit,
   BarChart3,
+  Users2,
 } from "lucide-react";
 import { AssistantRoot } from "@/components/assistant/assistant-root";
 import { ArtistFavicon } from "@/components/artist-favicon";
@@ -33,6 +34,7 @@ import { SlitDivider } from "@/components/ui/slit";
 import { SupportReportDialog } from "@/components/support/support-report-dialog";
 import { useRealtimeInbox } from "@/hooks/use-realtime-inbox";
 import { GlobalPlayerBar } from "@/components/player/global-player-bar";
+import { GuidedTour } from "@/components/guided-tour";
 
 // Artist sits above the space-scoped screens: it rolls up every space the
 // artist owns, so it stays in the rail whatever the active space's focus is.
@@ -45,6 +47,7 @@ const MUSIC_MAIN_NAV = [
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/artist", label: "Artist", icon: Disc3 },
   { href: "/social", label: "Social", icon: Orbit },
+  { href: "/scenes", label: "Scenes", icon: Users2 },
   { href: "/stats", label: "Stats", icon: BarChart3 },
 ] as const;
 
@@ -64,6 +67,7 @@ const TASKS_MAIN_NAV = [
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/artist", label: "Artist", icon: Disc3 },
   { href: "/social", label: "Social", icon: Orbit },
+  { href: "/scenes", label: "Scenes", icon: Users2 },
   { href: "/stats", label: "Stats", icon: BarChart3 },
 ] as const;
 
@@ -133,7 +137,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <SpaceSwitcher />
           </div>
 
-          <nav className="flex flex-1 flex-col gap-0.5 px-3">
+          <nav data-tour="workspace-nav" className="flex flex-1 flex-col gap-0.5 px-3">
             {mainNav.map(({ href, label, icon: Icon }) => {
               const active = isActive(pathname, href);
               return (
@@ -203,7 +207,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div className="sticky top-[var(--edge-strip-h)] z-40 mb-2 flex items-center justify-end gap-1.5 bg-bg-0/85 pb-4 pt-1.5 backdrop-blur-md">
               <NotificationCenter />
               <MessageCenter />
-              <GlobalSearch className="ml-1" />
+              <div data-tour="global-search" className="w-full max-w-[280px]">
+                <GlobalSearch className="ml-1" />
+              </div>
             </div>
             <div className="pb-6 pt-1">{children}</div>
           </div>
@@ -217,7 +223,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         aria-hidden
       />
 
-      <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-stretch bg-bg-1 md:hidden">
+      <nav data-tour="workspace-nav" className="fixed bottom-0 left-0 right-0 z-40 flex items-stretch bg-bg-1 md:hidden">
         <SlitDivider className="absolute inset-x-0 top-0" />
         {mobileNav.map(({ href, label, icon: Icon }) => {
           const active = isActive(pathname, href);
@@ -257,6 +263,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </nav>
 
       <AssistantRoot />
+      <GuidedTour />
     </div>
   );
 }

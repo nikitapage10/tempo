@@ -229,6 +229,16 @@ export type Post = {
   attachment_snapshot: PostAttachmentSnapshot | null;
   visibility: PostVisibility;
   reply_to_post_id: string | null;
+  /**
+   * Scenes layer (migrations 050/051). Null on every home-feed post — a post
+   * with a scene_id never reaches home_timeline, and a post without one can
+   * never carry a topic, a non-"post" kind, or a schedule.
+   */
+  scene_id: string | null;
+  scene_topic_id: string | null;
+  kind: ScenePostKind;
+  pinned_at: string | null;
+  scheduled_for: string | null;
   like_count: number;
   comment_count: number;
   edited_at: string | null;
@@ -878,4 +888,257 @@ export type AttentionSignal = {
   label: string;
   severity: AttentionSeverity;
   explanation: string;
+};
+
+/* ==========================================================================
+ * Scenes — communities (migrations 049–054)
+ *
+ * A Scene grants access to the ROOM, never to anyone's catalog. Nothing in
+ * this block ever carries track, space, or project data belonging to another
+ * artist — the only creative content that crosses is what someone
+ * deliberately posted, and that arrives frozen in Post.attachment_snapshot.
+ * ========================================================================== */
+
+export type SceneKind =
+  | "label"
+  | "school"
+  | "crew"
+  | "collective"
+  | "genre"
+  | "local"
+  | "other";
+
+/** How someone gets in. `invite` refuses join_scene() outright. */
+export type SceneJoinPolicy = "open" | "request" | "invite";
+
+/**
+ * `public` is reserved for the phase-3 /s/[slug] link and behaves exactly
+ * like `members` until that ships — there is deliberately no anon policy.
+ */
+export type SceneVisibility = "members" | "unlisted" | "public";
+
+export type SceneRole = "owner" | "moderator" | "member";
+
+export type SceneMemberStatus =
+  | "active"
+  | "pending"
+  | "invited"
+  | "banned"
+  | "left";
+
+/** Surfaces a scene can switch off. An absent key reads as enabled. */
+export type SceneFeatures = {
+  feed?: boolean;
+  polls?: boolean;
+  events?: boolean;
+  chat?: boolean;
+  directory?: boolean;
+};
+
+export type SceneWelcomeStep = {
+  id: string;
+  label: string;
+  /** In-app path or external URL. */
+  href?: string | null;
+};
+
+export type Scene = {
+  id: string;
+  slug: string;
+  name: string;
+  tagline: string | null;
+  about: string | null;
+  kind: SceneKind;
+  owner_profile_id: string;
+  owner_user_id: string;
+  join_policy: SceneJoinPolicy;
+  visibility: SceneVisibility;
+  emblem_url: string | null;
+  banner_url: string | null;
+  banner_color: string | null;
+  banner_color_end: string | null;
+  /**
+   * The scene's accent pair. Applied to a SCOPED wrapper only — never to
+   * document.documentElement, which stays the active artist's theme so
+   * "ice = interactive" keeps meaning one thing app-wide.
+   */
+  palette_id: ArtistPaletteId;
+  ice_color: string | null;
+  amber_color: string | null;
+  location: string | null;
+  country_code: string | null;
+  genres: string[];
+  links: ProfileLink[];
+  features: SceneFeatures;
+  welcome_checklist: SceneWelcomeStep[];
+  recognition_enabled: boolean;
+  parent_scene_id: string | null;
+  member_count: number;
+  post_count: number;
+  last_activity_at: string;
+  archived_at: string | null;
+  created_at: string;
+  updated_at: string;
+  /** Filled by the API for the signed-in caller. */
+  my_role?: SceneRole | null;
+  my_status?: SceneMemberStatus | null;
+  /** last_activity_at is newer than my last_read_at. Cheap unread dot. */
+  has_unread?: boolean;
+};
+
+export type SceneMember = {
+  scene_id: string;
+  profile_id: string;
+  user_id: string;
+  role: SceneRole;
+  status: SceneMemberStatus;
+  invited_by_profile_id: string | null;
+  request_note: string | null;
+  joined_at: string | null;
+  last_read_at: string | null;
+  muted: boolean;
+  welcome_steps_done: string[];
+  /** Phase-2 recognition fields — present but unused in phase 1. */
+  points: number;
+  streak_days: number;
+  last_active_on: string | null;
+  created_at: string;
+  updated_at: string;
+  profile?: Pick<
+    ArtistProfile,
+    | "id"
+    | "handle"
+    | "display_name"
+    | "emblem_url"
+    | "palette_id"
+    | "ice_color"
+    | "amber_color"
+    | "location"
+  > | null;
+};
+
+export type SceneTopicKind = "feed" | "announcements";
+export type SceneTopicPostPolicy = "members" | "moderators";
+
+export type SceneTopic = {
+  id: string;
+  scene_id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  sort_order: number;
+  kind: SceneTopicKind;
+  post_policy: SceneTopicPostPolicy;
+  features: Record<string, boolean>;
+  archived_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+/** `question` carries no options — answers are ordinary post comments. */
+export type ScenePostKind = "post" | "poll" | "question" | "announcement";
+
+export type ScenePollKind = "poll" | "question";
+
+export type ScenePollOption = {
+  id: string;
+  poll_id: string;
+  scene_id: string;
+  label: string;
+  sort_order: number;
+  vote_count: number;
+};
+
+export type ScenePoll = {
+  id: string;
+  post_id: string;
+  scene_id: string;
+  kind: ScenePollKind;
+  multi_choice: boolean;
+  closes_at: string | null;
+  closed_at: string | null;
+  total_votes: number;
+  created_at: string;
+  options?: ScenePollOption[];
+  /** Option ids the caller's scene profile has picked. */
+  my_option_ids?: string[];
+};
+
+export type SceneEventKind =
+  | "session"
+  | "show"
+  | "listening"
+  | "meeting"
+  | "workshop"
+  | "other";
+
+export type SceneRsvpResponse = "going" | "interested" | "not_going";
+
+export type SceneEvent = {
+  id: string;
+  scene_id: string;
+  created_by_profile_id: string;
+  created_by_user_id: string;
+  title: string;
+  description: string | null;
+  location: string | null;
+  location_url: string | null;
+  kind: SceneEventKind;
+  /** Same temporal shape as CalendarEvent — all_day XOR timestamped. */
+  all_day: boolean;
+  start_date: string | null;
+  end_date: string | null;
+  starts_at: string | null;
+  ends_at: string | null;
+  timezone: string | null;
+  capacity: number | null;
+  rsvp_deadline: string | null;
+  going_count: number;
+  interested_count: number;
+  announce_post_id: string | null;
+  mirror_calendar_event_id: string | null;
+  cancelled_at: string | null;
+  created_at: string;
+  updated_at: string;
+  my_response?: SceneRsvpResponse | null;
+};
+
+export type SceneEventRsvp = {
+  event_id: string;
+  profile_id: string;
+  scene_id: string;
+  user_id: string;
+  response: SceneRsvpResponse;
+  note: string | null;
+  created_at: string;
+  updated_at: string;
+  profile?: Pick<
+    ArtistProfile,
+    "id" | "handle" | "display_name" | "emblem_url" | "palette_id"
+  > | null;
+};
+
+export type SceneModerationAction =
+  | "pin"
+  | "unpin"
+  | "remove_post"
+  | "restore_post"
+  | "mute"
+  | "unmute"
+  | "ban"
+  | "unban"
+  | "approve"
+  | "reject"
+  | "role_change"
+  | "escalate";
+
+export type SceneModerationLogEntry = {
+  id: string;
+  scene_id: string;
+  actor_profile_id: string | null;
+  action: SceneModerationAction;
+  target_type: "post" | "post_comment" | "member";
+  target_id: string;
+  note: string | null;
+  created_at: string;
 };

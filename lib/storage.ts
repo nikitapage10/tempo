@@ -76,6 +76,22 @@ export function buildMessageMediaPath(params: {
   return `messages/${userId}/${scope}/${threadId}/${attachmentId}/${sanitizeFilename(filename)}`;
 }
 
+/**
+ * Scene banner/emblem/post media — same private bucket, own prefix. Media a
+ * non-uploader must read (a member viewing another member's post image) goes
+ * through app/api/scenes/media/url, not this path directly, since storage
+ * policies gate on owner = auth.uid().
+ */
+export function buildSceneMediaPath(params: {
+  sceneId: string;
+  kind: "banner" | "emblem" | "post";
+  entityId: string;
+  filename: string;
+}): string {
+  const { sceneId, kind, entityId, filename } = params;
+  return `scenes/${sceneId}/${kind}/${entityId}/${sanitizeFilename(filename)}`;
+}
+
 export function sanitizeFilename(name: string): string {
   const trimmed = name.trim() || "file";
   const lastDot = trimmed.lastIndexOf(".");

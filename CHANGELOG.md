@@ -4,6 +4,27 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-07
 
+- Added (v0.86.0): finishing Origin now opens an optional one-minute workspace
+  tour after the cinematic handoff. It spotlights Today, quick actions,
+  navigation, search, and the assistant in TEMPO's signal language, works on
+  desktop and phone, and can be skipped before or during the tour.
+- Changed (v0.86.0): the opening chapter of Origin's scrolling reveal now has
+  a larger animated **Scroll to reveal your story** prompt, a phone-specific
+  swipe cue, the number of chapters ahead, and a tap action that advances to
+  the next chapter.
+- Added (v0.86.0): the first pieces of **Scenes** — a new kind of room for
+  the people you make music with, separate from your own catalog. A Scene
+  can be a label roster, a school cohort, a crew, or any group you're part
+  of. You can start one, set whether people join freely, have to ask, or
+  need an invite, and see who's in it. A scene has its own owner and
+  moderators, who can review requests to join. The feed, polls, events, and
+  chat that will live inside a scene are still on the way — this first pass
+  is the room itself and who's allowed in it.
+  Under the hood: this needs six new database updates, migrations 049
+  through 054, run in order in the Supabase SQL editor before Scenes will
+  work. Until they're run, the new Scenes tab explains that a database
+  update is needed rather than showing an error.
+
 - Fixed (v0.84.5): unfinished first-time Origin onboarding now blocks the
   workspace shell entirely. Returning artists resume at their last saved
   section, with an immediate same-browser safety copy protecting changes made
