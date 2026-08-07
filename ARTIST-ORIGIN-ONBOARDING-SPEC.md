@@ -137,7 +137,7 @@ another account reaches nothing. A `CHECK` constraint additionally forbids a row
 whose `user_id` disagrees with the artist's owner, closing the gap where a
 caller inserts their own `user_id` against someone else's `artist_id`.
 
-`complete_artist_origin()` runs the whole completion as one transaction and is
+`complete_artist_origin_v2()` runs the whole completion as one transaction and is
 **idempotent** — a second call lands on the same state and does not move
 `completed_at`. It deliberately never touches `artist_profiles`: publishing,
 visibility, and Social stay exactly where the artist left them.
@@ -149,7 +149,7 @@ interrupts the experience, because nothing is lost from memory.
 
 `lib/origin/reducer.ts`. Phases: `booting`, `opening`, `name_idle`,
 `recognizing`, `introduction_idle`, `recording`, `interpreting_transition`,
-`processing`, `resolving`, `review`, `chapter_opening`, `story_scroll`,
+`direction_idle`, `processing`, `resolving`, `chapter_opening`, `story_scroll`,
 `saving`, `complete`, `recoverable_error`.
 
 **Transition timing, API timing and processing dwell are separate clocks.**
@@ -159,8 +159,8 @@ and `processingDwellSettled` (frame 4 visibly completed one full media cycle).
 A fast model response therefore cannot skip the processing loop.
 
 **Resume never lands mid-transition.** Saved steps map to stable loops: name →
-`loop-02`, introduction → `loop-03`, processing → `loop-04`, review →
-`loop-05`, story → `scroll-06`.
+`loop-02`, introduction → `loop-03`, processing → `loop-04`, the legacy
+`review` label → the direction question on `loop-04`, story → `scroll-06`.
 
 **Regeneration never destroys the current version.** A new interpretation is
 held in `pendingInterpretation` until the artist accepts it, and edits push onto
@@ -183,8 +183,8 @@ Staged chain — each phase warms what the *next* interaction needs:
 | opening | `loop-02` | — |
 | name | `transition-02-03`, `loop-03` | — |
 | introduction / recording | `transition-03-04`, `loop-04` | `scroll-06` |
-| processing | `transition-04-05`, `loop-05` | `scroll-06` |
-| review | `transition-05-06`, `scroll-06` | — |
+| direction | `loop-04` | `transition-04-05`, `scroll-06` |
+| processing | `transition-04-05`, `transition-05-06` | `scroll-06` |
 
 Gating is always on the **destination**, never on what is currently playing.
 Background work never runs while a high-priority asset is in flight. A *failed*
@@ -217,11 +217,10 @@ long marquee interval.
 
 The pre-tap invitation and opening film share the same poster floor and grade.
 Identity and backstory use editorial glass layouts rather than conventional
-title/input/button cards, the prompt asks directly for the artist's backstory,
-and the processing phrase holds long enough to register. Review is a
-calibration rather than a second story reveal: it first shows the interpreted
-identity threads, while the complete fields remain editable behind a
-disclosure. The scrolling chapters carry the narrative itself.
+title/input/button cards. After the history, a second grounded question asks
+what the artist is making now and what they want it to feel like. The processing
+phrase holds long enough to register. There is no separate review panel; the
+scrolling chapters are both the reflection and the editable narrative.
 
 ## Scroll-scrubbed story
 
@@ -232,14 +231,13 @@ maps to `currentTime` inside one `requestAnimationFrame` loop with passive
 listeners. Continuous progress lives in a ref and never enters React state;
 React is told only when the chapter changes. `fastSeek()` where supported.
 
-Six chapters at 0 / 16 / 34 / 52 / 72 / 88 %: The first light · What remains ·
-The spectrum · Where the light is pointing · Bring the work into view · A
-direction, not a destiny.
+Six chapters at 0 / 16 / 34 / 52 / 72 / 88 %: About the artist · The sound ·
+Right now · The story · Bring the work into range · Keep tuning.
 
-The first chapter uses an asymmetrical light-rail composition and signal chips
-instead of a generic text card. Later chapters use the interpretation's
-evidence where available so they expand on the compact review rather than
-reading it back verbatim.
+The first chapter uses an asymmetrical light-rail composition instead of a
+generic text card. About, The sound, Right now, and each modular story chapter
+are directly editable. Every chapter has a small Back control; moving backward
+preserves all entered and edited values.
 Every subsequent chapter also has its own numbered rail, ambient geometry and
 content-specific interior treatment, preserving the film-language established
 by The First Shape rather than returning to a generic copy panel.
@@ -261,7 +259,8 @@ temporary session but does not touch the in-memory or autosaved Origin draft.
 `POST /api/artist-origin/interpret`, server-only, `IMPORT_MODEL`, strict JSON
 Schema, `friendlyAIError` for safe messages. Ownership is verified against
 `artists` before the model is called, so a guessed UUID cannot spend tokens.
-The route writes nothing — the artist edits first, and the review step saves.
+The route writes nothing. The artist edits the reading in the scroll before the
+completion step saves it.
 
 The prompt forbids: internet lookup, treating a recognised name as a real
 artist, inventing achievements/releases/collaborators/influences, inferring race,
@@ -295,12 +294,13 @@ static mode so nothing waits on a file that will never load.
 ## Profile mapping
 
 Applied on completion. Fills **only empty** fields: the spark → `tagline`, the
-public-ready introduction → `bio`, identity signals → the profile spectrum,
-the present direction → Right now, and explicitly named genres and roles →
-their matching profile tags. Never passes `visibility`, never touches handle,
-location, pronouns, links, featured music, or messaging settings, and never
-enables Social. A failure is swallowed: the artist has finished Origin and must
-not be blocked from entering by an optional profile nicety.
+public-ready introduction → `bio`, identity signals → The sound, the present
+direction → Right now, modular history → profile story chapters, and explicitly
+named genres and roles → their matching profile tags. Never passes `visibility`,
+never touches handle, location, pronouns, links, featured music, or messaging
+settings, and never enables Social. A failure is swallowed: the artist has
+finished Origin and must not be blocked from entering by an optional profile
+nicety.
 
 ## The seam into the product
 
@@ -330,11 +330,13 @@ Not yet executed — needs a signed-in session against a migrated database.
 - [ ] Name validates; draft survives refresh
 - [ ] Live dictation, record-and-transcribe, and typing all work
 - [ ] Microphone denial is recoverable; transcript preserved
+- [ ] Name, history, direction, and all six story chapters can go Back without losing edits
 - [ ] Fast AI response still leaves frame 4 visible for one full loop
 - [ ] AI failure preserves transcript; retry and manual both work
-- [ ] Regeneration preserves current version until accepted; undo works
-- [ ] "Open the chapter" waits for scroll readiness with restrained copy
+- [ ] Direction reaches the scrolling review without a duplicate recap panel
+- [ ] Story chapter waits for scroll readiness with restrained copy
 - [ ] Scroll advances and reverses; pausing freezes the frame
+- [ ] About, Sound, Right now, and modular Story remain distinct and editable
 - [ ] Final save is idempotent; no profile becomes public
 - [ ] Import intake, reading, review and confirmation stay inside the story
 - [ ] Starting empty preserves the Origin draft; product opens without replaying the intro

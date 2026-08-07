@@ -3,6 +3,8 @@
 import * as React from "react";
 import Link from "next/link";
 import {
+  ArrowDown,
+  ArrowUp,
   BarChart3,
   Check,
   Eye,
@@ -34,6 +36,7 @@ import type {
   ProfileFeaturedMusic,
   ProfileLink,
   ProfileSoundMarker,
+  ProfileStorySection,
   ProfileVisibility,
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -57,7 +60,7 @@ type Draft = {
   handle: string;
   tagline: string;
   bio: string;
-  backstory: string;
+  story_sections: ProfileStorySection[];
   location: string;
   pronouns: string;
   genres: string[];
@@ -89,7 +92,12 @@ export default function ArtistProfilePage() {
       handle: profile?.handle ?? "",
       tagline: profile?.tagline ?? "",
       bio: profile?.bio ?? "",
-      backstory: profile?.backstory ?? "",
+      story_sections:
+        profile?.story_sections?.length
+          ? profile.story_sections
+          : profile?.backstory
+            ? [{ title: "The longer arc", body: profile.backstory }]
+            : [],
       location: profile?.location ?? "",
       pronouns: profile?.pronouns ?? "",
       genres: profile?.genres ?? [],
@@ -130,7 +138,13 @@ export default function ArtistProfilePage() {
       handle: handle || null,
       tagline: draft.tagline.trim() || null,
       bio: draft.bio.trim() || null,
-      backstory: draft.backstory.trim() || null,
+      backstory: null,
+      story_sections: draft.story_sections
+        .map((section) => ({
+          title: section.title.trim(),
+          body: section.body.trim(),
+        }))
+        .filter((section) => section.title || section.body),
       location: draft.location.trim() || null,
       pronouns: draft.pronouns.trim() || null,
       genres: draft.genres,
@@ -386,6 +400,31 @@ function ProfileEditor({
     patch({ sound_markers: draft.sound_markers.filter((_, index) => index !== i) });
   }
 
+  function addStorySection() {
+    if (draft.story_sections.length >= 8) return;
+    patch({ story_sections: [...draft.story_sections, { title: "", body: "" }] });
+  }
+
+  function updateStorySection(i: number, next: Partial<ProfileStorySection>) {
+    patch({
+      story_sections: draft.story_sections.map((section, index) =>
+        index === i ? { ...section, ...next } : section
+      ),
+    });
+  }
+
+  function removeStorySection(i: number) {
+    patch({ story_sections: draft.story_sections.filter((_, index) => index !== i) });
+  }
+
+  function moveStorySection(i: number, offset: -1 | 1) {
+    const destination = i + offset;
+    if (destination < 0 || destination >= draft.story_sections.length) return;
+    const sections = [...draft.story_sections];
+    [sections[i], sections[destination]] = [sections[destination], sections[i]];
+    patch({ story_sections: sections });
+  }
+
   function addFeaturedMusic() {
     if (draft.featured_music.length >= 6) return;
     patch({
@@ -474,7 +513,7 @@ function ProfileEditor({
         </div>
       </Field>
 
-      <Field label="The spectrum" hint="Up to 5 sounds, tensions, or ideas that keep returning.">
+      <Field label="The sound" hint="Up to 5 qualities people can hear or feel in the work.">
         <div className="space-y-2">
           {draft.sound_markers.map((marker, i) => (
             <div key={i} className="well grid gap-2 rounded-input p-3 sm:grid-cols-[11rem_1fr_auto]">
@@ -556,14 +595,66 @@ function ProfileEditor({
         </div>
       </Field>
 
-      <Field label="The story" hint="Up to 8,000 characters — the longer arc.">
-        <Textarea
-          value={draft.backstory}
-          onChange={(e) => patch({ backstory: e.target.value })}
-          maxLength={8000}
-          rows={6}
-          placeholder="How you got here, what you're about, whatever people should know."
-        />
+      <Field label="The story" hint="Build the longer arc in sections. Add, remove, and reorder up to 8.">
+        <div className="space-y-2">
+          {draft.story_sections.map((section, i) => (
+            <div key={i} className="well grid gap-2 rounded-input p-3">
+              <div className="flex items-center gap-2">
+                <Input
+                  value={section.title}
+                  onChange={(e) => updateStorySection(i, { title: e.target.value })}
+                  maxLength={120}
+                  placeholder="Chapter title"
+                  aria-label={`Story section ${i + 1} title`}
+                  className="flex-1 font-display"
+                />
+                <button
+                  type="button"
+                  onClick={() => moveStorySection(i, -1)}
+                  disabled={i === 0}
+                  className="rounded-input p-2 text-text-lo transition-colors hover:text-text-hi disabled:opacity-30"
+                  aria-label="Move story section up"
+                >
+                  <ArrowUp className="size-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => moveStorySection(i, 1)}
+                  disabled={i === draft.story_sections.length - 1}
+                  className="rounded-input p-2 text-text-lo transition-colors hover:text-text-hi disabled:opacity-30"
+                  aria-label="Move story section down"
+                >
+                  <ArrowDown className="size-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => removeStorySection(i)}
+                  className="rounded-input p-2 text-text-lo transition-colors hover:text-warn"
+                  aria-label="Remove story section"
+                >
+                  <Trash2 className="size-3.5" />
+                </button>
+              </div>
+              <Textarea
+                value={section.body}
+                onChange={(e) => updateStorySection(i, { body: e.target.value })}
+                maxLength={2000}
+                rows={4}
+                placeholder="Write this part of the story in your own words."
+                aria-label={`Story section ${i + 1} body`}
+              />
+            </div>
+          ))}
+          {draft.story_sections.length < 8 ? (
+            <button
+              type="button"
+              onClick={addStorySection}
+              className="flex items-center gap-1 rounded-chip border border-dashed border-line px-2.5 py-1 text-xs text-ice transition-colors hover:border-ice/50 hover:bg-ice/10"
+            >
+              <Plus className="size-3" /> Add a story section
+            </button>
+          ) : null}
+        </div>
       </Field>
 
       <div className="grid gap-4 sm:grid-cols-2">

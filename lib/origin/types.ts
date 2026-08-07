@@ -33,6 +33,11 @@ export type IdentitySignal = {
   confidence: Confidence;
 };
 
+export type OriginStorySection = {
+  title: string;
+  body: string;
+};
+
 /** The interpretation, as returned by the model and as edited by the artist. */
 export type ArtistOriginInterpretation = {
   artistPromise: string;
@@ -42,6 +47,7 @@ export type ArtistOriginInterpretation = {
     title: string;
     premise: string;
   };
+  storySections: OriginStorySection[];
   suggestedGenres: string[];
   suggestedRoles: string[];
 };
@@ -53,6 +59,7 @@ export type ArtistOrigin = {
   currentStep: OriginStep;
   artistNameDraft: string | null;
   introductionText: string | null;
+  directionText: string | null;
   interpretation: ArtistOriginInterpretation | null;
   generationVersion: number;
   generatedAt: string | null;
@@ -65,6 +72,7 @@ export type OriginDraftPatch = {
   currentStep?: OriginStep;
   artistNameDraft?: string | null;
   introductionText?: string | null;
+  directionText?: string | null;
   interpretation?: ArtistOriginInterpretation | null;
 };
 
@@ -73,6 +81,7 @@ export const EMPTY_INTERPRETATION: ArtistOriginInterpretation = {
   creativeCompass: "",
   identitySignals: [],
   currentChapter: { title: "", premise: "" },
+  storySections: [],
   suggestedGenres: [],
   suggestedRoles: [],
 };
@@ -84,11 +93,13 @@ export type ArtistOriginRow = {
   current_step: OriginStep;
   artist_name_draft: string | null;
   introduction_text: string | null;
+  direction_text: string | null;
   artist_promise: string | null;
   creative_compass: string | null;
   identity_signals: IdentitySignal[] | null;
   current_chapter_title: string | null;
   current_chapter_premise: string | null;
+  story_sections: OriginStorySection[] | null;
   suggested_genres: string[] | null;
   suggested_roles: string[] | null;
   generation_version: number;
@@ -101,7 +112,10 @@ export function rowToOrigin(row: ArtistOriginRow): ArtistOrigin {
   const hasInterpretation =
     Boolean(row.artist_promise) ||
     Boolean(row.creative_compass) ||
-    (row.identity_signals?.length ?? 0) > 0;
+    (row.identity_signals?.length ?? 0) > 0 ||
+    Boolean(row.current_chapter_title) ||
+    Boolean(row.current_chapter_premise) ||
+    (row.story_sections?.length ?? 0) > 0;
 
   return {
     artistId: row.artist_id,
@@ -109,6 +123,7 @@ export function rowToOrigin(row: ArtistOriginRow): ArtistOrigin {
     currentStep: row.current_step,
     artistNameDraft: row.artist_name_draft,
     introductionText: row.introduction_text,
+    directionText: row.direction_text ?? null,
     interpretation: hasInterpretation
       ? {
           artistPromise: row.artist_promise ?? "",
@@ -118,6 +133,7 @@ export function rowToOrigin(row: ArtistOriginRow): ArtistOrigin {
             title: row.current_chapter_title ?? "",
             premise: row.current_chapter_premise ?? "",
           },
+          storySections: row.story_sections ?? [],
           suggestedGenres: row.suggested_genres ?? [],
           suggestedRoles: row.suggested_roles ?? [],
         }

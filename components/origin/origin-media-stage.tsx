@@ -203,6 +203,24 @@ export function OriginMediaStage({
   const clipKey = clip?.key ?? null;
   const clipLoop = clip?.loop ?? false;
 
+  /** Returning to Tune in clears the active film so the original poster owns
+   * the stage again. Draft text is preserved by the reducer. */
+  React.useEffect(() => {
+    if (clipKey !== null) return;
+    for (const video of [aRef.current, bRef.current]) {
+      if (!video) continue;
+      video.pause();
+      video.muted = true;
+      video.volume = 0;
+    }
+    slotKeyRef.current = { a: null, b: null };
+    setPainted(false);
+    setHoldSlot(null);
+    setHandoffStill(null);
+    setFirstReveal(true);
+    cbRef.current.onActiveElement?.(null, null);
+  }, [clipKey]);
+
   /** Warm the final still before the transition ends so it can take over in
    * the same paint where an ended video might otherwise snap back to frame 0. */
   React.useEffect(() => {

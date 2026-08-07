@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ChevronLeft } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { MorphingText } from "@/components/ui/morphing-text";
 import { OriginScrim } from "@/components/origin/origin-copy-layer";
@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 export function OriginNameStep({
   name,
   onNameChange,
+  onBack,
   onSubmit,
   mediaReady,
   busy,
@@ -19,6 +20,7 @@ export function OriginNameStep({
 }: {
   name: string;
   onNameChange: (v: string) => void;
+  onBack: () => void;
   onSubmit: () => void;
   mediaReady: boolean;
   busy: boolean;
@@ -120,7 +122,13 @@ export function OriginNameStep({
         </div>
 
         <div className="flex items-center justify-between gap-4">
-          <p className="text-xs text-text-lo/60">This can change whenever you do.</p>
+          <button
+            type="button"
+            onClick={onBack}
+            className="flex items-center gap-1 text-xs text-text-lo transition-colors hover:text-text-hi"
+          >
+            <ChevronLeft className="size-3.5" /> Back
+          </button>
           <button
             type="submit"
             disabled={busy}

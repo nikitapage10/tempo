@@ -11,6 +11,7 @@ import type { Confidence } from "@/lib/ai/import-plan-schema";
 export const ORIGIN_LIMITS = {
   name: 60,
   introduction: 20000,
+  direction: 4000,
   promise: 400,
   compass: 2000,
   chapterTitle: 120,
@@ -19,10 +20,14 @@ export const ORIGIN_LIMITS = {
   signalText: 600,
   maxSignals: 8,
   maxTags: 12,
+  storySectionTitle: 120,
+  storySectionBody: 2000,
+  maxStorySections: 8,
 } as const;
 
 /** Enough to interpret. Deliberately not a word count — one vivid sentence beats forty vague ones. */
 export const MIN_INTRODUCTION_CHARS = 40;
+export const MIN_DIRECTION_CHARS = 12;
 
 const CONFIDENCES: Confidence[] = ["high", "medium", "low"];
 
@@ -53,8 +58,21 @@ export function validateIntroduction(raw: string): ValidationResult {
   return { ok: true };
 }
 
+export function validateDirection(raw: string): ValidationResult {
+  const text = raw.trim();
+  if (text.length < MIN_DIRECTION_CHARS) {
+    return { ok: false, message: "Add a little about what is taking shape now." };
+  }
+  if (text.length > ORIGIN_LIMITS.direction) {
+    return { ok: false, message: "That is a little too long. Trim it before continuing." };
+  }
+  return { ok: true };
+}
+
 function clampText(v: unknown, max: number): string {
-  return typeof v === "string" ? v.trim().slice(0, max) : "";
+  return typeof v === "string"
+    ? v.trim().replace(/\s*—\s*/g, ", ").slice(0, max)
+    : "";
 }
 
 function clampTags(v: unknown): string[] {
@@ -101,6 +119,17 @@ export function sanitizeInterpretation(raw: unknown): ArtistOriginInterpretation
       title: clampText(chapter.title, ORIGIN_LIMITS.chapterTitle),
       premise: clampText(chapter.premise, ORIGIN_LIMITS.chapterPremise),
     },
+    storySections: Array.isArray(r.storySections)
+      ? r.storySections
+          .map((item) => {
+            const section = (item ?? {}) as Record<string, unknown>;
+            const title = clampText(section.title, ORIGIN_LIMITS.storySectionTitle);
+            const body = clampText(section.body, ORIGIN_LIMITS.storySectionBody);
+            return title || body ? { title, body } : null;
+          })
+          .filter((section): section is { title: string; body: string } => section !== null)
+          .slice(0, ORIGIN_LIMITS.maxStorySections)
+      : [],
     suggestedGenres: clampTags(r.suggestedGenres),
     suggestedRoles: clampTags(r.suggestedRoles),
   };

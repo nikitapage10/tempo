@@ -12,6 +12,7 @@ import {
   buildOriginUserPrompt,
 } from "@/lib/origin/interpretation-schema";
 import {
+  MIN_DIRECTION_CHARS,
   MIN_INTRODUCTION_CHARS,
   ORIGIN_LIMITS,
   sanitizeInterpretation,
@@ -56,12 +57,14 @@ export async function POST(req: NextRequest) {
     artistId?: unknown;
     artistName?: unknown;
     introduction?: unknown;
+    direction?: unknown;
   } | null;
 
   const artistId = typeof body?.artistId === "string" ? body.artistId : "";
   const artistName = typeof body?.artistName === "string" ? body.artistName.trim() : "";
   const introduction =
     typeof body?.introduction === "string" ? body.introduction.trim() : "";
+  const direction = typeof body?.direction === "string" ? body.direction.trim() : "";
 
   if (!artistId) return fail("No artist selected.", 400);
   if (introduction.length < MIN_INTRODUCTION_CHARS) {
@@ -69,6 +72,12 @@ export async function POST(req: NextRequest) {
   }
   if (introduction.length > ORIGIN_LIMITS.introduction) {
     return fail("That's longer than TEMPO can read in one go.", 413);
+  }
+  if (direction.length < MIN_DIRECTION_CHARS) {
+    return fail("Add a little about what is taking shape now.", 422);
+  }
+  if (direction.length > ORIGIN_LIMITS.direction) {
+    return fail("That direction is too long to read in one go.", 413);
   }
 
   // The caller's own id is never taken from the request body. RLS would also
@@ -89,7 +98,10 @@ export async function POST(req: NextRequest) {
       model: IMPORT_MODEL,
       messages: [
         { role: "system", content: ORIGIN_SYSTEM_PROMPT },
-        { role: "user", content: buildOriginUserPrompt({ artistName, introduction }) },
+        {
+          role: "user",
+          content: buildOriginUserPrompt({ artistName, introduction, direction }),
+        },
       ],
       response_format: {
         type: "json_schema",

@@ -1,14 +1,27 @@
 "use client";
 
 import * as React from "react";
-import { Music4 } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ChevronLeft,
+  Music4,
+  Pencil,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   ImportExperience,
   type ImportStep,
 } from "@/components/import/import-experience";
 import { useOriginScrollScrub } from "@/hooks/use-origin-scroll-scrub";
-import type { ArtistOriginInterpretation } from "@/lib/origin/types";
+import type {
+  ArtistOriginInterpretation,
+  OriginStorySection,
+} from "@/lib/origin/types";
 import { cn } from "@/lib/utils";
 
 /**
@@ -27,15 +40,15 @@ import { cn } from "@/lib/utils";
 export const CHAPTER_STOPS = [0, 0.16, 0.34, 0.52, 0.72, 0.88];
 
 const CHAPTER_TITLES = [
-  "Where it began",
-  "What keeps returning",
-  "How it refracts",
-  "Where it’s pointing now",
+  "About the artist",
+  "The sound",
+  "Right now",
+  "The story",
   "Bring the work into range",
   "Keep tuning",
 ];
 
-const CHAPTER_KICKERS = ["Origin", "Signal", "Spectrum", "Now", "Intake", "Arrival"];
+const CHAPTER_KICKERS = ["About", "Sound", "Now", "Story", "Intake", "Arrival"];
 
 /**
  * Where each chapter sits horizontally.
@@ -99,6 +112,18 @@ function EnterTempoButton({ onClick, busy }: { onClick: () => void; busy: boolea
   );
 }
 
+function ChapterBackButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="mb-4 flex w-fit items-center gap-1 text-[11px] uppercase tracking-[0.16em] text-text-lo transition-colors hover:text-text-hi"
+    >
+      <ChevronLeft className="size-3.5" /> Back
+    </button>
+  );
+}
+
 function ChapterSection({
   index,
   staticMode,
@@ -106,6 +131,7 @@ function ChapterSection({
   title,
   wide = false,
   alignClass,
+  onBack,
 }: {
   index: number;
   staticMode: boolean;
@@ -113,6 +139,7 @@ function ChapterSection({
   title?: string;
   wide?: boolean;
   alignClass?: string;
+  onBack?: () => void;
 }) {
   if (index === 0) {
     return (
@@ -142,6 +169,7 @@ function ChapterSection({
               <span className="[writing-mode:vertical-rl]">Origin</span>
             </div>
             <div>
+              {onBack ? <ChapterBackButton onClick={onBack} /> : null}
               <h2
                 id="origin-chapter-0"
                 className="text-xs uppercase tracking-[0.26em] text-text-hi/85"
@@ -197,6 +225,7 @@ function ChapterSection({
             <span className="[writing-mode:vertical-rl]">{CHAPTER_KICKERS[index]}</span>
           </div>
           <div className="min-w-0">
+            {onBack ? <ChapterBackButton onClick={onBack} /> : null}
             <h2
               id={`origin-chapter-${index}`}
               className="text-xs uppercase tracking-[0.24em] text-text-hi/90"
@@ -213,10 +242,11 @@ function ChapterSection({
 
 export function OriginStoryScroll({
   interpretation,
+  onInterpretationChange,
   staticMode,
   videoRef,
   onEnter,
-  onBack,
+  onBackToDirection,
   busy,
   error,
   onSkipImport,
@@ -225,10 +255,11 @@ export function OriginStoryScroll({
   importPending,
 }: {
   interpretation: ArtistOriginInterpretation;
+  onInterpretationChange: (interpretation: ArtistOriginInterpretation) => void;
   staticMode: boolean;
   videoRef: React.MutableRefObject<HTMLVideoElement | null>;
   onEnter: () => void;
-  onBack: () => void;
+  onBackToDirection: () => void;
   busy: boolean;
   error: string | null;
   onSkipImport: () => void;
@@ -241,6 +272,7 @@ export function OriginStoryScroll({
   const sectionRefs = React.useRef<Array<HTMLDivElement | null>>([]);
   const [importStarted, setImportStarted] = React.useState(false);
   const [importStep, setImportStep] = React.useState<ImportStep>("intake");
+  const [editingChapter, setEditingChapter] = React.useState<number | null>(null);
 
   const importTitle: Record<ImportStep, string> = {
     intake: "Bring your music in",
@@ -373,63 +405,282 @@ export function OriginStoryScroll({
     };
   }, [staticMode]);
 
+  const patchInterpretation = React.useCallback(
+    (patch: Partial<ArtistOriginInterpretation>) => {
+      onInterpretationChange({ ...interpretation, ...patch });
+    },
+    [interpretation, onInterpretationChange]
+  );
+
+  const goToChapter = React.useCallback(
+    (target: number) => {
+      const index = Math.max(0, Math.min(CHAPTER_STOPS.length - 1, target));
+      setEditingChapter(null);
+      if (staticMode) {
+        document.getElementById(`origin-chapter-${index}`)?.scrollIntoView({ behavior: "smooth" });
+        return;
+      }
+      const scroller = scrollerRef.current;
+      if (!scroller) return;
+      const scrollable = scroller.scrollHeight - scroller.clientHeight;
+      scroller.scrollTo({ top: CHAPTER_STOPS[index] * scrollable, behavior: "smooth" });
+    },
+    [staticMode]
+  );
+
+  function updateStorySection(index: number, patch: Partial<OriginStorySection>) {
+    patchInterpretation({
+      storySections: interpretation.storySections.map((section, sectionIndex) =>
+        sectionIndex === index ? { ...section, ...patch } : section
+      ),
+    });
+  }
+
+  function moveStorySection(index: number, offset: -1 | 1) {
+    const destination = index + offset;
+    if (destination < 0 || destination >= interpretation.storySections.length) return;
+    const sections = [...interpretation.storySections];
+    [sections[index], sections[destination]] = [sections[destination], sections[index]];
+    patchInterpretation({ storySections: sections });
+  }
+
+  const editAction = (index: number) => (
+    <button
+      type="button"
+      onClick={() => setEditingChapter(editingChapter === index ? null : index)}
+      className="flex w-fit items-center gap-1.5 text-xs text-ice transition-colors hover:text-text-hi"
+    >
+      <Pencil className="size-3.5" /> {editingChapter === index ? "Done editing" : "Edit"}
+    </button>
+  );
+
+  const backForChapter = React.useCallback(
+    (index: number) => {
+      if (index === 0) {
+        onBackToDirection();
+        return;
+      }
+      if (index === 4 && importStarted) {
+        setImportStarted(false);
+        return;
+      }
+      goToChapter(index - 1);
+    },
+    [goToChapter, importStarted, onBackToDirection]
+  );
+
   const sections = [
-    <div key="promise" className="flex flex-col gap-6">
-      <p className="max-w-xl font-display text-2xl leading-snug text-text-hi sm:text-3xl">
-        <span aria-hidden className="mr-1 text-4xl leading-none text-ice/50">“</span>
-        {interpretation.artistPromise || "Something worth following."}
-      </p>
-      {interpretation.identitySignals.length > 0 ? (
-        <div className="flex flex-wrap gap-2">
-          {interpretation.identitySignals.slice(0, 3).map((signal, index) => (
-            <span
-              key={`${signal.label}-${index}`}
-              className="rounded-full border border-line/70 bg-white/[0.025] px-3 py-1 text-xs text-text-lo"
-            >
-              {signal.label}
-            </span>
-          ))}
+    <div key="about" className="flex flex-col gap-5">
+      {editingChapter === 0 ? (
+        <div className="grid gap-3">
+          <Input
+            value={interpretation.artistPromise}
+            onChange={(event) => patchInterpretation({ artistPromise: event.target.value })}
+            maxLength={140}
+            placeholder="A concise line beneath your name"
+            aria-label="Artist tagline"
+            className="font-display text-lg"
+          />
+          <Textarea
+            value={interpretation.creativeCompass}
+            onChange={(event) => patchInterpretation({ creativeCompass: event.target.value })}
+            maxLength={2000}
+            rows={5}
+            placeholder="Who you are and what music you make"
+            aria-label="Artist introduction"
+            className="resize-none"
+          />
         </div>
-      ) : null}
-    </div>,
-
-    <ul key="signals" className="grid gap-3 sm:grid-cols-2">
-      {interpretation.identitySignals.map((s, index) => (
-        <li
-          key={s.label}
-          className="relative overflow-hidden rounded-2xl border border-line/60 bg-white/[0.025] px-4 py-3.5"
-        >
-          <span className="absolute right-3 top-2 font-mono text-[10px] text-ice/55">
-            {String(index + 1).padStart(2, "0")}
-          </span>
-          <h3 className="pr-7 font-display text-base text-text-hi">{s.label}</h3>
-          <p className="mt-2 border-l border-ice/35 pl-3 text-sm italic leading-relaxed text-text-lo">
-            {s.evidence || s.explanation}
+      ) : (
+        <>
+          {interpretation.artistPromise ? (
+            <p className="max-w-xl font-display text-2xl leading-snug text-text-hi sm:text-3xl">
+              {interpretation.artistPromise}
+            </p>
+          ) : null}
+          <p className="max-w-xl text-sm leading-7 text-text-hi/85">
+            {interpretation.creativeCompass || "Add a concise introduction to the artist and the work."}
           </p>
-        </li>
-      ))}
-    </ul>,
-
-    <div key="compass" className="relative py-2 pl-7">
-      <span
-        aria-hidden
-        className="absolute inset-y-0 left-0 w-px bg-[linear-gradient(to_bottom,var(--amber),var(--ice),transparent)]"
-      />
-      <span aria-hidden className="font-display text-5xl leading-none text-amber/30">“</span>
-      <p className="-mt-4 max-w-lg font-display text-xl leading-relaxed text-text-hi">
-        {interpretation.creativeCompass}
-      </p>
+        </>
+      )}
+      {editAction(0)}
     </div>,
 
-    <div key="chapter" className="relative overflow-hidden rounded-2xl border border-line/60 bg-white/[0.025] p-5">
-      <span className="text-[10px] uppercase tracking-[0.24em] text-ice/80">Present direction</span>
-      <h3 className="mt-3 font-display text-2xl text-text-hi">
-        {interpretation.currentChapter.title}
-      </h3>
-      <p className="mt-3 max-w-lg text-sm leading-relaxed text-text-hi/80">
-        {interpretation.currentChapter.premise}
-      </p>
-      <span aria-hidden className="absolute -bottom-10 -right-8 size-28 rounded-full border border-amber/15" />
+    <div key="signals" className="flex flex-col gap-4">
+      <div className="grid gap-3 sm:grid-cols-2">
+        {interpretation.identitySignals.map((signal, index) => (
+          <div
+            key={`signal-${index}`}
+            className="relative overflow-hidden rounded-2xl border border-line/60 bg-white/[0.025] p-4"
+          >
+            {editingChapter === 1 ? (
+              <div className="grid gap-2">
+                <Input
+                  value={signal.label}
+                  onChange={(event) => {
+                    const next = [...interpretation.identitySignals];
+                    next[index] = { ...signal, label: event.target.value };
+                    patchInterpretation({ identitySignals: next });
+                  }}
+                  maxLength={80}
+                  aria-label={`Sound quality ${index + 1}`}
+                />
+                <Textarea
+                  value={signal.explanation}
+                  onChange={(event) => {
+                    const next = [...interpretation.identitySignals];
+                    next[index] = { ...signal, explanation: event.target.value };
+                    patchInterpretation({ identitySignals: next });
+                  }}
+                  maxLength={600}
+                  rows={3}
+                  aria-label={`Sound description ${index + 1}`}
+                  className="resize-none"
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    patchInterpretation({
+                      identitySignals: interpretation.identitySignals.filter((_, itemIndex) => itemIndex !== index),
+                    })
+                  }
+                  className="flex w-fit items-center gap-1 text-xs text-text-lo hover:text-warn"
+                >
+                  <Trash2 className="size-3.5" /> Remove
+                </button>
+              </div>
+            ) : (
+              <>
+                <span className="absolute right-3 top-2 font-mono text-[10px] text-ice/55">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <h3 className="pr-7 font-display text-base text-text-hi">{signal.label}</h3>
+                <p className="mt-2 text-sm leading-6 text-text-lo">{signal.explanation}</p>
+              </>
+            )}
+          </div>
+        ))}
+      </div>
+      {editingChapter === 1 && interpretation.identitySignals.length < 5 ? (
+        <button
+          type="button"
+          onClick={() =>
+            patchInterpretation({
+              identitySignals: [
+                ...interpretation.identitySignals,
+                { label: "", explanation: "", evidence: "Added by the artist.", confidence: "high" },
+              ],
+            })
+          }
+          className="flex w-fit items-center gap-1 text-xs text-ice"
+        >
+          <Plus className="size-3.5" /> Add a sound quality
+        </button>
+      ) : null}
+      {editAction(1)}
+    </div>,
+
+    <div key="now" className="flex flex-col gap-4">
+      {editingChapter === 2 ? (
+        <div className="grid gap-3">
+          <Input
+            value={interpretation.currentChapter.title}
+            onChange={(event) =>
+              patchInterpretation({
+                currentChapter: { ...interpretation.currentChapter, title: event.target.value },
+              })
+            }
+            maxLength={120}
+            placeholder="What is happening now?"
+            aria-label="Current focus title"
+            className="font-display text-lg"
+          />
+          <Textarea
+            value={interpretation.currentChapter.premise}
+            onChange={(event) =>
+              patchInterpretation({
+                currentChapter: { ...interpretation.currentChapter, premise: event.target.value },
+              })
+            }
+            maxLength={2000}
+            rows={4}
+            placeholder="The release, project, or direction taking shape"
+            aria-label="Current focus description"
+            className="resize-none"
+          />
+        </div>
+      ) : (
+        <div className="relative overflow-hidden rounded-2xl border border-line/60 bg-white/[0.025] p-5">
+          <h3 className="font-display text-2xl text-text-hi">
+            {interpretation.currentChapter.title || "Add what is happening now"}
+          </h3>
+          <p className="mt-3 max-w-lg text-sm leading-7 text-text-hi/80">
+            {interpretation.currentChapter.premise}
+          </p>
+          <span aria-hidden className="absolute -bottom-10 -right-8 size-28 rounded-full border border-amber/15" />
+        </div>
+      )}
+      {editAction(2)}
+    </div>,
+
+    <div key="story" className="flex flex-col gap-4">
+      {interpretation.storySections.map((section, index) => (
+        <div key={`story-${index}`} className="rounded-2xl border border-line/60 bg-white/[0.025] p-4">
+          {editingChapter === 3 ? (
+            <div className="grid gap-2">
+              <div className="flex items-center gap-2">
+                <Input
+                  value={section.title}
+                  onChange={(event) => updateStorySection(index, { title: event.target.value })}
+                  maxLength={120}
+                  placeholder="Section title"
+                  aria-label={`Story section ${index + 1} title`}
+                  className="font-display"
+                />
+                <button type="button" onClick={() => moveStorySection(index, -1)} disabled={index === 0} className="p-2 text-text-lo disabled:opacity-30" aria-label="Move story section up">
+                  <ArrowUp className="size-3.5" />
+                </button>
+                <button type="button" onClick={() => moveStorySection(index, 1)} disabled={index === interpretation.storySections.length - 1} className="p-2 text-text-lo disabled:opacity-30" aria-label="Move story section down">
+                  <ArrowDown className="size-3.5" />
+                </button>
+                <button type="button" onClick={() => patchInterpretation({ storySections: interpretation.storySections.filter((_, itemIndex) => itemIndex !== index) })} className="p-2 text-text-lo hover:text-warn" aria-label="Remove story section">
+                  <Trash2 className="size-3.5" />
+                </button>
+              </div>
+              <Textarea
+                value={section.body}
+                onChange={(event) => updateStorySection(index, { body: event.target.value })}
+                maxLength={2000}
+                rows={4}
+                placeholder="Write this part of the story in your own words"
+                aria-label={`Story section ${index + 1} body`}
+                className="resize-none"
+              />
+            </div>
+          ) : (
+            <>
+              <p className="text-[10px] uppercase tracking-[0.22em] text-ice/70">
+                {String(index + 1).padStart(2, "0")}
+              </p>
+              {section.title ? <h3 className="mt-2 font-display text-lg text-text-hi">{section.title}</h3> : null}
+              <p className="mt-2 text-sm leading-7 text-text-lo">{section.body}</p>
+            </>
+          )}
+        </div>
+      ))}
+      {!interpretation.storySections.length && editingChapter !== 3 ? (
+        <p className="text-sm leading-7 text-text-lo">Add the parts of your story you want people to know.</p>
+      ) : null}
+      {editingChapter === 3 && interpretation.storySections.length < 8 ? (
+        <button
+          type="button"
+          onClick={() => patchInterpretation({ storySections: [...interpretation.storySections, { title: "", body: "" }] })}
+          className="flex w-fit items-center gap-1 text-xs text-ice"
+        >
+          <Plus className="size-3.5" /> Add a story section
+        </button>
+      ) : null}
+      {editAction(3)}
     </div>,
 
     // Import lives inside the story rather than as a page you get sent to, so
@@ -516,9 +767,6 @@ export function OriginStoryScroll({
 
       <div className="flex flex-wrap items-center gap-3">
         <EnterTempoButton onClick={onEnter} busy={busy} />
-        <Button type="button" variant="ghost" size="sm" onClick={onBack} disabled={busy}>
-          Back
-        </Button>
       </div>
     </div>,
   ];
@@ -534,6 +782,7 @@ export function OriginStoryScroll({
             title={i === 4 && importStarted ? importTitle[importStep] : undefined}
             wide={i === 4 && importStarted}
             alignClass={i === 4 && importStarted ? importAlign : undefined}
+            onBack={() => backForChapter(i)}
           >
             {content}
           </ChapterSection>
@@ -575,6 +824,7 @@ export function OriginStoryScroll({
                 title={i === 4 && importStarted ? importTitle[importStep] : undefined}
                 wide={i === 4 && importStarted}
                 alignClass={i === 4 && importStarted ? importAlign : undefined}
+                onBack={() => backForChapter(i)}
               >
                 {content}
                 {i === 0 ? <ScrollCue /> : null}

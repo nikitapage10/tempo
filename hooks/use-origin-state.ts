@@ -85,7 +85,7 @@ export function useOriginState(revisit = false, replay = false): OriginControlle
           ? // Revisit opens straight into the editable story with the confirmed
             // content — the opening film only plays if deliberately asked for.
             resume
-            ? { ...resume, currentStep: "review" as const }
+            ? { ...resume, currentStep: "story" as const }
             : null
           : // A completed or skipped row is never auto-resumed into.
             resume && resume.status === "in_progress"
@@ -126,6 +126,7 @@ export function useOriginState(revisit = false, replay = false): OriginControlle
         currentStep: s.savedStep,
         artistNameDraft: s.name || null,
         introductionText: s.introduction || null,
+        directionText: s.direction || null,
         interpretation: s.interpretationReady ? s.interpretation : undefined,
       }).catch(() => {
         // Silent: nothing is lost, and the next save will carry it.
@@ -141,6 +142,7 @@ export function useOriginState(revisit = false, replay = false): OriginControlle
     state.savedStep,
     state.name,
     state.introduction,
+    state.direction,
     state.interpretation,
     state.interpretationReady,
   ]);
@@ -154,6 +156,7 @@ export function useOriginState(revisit = false, replay = false): OriginControlle
       artistId,
       artistName: s.name,
       introduction: s.introduction,
+      direction: s.direction,
     })
       .then((interpretation) => {
         // The reducer decides whether this can be shown yet — a fast response
@@ -182,6 +185,7 @@ export function useOriginState(revisit = false, replay = false): OriginControlle
       artistId,
       artistName: s.name,
       introduction: s.introduction,
+      direction: s.direction,
     })
       .then((interpretation) => {
         // Held aside — the visible interpretation is untouched until accepted.
@@ -211,6 +215,7 @@ export function useOriginState(revisit = false, replay = false): OriginControlle
         artistId,
         artistName: s.name,
         introduction: s.introduction,
+        direction: s.direction,
         interpretation: s.interpretation,
       });
       dispatch({ type: "save_ok" });
@@ -236,6 +241,7 @@ export function useOriginState(revisit = false, replay = false): OriginControlle
         currentStep: s.savedStep,
         artistNameDraft: s.name || null,
         introductionText: s.introduction || null,
+        directionText: s.direction || null,
       });
     } catch {
       /* skipping must not be blocked by a failed draft save */

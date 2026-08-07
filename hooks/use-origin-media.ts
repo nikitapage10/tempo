@@ -35,9 +35,15 @@ const STAGE_PLAN: Partial<
   // Speaking takes ~30s+ — the budget for the heaviest assets in the flow.
   introduction_idle: { high: ["transition03To04", "loop04"], low: ["scroll06"] },
   recording: { high: ["transition03To04", "loop04"], low: ["scroll06"] },
-  processing: { high: ["transition04To05", "loop05"], low: ["scroll06"] },
-  // Review can stay open indefinitely; finish the scroll asset here.
-  review: { high: ["transition05To06", "scroll06"], low: [] },
+  direction_idle: {
+    high: ["transition04To05", "loop05"],
+    low: ["transition05To06", "scroll06"],
+  },
+  processing: {
+    high: ["transition04To05", "loop05"],
+    low: ["transition05To06", "scroll06"],
+  },
+  resolving: { high: ["transition05To06", "scroll06"], low: [] },
 };
 
 export type OriginMediaControl = {

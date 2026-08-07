@@ -41,6 +41,7 @@ export async function saveOriginDraft(
   if (patch.currentStep !== undefined) row.current_step = patch.currentStep;
   if (patch.artistNameDraft !== undefined) row.artist_name_draft = patch.artistNameDraft;
   if (patch.introductionText !== undefined) row.introduction_text = patch.introductionText;
+  if (patch.directionText !== undefined) row.direction_text = patch.directionText;
 
   if (patch.interpretation !== undefined) {
     const i = patch.interpretation;
@@ -50,6 +51,7 @@ export async function saveOriginDraft(
       row.identity_signals = [];
       row.current_chapter_title = null;
       row.current_chapter_premise = null;
+      row.story_sections = [];
       row.suggested_genres = [];
       row.suggested_roles = [];
     } else {
@@ -59,6 +61,7 @@ export async function saveOriginDraft(
       row.identity_signals = clean.identitySignals;
       row.current_chapter_title = clean.currentChapter.title;
       row.current_chapter_premise = clean.currentChapter.premise;
+      row.story_sections = clean.storySections;
       row.suggested_genres = clean.suggestedGenres;
       row.suggested_roles = clean.suggestedRoles;
     }
@@ -90,20 +93,23 @@ export async function completeArtistOrigin(input: {
   artistId: string;
   artistName: string;
   introduction: string;
+  direction: string;
   interpretation: ArtistOriginInterpretation;
 }): Promise<ArtistOrigin> {
   const supabase = createClient();
   const clean = sanitizeInterpretation(input.interpretation);
 
-  const { data, error } = await supabase.rpc("complete_artist_origin", {
+  const { data, error } = await supabase.rpc("complete_artist_origin_v2", {
     p_artist_id: input.artistId,
     p_artist_name: input.artistName,
     p_introduction: input.introduction,
+    p_direction: input.direction,
     p_artist_promise: clean.artistPromise,
     p_creative_compass: clean.creativeCompass,
     p_identity_signals: clean.identitySignals,
     p_chapter_title: clean.currentChapter.title,
     p_chapter_premise: clean.currentChapter.premise,
+    p_story_sections: clean.storySections,
     p_suggested_genres: clean.suggestedGenres,
     p_suggested_roles: clean.suggestedRoles,
   });
@@ -122,6 +128,7 @@ export async function requestInterpretation(input: {
   artistId: string;
   artistName: string;
   introduction: string;
+  direction: string;
 }): Promise<ArtistOriginInterpretation> {
   const res = await fetch("/api/artist-origin/interpret", {
     method: "POST",

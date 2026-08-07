@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Mic, Pause, Play, RotateCcw, Square } from "lucide-react";
+import { ChevronLeft, Mic, Pause, Play, RotateCcw, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { MorphingText } from "@/components/ui/morphing-text";
@@ -34,6 +34,7 @@ export function OriginIntroductionStep({
   introduction,
   onIntroductionChange,
   onFinish,
+  onBack,
   onRecordingChange,
   voiceActive,
   mediaReady,
@@ -42,6 +43,7 @@ export function OriginIntroductionStep({
   introduction: string;
   onIntroductionChange: (v: string) => void;
   onFinish: () => void;
+  onBack: () => void;
   onRecordingChange: (recording: boolean) => void;
   /** Starts the entity voice only once the panel's reveal has begun. */
   voiceActive: boolean;
@@ -108,7 +110,14 @@ export function OriginIntroductionStep({
         className="absolute inset-y-0 left-0 w-px bg-[linear-gradient(to_bottom,transparent,var(--amber),var(--ice),transparent)] opacity-70"
       />
       <div className="relative flex flex-col gap-6 px-7 py-8 sm:px-9">
-      <div className="flex flex-col gap-3">
+        <button
+          type="button"
+          onClick={onBack}
+          className="flex w-fit items-center gap-1 text-xs text-text-lo transition-colors hover:text-text-hi"
+        >
+          <ChevronLeft className="size-3.5" /> Back
+        </button>
+        <div className="flex flex-col gap-3">
         <p className="text-[10px] uppercase tracking-[0.28em] text-text-lo/70">
           Signal / in your own words
         </p>

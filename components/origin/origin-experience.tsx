@@ -13,11 +13,11 @@ import {
 import { OriginAwakenStep } from "@/components/origin/origin-awaken-step";
 import { OriginNameStep } from "@/components/origin/origin-name-step";
 import { OriginIntroductionStep } from "@/components/origin/origin-introduction-step";
+import { OriginDirectionStep } from "@/components/origin/origin-direction-step";
 import {
   OriginInterpretationError,
   OriginProcessingStep,
 } from "@/components/origin/origin-processing-step";
-import { OriginReviewStep } from "@/components/origin/origin-review-step";
 import { OriginStoryScroll } from "@/components/origin/origin-story-scroll";
 import { MorphingText } from "@/components/ui/morphing-text";
 import {
@@ -62,7 +62,6 @@ const SOUNDTRACK_FADE_OUT_MS = 1100;
  * enough that the panel is settled before the loop begins, late enough that it
  * never competes with the film's own moment.
  */
-const PRELUDE_AT = 0.58;
 /** Processing speaks later, after the artist's words have had a beat to land. */
 const PROCESSING_PRELUDE_AT = 0.76;
 /** The opening sentence must finish its fade before the name panel begins. */
@@ -96,7 +95,6 @@ export function OriginExperience({
     artistId,
     hydrated,
     runInterpretation,
-    regenerate,
     complete,
     setInterpretation,
   } = useOriginState(revisit, replay);
@@ -158,6 +156,20 @@ export function OriginExperience({
     soundtrackFadeRef.current = requestAnimationFrame(fade);
   }, []);
 
+  const resetSoundtrack = React.useCallback(() => {
+    if (soundtrackFadeRef.current !== null) {
+      cancelAnimationFrame(soundtrackFadeRef.current);
+      soundtrackFadeRef.current = null;
+    }
+    const soundtrack = soundtrackRef.current;
+    if (soundtrack) {
+      soundtrack.pause();
+      soundtrack.currentTime = 0;
+      soundtrack.volume = 0;
+    }
+    setSoundOn(false);
+  }, []);
+
   React.useEffect(
     () => () => {
       if (soundtrackFadeRef.current !== null) cancelAnimationFrame(soundtrackFadeRef.current);
@@ -212,8 +224,6 @@ export function OriginExperience({
     Boolean(clip) && activeKeyRef.current === clip?.key,
     activeTick
   );
-  /** True once the current transition is far enough along to show what's next. */
-  const prelude = media.staticMode || clipProgress >= PRELUDE_AT;
   const namePrelude = media.staticMode || clipProgress >= NAME_PRELUDE_AT;
 
   /*
@@ -241,6 +251,15 @@ export function OriginExperience({
     state.phase === "introduction_idle" ||
     state.phase === "recording";
 
+  const mountDirection =
+    state.phase === "interpreting_transition" ||
+    state.phase === "direction_idle" ||
+    state.phase === "processing";
+  const showDirection =
+    state.phase === "direction_idle" ||
+    (state.phase === "interpreting_transition" &&
+      (media.staticMode || clipProgress >= PROCESSING_PRELUDE_AT));
+
   const recognitionVisible =
     state.phase === "recognizing" &&
     activeKeyRef.current === clip?.key &&
@@ -261,19 +280,10 @@ export function OriginExperience({
   else if (recognitionVisible) recognitionStartedRef.current = true;
 
   const mountProcessing =
-    state.phase === "interpreting_transition" ||
     state.phase === "processing" ||
     state.phase === "resolving";
   const showProcessing =
-    state.phase === "processing" ||
-    (state.phase === "interpreting_transition" &&
-      (media.staticMode || clipProgress >= PROCESSING_PRELUDE_AT));
-
-  const mountReview =
-    state.phase === "resolving" ||
-    state.phase === "review" ||
-    state.phase === "chapter_opening";
-  const showReview = state.phase === "review" || (state.phase === "resolving" && prelude);
+    state.phase === "processing";
 
   /**
    * A fast interpretation must still leave room for frame 4 to breathe. Count
@@ -311,7 +321,7 @@ export function OriginExperience({
    *  parallel with the transition, never gated on it. */
   const interpretationStartedRef = React.useRef(false);
   React.useEffect(() => {
-    if (state.phase !== "interpreting_transition" && state.phase !== "processing") {
+    if (state.phase !== "processing") {
       interpretationStartedRef.current = false;
       return;
     }
@@ -462,10 +472,11 @@ export function OriginExperience({
         <div className="absolute inset-0">
           <OriginStoryScroll
             interpretation={state.interpretation}
+            onInterpretationChange={setInterpretation}
             staticMode={media.staticMode}
             videoRef={activeVideoRef}
             onEnter={handleEnter}
-            onBack={() => dispatch({ type: "back_to_review" })}
+            onBackToDirection={() => dispatch({ type: "back_to_direction" })}
             busy={state.busy}
             error={state.error}
             onSkipImport={() => setImportChoice("empty")}
@@ -505,6 +516,10 @@ export function OriginExperience({
               <OriginNameStep
                 name={state.name}
                 onNameChange={(name) => dispatch({ type: "set_name", name })}
+                onBack={() => {
+                  resetSoundtrack();
+                  dispatch({ type: "back_to_awaken" });
+                }}
                 onSubmit={() => dispatch({ type: "submit_name" })}
                 mediaReady={media.gateOpen(gateFor("recognizing"))}
                 busy={state.busy}
@@ -540,12 +555,25 @@ export function OriginExperience({
               <OriginIntroductionStep
                 introduction={state.introduction}
                 onIntroductionChange={(text) => dispatch({ type: "set_introduction", text })}
+                onBack={() => dispatch({ type: "back_to_name" })}
                 onFinish={() => dispatch({ type: "finish_introduction" })}
                 onRecordingChange={(recording) =>
                   dispatch({ type: recording ? "start_recording" : "stop_recording" })
                 }
                 voiceActive={showIntroduction}
                 mediaReady={media.gateOpen(gateFor("interpreting_transition"))}
+                busy={state.busy}
+              />
+            </StepFade>
+          ) : null}
+
+          {mountDirection ? (
+            <StepFade show={showDirection} className="w-full max-w-xl">
+              <OriginDirectionStep
+                direction={state.direction}
+                onDirectionChange={(text) => dispatch({ type: "set_direction", text })}
+                onBack={() => dispatch({ type: "back_to_introduction" })}
+                onFinish={() => dispatch({ type: "finish_direction" })}
                 busy={state.busy}
               />
             </StepFade>
@@ -565,32 +593,13 @@ export function OriginExperience({
               message={state.error ?? "Something went wrong."}
               onRetry={() => {
                 interpretationStartedRef.current = false;
-                dispatch({ type: "finish_introduction" });
+                dispatch({ type: "retry_interpretation" });
               }}
               onWriteManually={() => dispatch({ type: "write_manually" })}
               busy={state.busy}
             />
           ) : null}
 
-          {mountReview ? (
-            <StepFade show={showReview} className="w-full max-w-2xl">
-              <OriginReviewStep
-              interpretation={state.interpretation}
-              pending={state.pendingInterpretation}
-              canUndo={state.undoStack.length > 0}
-              onChange={setInterpretation}
-              onUndo={() => dispatch({ type: "undo" })}
-              onRegenerate={regenerate}
-              onAcceptPending={() => dispatch({ type: "accept_regeneration" })}
-              onDiscardPending={() => dispatch({ type: "discard_regeneration" })}
-              onOpenChapter={() => dispatch({ type: "open_chapter" })}
-                mediaReady={media.gateOpen(gateFor("chapter_opening"))}
-                mediaProgress={media.gateProgress(gateFor("chapter_opening"))}
-                busy={state.busy}
-                error={state.error}
-              />
-            </StepFade>
-          ) : null}
         </OriginOverlay>
       )}
     </OriginMediaStage>

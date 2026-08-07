@@ -4,6 +4,24 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-07
 
+- Changed (v0.84.0): Origin now asks one useful direction question after the
+  artist shares their history. The separate recap screen is gone; the scrolling
+  reveal is the single place where Origin reflects the story back and lets the
+  artist edit it.
+- Added (v0.84.0): every interactive Origin section has a small Back control.
+  Moving backward keeps the name, history, direction, and edited profile copy
+  intact.
+- Changed (v0.84.0): Origin generates clearly separated profile material for
+  About, The sound, Right now, and a modular public story. Story chapters can be
+  added, edited, removed, and reordered during Origin or later in the profile
+  editor.
+- Changed (v0.84.0): artist profiles now lead with featured music, integrate
+  genres and roles into About, give links their own Listen and connect section,
+  and present the longer story as artist-owned chapters instead of one folded
+  block. The generic Details card has been removed.
+- Under the hood (v0.84.0): run
+  `migrations/048_origin_direction_and_profile_story.sql` in Supabase after
+  migration 047 before using the new Origin flow.
 - Changed (v0.83.0): Origin now follows one grounded signal from its first faint
   appearance through a name, a history, refraction, and a direction. The same
   screens and six-part story remain, with clearer language and no early product

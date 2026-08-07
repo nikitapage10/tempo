@@ -30,10 +30,10 @@ export type OriginPhase =
   | "recognizing"
   | "introduction_idle"
   | "recording"
+  | "direction_idle"
   | "interpreting_transition"
   | "processing"
   | "resolving"
-  | "review"
   | "chapter_opening"
   | "story_scroll"
   | "saving"
@@ -47,6 +47,7 @@ export type OriginState = {
 
   name: string;
   introduction: string;
+  direction: string;
   interpretation: ArtistOriginInterpretation;
   /** A regeneration awaiting accept/discard. Never overwrites `interpretation`. */
   pendingInterpretation: ArtistOriginInterpretation | null;
@@ -74,13 +75,20 @@ export type OriginAction =
   | { type: "submit_name" }
   | { type: "recognition_ended" }
   | { type: "set_introduction"; text: string }
+  | { type: "set_direction"; text: string }
   | { type: "start_recording" }
   | { type: "stop_recording" }
   | { type: "finish_introduction" }
+  | { type: "finish_direction" }
+  | { type: "back_to_awaken" }
+  | { type: "back_to_name" }
+  | { type: "back_to_introduction" }
+  | { type: "back_to_direction" }
   | { type: "transition_ended" }
   | { type: "processing_dwell_ended" }
   | { type: "interpretation_ok"; interpretation: ArtistOriginInterpretation }
   | { type: "interpretation_failed"; message: string }
+  | { type: "retry_interpretation" }
   | { type: "write_manually" }
   | { type: "resolve_ended" }
   | { type: "edit_interpretation"; interpretation: ArtistOriginInterpretation }
@@ -88,9 +96,7 @@ export type OriginAction =
   | { type: "accept_regeneration" }
   | { type: "discard_regeneration" }
   | { type: "undo" }
-  | { type: "open_chapter" }
   | { type: "chapter_ended" }
-  | { type: "back_to_review" }
   | { type: "begin_save" }
   | { type: "save_ok" }
   | { type: "save_failed"; message: string }
@@ -102,6 +108,7 @@ export const INITIAL_ORIGIN_STATE: OriginState = {
   staticMode: false,
   name: "",
   introduction: "",
+  direction: "",
   interpretation: EMPTY_INTERPRETATION,
   pendingInterpretation: null,
   undoStack: [],
@@ -118,7 +125,7 @@ const RESUME_PHASE: Record<OriginStep, OriginPhase> = {
   name: "name_idle",
   introduction: "introduction_idle",
   processing: "processing",
-  review: "review",
+  review: "direction_idle",
   story: "story_scroll",
   complete: "complete",
 };
@@ -128,8 +135,8 @@ export const PHASE_LOOP: Partial<Record<OriginPhase, OriginMediaKey>> = {
   name_idle: "loop02",
   introduction_idle: "loop03",
   recording: "loop03",
+  direction_idle: "loop04",
   processing: "loop04",
-  review: "loop05",
   story_scroll: "scroll06",
   saving: "scroll06",
   complete: "scroll06",
@@ -179,12 +186,19 @@ export function originReducer(state: OriginState, action: OriginAction): OriginS
           phase: staticMode ? "name_idle" : "awaiting_start",
         };
       }
-      const savedStep = resume.currentStep;
+      // A v2 draft may have reached processing before the direction question
+      // existed. Send that draft to the new question instead of calling the
+      // v3 interpreter with a missing answer.
+      const savedStep =
+        resume.currentStep === "processing" && !resume.directionText?.trim()
+          ? "review"
+          : resume.currentStep;
       return {
         ...state,
         staticMode,
         name: resume.artistNameDraft ?? "",
         introduction: resume.introductionText ?? "",
+        direction: resume.directionText ?? "",
         interpretation: resume.interpretation ?? EMPTY_INTERPRETATION,
         interpretationReady: resume.interpretation !== null,
         // A resumed processing step still deserves the full frame-4 hold. In
@@ -198,7 +212,9 @@ export function originReducer(state: OriginState, action: OriginAction): OriginS
     }
 
     case "begin":
-      return state.phase === "awaiting_start" ? { ...state, phase: "opening" } : state;
+      return state.phase === "awaiting_start"
+        ? { ...state, phase: state.staticMode ? "name_idle" : "opening" }
+        : state;
 
     case "opening_ended":
       return state.phase === "opening" ? { ...state, phase: "name_idle" } : state;
@@ -223,6 +239,9 @@ export function originReducer(state: OriginState, action: OriginAction): OriginS
     case "set_introduction":
       return { ...state, introduction: action.text, error: null };
 
+    case "set_direction":
+      return { ...state, direction: action.text, error: null };
+
     case "start_recording":
       return state.phase === "introduction_idle" ? { ...state, phase: "recording" } : state;
 
@@ -234,18 +253,54 @@ export function originReducer(state: OriginState, action: OriginAction): OriginS
       if (state.phase !== "introduction_idle" && state.phase !== "recording") return state;
       return {
         ...state,
-        // Static mode skips straight to the processing hold; there is no film.
-        phase: state.staticMode ? "processing" : "interpreting_transition",
+        phase: state.staticMode ? "direction_idle" : "interpreting_transition",
+        // `review` remains the persisted label for compatibility with the
+        // original current_step constraint. It now means the direction input.
+        savedStep: "review",
+        error: null,
+      };
+
+    case "finish_direction":
+      if (state.busy || state.phase !== "direction_idle") return state;
+      return {
+        ...state,
+        phase: "processing",
         savedStep: "processing",
-        transitionSettled: state.staticMode,
+        transitionSettled: true,
         interpretationReady: false,
         processingDwellSettled: state.staticMode,
         error: null,
       };
 
+    case "back_to_awaken":
+      return state.phase === "name_idle"
+        ? { ...state, phase: "awaiting_start", savedStep: "name", error: null }
+        : state;
+
+    case "back_to_name":
+      return state.phase === "introduction_idle"
+        ? { ...state, phase: "name_idle", savedStep: "name", error: null }
+        : state;
+
+    case "back_to_introduction":
+      return state.phase === "direction_idle"
+        ? { ...state, phase: "introduction_idle", savedStep: "introduction", error: null }
+        : state;
+
+    case "back_to_direction":
+      return state.phase === "story_scroll" || state.phase === "processing"
+        ? {
+            ...state,
+            phase: "direction_idle",
+            savedStep: "review",
+            error: null,
+            busy: false,
+          }
+        : state;
+
     case "transition_ended": {
       if (state.phase === "interpreting_transition") {
-        return maybeResolve({ ...state, phase: "processing", transitionSettled: true });
+        return { ...state, phase: "direction_idle", transitionSettled: true };
       }
       return state;
     }
@@ -268,11 +323,24 @@ export function originReducer(state: OriginState, action: OriginAction): OriginS
       // The transcript and every draft value survive — §16.
       return { ...state, phase: "recoverable_error", error: action.message, busy: false };
 
+    case "retry_interpretation":
+      return state.phase === "recoverable_error"
+        ? {
+            ...state,
+            phase: "processing",
+            savedStep: "processing",
+            interpretationReady: false,
+            processingDwellSettled: state.staticMode,
+            transitionSettled: true,
+            error: null,
+          }
+        : state;
+
     case "write_manually":
       return {
         ...state,
-        phase: "review",
-        savedStep: "review",
+        phase: state.staticMode ? "story_scroll" : "chapter_opening",
+        savedStep: "story",
         error: null,
         interpretationReady: true,
         transitionSettled: true,
@@ -281,7 +349,11 @@ export function originReducer(state: OriginState, action: OriginAction): OriginS
 
     case "resolve_ended":
       return state.phase === "resolving"
-        ? { ...state, phase: "review", savedStep: "review" }
+        ? {
+            ...state,
+            phase: state.staticMode ? "story_scroll" : "chapter_opening",
+            savedStep: "story",
+          }
         : state;
 
     case "edit_interpretation":
@@ -313,24 +385,10 @@ export function originReducer(state: OriginState, action: OriginAction): OriginS
       return { ...state, interpretation: previous, undoStack: rest };
     }
 
-    case "open_chapter":
-      if (state.phase !== "review" || state.busy) return state;
-      return {
-        ...state,
-        phase: state.staticMode ? "story_scroll" : "chapter_opening",
-        savedStep: "story",
-        error: null,
-      };
-
     case "chapter_ended":
       return state.phase === "chapter_opening"
         ? { ...state, phase: "story_scroll" }
         : state;
-
-    case "back_to_review":
-      // Returns to the loop the review sits on, without replaying 4→5.
-      if (state.phase !== "story_scroll") return state;
-      return { ...state, phase: "review", savedStep: "review", error: null };
 
     case "begin_save":
       if (state.busy) return state;

@@ -1,12 +1,11 @@
 import { fetchArtistProfile, upsertArtistProfile } from "@/lib/api/artist-profile";
 import type { ArtistOriginInterpretation } from "@/lib/origin/types";
+import { sanitizeInterpretation } from "@/lib/origin/validation";
 
 /**
- * Optional, opt-in mapping from an Origin story into the artist's *private*
- * profile.
+ * Maps the artist-confirmed Origin reading into still-empty profile fields.
  *
- * The rules here are deliberately timid, because this runs on a checkbox the
- * artist ticked once at the end of a long flow:
+ * The rules here are deliberately timid:
  *
  *  - Only empty fields are filled. Existing copy is never replaced.
  *  - `visibility` is never passed, so publication state cannot change.
@@ -24,35 +23,40 @@ export async function applyOriginToProfile(
   displayName: string
 ): Promise<void> {
   const existing = await fetchArtistProfile(artistId);
+  const clean = sanitizeInterpretation(interpretation);
 
   const patch: Parameters<typeof upsertArtistProfile>[1] = {};
 
   // The promise is one or two evocative sentences — the closest match to a tagline.
-  const promise = interpretation.artistPromise.trim();
+  const promise = clean.artistPromise.trim();
   if (promise && !existing?.tagline) patch.tagline = promise.slice(0, 140);
 
   // Longer approved prose goes to the bio, and only when there isn't one.
-  const compass = interpretation.creativeCompass.trim();
-  const chapter = interpretation.currentChapter.premise.trim();
+  const compass = clean.creativeCompass.trim();
+  const chapter = clean.currentChapter.premise.trim();
   if (compass && !existing?.bio) patch.bio = compass;
 
-  if (!existing?.sound_markers?.length && interpretation.identitySignals.length) {
-    patch.sound_markers = interpretation.identitySignals.slice(0, 5).map((signal) => ({
+  if (!existing?.sound_markers?.length && clean.identitySignals.length) {
+    patch.sound_markers = clean.identitySignals.slice(0, 5).map((signal) => ({
       label: signal.label,
       description: signal.explanation,
     }));
   }
 
-  if (interpretation.currentChapter.title.trim() && !existing?.current_focus_title) {
-    patch.current_focus_title = interpretation.currentChapter.title.trim();
+  if (clean.currentChapter.title.trim() && !existing?.current_focus_title) {
+    patch.current_focus_title = clean.currentChapter.title.trim();
   }
   if (chapter && !existing?.current_focus_body) patch.current_focus_body = chapter;
 
-  if (!existing?.genres?.length && interpretation.suggestedGenres.length) {
-    patch.genres = interpretation.suggestedGenres.slice(0, 8);
+  if (!existing?.story_sections?.length && clean.storySections.length) {
+    patch.story_sections = clean.storySections;
   }
-  if (!existing?.roles?.length && interpretation.suggestedRoles.length) {
-    patch.roles = interpretation.suggestedRoles.slice(0, 8);
+
+  if (!existing?.genres?.length && clean.suggestedGenres.length) {
+    patch.genres = clean.suggestedGenres.slice(0, 8);
+  }
+  if (!existing?.roles?.length && clean.suggestedRoles.length) {
+    patch.roles = clean.suggestedRoles.slice(0, 8);
   }
 
   if (Object.keys(patch).length === 0) return;
