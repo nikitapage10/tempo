@@ -4,6 +4,11 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-07
 
+- Added (v0.89.0): Scenes now has events. A manager can add one with a date,
+  a kind, a location or link, an optional headcount limit, and details;
+  members RSVP going, interested, or can't go, and see how many others are
+  coming. A full event stops taking new "going" RSVPs. A manager can cancel
+  an event, which pulls it for everyone.
 - Added (v0.88.0): Scenes can now hold polls and open questions. Ask a
   multiple-choice question with up to ten answers (single- or multi-select),
   and watch the results fill in live once someone's voted or the poll has

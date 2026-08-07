@@ -143,8 +143,12 @@ posts. Managers can remove a post from the feed; it stays out for everyone
 and the removal is recorded. A post can also be a poll — up to ten options,
 single- or multi-select, with live results once you've voted or it's
 closed — or an open question, which skips the options and takes its answers
-as ordinary comments instead. Events and chat that will live inside a scene
-are still on the way. Scenes needs six database updates (migrations 049
+as ordinary comments instead. A scene's Events tab holds what's coming up
+and what's past; a manager adds an event with a date, kind, location or
+link, an optional headcount limit, and details, and members RSVP going,
+interested, or can't go — a full event stops taking new "going" RSVPs.
+Chat that will live inside a scene is still on the way. Scenes needs six
+database updates (migrations 049
 through 054) before it works — until they're run, the Scenes tab explains
 that plainly instead of erroring.
 

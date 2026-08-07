@@ -9,6 +9,7 @@ import { useSceneMembers } from "@/hooks/use-scene-members";
 import { SceneHeader } from "@/components/scenes/scene-header";
 import { SceneMemberRow } from "@/components/scenes/scene-member-row";
 import { SceneFeed } from "@/components/scenes/scene-feed";
+import { SceneEvents } from "@/components/scenes/scene-events";
 import { EmptyShaderPanel } from "@/components/shader-empty";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
@@ -139,7 +140,9 @@ export default function SceneView({ slug }: { slug: string }) {
           {active === "feed" ? (
             <SceneFeed sceneId={scene.id} myProfileId={myProfileId} isManager={isManager} />
           ) : null}
-          {active === "events" ? comingSoon("Events") : null}
+          {active === "events" ? (
+            <SceneEvents sceneId={scene.id} myProfileId={myProfileId} isManager={isManager} />
+          ) : null}
           {active === "chat" ? comingSoon("Chat") : null}
 
           {active === "members" ? (

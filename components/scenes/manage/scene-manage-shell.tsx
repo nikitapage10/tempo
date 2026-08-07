@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowLeft, LayoutDashboard, Shield, Users } from "lucide-react";
+import { ArrowLeft, CalendarDays, LayoutDashboard, Shield, Users } from "lucide-react";
 import { ArtistMark } from "@/components/artists/artist-mark";
 import { FlareLine } from "@/components/flare-line";
 import type { Scene } from "@/lib/types";
@@ -32,6 +32,7 @@ export function SceneManageShell({
   const items = [
     { href: base, label: "Overview", icon: LayoutDashboard, count: 0 },
     { href: `${base}/members`, label: "Members", icon: Users, count: requestCount },
+    { href: `${base}/events`, label: "Events", icon: CalendarDays, count: 0 },
     { href: `${base}/moderation`, label: "Reports", icon: Shield, count: reportCount },
   ];
 
