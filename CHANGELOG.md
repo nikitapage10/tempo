@@ -4,6 +4,10 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-07
 
+- Changed (v0.84.4): Origin's history and direction questions now share one
+  simple dictation control. Tap the microphone to start, tap it again to stop,
+  or pause for a few seconds to stop automatically. Direction 02 also uses a
+  darker glass surface and stronger text contrast over bright film frames.
 - Changed (v0.84.3): Today’s moving cover rows are now playable. Hovering a row
   slows it down substantially; the center of each cover plays or pauses its
   current bounce, while a black-gradient title and artist strip opens the track

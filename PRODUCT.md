@@ -26,7 +26,10 @@ where it is pointing now. The product name stays out of the story until the
 final workspace threshold. A quiet ambient track begins only after **Tune in**
 and loops through the full experience. After the artist gives the signal a
 history, one grounded question asks what they are making now and what they want
-it to feel like. The scrolling film is the only reflection and review, with
+it to feel like. Both questions use the same one-tap dictation control: tap to
+start, tap again to stop, or pause briefly and let it stop on its own. Direction
+uses a deeper glass surface so its text remains clear over bright film frames.
+The scrolling film is the only reflection and review, with
 editable chapters for About, The sound, Right now, and The story. The first chapter uses an
 asymmetrical lit composition, and the final transition holds its true last
 frame until the scroll film is painted. The dashboard stays covered until the

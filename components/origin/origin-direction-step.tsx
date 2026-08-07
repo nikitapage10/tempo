@@ -1,11 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { ArrowRight, ChevronLeft } from "lucide-react";
+import { ArrowRight, ChevronLeft, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { MorphingText } from "@/components/ui/morphing-text";
 import { OriginScrim } from "@/components/origin/origin-copy-layer";
+import { useOriginSpeech } from "@/hooks/use-origin-speech";
 import { validateDirection } from "@/lib/origin/validation";
 
 const PROMPTS = [
@@ -29,6 +30,24 @@ export function OriginDirectionStep({
   busy: boolean;
 }) {
   const [error, setError] = React.useState<string | null>(null);
+  const baseTextRef = React.useRef("");
+  const directionRef = React.useRef(direction);
+  directionRef.current = direction;
+
+  const speech = useOriginSpeech({
+    onTranscript: onDirectionChange,
+    baseText: () => baseTextRef.current,
+  });
+
+  async function handleDictation() {
+    if (speech.listening) {
+      await speech.finish();
+      return;
+    }
+    baseTextRef.current = directionRef.current.trim();
+    setError(null);
+    await speech.start();
+  }
 
   function handleContinue() {
     if (busy) return;
@@ -41,8 +60,13 @@ export function OriginDirectionStep({
     onFinish();
   }
 
+  const canSpeak = speech.mode !== "unavailable" && !speech.micDenied;
+
   return (
-    <OriginScrim className="pointer-events-auto relative flex w-full max-w-2xl flex-col gap-6 overflow-hidden p-0">
+    <OriginScrim
+      tone="story"
+      className="pointer-events-auto relative flex w-full max-w-2xl flex-col gap-6 overflow-hidden border-line bg-[linear-gradient(135deg,rgb(7_8_11/0.88),rgb(14_15_20/0.80))] p-0 shadow-[0_24px_80px_rgb(0_0_0/0.52)] backdrop-blur-2xl"
+    >
       <span
         aria-hidden
         className="absolute inset-y-0 left-0 w-px bg-[linear-gradient(to_bottom,transparent,var(--ice),var(--amber),transparent)] opacity-75"
@@ -67,7 +91,7 @@ export function OriginDirectionStep({
             holdSeconds={2}
             className="font-display text-3xl leading-tight text-text-hi sm:text-4xl [&>span]:text-left"
           />
-          <p className="max-w-xl text-sm leading-relaxed text-text-lo">
+          <p className="max-w-xl text-sm leading-relaxed text-text-hi/75">
             What are you making right now, and what do you want it to feel like?
             Talk about the releases, sounds, or ideas currently taking shape.
           </p>
@@ -85,35 +109,75 @@ export function OriginDirectionStep({
             holdSeconds={2.7}
             morphSeconds={0.85}
             blurPx={2}
-            className="text-sm italic text-text-lo/85 [&>span]:text-left"
+            className="text-sm italic text-text-hi/75 [&>span]:text-left"
           />
         </div>
 
-        <Textarea
-          value={direction}
-          onChange={(event) => {
-            onDirectionChange(event.target.value);
-            if (error) setError(null);
-          }}
-          rows={5}
-          maxLength={4000}
-          placeholder="Start with what is taking shape now…"
-          aria-label="What you are making now and what you want it to feel like"
-          className="min-h-36 resize-none rounded-none border-x-0 border-t-0 bg-transparent px-0 text-base leading-relaxed shadow-none focus-visible:ring-0"
-        />
+        <div className="relative flex flex-col gap-2 pl-5 before:absolute before:inset-y-1 before:left-0 before:w-px before:bg-[linear-gradient(to_bottom,var(--ice),var(--amber),transparent)]">
+          <Textarea
+            value={direction}
+            onChange={(event) => {
+              onDirectionChange(event.target.value);
+              if (error) setError(null);
+            }}
+            rows={5}
+            maxLength={4000}
+            placeholder="Start with what is taking shape now…"
+            aria-label="What you are making now and what you want it to feel like"
+            aria-describedby="origin-direction-status origin-direction-privacy"
+            className="min-h-36 resize-none rounded-none border-0 bg-transparent px-0 text-base leading-relaxed text-text-hi shadow-none placeholder:text-text-lo focus-visible:ring-0"
+          />
+          <p
+            id="origin-direction-status"
+            aria-live="polite"
+            className="min-h-4 text-xs text-text-lo"
+          >
+            {speech.transcribing
+              ? "Writing down what you said…"
+              : speech.listening
+                ? "Listening… pause for a moment or tap the microphone to stop."
+                : ""}
+          </p>
+        </div>
+
+        {speech.error ? <p role="alert" className="text-xs text-warn">{speech.error}</p> : null}
 
         {error ? <p role="alert" className="text-xs text-warn">{error}</p> : null}
 
-        <div className="flex justify-end">
+        <div className="flex flex-wrap items-center gap-2">
+          {canSpeak ? (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleDictation}
+              disabled={speech.transcribing}
+              aria-pressed={speech.listening}
+              className={speech.listening ? "border-ice/70 bg-ice/10 text-ice" : undefined}
+            >
+              <Mic className={speech.listening ? "animate-pulse motion-reduce:animate-none" : undefined} />
+              {speech.listening
+                ? "Listening…"
+                : speech.transcribing
+                  ? "Finishing…"
+                  : direction.trim()
+                    ? "Dictate more"
+                    : "Dictate"}
+            </Button>
+          ) : null}
           <Button
             type="button"
             onClick={handleContinue}
-            disabled={busy}
-            className="rounded-full px-5"
+            disabled={busy || speech.listening || speech.transcribing}
+            className="ml-auto rounded-full px-5"
           >
             Set the direction <ArrowRight className="size-4" />
           </Button>
         </div>
+
+        <p id="origin-direction-privacy" className="text-xs leading-relaxed text-text-lo/80">
+          Your words are sent to be transcribed and interpreted. The recording itself is not
+          kept. Nothing is published without your confirmation.
+        </p>
       </div>
     </OriginScrim>
   );

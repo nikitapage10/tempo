@@ -1,12 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { ChevronLeft, Mic, Pause, Play, RotateCcw, Square } from "lucide-react";
+import { ChevronLeft, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { MorphingText } from "@/components/ui/morphing-text";
 import { OriginScrim } from "@/components/origin/origin-copy-layer";
-import { formatElapsed, useOriginSpeech } from "@/hooks/use-origin-speech";
+import { useOriginSpeech } from "@/hooks/use-origin-speech";
 import { MIN_INTRODUCTION_CHARS, validateIntroduction } from "@/lib/origin/validation";
 
 /**
@@ -58,7 +58,7 @@ export function OriginIntroductionStep({
     if (voiceActive) setVoiceStarted(true);
   }, [voiceActive]);
 
-  // Text present before dictation started, so a restart doesn't eat typing.
+  // Text present before dictation started, so speaking adds to existing typing.
   const baseTextRef = React.useRef("");
   const introRef = React.useRef(introduction);
   introRef.current = introduction;
@@ -78,14 +78,14 @@ export function OriginIntroductionStep({
     if (attempted && mediaReady && !error) onFinish();
   }, [attempted, mediaReady, error, onFinish]);
 
-  async function handleStart() {
+  async function handleDictation() {
+    if (speech.listening) {
+      await speech.finish();
+      return;
+    }
     baseTextRef.current = introRef.current.trim();
     setError(null);
     await speech.start();
-  }
-
-  async function handleFinishSpeaking() {
-    await speech.finish();
   }
 
   function handleContinue() {
@@ -183,7 +183,7 @@ export function OriginIntroductionStep({
           {speech.transcribing
             ? "Writing down what you said…"
             : speech.listening
-              ? `${speech.paused ? "Paused" : "Listening"} · ${formatElapsed(speech.elapsed)}`
+              ? "Listening… pause for a moment or tap the microphone to stop."
               : remaining > 0 && introduction.trim().length > 0
                 ? "Keep going a little."
                 : ""}
@@ -202,29 +202,24 @@ export function OriginIntroductionStep({
       ) : null}
 
       <div className="flex flex-wrap items-center gap-2">
-        {canSpeak && !speech.listening ? (
-          <Button type="button" variant="secondary" onClick={handleStart} disabled={speech.transcribing}>
-            <Mic /> {introduction.trim() ? "Speak more" : "Speak"}
+        {canSpeak ? (
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleDictation}
+            disabled={speech.transcribing}
+            aria-pressed={speech.listening}
+            className={speech.listening ? "border-ice/70 bg-ice/10 text-ice" : undefined}
+          >
+            <Mic className={speech.listening ? "animate-pulse motion-reduce:animate-none" : undefined} />
+            {speech.listening
+              ? "Listening…"
+              : speech.transcribing
+                ? "Finishing…"
+                : introduction.trim()
+                  ? "Dictate more"
+                  : "Dictate"}
           </Button>
-        ) : null}
-
-        {speech.listening ? (
-          <>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={speech.paused ? speech.resume : speech.pause}
-            >
-              {speech.paused ? <Play /> : <Pause />}
-              {speech.paused ? "Resume" : "Pause"}
-            </Button>
-            <Button type="button" variant="secondary" onClick={handleFinishSpeaking}>
-              <Square /> Stop
-            </Button>
-            <Button type="button" variant="ghost" size="sm" onClick={speech.restart}>
-              <RotateCcw /> Start over
-            </Button>
-          </>
         ) : null}
 
         <Button
