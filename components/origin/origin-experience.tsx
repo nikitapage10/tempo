@@ -48,9 +48,14 @@ const HOME_ROUTE = "/";
  * field arrive together rather than one after the other.
  */
 const OPENING_LINES = [
-  { text: "Some things don’t arrive in focus.", at: 0.04, until: 0.4 },
-  { text: "They become clearer each time you choose them.", at: 0.42, until: 0.72 },
+  { text: "Before it can be heard…", at: 0.04, until: 0.4 },
+  { text: "give it a name.", at: 0.42, until: 0.72 },
 ];
+
+const SOUNDTRACK_SRC = "/onboarding/origin/signal-history.mp3";
+const SOUNDTRACK_VOLUME = 0.09;
+const SOUNDTRACK_FADE_IN_MS = 1400;
+const SOUNDTRACK_FADE_OUT_MS = 1100;
 
 /**
  * How far through a transition its destination panel starts fading up. Early
@@ -99,6 +104,67 @@ export function OriginExperience({
   const media = useOriginMedia(state.phase);
   /** Set by the opening tap — the gesture browsers require for audible video. */
   const [soundOn, setSoundOn] = React.useState(false);
+  const soundtrackRef = React.useRef<HTMLAudioElement | null>(null);
+  const soundtrackFadeRef = React.useRef<number | null>(null);
+
+  /** Starts inside the Tune in gesture, which keeps playback browser-safe. */
+  const startSoundtrack = React.useCallback(() => {
+    const soundtrack = soundtrackRef.current;
+    if (!soundtrack) return;
+    if (soundtrackFadeRef.current !== null) {
+      cancelAnimationFrame(soundtrackFadeRef.current);
+      soundtrackFadeRef.current = null;
+    }
+    soundtrack.loop = true;
+    soundtrack.volume = 0;
+    void soundtrack
+      .play()
+      .then(() => {
+        const startedAt = performance.now();
+        const fade = (now: number) => {
+          const progress = Math.min(1, (now - startedAt) / SOUNDTRACK_FADE_IN_MS);
+          soundtrack.volume = SOUNDTRACK_VOLUME * progress;
+          if (progress < 1) {
+            soundtrackFadeRef.current = requestAnimationFrame(fade);
+          } else {
+            soundtrackFadeRef.current = null;
+          }
+        };
+        soundtrackFadeRef.current = requestAnimationFrame(fade);
+      })
+      .catch(() => {
+        // If a browser still refuses playback, the visual flow remains usable.
+      });
+  }, []);
+
+  /** Lets the ambient bed leave with the film instead of stopping at navigation. */
+  const fadeSoundtrack = React.useCallback(() => {
+    const soundtrack = soundtrackRef.current;
+    if (!soundtrack || soundtrack.paused) return;
+    if (soundtrackFadeRef.current !== null) cancelAnimationFrame(soundtrackFadeRef.current);
+
+    const startedAt = performance.now();
+    const startVolume = soundtrack.volume;
+    const fade = (now: number) => {
+      const progress = Math.min(1, (now - startedAt) / SOUNDTRACK_FADE_OUT_MS);
+      soundtrack.volume = startVolume * (1 - progress);
+      if (progress < 1) {
+        soundtrackFadeRef.current = requestAnimationFrame(fade);
+      } else {
+        soundtrack.pause();
+        soundtrackFadeRef.current = null;
+      }
+    };
+    soundtrackFadeRef.current = requestAnimationFrame(fade);
+  }, []);
+
+  React.useEffect(
+    () => () => {
+      if (soundtrackFadeRef.current !== null) cancelAnimationFrame(soundtrackFadeRef.current);
+      soundtrackRef.current?.pause();
+    },
+    []
+  );
   /**
    * Chosen in the import chapter. Defaults to importing when Import is still
    * owed, so an artist who scrolls straight past still lands somewhere useful.
@@ -338,6 +404,7 @@ export function OriginExperience({
     const heldFrame = captureOriginFrame(activeVideoRef.current);
     const ok = await complete();
     if (!ok) return;
+    fadeSoundtrack();
 
     // Claimed the instant the save lands, before anything that can await.
     //
@@ -388,6 +455,7 @@ export function OriginExperience({
       onError={handleMediaError}
       onActiveElement={handleActiveElement}
     >
+      <audio ref={soundtrackRef} src={SOUNDTRACK_SRC} preload="auto" loop aria-hidden="true" />
       {/* The story owns the whole scroll range, so it sits outside the centred
           overlay the other steps share. */}
       {storyPhase ? (
@@ -411,12 +479,13 @@ export function OriginExperience({
           {state.phase === "awaiting_start" ? (
             <OriginAwakenStep
               staticMode={media.staticMode}
-              onBegin={() => {
+              onTuneIn={() => {
                 // Order matters: sound is enabled in the same tick as the
                 // gesture, so the first play() call is already allowed audio.
                 setSoundOn(true);
-                dispatch({ type: "begin" });
+                startSoundtrack();
               }}
+              onBegin={() => dispatch({ type: "begin" })}
             />
           ) : null}
 
@@ -455,7 +524,7 @@ export function OriginExperience({
             >
               <MorphingText
                 as="h1"
-                texts={[`${state.name}.`, "The signal holds."]}
+                texts={[`${state.name}.`, "The signal has a name."]}
                 loop={false}
                 active={recognitionStartedRef.current}
                 delaySeconds={0.15}

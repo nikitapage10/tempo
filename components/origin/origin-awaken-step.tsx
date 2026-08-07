@@ -18,9 +18,9 @@ import { cn } from "@/lib/utils";
  */
 
 const LINES = [
-  "Before it becomes a song—",
-  "a flicker, a pull,",
-  "something worth following.",
+  "Every artist begins as a signal…",
+  "faint at first,",
+  "shaped by everything it passes through.",
 ];
 
 /** Beat of stillness before anything speaks. The screen should feel dormant. */
@@ -30,9 +30,12 @@ const EXIT_MS = 900;
 
 export function OriginAwakenStep({
   onBegin,
+  onTuneIn,
   staticMode,
 }: {
   onBegin: () => void;
+  /** Runs on the tap itself so browser-gated audio can begin immediately. */
+  onTuneIn: () => void;
   staticMode: boolean;
 }) {
   const [settled, setSettled] = React.useState(staticMode);
@@ -48,16 +51,17 @@ export function OriginAwakenStep({
 
   const begin = React.useCallback(() => {
     if (leaving || !started) return;
+    onTuneIn();
     // The copy clears first, then the film comes up into the space it left.
     setLeaving(true);
     setTimeout(onBegin, EXIT_MS);
-  }, [leaving, started, onBegin]);
+  }, [leaving, started, onBegin, onTuneIn]);
 
   return (
     <button
       type="button"
       onClick={begin}
-      aria-label="Begin"
+      aria-label="Tune in"
       // Covers the viewport so the invitation is literally true. Sits under the
       // overlay's own padding, so the copy still lands middle-right.
       className="pointer-events-auto fixed inset-0 z-10 cursor-pointer focus-visible:outline-none"
@@ -108,7 +112,7 @@ export function OriginAwakenStep({
               <span className="absolute inline-flex size-full animate-ping rounded-full bg-ice opacity-60 motion-reduce:hidden" />
               <span className="relative inline-flex size-2 rounded-full bg-ice" />
             </span>
-            Follow it
+            Tune in
           </span>
         </span>
       </span>

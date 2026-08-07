@@ -27,15 +27,15 @@ import { cn } from "@/lib/utils";
 export const CHAPTER_STOPS = [0, 0.16, 0.34, 0.52, 0.72, 0.88];
 
 const CHAPTER_TITLES = [
-  "The first light",
-  "What remains",
-  "The spectrum",
-  "Where the light is pointing",
-  "Bring the work into view",
-  "A direction, not a destiny",
+  "Where it began",
+  "What keeps returning",
+  "How it refracts",
+  "Where it’s pointing now",
+  "Bring the work into range",
+  "Keep tuning",
 ];
 
-const CHAPTER_KICKERS = ["Light", "Signal", "Spectrum", "Now", "Intake", "Tempo"];
+const CHAPTER_KICKERS = ["Origin", "Signal", "Spectrum", "Now", "Intake", "Arrival"];
 
 /**
  * Where each chapter sits horizontally.
@@ -455,8 +455,9 @@ export function OriginStoryScroll({
         <>
           <p className="text-sm leading-relaxed text-text-lo">
             Finished records, abandoned versions, unfinished sessions, and new ideas
-            are all part of the same picture. Bring in what already exists, and TEMPO
-            will propose a workspace around it. Nothing is added until you approve it.
+            all carry part of the signal. Bring in what already exists, and it will
+            become part of the workspace waiting on the other side. Nothing is added
+            until you approve it.
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <Button
@@ -494,11 +495,17 @@ export function OriginStoryScroll({
     <div key="final" className="relative flex flex-col gap-5 pl-6">
       <span aria-hidden className="absolute inset-y-0 left-0 w-px bg-[linear-gradient(to_bottom,var(--ice),white,var(--amber),transparent)] shadow-[0_0_16px_var(--ice)]" />
       <p className="font-display text-xl leading-relaxed text-text-hi">
-        Purpose is rarely one answer waiting to be found.
+        A signal is never finished.
       </p>
       <p className="text-sm leading-relaxed text-text-lo">
-        More often, it becomes visible when you notice what you keep choosing. TEMPO
-        has a first reading of the light. The rest comes into focus through the work.
+        It changes with everything you make, every direction you follow, and every
+        part of yourself you bring into the work.
+      </p>
+      <p className="text-sm leading-relaxed text-text-lo">
+        You&rsquo;ve given it a name. You&rsquo;ve given it a history.
+      </p>
+      <p className="font-display text-lg leading-relaxed text-text-hi">
+        Now give it somewhere to go.
       </p>
 
       {error ? (

@@ -4,6 +4,13 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-07
 
+- Changed (v0.83.0): Origin now follows one grounded signal from its first faint
+  appearance through a name, a history, refraction, and a direction. The same
+  screens and six-part story remain, with clearer language and no early product
+  introduction before the final **Enter TEMPO** threshold.
+- Added (v0.83.0): the supplied ambient focus track begins only when the artist
+  presses **Tune in**, plays quietly on a continuous loop throughout Origin,
+  and fades away as the workspace opens.
 - Changed (v0.82.0): Origin is now **Coming Into Focus**. Its story follows a
   flicker into a signal, focus, spectrum, and present direction, asking what
   keeps bringing an artist back instead of trying to declare who they are.

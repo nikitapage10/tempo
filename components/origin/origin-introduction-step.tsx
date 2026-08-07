@@ -22,12 +22,12 @@ import { MIN_INTRODUCTION_CHARS, validateIntroduction } from "@/lib/origin/valid
  * artist should be able to ignore all four and still say something true.
  */
 const PROMPTS = [
-  "When did music first begin to feel like yours?",
-  "What do you lose track of time making?",
-  "What feeling do you keep trying to reach?",
-  "What has changed while something else stayed?",
-  "What remains after the rest fades?",
-  "What are you being pulled toward now?",
+  "The first sound that changed how you listened.",
+  "A moment when music began to feel like yours.",
+  "An influence you can still hear in your work.",
+  "A feeling you keep trying to reach.",
+  "Something that changed… and something that remained.",
+  "The direction pulling you forward now.",
 ];
 
 export function OriginIntroductionStep({
@@ -116,8 +116,8 @@ export function OriginIntroductionStep({
           <MorphingText
             as="h1"
             texts={[
-              "What keeps bringing you back?",
-              "What are you following now?",
+              "Now, give it a history…",
+              "What is shaping it now?",
             ]}
             loop={false}
             holdSeconds={1.8}
@@ -127,9 +127,9 @@ export function OriginIntroductionStep({
           <div aria-hidden className="h-8 sm:h-9" />
         )}
         <p className="max-w-lg text-sm leading-relaxed text-text-lo">
-          Tell TEMPO where the music began for you, what keeps returning in the
-          work, and what feels alive right now. Don&rsquo;t explain everything—follow
-          the details that still have energy.
+          Every sound comes from somewhere. Tune the signal with the moments,
+          influences, and instincts that shaped yours. Start with what first pulled
+          you toward music, what keeps returning, and what is calling you forward now.
         </p>
       </div>
 
@@ -163,7 +163,7 @@ export function OriginIntroductionStep({
           }}
           rows={6}
           placeholder={
-            "Start with the part that still feels alive."
+            "Start with where the signal began…"
           }
           className="min-h-40 resize-none rounded-none border-0 bg-transparent px-0 text-base leading-relaxed shadow-none focus-visible:ring-0"
           aria-describedby="origin-intro-status origin-intro-privacy"
@@ -225,7 +225,7 @@ export function OriginIntroductionStep({
           disabled={busy || speech.listening || speech.transcribing}
           className="ml-auto rounded-full border border-line/80 bg-white/[0.035] px-5 text-text-hi hover:border-ice/50 hover:bg-ice/[0.06] hover:text-text-hi"
         >
-          {waiting ? "One moment…" : "Let it take shape →"}
+          {waiting ? "One moment…" : "Shape the signal →"}
         </Button>
       </div>
 

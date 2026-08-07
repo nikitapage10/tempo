@@ -72,7 +72,7 @@ export function OriginNameStep({
         className="relative flex flex-col gap-8 px-7 py-8 sm:px-9 sm:py-10"
       >
         <div className="flex items-center justify-between gap-4 text-[10px] uppercase tracking-[0.28em] text-text-lo/70">
-          <span>Identity / 01</span>
+          <span>Signal / 01</span>
           <span className="h-px flex-1 bg-[linear-gradient(90deg,var(--line),transparent)]" />
           <span>In your words</span>
         </div>
@@ -85,7 +85,7 @@ export function OriginNameStep({
             className="font-display text-4xl leading-none text-text-hi sm:text-5xl [&>span]:text-left"
           />
           <p className="max-w-sm text-sm leading-relaxed text-text-lo">
-            Give TEMPO the artist or project name you want it to know.
+            Choose the artist or project name you want to carry forward.
           </p>
         </div>
 
@@ -129,7 +129,7 @@ export function OriginNameStep({
               waiting && "cursor-wait"
             )}
           >
-            <span>{waiting ? "One moment…" : "Give it a name"}</span>
+            <span>{waiting ? "One moment…" : "Name the signal"}</span>
             <span className="flex size-9 items-center justify-center rounded-full bg-ice text-bg-0 transition-transform group-hover:translate-x-0.5">
               <ArrowRight className="size-4" />
             </span>

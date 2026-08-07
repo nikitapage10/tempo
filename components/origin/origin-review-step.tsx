@@ -165,14 +165,15 @@ export function OriginReviewStep({
       >
       <div className="flex flex-col gap-2">
         <p className="text-[10px] uppercase tracking-[0.28em] text-text-hi/80">
-          Focus / a first reading
+          Signal / a first reading
         </p>
         <h1 className="font-display text-3xl text-text-hi sm:text-4xl">
-          A first shape.
+          Here&rsquo;s what came through.
         </h1>
         <p className="max-w-xl text-sm leading-relaxed text-text-hi/90">
-          These are the things TEMPO heard more than once. They don&rsquo;t define
-          you. They show where your energy is gathering right now.
+          The signal has passed through your history and begun to refract, revealing
+          the ideas, instincts, and contrasts already present in your work. This
+          isn&rsquo;t a definition. It&rsquo;s the clearest reading so far.
         </p>
       </div>
 
@@ -201,7 +202,7 @@ export function OriginReviewStep({
           className="absolute inset-y-0 left-0 w-px bg-[linear-gradient(to_bottom,transparent,var(--ice),var(--amber),transparent)]"
         />
         <p className="text-xs uppercase tracking-[0.22em] text-text-hi/80">
-          The spectrum coming through
+          What came through
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           {interpretation.identitySignals.slice(0, 5).map((signal, index) => (
@@ -224,13 +225,13 @@ export function OriginReviewStep({
 
       <details className="group rounded-card border border-line/60 bg-bg-0/25">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-3 text-sm text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ice">
-          <span>Bring the reading closer</span>
+          <span>Tune the signal</span>
           <ChevronDown className="size-4 text-text-lo transition-transform group-open:rotate-180" />
         </summary>
         <div className="flex flex-col gap-5 border-t border-line/60 p-4">
       <section className="flex flex-col gap-2">
         <label htmlFor="origin-promise" className="text-xs uppercase tracking-wide text-text-lo">
-          The spark
+          Where it began
         </label>
         <Textarea
           id="origin-promise"
@@ -244,7 +245,7 @@ export function OriginReviewStep({
 
       <section className="flex flex-col gap-2">
         <label htmlFor="origin-compass" className="text-xs uppercase tracking-wide text-text-lo">
-          The pull
+          The throughline
         </label>
         <Textarea
           id="origin-compass"
@@ -258,7 +259,7 @@ export function OriginReviewStep({
 
       {interpretation.identitySignals.length > 0 ? (
         <section className="flex flex-col gap-2">
-          <h2 className="text-xs uppercase tracking-wide text-text-lo">The spectrum</h2>
+          <h2 className="text-xs uppercase tracking-wide text-text-lo">What keeps returning</h2>
           <ul className="flex flex-col gap-3">
             {interpretation.identitySignals.map((signal, i) => (
               <SignalCard
@@ -282,7 +283,7 @@ export function OriginReviewStep({
 
       <section className="flex flex-col gap-2">
         <h2 className="text-xs uppercase tracking-wide text-text-lo">
-          Where the light is pointing
+          Where it&rsquo;s pointing now
         </h2>
         <Input
           value={interpretation.currentChapter.title}
@@ -347,7 +348,7 @@ export function OriginReviewStep({
             disabled={busy || waiting}
             className={cn(waiting && "cursor-wait")}
           >
-            {waiting ? "Bringing it into focus…" : "Bring it into focus"}
+            {waiting ? "Preparing the signal…" : "Follow it forward"}
           </Button>
           {waiting ? (
             <div

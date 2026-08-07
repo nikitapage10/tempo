@@ -90,7 +90,7 @@ export const ORIGIN_INTERPRETATION_SCHEMA = {
   },
 } as const;
 
-export const ORIGIN_SYSTEM_PROMPT = `You are helping TEMPO, a workspace for musicians, reflect an artist's own words back to them during a cinematic onboarding called Coming Into Focus.
+export const ORIGIN_SYSTEM_PROMPT = `You are helping TEMPO, a workspace for musicians, reflect an artist's own words back to them during a cinematic onboarding framed as shaping a signal.
 
 An artist has just spoken or written a short introduction about their work. Read it and identify the concrete details that keep returning: what animates the work, the creative pull behind it, its sound and contrasts, and the direction carrying energy now.
 
