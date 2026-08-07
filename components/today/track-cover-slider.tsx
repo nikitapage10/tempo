@@ -1,8 +1,15 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
-import { InfiniteSlider } from "@/components/ui/infinite-slider-horizontal";
+import { Pause, Play } from "lucide-react";
+import {
+  useGlobalPlayer,
+  type PlayerTrack,
+} from "@/components/player/global-player-provider";
 import { SpectraCoverArt } from "@/components/spectra/spectra-cover-art";
+import { InfiniteSlider } from "@/components/ui/infinite-slider-horizontal";
+import { useVersionsForTracks } from "@/hooks/use-versions";
 import type { Track } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -12,21 +19,60 @@ type TrackCoverSliderProps = {
 };
 
 /**
- * Dual-row infinite marquee of track covers on Today.
- * Covers are links only — no other controls.
+ * Dual-row infinite marquee of track covers on Today. The artwork plays the
+ * current bounce; the revealed title strip opens the track workspace.
  */
 export function TrackCoverSlider({ tracks, className }: TrackCoverSliderProps) {
+  const versionsQuery = useVersionsForTracks(tracks.map((track) => track.id));
+  const { current, playing, play, toggle } = useGlobalPlayer();
+
+  const playableTracks = React.useMemo(() => {
+    const map = new Map<string, PlayerTrack>();
+    const versionsByTrack = versionsQuery.data;
+    if (!versionsByTrack) return map;
+    for (const track of tracks) {
+      const versions = versionsByTrack.get(track.id);
+      if (!versions?.length) continue;
+      const version = versions.find((item) => item.is_current) ?? versions[0];
+      map.set(track.id, {
+        id: track.id,
+        title: track.title,
+        artist: track.artist_alias,
+        artworkUrl: track.artwork_url,
+        fileUrl: version.file_url,
+      });
+    }
+    return map;
+  }, [tracks, versionsQuery.data]);
+
+  const playableQueue = React.useMemo(
+    () =>
+      tracks
+        .map((track) => playableTracks.get(track.id))
+        .filter((track): track is PlayerTrack => !!track),
+    [playableTracks, tracks]
+  );
+
+  function handlePlay(track: Track) {
+    const playerTrack = playableTracks.get(track.id);
+    if (!playerTrack) return;
+    if (current?.id === track.id) {
+      toggle();
+      return;
+    }
+    play(playerTrack, playableQueue);
+  }
+
   if (tracks.length === 0) return null;
 
-  // Enough tiles that one marquee half outruns a wide desktop viewport —
-  // otherwise the strip looks like it runs out before the seamless loop.
+  // Enough tiles that one marquee half outruns a wide desktop viewport.
   const MIN_TILES = 12;
   const tiles =
     tracks.length >= MIN_TILES
       ? tracks
       : Array.from(
           { length: Math.ceil(MIN_TILES / tracks.length) },
-          () => tracks,
+          () => tracks
         ).flat();
 
   return (
@@ -44,10 +90,16 @@ export function TrackCoverSlider({ tracks, className }: TrackCoverSliderProps) {
           direction="horizontal"
           gap={14}
           duration={110}
-          durationOnHover={180}
+          durationOnHover={420}
         >
-          {tiles.map((track, i) => (
-            <CoverTile key={`a-${track.id}-${i}`} track={track} />
+          {tiles.map((track, index) => (
+            <CoverTile
+              key={`a-${track.id}-${index}`}
+              track={track}
+              playable={playableTracks.has(track.id)}
+              playing={current?.id === track.id && playing}
+              onPlay={() => handlePlay(track)}
+            />
           ))}
         </InfiniteSlider>
         <InfiniteSlider
@@ -55,10 +107,16 @@ export function TrackCoverSlider({ tracks, className }: TrackCoverSliderProps) {
           reverse
           gap={14}
           duration={125}
-          durationOnHover={200}
+          durationOnHover={460}
         >
-          {tiles.map((track, i) => (
-            <CoverTile key={`b-${track.id}-${i}`} track={track} />
+          {tiles.map((track, index) => (
+            <CoverTile
+              key={`b-${track.id}-${index}`}
+              track={track}
+              playable={playableTracks.has(track.id)}
+              playing={current?.id === track.id && playing}
+              onPlay={() => handlePlay(track)}
+            />
           ))}
         </InfiniteSlider>
       </div>
@@ -66,20 +124,65 @@ export function TrackCoverSlider({ tracks, className }: TrackCoverSliderProps) {
   );
 }
 
-function CoverTile({ track }: { track: Track }) {
+function CoverTile({
+  track,
+  playable,
+  playing,
+  onPlay,
+}: {
+  track: Track;
+  playable: boolean;
+  playing: boolean;
+  onPlay: () => void;
+}) {
   return (
-    <Link
-      href={`/track/${track.id}`}
-      className="group relative block aspect-square w-[148px] shrink-0 overflow-hidden rounded-card border border-line/60 shadow-e1 opacity-[0.55] transition-[opacity,border-color,box-shadow,transform] duration-300 ease-out hover:z-10 hover:scale-[1.02] hover:border-ice/40 hover:opacity-100 hover:shadow-e2 focus-visible:z-10 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice sm:w-[168px]"
-      aria-label={`Open ${track.title}`}
-      title={track.title}
-    >
+    <article className="group relative aspect-square w-[148px] shrink-0 overflow-hidden rounded-card border border-line/60 shadow-e1 opacity-[0.55] transition-[opacity,border-color,box-shadow,transform] duration-300 ease-out hover:z-10 hover:scale-[1.02] hover:border-ice/40 hover:opacity-100 hover:shadow-e2 focus-within:z-10 focus-within:border-ice/40 focus-within:opacity-100 focus-within:shadow-e2 sm:w-[168px]">
       <SpectraCoverArt
         trackId={track.id}
         title={track.title}
         artworkUrl={track.artwork_url}
-        showTitle
       />
-    </Link>
+
+      <button
+        type="button"
+        onClick={onPlay}
+        disabled={!playable}
+        aria-label={
+          playable
+            ? playing
+              ? `Pause ${track.title}`
+              : `Play ${track.title}`
+            : `${track.title} has no playable bounce`
+        }
+        className="absolute inset-x-0 bottom-14 top-0 z-10 flex items-center justify-center focus-visible:outline-none disabled:cursor-default"
+      >
+        <span
+          className={cn(
+            "flex size-11 items-center justify-center rounded-full bg-black/75 text-white shadow-e2 backdrop-blur-sm transition-[opacity,transform] duration-200",
+            playing
+              ? "scale-100 opacity-100"
+              : "scale-100 opacity-90 sm:scale-90 sm:opacity-0 sm:group-hover:scale-100 sm:group-hover:opacity-100 sm:group-focus-within:scale-100 sm:group-focus-within:opacity-100",
+            !playable && "hidden"
+          )}
+        >
+          {playing ? (
+            <Pause className="size-5" fill="currentColor" />
+          ) : (
+            <Play className="size-5 translate-x-px" fill="currentColor" />
+          )}
+        </span>
+      </button>
+
+      <Link
+        href={`/track/${track.id}`}
+        className="absolute inset-x-0 bottom-0 z-20 flex min-h-16 flex-col justify-end bg-gradient-to-t from-black via-black/80 to-transparent px-3 pb-2.5 pt-8 text-white opacity-100 transition-opacity duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ice sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 sm:focus-visible:opacity-100"
+        aria-label={`Open ${track.title}`}
+      >
+        <span className="truncate text-xs font-medium">{track.title}</span>
+        <span className="truncate text-[10px] text-white/65">
+          {track.artist_alias || "Open track"}
+        </span>
+      </Link>
+    </article>
   );
 }

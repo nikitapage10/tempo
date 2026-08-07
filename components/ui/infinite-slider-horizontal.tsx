@@ -73,7 +73,15 @@ export function InfiniteSlider({
     durationOnHover && durationOnHover > 0 ? duration / durationOnHover : null;
 
   return (
-    <div className={cn("overflow-hidden", className)}>
+    <div
+      className={cn("overflow-hidden", className)}
+      onPointerEnter={
+        hoverRate != null ? () => setPlaybackRate(hoverRate) : undefined
+      }
+      onPointerLeave={
+        hoverRate != null ? () => setPlaybackRate(1) : undefined
+      }
+    >
       <div
         ref={trackRef}
         className={cn(
@@ -92,12 +100,6 @@ export function InfiniteSlider({
           {
             "--infinite-slider-duration": `${duration}s`,
           } as React.CSSProperties
-        }
-        onMouseEnter={
-          hoverRate != null ? () => setPlaybackRate(hoverRate) : undefined
-        }
-        onMouseLeave={
-          hoverRate != null ? () => setPlaybackRate(1) : undefined
         }
       >
         <div

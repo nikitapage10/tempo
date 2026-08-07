@@ -4,6 +4,10 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-07
 
+- Changed (v0.84.3): Today’s moving cover rows are now playable. Hovering a row
+  slows it down substantially; the center of each cover plays or pauses its
+  current bounce, while a black-gradient title and artist strip opens the track
+  page. The controls remain visible on touch screens.
 - Fixed (v0.84.2): the rail media player's Previous and Next controls now use
   every playable track in the active space. The queue refreshes on the homepage
   and when bounces are uploaded, removed, or made current, instead of remaining
