@@ -145,7 +145,7 @@ export default function TodayPage() {
 
       {/* Today hero — one tall surface carrying greeting, stats and actions.
           Scrim clears toward the right so the lightfield is actually visible. */}
-      <LfWindow className="relative overflow-hidden rounded-panel border border-line shadow-e3">
+      <LfWindow data-tour="today" className="relative overflow-hidden rounded-panel border border-line shadow-e3">
         <div className="absolute inset-0">
           <div className="scrim-reveal absolute inset-0" aria-hidden />
           {activeArtist ? (
@@ -197,7 +197,7 @@ export default function TodayPage() {
             )}
           >
             <FlareLine className="mb-4 max-w-[420px] opacity-60" />
-            <div className="flex flex-wrap gap-2">
+            <div data-tour="today-actions" className="flex flex-wrap gap-2">
               {tasksFocused ? (
                 <>
                   <Button

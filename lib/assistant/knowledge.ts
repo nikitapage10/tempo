@@ -32,6 +32,7 @@ MOMENTUM VS STAGE
 - A track can be in Mixing and stalled; stage and momentum are independent. First-timers often confuse them.
 
 WHERE THINGS LIVE
+- First workspace open: after Origin, an optional five-step tour spotlights Today, quick actions, navigation, global search, and the assistant. It can be skipped before or during the tour and does not return after dismissal.
 - Today (/): greeting, quick actions, and — in a music space — due tasks, needs-attention list, drifting cover strip; in a tasks-focused space — open tasks and project progress instead.
 - Board (/board): Kanban by stage; music-focus spaces only — not shown for tasks-focused spaces. Stage + adds an existing track with no stage, a new track, or a sticky note (board-only). Tracks with no stage are hidden until you pick them from Existing track…. Remove on a card clears the stage without deleting — still in Tracks. Notes drag between stages; delete removes them.
 - Tracks (/tracks): list + create/select/delete; optional named groups (album/EP/playlist buckets — independent of projects, not 1:1 with them); drag tracks within/between groups in Custom sort; filter by type/stage/tag/attention; sort Custom (drag) / title / stage / updated / deadline / named saved orders (Save order → Sort chips). Music-focus spaces only.

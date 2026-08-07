@@ -865,6 +865,20 @@
   50% { transform: translateY(6px); opacity: 0.3; }
 }
 
+@keyframes origin-scroll-arrow {
+  0%, 100% { transform: translateY(-2px); opacity: 0.55; }
+  50% { transform: translateY(3px); opacity: 1; }
+}
+
+@keyframes origin-scroll-prompt-breathe {
+  0%, 100% { box-shadow: 0 0 20px rgb(var(--ice-rgb) / 0.08); }
+  50% { box-shadow: 0 0 34px rgb(var(--ice-rgb) / 0.2); }
+}
+
+.origin-scroll-prompt {
+  animation: origin-scroll-prompt-breathe 2.8s ease-in-out infinite;
+}
+
 /* The opening story card behaves like a piece of the film, not a form panel. */
 @keyframes origin-first-shape-arrive {
   0% { opacity: 0; transform: translate3d(-18px, 10px, 0); letter-spacing: 0.025em; }
@@ -906,7 +920,8 @@
 @media (prefers-reduced-motion: reduce) {
   .origin-first-shape::after,
   .origin-first-shape__content,
-  .origin-story-chapter::after {
+  .origin-story-chapter::after,
+  .origin-scroll-prompt {
     animation: none;
   }
 }

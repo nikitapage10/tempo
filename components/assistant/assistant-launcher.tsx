@@ -20,6 +20,7 @@ export function AssistantLauncher({
   return (
     <button
       ref={launcherRef}
+      data-tour="assistant"
       type="button"
       aria-label={open ? "Close assistant" : "Open assistant"}
       aria-expanded={open}

@@ -827,7 +827,7 @@ export function OriginStoryScroll({
                 onBack={() => backForChapter(i)}
               >
                 {content}
-                {i === 0 ? <ScrollCue /> : null}
+                {i === 0 ? <ScrollCue onAdvance={() => goToChapter(1)} /> : null}
               </ChapterSection>
             </div>
           ))}
@@ -853,14 +853,28 @@ export function OriginStoryScroll({
   );
 }
 
-/** A small breathing cue under the opening chapter, in place of a footer label. */
-function ScrollCue() {
+/** A clear first gesture into the scrubbed story, with a tap fallback. */
+function ScrollCue({ onAdvance }: { onAdvance: () => void }) {
   return (
-    <div aria-hidden className="mt-6 flex items-center gap-2 text-xs text-text-lo/70">
-      <span className="relative flex h-6 w-4 items-start justify-center rounded-full border border-line/80">
-        <span className="mt-1 block h-1.5 w-0.5 rounded-full bg-ice motion-safe:animate-[origin-scroll-cue_1.8s_ease-in-out_infinite]" />
+    <button
+      type="button"
+      onClick={onAdvance}
+      className="origin-scroll-prompt group mt-7 flex w-fit items-center gap-3 rounded-full border border-ice/25 bg-bg-0/65 py-2 pl-2 pr-4 text-left shadow-[0_0_28px_rgb(var(--ice-rgb)_/_0.12)] backdrop-blur-md transition-colors hover:border-ice/50 hover:bg-bg-1/85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+      aria-label="Scroll to reveal the next chapter"
+    >
+      <span className="relative flex size-9 shrink-0 items-start justify-center rounded-full border border-line bg-bg-2/80">
+        <span className="mt-2 block h-2 w-0.5 rounded-full bg-ice motion-safe:animate-[origin-scroll-cue_1.5s_ease-in-out_infinite]" />
       </span>
-      Scroll
-    </div>
+      <span>
+        <span className="block text-xs font-medium text-text-hi">
+          <span className="md:hidden">Swipe up to reveal your story</span>
+          <span className="hidden md:inline">Scroll to reveal your story</span>
+        </span>
+        <span className="mt-0.5 block font-mono text-[10px] uppercase tracking-[0.16em] text-text-lo">
+          Six chapters ahead
+        </span>
+      </span>
+      <ArrowDown className="ml-1 size-4 text-ice motion-safe:animate-[origin-scroll-arrow_1.5s_ease-in-out_infinite]" />
+    </button>
   );
 }

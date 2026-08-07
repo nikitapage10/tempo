@@ -7,6 +7,7 @@ import {
   SUPPRESS_INTRO_KEY,
 } from "@/lib/intro";
 import { setLightfieldPaused } from "@/lib/lightfield";
+import { ORIGIN_ARRIVAL_COMPLETE_EVENT } from "@/lib/guided-tour";
 import { OriginFilmGrain } from "@/components/origin/origin-media-stage";
 
 const usePrePaintEffect =
@@ -293,6 +294,7 @@ export function FirstOpenReveal() {
       consumeFirstOpenFlag();
       claimedRef.current = false;
       setPhase("done");
+      window.dispatchEvent(new Event(ORIGIN_ARRIVAL_COMPLETE_EVENT));
     }, reduced ? 180 : ARRIVAL_MS);
 
     return () => {

@@ -29,6 +29,7 @@ import { useOriginState } from "@/hooks/use-origin-state";
 import { clipForPhase } from "@/lib/origin/reducer";
 import { originAsset, type OriginMediaKey } from "@/lib/origin/media";
 import { applyOriginToProfile } from "@/lib/origin/profile-mapping";
+import { armGuidedTour } from "@/lib/guided-tour";
 
 /**
  * ORIGIN, assembled.
@@ -415,6 +416,10 @@ export function OriginExperience({
     const ok = await complete();
     if (!ok) return;
     fadeSoundtrack();
+
+    // A deliberate revisit still gets the cinematic handoff, but only the
+    // account's first Origin completion should open the workspace tour.
+    if (!revisit && !replay) armGuidedTour();
 
     // Claimed the instant the save lands, before anything that can await.
     //
