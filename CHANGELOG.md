@@ -4,6 +4,10 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-07
 
+- Fixed (v0.84.5): unfinished first-time Origin onboarding now blocks the
+  workspace shell entirely. Returning artists resume at their last saved
+  section, with an immediate same-browser safety copy protecting changes made
+  just before a tab closes while cloud autosave remains authoritative.
 - Changed (v0.84.4): Origin's history and direction questions now share one
   simple dictation control. Tap the microphone to start, tap it again to stop,
   or pause for a few seconds to stop automatically. Direction 02 also uses a

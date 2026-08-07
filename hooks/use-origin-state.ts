@@ -15,7 +15,11 @@ import {
   type OriginAction,
   type OriginState,
 } from "@/lib/origin/reducer";
-import type { ArtistOriginInterpretation } from "@/lib/origin/types";
+import type {
+  ArtistOrigin,
+  ArtistOriginInterpretation,
+  OriginStep,
+} from "@/lib/origin/types";
 import { prefersReducedMotion, networkProfile } from "@/lib/origin/readiness";
 
 /**
@@ -28,6 +32,88 @@ import { prefersReducedMotion, networkProfile } from "@/lib/origin/readiness";
  */
 
 const DRAFT_DEBOUNCE_MS = 900;
+const LOCAL_DRAFT_PREFIX = "tempo.originDraft:";
+const RESUME_STEPS = new Set<OriginStep>([
+  "name",
+  "introduction",
+  "processing",
+  "review",
+  "story",
+  "complete",
+]);
+
+type LocalOriginDraft = {
+  currentStep: OriginStep;
+  artistNameDraft: string | null;
+  introductionText: string | null;
+  directionText: string | null;
+  interpretation: ArtistOriginInterpretation | null;
+  savedAt: string;
+};
+
+function localDraftKey(artistId: string) {
+  return `${LOCAL_DRAFT_PREFIX}${artistId}`;
+}
+
+function readLocalDraft(artistId: string): ArtistOrigin | null {
+  try {
+    const raw = localStorage.getItem(localDraftKey(artistId));
+    if (!raw) return null;
+    const draft = JSON.parse(raw) as LocalOriginDraft;
+    if (!RESUME_STEPS.has(draft.currentStep) || !draft.savedAt) return null;
+    return {
+      artistId,
+      status: "in_progress",
+      currentStep: draft.currentStep,
+      artistNameDraft: draft.artistNameDraft ?? null,
+      introductionText: draft.introductionText ?? null,
+      directionText: draft.directionText ?? null,
+      interpretation: draft.interpretation ?? null,
+      generationVersion: 0,
+      generatedAt: null,
+      completedAt: null,
+      updatedAt: draft.savedAt,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeLocalDraft(artistId: string, state: OriginState) {
+  try {
+    const draft: LocalOriginDraft = {
+      currentStep: state.savedStep,
+      artistNameDraft: state.name || null,
+      introductionText: state.introduction || null,
+      directionText: state.direction || null,
+      interpretation: state.interpretationReady ? state.interpretation : null,
+      savedAt: new Date().toISOString(),
+    };
+    localStorage.setItem(localDraftKey(artistId), JSON.stringify(draft));
+  } catch {
+    // Cloud autosave remains the primary path when local storage is unavailable.
+  }
+}
+
+function removeLocalDraft(artistId: string) {
+  try {
+    localStorage.removeItem(localDraftKey(artistId));
+  } catch {
+    // Nothing else depends on local cleanup.
+  }
+}
+
+function newestDraft(
+  cloud: ArtistOrigin | null,
+  local: ArtistOrigin | null
+): ArtistOrigin | null {
+  if (cloud?.status === "complete" || cloud?.status === "skipped") return cloud;
+  if (!local) return cloud;
+  if (!cloud) return local;
+  const cloudTime = cloud.updatedAt ? Date.parse(cloud.updatedAt) : 0;
+  const localTime = local.updatedAt ? Date.parse(local.updatedAt) : 0;
+  return localTime > cloudTime ? local : cloud;
+}
 
 export type OriginController = {
   state: OriginState;
@@ -67,11 +153,16 @@ export function useOriginState(revisit = false, replay = false): OriginControlle
     let settled = false;
 
     void (async () => {
-      let resume = null;
+      let cloudResume: ArtistOrigin | null = null;
       try {
-        resume = await fetchArtistOrigin(artistId);
+        cloudResume = await fetchArtistOrigin(artistId);
       } catch {
-        // A failed read is not fatal — start fresh rather than block the flow.
+        // The same-browser safety copy can still resume a failed cloud read.
+      }
+      const localResume = readLocalDraft(artistId);
+      const resume = newestDraft(cloudResume, localResume);
+      if (cloudResume?.status === "complete" || cloudResume?.status === "skipped") {
+        removeLocalDraft(artistId);
       }
       if (cancelled) return;
       dispatch({
@@ -114,6 +205,25 @@ export function useOriginState(revisit = false, replay = false): OriginControlle
       if (!settled) bootedRef.current = false;
     };
   }, [artistId, activeArtist?.name, revisit, replay]);
+
+  /**
+   * Immediate same-browser safety copy. The cloud write below is authoritative,
+   * but its debounce can be interrupted by a tab closing just after a keystroke
+   * or step change. This synchronous copy closes that small gap.
+   */
+  React.useEffect(() => {
+    if (!hydrated || !artistId) return;
+    writeLocalDraft(artistId, state);
+  }, [
+    hydrated,
+    artistId,
+    state.savedStep,
+    state.name,
+    state.introduction,
+    state.direction,
+    state.interpretation,
+    state.interpretationReady,
+  ]);
 
   /** Debounced draft save whenever meaningful content changes. */
   React.useEffect(() => {
@@ -218,6 +328,7 @@ export function useOriginState(revisit = false, replay = false): OriginControlle
         direction: s.direction,
         interpretation: s.interpretation,
       });
+      removeLocalDraft(artistId);
       dispatch({ type: "save_ok" });
       return true;
     } catch (err) {
@@ -248,6 +359,7 @@ export function useOriginState(revisit = false, replay = false): OriginControlle
     }
     try {
       await skipArtistOrigin(artistId);
+      removeLocalDraft(artistId);
     } catch {
       /* the redirect still happens; status can be set again later */
     }
