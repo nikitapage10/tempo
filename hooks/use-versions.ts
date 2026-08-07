@@ -38,6 +38,7 @@ export function useVersionMutations(trackId: string | null) {
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: key });
+    qc.invalidateQueries({ queryKey: ["versions-batch"] });
     qc.invalidateQueries({ queryKey: ["version-count", trackId] });
     qc.invalidateQueries({ queryKey: ["track", trackId] });
   };

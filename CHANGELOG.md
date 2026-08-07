@@ -4,6 +4,10 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-07
 
+- Fixed (v0.84.2): the rail media player's Previous and Next controls now use
+  every playable track in the active space. The queue refreshes on the homepage
+  and when bounces are uploaded, removed, or made current, instead of remaining
+  a stale snapshot of the last Tracks-page view.
 - Added (v0.84.1): individual track pages now have compact Previous and Next
   controls in the header. They follow the current space's track order, making
   it possible to move through the catalog without returning to Board or Tracks.

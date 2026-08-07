@@ -3,11 +3,14 @@
 /**
  * App-wide "now playing" mini-player. A single <audio> element lives here,
  * registered with playbackCoordinator like every other player, so opening a
- * waveform elsewhere pauses this one and vice versa. Track lists hand it a
- * queue; Next/Prev just walks that queue (wrapping at the ends).
+ * waveform elsewhere pauses this one and vice versa. Its queue follows every
+ * playable track in the active space; Next/Prev walks that queue and wraps.
  */
 
 import * as React from "react";
+import { useActiveSpace } from "@/components/active-space-provider";
+import { useTracks } from "@/hooks/use-tracks";
+import { useVersionsForTracks } from "@/hooks/use-versions";
 import { playbackCoordinator } from "@/lib/playback-coordinator";
 import { getSignedUrl } from "@/lib/storage";
 import { useCurrentUser } from "@/hooks/use-current-user";
@@ -28,7 +31,7 @@ type GlobalPlayerContextValue = {
   loading: boolean;
   currentTime: number;
   duration: number;
-  /** Plays `track`. If `queue` is given, Next/Prev walk that list; otherwise the track plays alone. */
+  /** Plays `track`. The active-space catalog is preferred; `queue` is a fallback for other contexts. */
   play: (track: PlayerTrack, queue?: PlayerTrack[]) => void;
   toggle: () => void;
   next: () => void;
@@ -119,6 +122,38 @@ export function GlobalPlayerProvider({ children }: { children: React.ReactNode }
   const currentUser = useCurrentUser();
   const userId = currentUser?.id ?? null;
   const userIdRef = React.useRef<string | null>(null);
+  const { activeSpaceId } = useActiveSpace();
+  const spaceTracksQuery = useTracks(activeSpaceId);
+  const spaceTrackIds = React.useMemo(
+    () => (spaceTracksQuery.data ?? []).map((track) => track.id),
+    [spaceTracksQuery.data]
+  );
+  const spaceVersionsQuery = useVersionsForTracks(spaceTrackIds);
+
+  /**
+   * The canonical queue belongs to the active space, not to whichever filters
+   * happened to be visible the last time Play was pressed on Tracks.
+   */
+  const catalogQueue = React.useMemo<PlayerTrack[]>(() => {
+    const versionsByTrack = spaceVersionsQuery.data;
+    if (!versionsByTrack) return [];
+    const playable: PlayerTrack[] = [];
+    for (const track of spaceTracksQuery.data ?? []) {
+      const versions = versionsByTrack.get(track.id);
+      if (!versions?.length) continue;
+      const version = versions.find((item) => item.is_current) ?? versions[0];
+      playable.push({
+        id: track.id,
+        title: track.title,
+        artist: track.artist_alias,
+        artworkUrl: track.artwork_url,
+        fileUrl: version.file_url,
+      });
+    }
+    return playable;
+  }, [spaceTracksQuery.data, spaceVersionsQuery.data]);
+  const catalogQueueRef = React.useRef<PlayerTrack[]>([]);
+  catalogQueueRef.current = catalogQueue;
 
   React.useEffect(() => {
     currentTimeRef.current = currentTime;
@@ -217,6 +252,34 @@ export function GlobalPlayerProvider({ children }: { children: React.ReactNode }
     loadIndex(persisted.index, false);
   }, [currentUser, userId, loadIndex]);
 
+  /**
+   * Replace an old persisted or filtered queue without interrupting playback.
+   * The current track keeps its position; only its neighbors are refreshed.
+   */
+  React.useEffect(() => {
+    if (!spaceTracksQuery.isSuccess || !spaceVersionsQuery.isSuccess) return;
+    if (catalogQueue.length === 0 || currentIndex < 0) return;
+    const currentTrack = queueRef.current[indexRef.current];
+    if (!currentTrack) return;
+    const nextIndex = catalogQueue.findIndex((track) => track.id === currentTrack.id);
+    if (nextIndex < 0) return;
+
+    queueRef.current = catalogQueue;
+    indexRef.current = nextIndex;
+    setQueue(catalogQueue);
+    setCurrentIndex(nextIndex);
+    writePersistedState(userIdRef.current, {
+      queue: catalogQueue,
+      index: nextIndex,
+      time: currentTimeRef.current,
+    });
+  }, [
+    catalogQueue,
+    currentIndex,
+    spaceTracksQuery.isSuccess,
+    spaceVersionsQuery.isSuccess,
+  ]);
+
   React.useEffect(() => {
     const audio = new Audio();
     audio.preload = "metadata";
@@ -274,7 +337,12 @@ export function GlobalPlayerProvider({ children }: { children: React.ReactNode }
 
   const play = React.useCallback(
     (track: PlayerTrack, newQueue?: PlayerTrack[]) => {
-      const q = newQueue && newQueue.length > 0 ? newQueue : [track];
+      const currentCatalog = catalogQueueRef.current;
+      const q = currentCatalog.some((item) => item.id === track.id)
+        ? currentCatalog
+        : newQueue && newQueue.length > 0
+          ? newQueue
+          : [track];
       const idx = q.findIndex((t) => t.id === track.id);
       queueRef.current = q;
       setQueue(q);
