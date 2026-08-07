@@ -140,10 +140,13 @@ own feed — post, like, comment, and @mention the same way you would on
 Social — split into topics when a scene has more than one, with pinned posts
 held at the top and announcements from managers marked apart from ordinary
 posts. Managers can remove a post from the feed; it stays out for everyone
-and the removal is recorded. Polls, events, and chat that will live inside a
-scene are still on the way. Scenes needs six database updates (migrations
-049 through 054) before it works — until they're run, the Scenes tab
-explains that plainly instead of erroring.
+and the removal is recorded. A post can also be a poll — up to ten options,
+single- or multi-select, with live results once you've voted or it's
+closed — or an open question, which skips the options and takes its answers
+as ordinary comments instead. Events and chat that will live inside a scene
+are still on the way. Scenes needs six database updates (migrations 049
+through 054) before it works — until they're run, the Scenes tab explains
+that plainly instead of erroring.
 
 **Stats.** Today, Board, Tracks and Tasks all show one space at a time; **Stats** (formerly "Artist", renamed and moved to its own tab when the Artist tab became the public profile page above) shows the whole artist's numbers at once, across every space they own. Reach it from the rail or the artist dropdown. It opens on that artist's banner and logo with a headline row — tracks, bounces, in progress, released, focus time — and then a set of sections: **the year in bounces** (twelve months of bounces uploaded against tracks started, so a year of work reads at a glance); **pipeline** (where tracks sit in each space's stages, one bar per space, with spaces that have nothing staged collected into a single quiet line); **spaces** (every space of that artist side by side with its own counts and when it was last touched — tap one to switch to it); **your sound** (the shape of your tempos, the keys you write in most, your genres and track types); **work rhythm** (when you actually work, by day and hour, with your busiest day, busiest hour and how many weeks in a row you've kept going); **longest in progress** (the oldest unfinished tracks and how long each has sat in its current stage); **releases** (countdowns to what's coming and a strip of what's already out); and **feedback received** (how much has come from guests versus your own notes, how much is still open, and the decisions logged). Every number comes from what's actually in your TEMPO — nothing is estimated or guessed.
 

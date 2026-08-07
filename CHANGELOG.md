@@ -4,6 +4,11 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-07
 
+- Added (v0.88.0): Scenes can now hold polls and open questions. Ask a
+  multiple-choice question with up to ten answers (single- or multi-select),
+  and watch the results fill in live once someone's voted or the poll has
+  closed. Open questions skip the options entirely — answers just come in as
+  comments. A manager can close a poll early.
 - Added (v0.87.0): Scenes now has a real feed. Post to a scene, pin something
   to the top, split posts into topics when a scene has more than one, and
   post an announcement if you manage the scene. Likes and comments work the

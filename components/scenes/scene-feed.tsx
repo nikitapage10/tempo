@@ -4,6 +4,7 @@ import * as React from "react";
 import { Hash } from "lucide-react";
 import { useSceneTopics } from "@/hooks/use-scene-topics";
 import { useSceneFeed, useScenePinnedPosts } from "@/hooks/use-scene-feed";
+import { useScenePollsForPosts } from "@/hooks/use-scene-polls";
 import { SceneComposer } from "@/components/scenes/scene-composer";
 import { ScenePostRow } from "@/components/scenes/scene-post-row";
 import { PostDetailDialog } from "@/components/social/post-detail";
@@ -30,6 +31,13 @@ export function SceneFeed({
   const visiblePinned = topicId
     ? pinned.filter((p) => p.scene_topic_id === topicId)
     : pinned;
+
+  const pollPostIds = React.useMemo(
+    () =>
+      [...visiblePinned, ...feed].filter((p) => p.kind === "poll").map((p) => p.id),
+    [visiblePinned, feed]
+  );
+  const { data: polls } = useScenePollsForPosts(pollPostIds, myProfileId);
 
   return (
     <div className="grid gap-4 lg:grid-cols-[10rem_minmax(0,1fr)]">
@@ -77,6 +85,7 @@ export function SceneFeed({
           <ScenePostRow
             key={post.id}
             post={post}
+            poll={polls?.get(post.id)}
             sceneId={sceneId}
             myProfileId={myProfileId}
             isManager={isManager}
@@ -95,6 +104,7 @@ export function SceneFeed({
             <ScenePostRow
               key={post.id}
               post={post}
+              poll={polls?.get(post.id)}
               sceneId={sceneId}
               myProfileId={myProfileId}
               isManager={isManager}

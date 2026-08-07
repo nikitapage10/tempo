@@ -3,9 +3,10 @@
 import * as React from "react";
 import { Pin, PinOff, Trash2 } from "lucide-react";
 import { FeedPostCard } from "@/components/social/feed-post";
+import { PollCard } from "@/components/scenes/poll-card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useSceneFeedMutations } from "@/hooks/use-scene-feed";
-import type { Post } from "@/lib/types";
+import type { Post, ScenePoll } from "@/lib/types";
 
 const KIND_LABEL: Record<string, string> = {
   announcement: "Announcement",
@@ -15,12 +16,15 @@ const KIND_LABEL: Record<string, string> = {
 
 export function ScenePostRow({
   post,
+  poll,
   sceneId,
   myProfileId,
   isManager,
   onOpen,
 }: {
   post: Post;
+  /** Present only for kind='poll' posts — options + vote counts. */
+  poll?: ScenePoll | null;
   sceneId: string;
   myProfileId: string | null;
   isManager: boolean;
@@ -72,6 +76,10 @@ export function ScenePostRow({
           </div>
         ) : null}
       </div>
+
+      {post.kind === "poll" && poll ? (
+        <PollCard poll={poll} sceneId={sceneId} myProfileId={myProfileId} isManager={isManager} />
+      ) : null}
 
       <ConfirmDialog
         open={confirmRemove}

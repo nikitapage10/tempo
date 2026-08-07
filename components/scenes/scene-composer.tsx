@@ -1,12 +1,18 @@
 "use client";
 
 import * as React from "react";
-import { Megaphone, Send } from "lucide-react";
+import { Megaphone, MessageCircleQuestion, Plus, Send, Trash2, Vote } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useSceneFeedMutations } from "@/hooks/use-scene-feed";
+import { useScenePollMutations } from "@/hooks/use-scene-polls";
 import type { ScenePostKind, SceneTopic } from "@/lib/types";
 import { cn } from "@/lib/utils";
+
+type ComposerKind = Exclude<ScenePostKind, "announcement"> | "announcement";
+
+const MAX_OPTIONS = 10;
 
 export function SceneComposer({
   sceneId,
@@ -25,9 +31,12 @@ export function SceneComposer({
   className?: string;
 }) {
   const { create } = useSceneFeedMutations(sceneId, myProfileId);
+  const { createPoll, createQuestion } = useScenePollMutations(sceneId);
   const [body, setBody] = React.useState("");
+  const [kind, setKind] = React.useState<ComposerKind>("post");
+  const [options, setOptions] = React.useState<string[]>(["", ""]);
+  const [multiChoice, setMultiChoice] = React.useState(false);
   const [topicId, setTopicId] = React.useState<string | null>(activeTopicId);
-  const [announcement, setAnnouncement] = React.useState(false);
   const [expanded, setExpanded] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -38,6 +47,15 @@ export function SceneComposer({
   const selectedTopic = topics.find((t) => t.id === topicId) ?? null;
   const postingBlocked =
     !!selectedTopic && selectedTopic.post_policy === "moderators" && !isManager;
+  const busy = create.isPending || createPoll.isPending || createQuestion.isPending;
+
+  function resetForm() {
+    setBody("");
+    setKind("post");
+    setOptions(["", ""]);
+    setMultiChoice(false);
+    setExpanded(false);
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -46,11 +64,24 @@ export function SceneComposer({
     if (!trimmed) return;
     setError(null);
     try {
-      const kind: ScenePostKind = announcement ? "announcement" : "post";
-      await create.mutateAsync({ topicId, body: trimmed, kind });
-      setBody("");
-      setAnnouncement(false);
-      setExpanded(false);
+      if (kind === "poll") {
+        await createPoll.mutateAsync({
+          authorProfileId: myProfileId,
+          topicId,
+          question: trimmed,
+          options,
+          multiChoice,
+        });
+      } else if (kind === "question") {
+        await createQuestion.mutateAsync({
+          authorProfileId: myProfileId,
+          topicId,
+          question: trimmed,
+        });
+      } else {
+        await create.mutateAsync({ topicId, body: trimmed, kind });
+      }
+      resetForm();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't post — try again.");
     }
@@ -79,7 +110,13 @@ export function SceneComposer({
         value={body}
         onChange={(e) => setBody(e.target.value)}
         onFocus={() => setExpanded(true)}
-        placeholder="Share something with the scene…"
+        placeholder={
+          kind === "poll"
+            ? "Ask a question with a few answers…"
+            : kind === "question"
+              ? "Ask an open question…"
+              : "Share something with the scene…"
+        }
         maxLength={5000}
         rows={expanded ? 3 : 1}
         className={cn(
@@ -87,8 +124,100 @@ export function SceneComposer({
           expanded ? "min-h-[4.5rem]" : "min-h-0 resize-none py-1.5"
         )}
       />
+
       {expanded ? (
         <>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Button
+              type="button"
+              size="sm"
+              variant={kind === "post" ? "default" : "ghost"}
+              onClick={() => setKind("post")}
+            >
+              Post
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={kind === "question" ? "default" : "ghost"}
+              onClick={() => setKind("question")}
+            >
+              <MessageCircleQuestion className="size-3.5" />
+              Question
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={kind === "poll" ? "default" : "ghost"}
+              onClick={() => setKind("poll")}
+            >
+              <Vote className="size-3.5" />
+              Poll
+            </Button>
+            {isManager ? (
+              <Button
+                type="button"
+                size="sm"
+                variant={kind === "announcement" ? "default" : "ghost"}
+                onClick={() => setKind("announcement")}
+              >
+                <Megaphone className="size-3.5" />
+                Announcement
+              </Button>
+            ) : null}
+          </div>
+
+          {kind === "poll" ? (
+            <div className="well space-y-2 rounded-input p-3">
+              {options.map((opt, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <Input
+                    value={opt}
+                    onChange={(e) => {
+                      const next = [...options];
+                      next[i] = e.target.value;
+                      setOptions(next);
+                    }}
+                    placeholder={`Option ${i + 1}`}
+                    maxLength={120}
+                  />
+                  {options.length > 2 ? (
+                    <button
+                      type="button"
+                      onClick={() => setOptions(options.filter((_, idx) => idx !== i))}
+                      className="shrink-0 rounded-input p-1.5 text-text-lo hover:bg-bg-2 hover:text-warn"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  ) : null}
+                </div>
+              ))}
+              <div className="flex items-center justify-between">
+                {options.length < MAX_OPTIONS ? (
+                  <button
+                    type="button"
+                    onClick={() => setOptions([...options, ""])}
+                    className="flex items-center gap-1 text-xs text-ice hover:underline"
+                  >
+                    <Plus className="size-3" />
+                    Add option
+                  </button>
+                ) : (
+                  <span />
+                )}
+                <label className="flex items-center gap-1.5 text-xs text-text-lo">
+                  <input
+                    type="checkbox"
+                    checked={multiChoice}
+                    onChange={(e) => setMultiChoice(e.target.checked)}
+                    className="rounded-sm"
+                  />
+                  Allow more than one answer
+                </label>
+              </div>
+            </div>
+          ) : null}
+
           <div className="flex flex-wrap items-center gap-2">
             {topics.length > 1 ? (
               <select
@@ -104,26 +233,15 @@ export function SceneComposer({
                 ))}
               </select>
             ) : null}
-            {isManager ? (
-              <Button
-                type="button"
-                size="sm"
-                variant={announcement ? "default" : "ghost"}
-                onClick={() => setAnnouncement((v) => !v)}
-              >
-                <Megaphone className="size-3.5" />
-                Announcement
-              </Button>
-            ) : null}
             <div className="flex-1" />
             {!body.trim() ? (
-              <Button type="button" size="sm" variant="ghost" onClick={() => setExpanded(false)}>
+              <Button type="button" size="sm" variant="ghost" onClick={resetForm}>
                 Cancel
               </Button>
             ) : null}
-            <Button type="submit" size="sm" disabled={create.isPending}>
+            <Button type="submit" size="sm" disabled={busy}>
               <Send className="size-3.5" />
-              Post
+              {kind === "poll" ? "Post poll" : kind === "question" ? "Ask" : "Post"}
             </Button>
           </div>
           {error ? <p className="text-xs text-warn">{error}</p> : null}
