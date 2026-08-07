@@ -4,6 +4,12 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-07
 
+- Added (v0.87.0): Scenes now has a real feed. Post to a scene, pin something
+  to the top, split posts into topics when a scene has more than one, and
+  post an announcement if you manage the scene. Likes and comments work the
+  same way they do everywhere else in TEMPO. Managers can remove a post,
+  which takes it out of the feed for everyone and is recorded so it can be
+  explained later.
 - Added (v0.86.0): finishing Origin now opens an optional one-minute workspace
   tour after the cinematic handoff. It spotlights Today, quick actions,
   navigation, search, and the assistant in TEMPO's signal language, works on

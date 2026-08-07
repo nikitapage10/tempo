@@ -4,7 +4,7 @@ import type { Post, PostComment, PostVisibility } from "@/lib/types";
 const AUTHOR_SELECT =
   "id, handle, display_name, emblem_url, palette_id, ice_color, amber_color";
 
-function extractHandles(text: string): string[] {
+export function extractHandles(text: string): string[] {
   const handles: string[] = [];
   const re = /@([a-z0-9_.]{3,30})/gi;
   let m: RegExpExecArray | null;

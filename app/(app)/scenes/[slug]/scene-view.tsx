@@ -8,6 +8,7 @@ import { useScene, useSceneMutations } from "@/hooks/use-scenes";
 import { useSceneMembers } from "@/hooks/use-scene-members";
 import { SceneHeader } from "@/components/scenes/scene-header";
 import { SceneMemberRow } from "@/components/scenes/scene-member-row";
+import { SceneFeed } from "@/components/scenes/scene-feed";
 import { EmptyShaderPanel } from "@/components/shader-empty";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
@@ -95,6 +96,7 @@ export default function SceneView({ slug }: { slug: string }) {
   }
 
   const isMember = scene.my_status === "active";
+  const isManager = scene.my_role === "owner" || scene.my_role === "moderator";
   const comingSoon = (label: string) => (
     <EmptyShaderPanel title={`${label} is on the way`} copy="This part of Scenes hasn't shipped yet — check back soon." />
   );
@@ -134,7 +136,9 @@ export default function SceneView({ slug }: { slug: string }) {
         />
       ) : (
         <>
-          {active === "feed" ? comingSoon("The feed") : null}
+          {active === "feed" ? (
+            <SceneFeed sceneId={scene.id} myProfileId={myProfileId} isManager={isManager} />
+          ) : null}
           {active === "events" ? comingSoon("Events") : null}
           {active === "chat" ? comingSoon("Chat") : null}
 
