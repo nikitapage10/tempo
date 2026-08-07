@@ -18,9 +18,9 @@ import { cn } from "@/lib/utils";
  */
 
 const LINES = [
-  "Something is listening.",
-  "A pulse, finding its footing.",
-  "Every story begins here.",
+  "Before it becomes a song—",
+  "a flicker, a pull,",
+  "something worth following.",
 ];
 
 /** Beat of stillness before anything speaks. The screen should feel dormant. */
@@ -108,7 +108,7 @@ export function OriginAwakenStep({
               <span className="absolute inline-flex size-full animate-ping rounded-full bg-ice opacity-60 motion-reduce:hidden" />
               <span className="relative inline-flex size-2 rounded-full bg-ice" />
             </span>
-            Tap anywhere to begin
+            Follow it
           </span>
         </span>
       </span>

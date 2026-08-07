@@ -48,8 +48,8 @@ const HOME_ROUTE = "/";
  * field arrive together rather than one after the other.
  */
 const OPENING_LINES = [
-  { text: "Every story begins with a pulse.", at: 0.04, until: 0.4 },
-  { text: "There's someone in the noise.", at: 0.42, until: 0.66 },
+  { text: "Some things don’t arrive in focus.", at: 0.04, until: 0.4 },
+  { text: "They become clearer each time you choose them.", at: 0.42, until: 0.72 },
 ];
 
 /**
@@ -455,7 +455,7 @@ export function OriginExperience({
             >
               <MorphingText
                 as="h1"
-                texts={[`${state.name}.`, "Good. I can see you now."]}
+                texts={[`${state.name}.`, "The signal holds."]}
                 loop={false}
                 active={recognitionStartedRef.current}
                 delaySeconds={0.15}

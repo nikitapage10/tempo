@@ -80,12 +80,12 @@ export function OriginNameStep({
         <div className="flex flex-col gap-3">
           <MorphingText
             as="h1"
-            texts={["Who are you?"]}
+            texts={["What name does the work answer to?"]}
             loop={false}
             className="font-display text-4xl leading-none text-text-hi sm:text-5xl [&>span]:text-left"
           />
           <p className="max-w-sm text-sm leading-relaxed text-text-lo">
-            Not the paperwork. The name that should meet the room first.
+            Give TEMPO the artist or project name you want it to know.
           </p>
         </div>
 
@@ -101,7 +101,7 @@ export function OriginNameStep({
               onNameChange(e.target.value);
               if (error) setError(null);
             }}
-            placeholder="The name on the record"
+            placeholder="Artist name"
             autoComplete="off"
             maxLength={60}
             aria-invalid={Boolean(error)}
@@ -129,7 +129,7 @@ export function OriginNameStep({
               waiting && "cursor-wait"
             )}
           >
-            <span>{waiting ? "One moment…" : "Let it in"}</span>
+            <span>{waiting ? "One moment…" : "Give it a name"}</span>
             <span className="flex size-9 items-center justify-center rounded-full bg-ice text-bg-0 transition-transform group-hover:translate-x-0.5">
               <ArrowRight className="size-4" />
             </span>

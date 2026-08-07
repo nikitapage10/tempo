@@ -3,13 +3,14 @@
 import * as React from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { ExternalLink, MessageSquare } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FlareLine } from "@/components/flare-line";
 import { LfWindow } from "@/components/lf-windows";
 import { EmptyShaderPanel } from "@/components/shader-empty";
 import { SignedImage } from "@/components/ui/signed-image";
 import { ArtistProfileImage } from "@/components/artists/artist-mark";
+import { ArtistProfileStoryView } from "@/components/artist/profile-story";
 import { FollowButton } from "@/components/social/follow-button";
 import { useActiveArtist } from "@/components/active-artist-provider";
 import { useArtistProfile } from "@/hooks/use-artist-profile";
@@ -113,7 +114,11 @@ export default function ArtistProfileByHandlePage() {
               {profile.display_name}
             </h1>
             {profile.handle ? (
-              <p className="mt-1 text-sm text-text-lo">@{profile.handle}</p>
+              <p className="mt-1 text-sm text-text-lo">
+                @{profile.handle}
+                {profile.pronouns ? ` · ${profile.pronouns}` : ""}
+                {profile.location ? ` · ${profile.location}` : ""}
+              </p>
             ) : null}
             {profile.tagline ? (
               <p className="mt-1.5 max-w-lg text-sm text-text-lo">{profile.tagline}</p>
@@ -174,67 +179,7 @@ export default function ArtistProfileByHandlePage() {
         <FlareLine className="relative z-[1] mx-6 mb-6 max-w-[420px] opacity-60 sm:mx-8" />
       </LfWindow>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        {profile.bio ? (
-          <section className="panel-quiet p-6 lg:col-span-2">
-            <p className="label-mono mb-2">Bio</p>
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-text-hi">
-              {profile.bio}
-            </p>
-          </section>
-        ) : null}
-
-        {profile.backstory ? (
-          <section className="panel-quiet p-6 lg:col-span-2">
-            <p className="label-mono mb-2">Backstory</p>
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-text-hi">
-              {profile.backstory}
-            </p>
-          </section>
-        ) : null}
-
-        {profile.genres.length || profile.roles.length ? (
-          <section className="panel-quiet p-6">
-            <p className="label-mono mb-2">Genres &amp; roles</p>
-            <div className="flex flex-wrap gap-1.5">
-              {profile.genres.map((g) => (
-                <span key={g} className="rounded-chip border border-line px-2.5 py-1 text-xs text-text-lo">
-                  {g}
-                </span>
-              ))}
-              {profile.roles.map((r) => (
-                <span
-                  key={r}
-                  className="rounded-chip border border-ice/30 bg-ice/10 px-2.5 py-1 text-xs text-ice"
-                >
-                  {r}
-                </span>
-              ))}
-            </div>
-          </section>
-        ) : null}
-
-        {profile.links.length ? (
-          <section className="panel-quiet p-6">
-            <p className="label-mono mb-2">Links</p>
-            <ul className="space-y-1.5">
-              {profile.links.map((link, i) => (
-                <li key={i}>
-                  <a
-                    href={link.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="well lift flex items-center gap-2 rounded-input px-3 py-2 text-sm text-text-hi"
-                  >
-                    <ExternalLink className="size-3.5 shrink-0 text-ice" />
-                    <span className="truncate">{link.label}</span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ) : null}
-      </div>
+      <ArtistProfileStoryView profile={profile} />
     </div>
   );
 }

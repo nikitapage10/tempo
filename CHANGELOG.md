@@ -2,6 +2,21 @@
 
 Plain-English history of what changed in TEMPO, newest first.
 
+## 2026-08-07
+
+- Changed (v0.82.0): Origin is now **Coming Into Focus**. Its story follows a
+  flicker into a signal, focus, spectrum, and present direction, asking what
+  keeps bringing an artist back instead of trying to declare who they are.
+- Changed (v0.82.0): the reflection at the end of Origin is more useful and
+  grounded: a public-ready introduction, the spark and pull behind the work,
+  specific sound markers, and where the artist's energy is pointing now.
+- Added (v0.82.0): artist profiles can show featured music, a living **Right
+  now** direction, and a visual **Spectrum** of the sounds and contrasts that
+  keep returning. The longer story stays available without dominating the
+  page, and sharing controls now sit compactly in the profile header.
+- Under the hood (v0.82.0): run `migrations/047_living_artist_profiles.sql` in
+  Supabase before deploying this version.
+
 ## 2026-08-02
 
 - Fixed (v0.81.1): Continue with Microsoft now asks Microsoft for your email

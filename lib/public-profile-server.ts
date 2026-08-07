@@ -12,6 +12,7 @@
  */
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import type { ProfileFeaturedMusic, ProfileSoundMarker } from "@/lib/types";
 
 export type PublicArtistProfile = {
   handle: string;
@@ -31,6 +32,10 @@ export type PublicArtistProfile = {
   genres: string[];
   roles: string[];
   links: { label: string; url: string }[];
+  sound_markers: ProfileSoundMarker[];
+  current_focus_title: string | null;
+  current_focus_body: string | null;
+  featured_music: ProfileFeaturedMusic[];
   pronouns: string | null;
 };
 
@@ -50,7 +55,7 @@ export async function resolvePublicArtistProfile(
   const { data, error } = await admin
     .from("artist_profiles")
     .select(
-      "handle, display_name, emblem_url, banner_url, banner_color, banner_color_end, ice_color, amber_color, palette_id, tagline, bio, backstory, location, country_code, genres, roles, links, pronouns, visibility"
+      "handle, display_name, emblem_url, banner_url, banner_color, banner_color_end, ice_color, amber_color, palette_id, tagline, bio, backstory, location, country_code, genres, roles, links, sound_markers, current_focus_title, current_focus_body, featured_music, pronouns, visibility"
     )
     .eq("handle", handle)
     .maybeSingle();

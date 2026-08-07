@@ -68,6 +68,17 @@ export type ProfileLink = {
   url: string;
 };
 
+export type ProfileSoundMarker = {
+  label: string;
+  description: string;
+};
+
+export type ProfileFeaturedMusic = {
+  title: string;
+  url: string;
+  note: string;
+};
+
 /**
  * The public-facing artist profile — migration 028. A separate 1:1 table
  * from `artists`, not new columns on it: identity fields are mirrored in by
@@ -96,6 +107,10 @@ export type ArtistProfile = {
   genres: string[];
   roles: string[];
   links: ProfileLink[];
+  sound_markers: ProfileSoundMarker[];
+  current_focus_title: string | null;
+  current_focus_body: string | null;
+  featured_music: ProfileFeaturedMusic[];
   pronouns: string | null;
   visibility: ProfileVisibility;
   published_at: string | null;
@@ -116,6 +131,10 @@ export type ArtistProfileUpdate = Partial<{
   genres: string[];
   roles: string[];
   links: ProfileLink[];
+  sound_markers: ProfileSoundMarker[];
+  current_focus_title: string | null;
+  current_focus_body: string | null;
+  featured_music: ProfileFeaturedMusic[];
   pronouns: string | null;
   visibility: ProfileVisibility;
   accepts_dms: ProfileDmPolicy;

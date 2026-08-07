@@ -14,7 +14,7 @@
 import { ORIGIN_LIMITS } from "@/lib/origin/validation";
 
 /** Bump when the prompt or schema changes materially. Stored on the row. */
-export const ORIGIN_GENERATION_VERSION = 1;
+export const ORIGIN_GENERATION_VERSION = 2;
 
 export const ORIGIN_INTERPRETATION_SCHEMA = {
   type: "object",
@@ -31,12 +31,12 @@ export const ORIGIN_INTERPRETATION_SCHEMA = {
     artistPromise: {
       type: "string",
       description:
-        "One or two sentences naming what this artist reliably offers a listener. Concise and evocative. Provisional language. Never a prediction of success.",
+        "A public-ready profile tagline, no more than 140 characters, naming the spark or recognizable offer in the work. Concrete, restrained, and never a prediction of success.",
     },
     creativeCompass: {
       type: "string",
       description:
-        "A short paragraph on intention, contrast, emotional direction, or the recurring creative tension in what they described.",
+        "A short public-ready artist introduction in third person, grounded in the artist's own words. Name the recurring pull, sound, or intention without mystical or psychological claims.",
     },
     identitySignals: {
       type: "array",
@@ -90,12 +90,12 @@ export const ORIGIN_INTERPRETATION_SCHEMA = {
   },
 } as const;
 
-export const ORIGIN_SYSTEM_PROMPT = `You are helping TEMPO, a workspace for musicians, reflect an artist's own words back to them at the start of their first session.
+export const ORIGIN_SYSTEM_PROMPT = `You are helping TEMPO, a workspace for musicians, reflect an artist's own words back to them during a cinematic onboarding called Coming Into Focus.
 
-An artist has just spoken or written a short introduction about themselves. Read it and describe the shape of what they said.
+An artist has just spoken or written a short introduction about their work. Read it and identify the concrete details that keep returning: what animates the work, the creative pull behind it, its sound and contrasts, and the direction carrying energy now.
 
 WHAT YOU ARE DOING
-You are reflecting, not diagnosing. The artist said these things about themselves deliberately, and they will see, edit, and confirm everything you write before it is kept. Your output is a first draft of their own story, not a verdict on who they are.
+You are reflecting, not diagnosing. The artist will see, edit, and confirm everything you write before it is kept. Your output is a first useful reading of the work, not a verdict on who they are and not a declaration of their destiny or purpose.
 
 GROUNDING — these are hard rules
 - Use ONLY the artist's introduction and any private workspace details supplied in this request.
@@ -112,8 +112,14 @@ Every identity signal must carry evidence drawn from what the artist actually sa
 GENRES AND ROLES
 Leave these arrays empty rather than guessing. Only include a genre or role the artist named or plainly implied.
 
+OUTPUT ROLES
+- artistPromise is the concise public-facing spark: a tagline the artist could place beneath their name. Maximum 140 characters.
+- creativeCompass is a public-ready third-person introduction. Use the supplied artist name when available; otherwise use "the project". Keep it factual enough to live on a profile.
+- identitySignals are the spectrum: specific sounds, contrasts, or recurring creative qualities. Labels must be concrete rather than personality traits.
+- currentChapter is the present direction: what appears to carry energy now, without predicting an outcome.
+
 TONE
-Restrained, warm, specific. Second person. Provisional — "seems to", "keeps returning to", "reads as". This is a studio, not a horoscope and not a pitch deck. No hype, no flattery, no mysticism, no exclamation marks.
+Restrained, warm, specific. The surrounding interface carries the spectral metaphor, so the generated artist copy should stay grounded. This is a studio, not a horoscope and not a pitch deck. No hype, flattery, mysticism, destiny language, or exclamation marks.
 
 LENGTH
 artistPromise: at most ${ORIGIN_LIMITS.promise} characters.

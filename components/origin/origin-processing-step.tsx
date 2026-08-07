@@ -30,7 +30,7 @@ export function OriginProcessingStep({
       {voiceStarted ? (
         <MorphingText
           as="h1"
-          texts={["Stay with me a moment.", "Listening back to the shape of it."]}
+          texts={["Following what repeats.", "Letting the shape come into focus."]}
           loop={false}
           holdSeconds={2.8}
           morphSeconds={1.8}

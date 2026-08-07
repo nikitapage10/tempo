@@ -22,10 +22,12 @@ import { MIN_INTRODUCTION_CHARS, validateIntroduction } from "@/lib/origin/valid
  * artist should be able to ignore all four and still say something true.
  */
 const PROMPTS = [
-  "What does the room sound like when it's working?",
-  "What do you keep circling back to?",
-  "What should it do to someone?",
-  "What's the thing you haven't made yet?",
+  "When did music first begin to feel like yours?",
+  "What do you lose track of time making?",
+  "What feeling do you keep trying to reach?",
+  "What has changed while something else stayed?",
+  "What remains after the rest fades?",
+  "What are you being pulled toward now?",
 ];
 
 export function OriginIntroductionStep({
@@ -108,14 +110,14 @@ export function OriginIntroductionStep({
       <div className="relative flex flex-col gap-6 px-7 py-8 sm:px-9">
       <div className="flex flex-col gap-3">
         <p className="text-[10px] uppercase tracking-[0.28em] text-text-lo/70">
-          Your origin / in your own words
+          Signal / in your own words
         </p>
         {voiceStarted ? (
           <MorphingText
             as="h1"
             texts={[
-              "Tell me the story behind the sound.",
-              "Where did it begin for you?",
+              "What keeps bringing you back?",
+              "What are you following now?",
             ]}
             loop={false}
             holdSeconds={1.8}
@@ -125,8 +127,9 @@ export function OriginIntroductionStep({
           <div aria-hidden className="h-8 sm:h-9" />
         )}
         <p className="max-w-lg text-sm leading-relaxed text-text-lo">
-          Give me the backstory: who you are, what keeps pulling you back, what
-          you are making now, and what you want the room to feel.
+          Tell TEMPO where the music began for you, what keeps returning in the
+          work, and what feels alive right now. Don&rsquo;t explain everything—follow
+          the details that still have energy.
         </p>
       </div>
 
@@ -160,7 +163,7 @@ export function OriginIntroductionStep({
           }}
           rows={6}
           placeholder={
-            canSpeak ? "Talk, or write it — either way it stays yours to edit." : "Write it here."
+            "Start with the part that still feels alive."
           }
           className="min-h-40 resize-none rounded-none border-0 bg-transparent px-0 text-base leading-relaxed shadow-none focus-visible:ring-0"
           aria-describedby="origin-intro-status origin-intro-privacy"
@@ -222,7 +225,7 @@ export function OriginIntroductionStep({
           disabled={busy || speech.listening || speech.transcribing}
           className="ml-auto rounded-full border border-line/80 bg-white/[0.035] px-5 text-text-hi hover:border-ice/50 hover:bg-ice/[0.06] hover:text-text-hi"
         >
-          {waiting ? "One moment…" : "Shape what you heard →"}
+          {waiting ? "One moment…" : "Let it take shape →"}
         </Button>
       </div>
 

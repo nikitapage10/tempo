@@ -165,14 +165,14 @@ export function OriginReviewStep({
       >
       <div className="flex flex-col gap-2">
         <p className="text-[10px] uppercase tracking-[0.28em] text-text-hi/80">
-          A reading, not a verdict
+          Focus / a first reading
         </p>
         <h1 className="font-display text-3xl text-text-hi sm:text-4xl">
-          Does this feel true?
+          A first shape.
         </h1>
         <p className="max-w-xl text-sm leading-relaxed text-text-hi/90">
-          I found these threads in what you said. Tune anything that feels off,
-          then let the full story unfold in the film.
+          These are the things TEMPO heard more than once. They don&rsquo;t define
+          you. They show where your energy is gathering right now.
         </p>
       </div>
 
@@ -201,7 +201,7 @@ export function OriginReviewStep({
           className="absolute inset-y-0 left-0 w-px bg-[linear-gradient(to_bottom,transparent,var(--ice),var(--amber),transparent)]"
         />
         <p className="text-xs uppercase tracking-[0.22em] text-text-hi/80">
-          The threads I heard
+          The spectrum coming through
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           {interpretation.identitySignals.slice(0, 5).map((signal, index) => (
@@ -224,13 +224,13 @@ export function OriginReviewStep({
 
       <details className="group rounded-card border border-line/60 bg-bg-0/25">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-3 text-sm text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ice">
-          <span>Fine-tune the full reading</span>
+          <span>Bring the reading closer</span>
           <ChevronDown className="size-4 text-text-lo transition-transform group-open:rotate-180" />
         </summary>
         <div className="flex flex-col gap-5 border-t border-line/60 p-4">
       <section className="flex flex-col gap-2">
         <label htmlFor="origin-promise" className="text-xs uppercase tracking-wide text-text-lo">
-          Your promise
+          The spark
         </label>
         <Textarea
           id="origin-promise"
@@ -244,7 +244,7 @@ export function OriginReviewStep({
 
       <section className="flex flex-col gap-2">
         <label htmlFor="origin-compass" className="text-xs uppercase tracking-wide text-text-lo">
-          Your creative compass
+          The pull
         </label>
         <Textarea
           id="origin-compass"
@@ -258,7 +258,7 @@ export function OriginReviewStep({
 
       {interpretation.identitySignals.length > 0 ? (
         <section className="flex flex-col gap-2">
-          <h2 className="text-xs uppercase tracking-wide text-text-lo">What came through</h2>
+          <h2 className="text-xs uppercase tracking-wide text-text-lo">The spectrum</h2>
           <ul className="flex flex-col gap-3">
             {interpretation.identitySignals.map((signal, i) => (
               <SignalCard
@@ -282,7 +282,7 @@ export function OriginReviewStep({
 
       <section className="flex flex-col gap-2">
         <h2 className="text-xs uppercase tracking-wide text-text-lo">
-          The chapter you&rsquo;re opening
+          Where the light is pointing
         </h2>
         <Input
           value={interpretation.currentChapter.title}
@@ -332,7 +332,7 @@ export function OriginReviewStep({
 
       <div className="flex flex-wrap items-center gap-2 border-t border-line pt-4">
         <Button type="button" variant="secondary" onClick={onRegenerate} disabled={busy}>
-          Try another interpretation
+          See another reading
         </Button>
         {canUndo ? (
           <Button type="button" variant="ghost" size="sm" onClick={onUndo}>
@@ -347,7 +347,7 @@ export function OriginReviewStep({
             disabled={busy || waiting}
             className={cn(waiting && "cursor-wait")}
           >
-            {waiting ? "Preparing your chapter…" : "Let it unfold"}
+            {waiting ? "Bringing it into focus…" : "Bring it into focus"}
           </Button>
           {waiting ? (
             <div

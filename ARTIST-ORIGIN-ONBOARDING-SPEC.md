@@ -15,10 +15,9 @@ questionnaire, a tutorial, or a personality test. TEMPO begins dormant, senses
 an artist arriving, listens to them, reflects an initial shape back, and opens
 that signal into a larger creative world.
 
-The emotional premise: **"Every story begins with a pulse."**
+The emotional premise: **something worth following comes into focus through the work.**
 
-Narrative arc: PULSE → PRESENCE → RECOGNITION → LISTENING → INTERPRETATION →
-FORMATION → THE CHAPTER OPENS → ENTER TEMPO.
+Narrative arc: FLICKER → SIGNAL → FOCUS → SPECTRUM → DIRECTION → ENTER TEMPO.
 
 The generated interpretation is **provisional and editable**. TEMPO reflects
 what the artist deliberately provided. It does not diagnose them, define them
@@ -233,9 +232,9 @@ maps to `currentTime` inside one `requestAnimationFrame` loop with passive
 listeners. Continuous progress lives in a ref and never enters React state;
 React is told only when the chapter changes. `fastSeek()` where supported.
 
-Six chapters at 0 / 16 / 34 / 52 / 72 / 88 %: The first shape · What came
-through · Your creative compass · The chapter you are opening · Bring your
-music in · Your story has a tempo.
+Six chapters at 0 / 16 / 34 / 52 / 72 / 88 %: The first light · What remains ·
+The spectrum · Where the light is pointing · Bring the work into view · A
+direction, not a destiny.
 
 The first chapter uses an asymmetrical light-rail composition and signal chips
 instead of a generic text card. Later chapters use the interpretation's
@@ -295,12 +294,13 @@ static mode so nothing waits on a file that will never load.
 
 ## Profile mapping
 
-Applied on completion. Fills **only empty** fields — promise → `tagline`,
-compass + chapter premise → `bio`. Never passes `visibility`, never touches
-handle, location, pronouns, links, or messaging settings, never enables Social,
-and does not write genres or roles (those need their own confirmation). A
-failure is swallowed: the artist has finished Origin and must not be blocked
-from entering by an optional nicety.
+Applied on completion. Fills **only empty** fields: the spark → `tagline`, the
+public-ready introduction → `bio`, identity signals → the profile spectrum,
+the present direction → Right now, and explicitly named genres and roles →
+their matching profile tags. Never passes `visibility`, never touches handle,
+location, pronouns, links, featured music, or messaging settings, and never
+enables Social. A failure is swallowed: the artist has finished Origin and must
+not be blocked from entering by an optional profile nicety.
 
 ## The seam into the product
 

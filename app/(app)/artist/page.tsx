@@ -5,12 +5,11 @@ import Link from "next/link";
 import {
   BarChart3,
   Check,
-  ExternalLink,
+  Eye,
   Globe,
   Lock,
   Pencil,
   Plus,
-  Sparkles,
   Trash2,
   Users,
   X,
@@ -25,40 +24,34 @@ import { SignedImage } from "@/components/ui/signed-image";
 import { ArtistBanner } from "@/components/artists/artist-banner";
 import { ArtistProfileImage } from "@/components/artists/artist-mark";
 import { CityInput } from "@/components/artists/city-input";
+import { ArtistProfileStoryView } from "@/components/artist/profile-story";
 import { useActiveArtist } from "@/components/active-artist-provider";
 import { useArtistProfile } from "@/hooks/use-artist-profile";
 import { checkHandleAvailable } from "@/lib/api/artist-profile";
 import type {
   ArtistProfileUpdate,
   ProfileDmPolicy,
+  ProfileFeaturedMusic,
   ProfileLink,
+  ProfileSoundMarker,
   ProfileVisibility,
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
-
-const VISIBILITY_OPTIONS: { value: ProfileVisibility; label: string; hint: string }[] = [
-  {
-    value: "private",
-    label: "Off the network",
-    hint: "Stay private — nobody can find, follow, or message you on Social. You don’t have to socialize. Your private collaborator contact book still works.",
-  },
-  {
-    value: "members",
-    label: "TEMPO members",
-    hint: "You’re on the network. Any signed-in TEMPO artist can look you up, follow you, and (if you allow) message you.",
-  },
-  {
-    value: "public",
-    label: "Public link",
-    hint: "On the network, plus a shareable /p/handle link anyone can open — no TEMPO account needed.",
-  },
-];
 
 const DM_OPTIONS: { value: ProfileDmPolicy; label: string }[] = [
   { value: "anyone", label: "Anyone" },
   { value: "connections", label: "People I follow back" },
   { value: "nobody", label: "Nobody" },
 ];
+
+function isSafeWebUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
 
 type Draft = {
   handle: string;
@@ -70,7 +63,10 @@ type Draft = {
   genres: string[];
   roles: string[];
   links: ProfileLink[];
-  visibility: ProfileVisibility;
+  sound_markers: ProfileSoundMarker[];
+  current_focus_title: string;
+  current_focus_body: string;
+  featured_music: ProfileFeaturedMusic[];
   accepts_dms: ProfileDmPolicy;
 };
 
@@ -99,7 +95,10 @@ export default function ArtistProfilePage() {
       genres: profile?.genres ?? [],
       roles: profile?.roles ?? [],
       links: profile?.links ?? [],
-      visibility: profile?.visibility ?? "private",
+      sound_markers: profile?.sound_markers ?? [],
+      current_focus_title: profile?.current_focus_title ?? "",
+      current_focus_body: profile?.current_focus_body ?? "",
+      featured_music: profile?.featured_music ?? [],
       accepts_dms: profile?.accepts_dms ?? "connections",
     });
     setEditing(true);
@@ -119,6 +118,14 @@ export default function ArtistProfilePage() {
         return;
       }
     }
+    const externalUrls = [
+      ...draft.links.map((link) => link.url),
+      ...draft.featured_music.map((item) => item.url),
+    ].filter((url) => url.trim());
+    if (externalUrls.some((url) => !isSafeWebUrl(url))) {
+      toast("Links must begin with http:// or https://.");
+      return;
+    }
     const patch: ArtistProfileUpdate = {
       handle: handle || null,
       tagline: draft.tagline.trim() || null,
@@ -129,6 +136,12 @@ export default function ArtistProfilePage() {
       genres: draft.genres,
       roles: draft.roles,
       links: draft.links.filter((l) => l.label.trim() && l.url.trim()),
+      sound_markers: draft.sound_markers.filter((marker) => marker.label.trim()),
+      current_focus_title: draft.current_focus_title.trim() || null,
+      current_focus_body: draft.current_focus_body.trim() || null,
+      featured_music: draft.featured_music.filter(
+        (item) => item.title.trim() && item.url.trim()
+      ),
       accepts_dms: draft.accepts_dms,
     };
     try {
@@ -142,6 +155,16 @@ export default function ArtistProfilePage() {
   }
 
   async function handleVisibilityChange(visibility: ProfileVisibility) {
+    if (!profile && visibility !== "private") {
+      toast("Shape and save the profile before joining the network.");
+      startEditing();
+      return;
+    }
+    if (visibility === "public" && !profile?.handle) {
+      toast("Add a handle before making the profile public.");
+      startEditing();
+      return;
+    }
     try {
       if (visibility === "private") {
         await unpublish.mutateAsync();
@@ -200,10 +223,48 @@ export default function ArtistProfilePage() {
             </div>
 
             {!editing ? (
-              <Button type="button" size="sm" variant="secondary" onClick={startEditing}>
-                <Pencil className="size-3.5" />
-                Edit profile
-              </Button>
+              <div className="flex flex-wrap justify-end gap-2">
+                <label className="sr-only" htmlFor="profile-visibility">
+                  Profile visibility
+                </label>
+                <div className="relative">
+                  {profile?.visibility === "public" ? (
+                    <Globe className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-ice" />
+                  ) : profile?.visibility === "members" ? (
+                    <Users className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-ice" />
+                  ) : (
+                    <Lock className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-text-lo" />
+                  )}
+                  <select
+                    id="profile-visibility"
+                    value={profile?.visibility ?? "private"}
+                    onChange={(event) =>
+                      void handleVisibilityChange(event.target.value as ProfileVisibility)
+                    }
+                    disabled={busy}
+                    className="h-9 appearance-none rounded-chip border border-line bg-bg-0/70 py-1 pl-8 pr-7 text-xs text-text-hi backdrop-blur focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice disabled:opacity-50"
+                  >
+                    <option value="private">Private</option>
+                    <option value="members">TEMPO members</option>
+                    <option value="public">Public</option>
+                  </select>
+                </div>
+                {profile?.handle ? (
+                  <Button asChild type="button" size="sm" variant="secondary">
+                    <Link
+                      href={profile.visibility === "public" ? `/p/${profile.handle}` : `/artist/${profile.handle}`}
+                      target="_blank"
+                    >
+                      <Eye className="size-3.5" />
+                      Preview
+                    </Link>
+                  </Button>
+                ) : null}
+                <Button type="button" size="sm" variant="secondary" onClick={startEditing}>
+                  <Pencil className="size-3.5" />
+                  Edit profile
+                </Button>
+              </div>
             ) : null}
           </div>
 
@@ -233,10 +294,14 @@ export default function ArtistProfilePage() {
           onSave={handleSave}
         />
       ) : (
-        <ProfileView
+        <ArtistProfileStoryView
           profile={profile}
-          onVisibilityChange={handleVisibilityChange}
-          busy={busy}
+          emptyAction={
+            <Button type="button" size="sm" variant="secondary" onClick={startEditing} className="mt-1 w-fit">
+              <Pencil className="size-3.5" />
+              Shape the profile
+            </Button>
+          }
         />
       )}
 
@@ -251,199 +316,6 @@ export default function ArtistProfilePage() {
           page.
         </p>
       </div>
-    </div>
-  );
-}
-
-function ProfileView({
-  profile,
-  onVisibilityChange,
-  busy,
-}: {
-  profile: ReturnType<typeof useArtistProfile>["profile"];
-  onVisibilityChange: (v: ProfileVisibility) => void;
-  busy: boolean;
-}) {
-  const hasContent =
-    !!profile?.bio || !!profile?.backstory || (profile?.links.length ?? 0) > 0;
-  const visibility = profile?.visibility ?? "private";
-  const onNetwork = visibility === "members" || visibility === "public";
-
-  return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      <section className="panel flex flex-col gap-4 p-6 lg:col-span-2">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="label-mono">Social network</p>
-            <p className="mt-1 max-w-xl text-sm text-text-lo">
-              Optional. Keep it off if you just want TEMPO for your own catalog —
-              you can join later anytime.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => onVisibilityChange("private")}
-              className={cn(
-                "flex items-center gap-1.5 rounded-chip border px-2.5 py-1 text-xs transition-colors duration-hover disabled:opacity-50",
-                !onNetwork
-                  ? "border-ice/40 bg-ice/15 text-ice"
-                  : "border-line text-text-lo hover:border-ice/30 hover:text-text-hi"
-              )}
-            >
-              <Lock className="size-3" />
-              Off the network
-            </button>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => {
-                if (!onNetwork) onVisibilityChange("members");
-              }}
-              className={cn(
-                "flex items-center gap-1.5 rounded-chip border px-2.5 py-1 text-xs transition-colors duration-hover disabled:opacity-50",
-                onNetwork
-                  ? "border-ice/40 bg-ice/15 text-ice"
-                  : "border-line text-text-lo hover:border-ice/30 hover:text-text-hi"
-              )}
-            >
-              <Users className="size-3" />
-              On the network
-            </button>
-          </div>
-        </div>
-
-        {onNetwork ? (
-          <div className="well space-y-3 rounded-input p-3">
-            <p className="text-[11px] text-text-lo">
-              How visible should you be while you&apos;re on the network?
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {VISIBILITY_OPTIONS.filter((o) => o.value !== "private").map((opt) => {
-                const active = visibility === opt.value;
-                const Icon = opt.value === "members" ? Users : Globe;
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    disabled={busy}
-                    onClick={() => onVisibilityChange(opt.value)}
-                    className={cn(
-                      "flex items-center gap-1.5 rounded-chip border px-2.5 py-1 text-xs transition-colors duration-hover disabled:opacity-50",
-                      active
-                        ? "border-ice/40 bg-ice/15 text-ice"
-                        : "border-line text-text-lo hover:border-ice/30 hover:text-text-hi"
-                    )}
-                  >
-                    <Icon className="size-3" />
-                    {opt.label}
-                  </button>
-                );
-              })}
-            </div>
-            <p className="text-[11px] text-text-lo">
-              {VISIBILITY_OPTIONS.find((o) => o.value === visibility)?.hint}
-            </p>
-          </div>
-        ) : (
-          <p className="text-[11px] text-text-lo">
-            {VISIBILITY_OPTIONS.find((o) => o.value === "private")?.hint}
-          </p>
-        )}
-
-        {visibility === "public" && profile?.handle ? (
-          <div className="well flex items-center justify-between gap-3 rounded-input px-3 py-2.5">
-            <span className="truncate font-mono text-xs text-text-lo">
-              /p/{profile.handle}
-            </span>
-            <Link
-              href={`/p/${profile.handle}`}
-              target="_blank"
-              className="flex shrink-0 items-center gap-1 text-xs text-ice hover:underline"
-            >
-              Open <ExternalLink className="size-3" />
-            </Link>
-          </div>
-        ) : visibility === "public" ? (
-          <p className="text-[11px] text-amber">
-            Set a handle in Edit profile to activate the public link.
-          </p>
-        ) : null}
-      </section>
-
-      {hasContent ? (
-        <>
-          {profile?.bio ? (
-            <section className="panel-quiet p-6 lg:col-span-2">
-              <p className="label-mono mb-2">Bio</p>
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-text-hi">
-                {profile.bio}
-              </p>
-            </section>
-          ) : null}
-
-          {profile?.backstory ? (
-            <section className="panel-quiet p-6 lg:col-span-2">
-              <p className="label-mono mb-2">Backstory</p>
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-text-hi">
-                {profile.backstory}
-              </p>
-            </section>
-          ) : null}
-
-          {(profile?.genres.length || profile?.roles.length) ? (
-            <section className="panel-quiet p-6">
-              <p className="label-mono mb-2">Genres &amp; roles</p>
-              <div className="flex flex-wrap gap-1.5">
-                {profile?.genres.map((g) => (
-                  <span key={g} className="rounded-chip border border-line px-2.5 py-1 text-xs text-text-lo">
-                    {g}
-                  </span>
-                ))}
-                {profile?.roles.map((r) => (
-                  <span key={r} className="rounded-chip border border-ice/30 bg-ice/10 px-2.5 py-1 text-xs text-ice">
-                    {r}
-                  </span>
-                ))}
-              </div>
-            </section>
-          ) : null}
-
-          {profile?.links.length ? (
-            <section className="panel-quiet p-6">
-              <p className="label-mono mb-2">Links</p>
-              <ul className="space-y-1.5">
-                {profile.links.map((link, i) => (
-                  <li key={i}>
-                    <a
-                      href={link.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="well lift flex items-center gap-2 rounded-input px-3 py-2 text-sm text-text-hi"
-                    >
-                      <ExternalLink className="size-3.5 shrink-0 text-ice" />
-                      <span className="truncate">{link.label}</span>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
-        </>
-      ) : (
-        <section className="panel-quiet flex flex-col gap-3 p-6 lg:col-span-2">
-          <div className="flex items-center gap-2 text-ice">
-            <Sparkles className="size-4" strokeWidth={1.75} />
-            <p className="label-mono text-ice">Nothing here yet</p>
-          </div>
-          <p className="text-sm leading-relaxed text-text-lo">
-            Tell people who you are: a bio, a longer backstory, genres, roles,
-            and links to your music elsewhere. Nobody sees this until you turn
-            on the network above.
-          </p>
-        </section>
-      )}
     </div>
   );
 }
@@ -495,6 +367,44 @@ function ProfileEditor({
     patch({ links: draft.links.filter((_, idx) => idx !== i) });
   }
 
+  function addSoundMarker() {
+    if (draft.sound_markers.length >= 5) return;
+    patch({
+      sound_markers: [...draft.sound_markers, { label: "", description: "" }],
+    });
+  }
+
+  function updateSoundMarker(i: number, next: Partial<ProfileSoundMarker>) {
+    patch({
+      sound_markers: draft.sound_markers.map((marker, index) =>
+        index === i ? { ...marker, ...next } : marker
+      ),
+    });
+  }
+
+  function removeSoundMarker(i: number) {
+    patch({ sound_markers: draft.sound_markers.filter((_, index) => index !== i) });
+  }
+
+  function addFeaturedMusic() {
+    if (draft.featured_music.length >= 6) return;
+    patch({
+      featured_music: [...draft.featured_music, { title: "", url: "", note: "" }],
+    });
+  }
+
+  function updateFeaturedMusic(i: number, next: Partial<ProfileFeaturedMusic>) {
+    patch({
+      featured_music: draft.featured_music.map((item, index) =>
+        index === i ? { ...item, ...next } : item
+      ),
+    });
+  }
+
+  function removeFeaturedMusic(i: number) {
+    patch({ featured_music: draft.featured_music.filter((_, index) => index !== i) });
+  }
+
   return (
     <div className="panel flex flex-col gap-6 p-6">
       <div className="grid gap-4 sm:grid-cols-2">
@@ -533,7 +443,7 @@ function ProfileEditor({
         </Field>
       </div>
 
-      <Field label="Bio" hint="Up to 2,000 characters.">
+      <Field label="About" hint="A concise introduction, up to 2,000 characters.">
         <Textarea
           value={draft.bio}
           onChange={(e) => patch({ bio: e.target.value })}
@@ -543,7 +453,110 @@ function ProfileEditor({
         />
       </Field>
 
-      <Field label="Backstory" hint="Up to 8,000 characters — the longer story.">
+      <Field
+        label="Right now"
+        hint="A living snapshot of the part of the work carrying the most energy."
+      >
+        <div className="grid gap-2">
+          <Input
+            value={draft.current_focus_title}
+            onChange={(e) => patch({ current_focus_title: e.target.value })}
+            maxLength={120}
+            placeholder="What is taking shape?"
+          />
+          <Textarea
+            value={draft.current_focus_body}
+            onChange={(e) => patch({ current_focus_body: e.target.value })}
+            maxLength={1000}
+            rows={3}
+            placeholder="A release, a new direction, a live idea, or the question you are following now."
+          />
+        </div>
+      </Field>
+
+      <Field label="The spectrum" hint="Up to 5 sounds, tensions, or ideas that keep returning.">
+        <div className="space-y-2">
+          {draft.sound_markers.map((marker, i) => (
+            <div key={i} className="well grid gap-2 rounded-input p-3 sm:grid-cols-[11rem_1fr_auto]">
+              <Input
+                value={marker.label}
+                onChange={(e) => updateSoundMarker(i, { label: e.target.value })}
+                placeholder="Cinematic tension"
+                maxLength={60}
+              />
+              <Input
+                value={marker.description}
+                onChange={(e) => updateSoundMarker(i, { description: e.target.value })}
+                placeholder="How it shows up in the work"
+                maxLength={300}
+              />
+              <button
+                type="button"
+                onClick={() => removeSoundMarker(i)}
+                className="self-center rounded-input p-2 text-text-lo transition-colors hover:text-warn"
+                aria-label="Remove sound marker"
+              >
+                <Trash2 className="size-3.5" />
+              </button>
+            </div>
+          ))}
+          {draft.sound_markers.length < 5 ? (
+            <button
+              type="button"
+              onClick={addSoundMarker}
+              className="flex items-center gap-1 rounded-chip border border-dashed border-line px-2.5 py-1 text-xs text-ice transition-colors hover:border-ice/50 hover:bg-ice/10"
+            >
+              <Plus className="size-3" /> Add a marker
+            </button>
+          ) : null}
+        </div>
+      </Field>
+
+      <Field label="Featured music" hint="Up to 6 public links to the work people should hear first.">
+        <div className="space-y-2">
+          {draft.featured_music.map((item, i) => (
+            <div key={i} className="well grid gap-2 rounded-input p-3 sm:grid-cols-[1fr_1.35fr_auto]">
+              <Input
+                value={item.title}
+                onChange={(e) => updateFeaturedMusic(i, { title: e.target.value })}
+                placeholder="Track or release title"
+                maxLength={120}
+              />
+              <Input
+                value={item.url}
+                onChange={(e) => updateFeaturedMusic(i, { url: e.target.value })}
+                placeholder="https://…"
+              />
+              <button
+                type="button"
+                onClick={() => removeFeaturedMusic(i)}
+                className="self-center rounded-input p-2 text-text-lo transition-colors hover:text-warn"
+                aria-label="Remove featured music"
+              >
+                <Trash2 className="size-3.5" />
+              </button>
+              <Input
+                value={item.note}
+                onChange={(e) => updateFeaturedMusic(i, { note: e.target.value })}
+                placeholder="Optional note"
+                maxLength={160}
+                className="sm:col-span-2"
+              />
+            </div>
+          ))}
+          {draft.featured_music.length < 6 ? (
+            <button
+              type="button"
+              onClick={addFeaturedMusic}
+              className="flex items-center gap-1 rounded-chip border border-dashed border-line px-2.5 py-1 text-xs text-ice transition-colors hover:border-ice/50 hover:bg-ice/10"
+            >
+              <Plus className="size-3" /> Feature music
+            </button>
+          ) : null}
+        </div>
+      </Field>
+
+      <Field label="The story" hint="Up to 8,000 characters — the longer arc.">
         <Textarea
           value={draft.backstory}
           onChange={(e) => patch({ backstory: e.target.value })}

@@ -27,15 +27,15 @@ import { cn } from "@/lib/utils";
 export const CHAPTER_STOPS = [0, 0.16, 0.34, 0.52, 0.72, 0.88];
 
 const CHAPTER_TITLES = [
-  "The first shape",
-  "What came through",
-  "Your creative compass",
-  "The chapter you are opening",
-  "Bring your music in",
-  "Your story has a tempo",
+  "The first light",
+  "What remains",
+  "The spectrum",
+  "Where the light is pointing",
+  "Bring the work into view",
+  "A direction, not a destiny",
 ];
 
-const CHAPTER_KICKERS = ["Origin", "Signal", "Compass", "Now", "Intake", "Tempo"];
+const CHAPTER_KICKERS = ["Light", "Signal", "Spectrum", "Now", "Intake", "Tempo"];
 
 /**
  * Where each chapter sits horizontally.
@@ -377,7 +377,7 @@ export function OriginStoryScroll({
     <div key="promise" className="flex flex-col gap-6">
       <p className="max-w-xl font-display text-2xl leading-snug text-text-hi sm:text-3xl">
         <span aria-hidden className="mr-1 text-4xl leading-none text-ice/50">“</span>
-        {interpretation.artistPromise || "A beginning, in your own words."}
+        {interpretation.artistPromise || "Something worth following."}
       </p>
       {interpretation.identitySignals.length > 0 ? (
         <div className="flex flex-wrap gap-2">
@@ -422,7 +422,7 @@ export function OriginStoryScroll({
     </div>,
 
     <div key="chapter" className="relative overflow-hidden rounded-2xl border border-line/60 bg-white/[0.025] p-5">
-      <span className="text-[10px] uppercase tracking-[0.24em] text-ice/80">Current direction</span>
+      <span className="text-[10px] uppercase tracking-[0.24em] text-ice/80">Present direction</span>
       <h3 className="mt-3 font-display text-2xl text-text-hi">
         {interpretation.currentChapter.title}
       </h3>
@@ -454,9 +454,9 @@ export function OriginStoryScroll({
       ) : (
         <>
           <p className="text-sm leading-relaxed text-text-lo">
-            Whatever you already have — a spreadsheet, screenshots of project folders,
-            a voice note, a list in your phone — TEMPO can read it and propose a
-            workspace. Nothing is added until you approve it.
+            Finished records, abandoned versions, unfinished sessions, and new ideas
+            are all part of the same picture. Bring in what already exists, and TEMPO
+            will propose a workspace around it. Nothing is added until you approve it.
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <Button
@@ -474,12 +474,12 @@ export function OriginStoryScroll({
               onClick={onSkipImport}
               disabled={busy}
             >
-              {importPending ? "Start empty" : "Not now"}
+              {importPending ? "Begin with open space" : "Not now"}
             </Button>
           </div>
           {importChoice === "empty" ? (
             <p className="text-xs text-ice">
-              Starting empty. You can bring music in any time from Settings.
+              Beginning with open space. You can bring music in any time from Settings.
             </p>
           ) : null}
           {importChoice === "imported" ? (
@@ -494,10 +494,11 @@ export function OriginStoryScroll({
     <div key="final" className="relative flex flex-col gap-5 pl-6">
       <span aria-hidden className="absolute inset-y-0 left-0 w-px bg-[linear-gradient(to_bottom,var(--ice),white,var(--amber),transparent)] shadow-[0_0_16px_var(--ice)]" />
       <p className="font-display text-xl leading-relaxed text-text-hi">
-        This is where it starts keeping time with you.
+        Purpose is rarely one answer waiting to be found.
       </p>
       <p className="text-sm leading-relaxed text-text-lo">
-        None of it is fixed. Your story changes as you do, and TEMPO changes with it.
+        More often, it becomes visible when you notice what you keep choosing. TEMPO
+        has a first reading of the light. The rest comes into focus through the work.
       </p>
 
       {error ? (
