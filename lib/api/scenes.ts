@@ -2,9 +2,15 @@ import { createClient } from "@/lib/supabase/client";
 import { buildSceneMediaPath, deleteFile, uploadFile } from "@/lib/storage";
 import type { Scene, SceneKind, SceneJoinPolicy, SceneVisibility, SceneMemberStatus } from "@/lib/types";
 
-/** True when migration 049 (or later) hasn't been run yet. */
+/**
+ * True when some part of the Scenes migration set (049–054) hasn't been run
+ * yet. Matches any "scene…" identifier — table, column (e.g. the
+ * conversations.scene_id column 053 adds), or function — rather than an
+ * explicit list, since a narrower pattern silently stops catching new
+ * migrations' errors as they're added.
+ */
 export function isMissingSceneSchema(error: { message?: string }): boolean {
-  return /scenes|scene_members|scene_topics/i.test(error?.message ?? "");
+  return /\bscene/i.test(error?.message ?? "");
 }
 
 /**

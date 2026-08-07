@@ -44,6 +44,10 @@ export async function fetchConversations(
   const { data: convos, error: cErr } = await supabase
     .from("conversations")
     .select("*")
+    // Scene rooms are 'group' conversations too (migration 053), but this
+    // inbox's `peer` model assumes exactly one other participant — a scene
+    // room is reached from its own Chat tab instead, not this list.
+    .eq("kind", "direct")
     .in("id", ids)
     .order("last_message_at", { ascending: false, nullsFirst: false });
   if (cErr) throw cErr;

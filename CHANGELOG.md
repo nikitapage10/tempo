@@ -4,6 +4,10 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-07
 
+- Added (v0.90.0): Scenes now has a Chat tab — a group thread for everyone
+  in the scene. It works the same as any TEMPO message: text now, with
+  images and files to follow. Leaving a scene takes you out of its chat too.
+
 - Added (v0.89.0): Scenes now has events. A manager can add one with a date,
   a kind, a location or link, an optional headcount limit, and details;
   members RSVP going, interested, or can't go, and see how many others are

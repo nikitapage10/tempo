@@ -10,6 +10,7 @@ import { SceneHeader } from "@/components/scenes/scene-header";
 import { SceneMemberRow } from "@/components/scenes/scene-member-row";
 import { SceneFeed } from "@/components/scenes/scene-feed";
 import { SceneEvents } from "@/components/scenes/scene-events";
+import { SceneChatPanel } from "@/components/scenes/scene-chat-panel";
 import { EmptyShaderPanel } from "@/components/shader-empty";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
@@ -98,9 +99,6 @@ export default function SceneView({ slug }: { slug: string }) {
 
   const isMember = scene.my_status === "active";
   const isManager = scene.my_role === "owner" || scene.my_role === "moderator";
-  const comingSoon = (label: string) => (
-    <EmptyShaderPanel title={`${label} is on the way`} copy="This part of Scenes hasn't shipped yet — check back soon." />
-  );
 
   return (
     <div className="space-y-5">
@@ -143,7 +141,9 @@ export default function SceneView({ slug }: { slug: string }) {
           {active === "events" ? (
             <SceneEvents sceneId={scene.id} myProfileId={myProfileId} isManager={isManager} />
           ) : null}
-          {active === "chat" ? comingSoon("Chat") : null}
+          {active === "chat" ? (
+            <SceneChatPanel sceneId={scene.id} myProfileId={myProfileId} members={members} />
+          ) : null}
 
           {active === "members" ? (
             membersLoading ? (
