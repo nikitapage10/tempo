@@ -4,6 +4,11 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-08
 
+- Fixed (v0.93.2): the Manage/Leave scene buttons on a scene page were
+  rendering with their top edge flattened, like something was cut off. They
+  were sharing a row with the avatar that intentionally overlaps the banner,
+  which put the buttons' own top edge inside the banner too. Buttons now sit
+  in their own row, fully clear of the banner.
 - Fixed (v0.93.1): a deleted scene's name/address stayed locked forever, so
   trying to start a new scene with the same name said "That address is
   taken." Deleting a scene now frees its name for reuse.

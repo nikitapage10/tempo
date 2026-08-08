@@ -97,64 +97,71 @@ export function SceneHeader({
       </div>
 
       <div className="bg-bg-1 px-5 pb-5">
-        <div className="flex flex-wrap items-end justify-between gap-4 -mt-8">
-          <div className="flex items-end gap-3">
-            <ArtistMark
-              emblemUrl={scene.emblem_url}
-              paletteId={scene.palette_id}
-              iceColor={scene.ice_color}
-              amberColor={scene.amber_color}
-              name={scene.name}
-              size={56}
-              className="size-14 border-4 border-bg-1 bg-bg-1"
-            />
-            <div className="min-w-0 pb-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="font-display text-xl font-semibold tracking-tight text-text-hi">
-                  {scene.name}
-                </h1>
-                <span className="rounded-chip border border-line px-2 py-0.5 text-[11px] text-text-lo">
-                  {KIND_LABEL[scene.kind]}
-                </span>
-              </div>
-              {scene.tagline ? (
-                <p className="mt-0.5 text-sm text-text-lo">{scene.tagline}</p>
-              ) : null}
-              <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-text-lo">
+        {/*
+          Only the avatar/name block overlaps the banner (via -mt-8) — the
+          intentional "avatar over cover photo" look. The button row used to
+          share this same flex line under items-end, which put its top edge
+          inside the banner's own box (still behind the banner's fade
+          overlay in paint order) rather than in the solid area below, so it
+          rendered with a flat, unrounded top edge. Buttons now live in their
+          own row, entirely below the overlap zone.
+        */}
+        <div className="flex flex-wrap items-end gap-3 -mt-8">
+          <ArtistMark
+            emblemUrl={scene.emblem_url}
+            paletteId={scene.palette_id}
+            iceColor={scene.ice_color}
+            amberColor={scene.amber_color}
+            name={scene.name}
+            size={56}
+            className="size-14 border-4 border-bg-1 bg-bg-1"
+          />
+          <div className="min-w-0 pb-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="font-display text-xl font-semibold tracking-tight text-text-hi">
+                {scene.name}
+              </h1>
+              <span className="rounded-chip border border-line px-2 py-0.5 text-[11px] text-text-lo">
+                {KIND_LABEL[scene.kind]}
+              </span>
+            </div>
+            {scene.tagline ? (
+              <p className="mt-0.5 text-sm text-text-lo">{scene.tagline}</p>
+            ) : null}
+            <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-text-lo">
+              <span className="flex items-center gap-1">
+                <Users className="size-3" />
+                {scene.member_count} {scene.member_count === 1 ? "member" : "members"}
+              </span>
+              {scene.location ? (
                 <span className="flex items-center gap-1">
-                  <Users className="size-3" />
-                  {scene.member_count} {scene.member_count === 1 ? "member" : "members"}
+                  <MapPin className="size-3" />
+                  {scene.location}
                 </span>
-                {scene.location ? (
-                  <span className="flex items-center gap-1">
-                    <MapPin className="size-3" />
-                    {scene.location}
-                  </span>
-                ) : null}
-              </div>
+              ) : null}
             </div>
           </div>
+        </div>
 
-          <div className="flex items-center gap-2 pb-1">
-            {isManager ? (
-              <Button asChild size="sm" variant="secondary">
-                <Link href={`/scenes/${scene.slug}/manage`}>
-                  <Settings2 className="size-3.5" />
-                  Manage
-                </Link>
-              </Button>
-            ) : null}
-            <Button
-              type="button"
-              size="sm"
-              variant={action.onClick ? "default" : "secondary"}
-              disabled={action.disabled}
-              onClick={action.onClick}
-            >
-              {joinPending ? <Loader2 className="size-3.5 animate-spin" /> : null}
-              {action.label}
+        <div className="mt-3 flex items-center justify-end gap-2">
+          {isManager ? (
+            <Button asChild size="sm" variant="secondary">
+              <Link href={`/scenes/${scene.slug}/manage`}>
+                <Settings2 className="size-3.5" />
+                Manage
+              </Link>
             </Button>
-          </div>
+          ) : null}
+          <Button
+            type="button"
+            size="sm"
+            variant={action.onClick ? "default" : "secondary"}
+            disabled={action.disabled}
+            onClick={action.onClick}
+          >
+            {joinPending ? <Loader2 className="size-3.5 animate-spin" /> : null}
+            {action.label}
+          </Button>
         </div>
       </div>
 
