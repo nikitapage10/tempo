@@ -200,6 +200,16 @@ export type CreateSceneInput = {
  */
 export async function createScene(input: CreateSceneInput): Promise<Scene> {
   const supabase = createClient();
+  // Send owner_user_id explicitly rather than leaning on the column's
+  // `default auth.uid()`. insert_scenes checks `owner_user_id = auth.uid()`,
+  // and if that default ever resolves to NULL the comparison is NULL — not
+  // true — so the policy rejects the row with a bare 42501 and no hint.
+  // Every other write path in the app already passes the id explicitly.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("You’re signed out — sign in again, then retry.");
+
   const { data, error } = await supabase
     .from("scenes")
     .insert({
@@ -211,6 +221,7 @@ export async function createScene(input: CreateSceneInput): Promise<Scene> {
       join_policy: input.joinPolicy,
       visibility: input.visibility,
       owner_profile_id: input.ownerProfileId,
+      owner_user_id: user.id,
     })
     .select("*")
     .single();

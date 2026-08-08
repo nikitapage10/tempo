@@ -236,12 +236,25 @@ export default function NewScenePage() {
                 key={d.value}
                 type="button"
                 onClick={() => setJoinPolicy(d.value)}
+                aria-pressed={joinPolicy === d.value}
                 className={cn(
-                  "well rounded-input px-3 py-2.5 text-left transition-colors",
-                  joinPolicy === d.value && "border-ice/40 bg-ice/10"
+                  // `border` (width) is load-bearing: a colour-only class like
+                  // border-ice/40 renders nothing without it, which left every
+                  // option looking flat and un-selectable.
+                  "rounded-input border px-3 py-2.5 text-left transition-colors",
+                  joinPolicy === d.value
+                    ? "border-ice bg-ice/10"
+                    : "border-line bg-bg-2 hover:border-ice/40"
                 )}
               >
-                <p className="text-sm font-medium text-text-hi">{d.label}</p>
+                <p
+                  className={cn(
+                    "text-sm font-medium",
+                    joinPolicy === d.value ? "text-ice" : "text-text-hi"
+                  )}
+                >
+                  {d.label}
+                </p>
                 <p className="mt-0.5 text-xs text-text-lo">{d.hint}</p>
               </button>
             ))}

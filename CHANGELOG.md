@@ -4,6 +4,12 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-08
 
+- Fixed (v0.91.2): the three "door" choices when starting a scene (Open, Ask
+  to join, Invite only) now clearly show which one is picked — they were
+  always clickable, but the selected one looked identical to the others, so
+  the whole row read as greyed out. Also another attempt at the scene
+  creation failure: the app now states who owns the scene explicitly instead
+  of leaving it for the database to infer.
 - Fixed (v0.91.1): the workspace tour reliably starts after first-time Origin
   for each artist. A prior tour on the same browser no longer suppresses a new
   artist's introduction, and **Replay introduction** now deliberately replays
