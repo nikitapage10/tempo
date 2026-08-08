@@ -35,6 +35,8 @@ import { SupportReportDialog } from "@/components/support/support-report-dialog"
 import { useRealtimeInbox } from "@/hooks/use-realtime-inbox";
 import { GlobalPlayerBar } from "@/components/player/global-player-bar";
 import { GuidedTour } from "@/components/guided-tour";
+import { StarterChecklist } from "@/components/onboarding/starter-checklist";
+import { ContextualPageTour } from "@/components/onboarding/contextual-page-tour";
 
 // Artist sits above the space-scoped screens: it rolls up every space the
 // artist owns, so it stays in the rail whatever the active space's focus is.
@@ -144,6 +146,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Link
                   key={href}
                   href={href}
+                  data-context-tour={href.slice(1) || "today"}
                   className={cn(
                     "relative flex items-center gap-2.5 rounded-input px-3 py-2 text-sm transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
                     active
@@ -173,6 +176,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="px-3 py-4">
             <Link
               href="/settings"
+              data-context-tour="settings"
               className={cn(
                 "relative flex items-center gap-2.5 rounded-input px-3 py-2 text-sm transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
                 isActive(pathname, "/settings")
@@ -196,9 +200,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               Settings
             </Link>
             <SupportReportDialog />
-            <p className="mt-3 px-3 font-mono text-[11px] text-text-lo/70">
+            <Link href="/beta" className="mt-3 block rounded-input px-3 py-1 font-mono text-[11px] text-text-lo/70 transition-colors hover:bg-bg-2 hover:text-ice">
               v{APP_VERSION}
-            </p>
+            </Link>
           </div>
         </aside>
 
@@ -231,6 +235,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Link
               key={href}
               href={href}
+              data-context-tour={href.slice(1) || "today"}
               className={cn(
                 "relative flex flex-1 flex-col items-center justify-center gap-1 py-2.5 text-[11px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ice",
                 active ? "text-ice" : "text-text-lo"
@@ -264,6 +269,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <AssistantRoot />
       <GuidedTour />
+      <StarterChecklist />
+      <ContextualPageTour />
     </div>
   );
 }

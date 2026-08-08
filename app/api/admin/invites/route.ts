@@ -19,12 +19,12 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const access = await requireAdmin(); if (!access) return adminError("Forbidden.", 403);
-  const body = await req.json().catch(() => null); const email = typeof body?.email === "string" && body.email.trim() ? body.email.trim().toLowerCase() : null; const note = typeof body?.note === "string" && body.note.trim() ? body.note.trim().slice(0, 500) : null; const expiresAt = typeof body?.expiresAt === "string" && body.expiresAt ? new Date(body.expiresAt).toISOString() : null; const maxUses = Math.min(100, Math.max(1, Number(body?.maxUses) || 1));
+  const body = await req.json().catch(() => null); const email = typeof body?.email === "string" && body.email.trim() ? body.email.trim().toLowerCase() : null; const note = typeof body?.note === "string" && body.note.trim() ? body.note.trim().slice(0, 500) : null; const welcomeNote = typeof body?.welcomeNote === "string" && body.welcomeNote.trim() ? body.welcomeNote.trim().slice(0, 1200) : null; const requestedRole = typeof body?.memberRole === "string" ? body.memberRole : "beta_artist"; const memberRole = requestedRole === "team_member" || requestedRole === "administrator" ? requestedRole : "beta_artist"; const expiresAt = typeof body?.expiresAt === "string" && body.expiresAt ? new Date(body.expiresAt).toISOString() : null; const maxUses = Math.min(100, Math.max(1, Number(body?.maxUses) || 1));
   try {
     const service = createAdminClient(); let created = null;
-    for (let attempt = 0; attempt < 3 && !created; attempt++) { const { data } = await service.from("invites").insert({ code: code(), email, note, expires_at: expiresAt, max_uses: maxUses, created_by: access.user.id }).select(INVITE_COLUMNS).single(); created = data; }
+    for (let attempt = 0; attempt < 3 && !created; attempt++) { const { data } = await service.from("invites").insert({ code: code(), email, note, member_role: memberRole, welcome_note: welcomeNote, expires_at: expiresAt, max_uses: maxUses, created_by: access.user.id }).select(INVITE_COLUMNS).single(); created = data; }
     if (!created) throw new Error();
-    await logAdminAction(access.user.id, "invite.created", { type: "invite", id: created.id }, { email, maxUses, expiresAt });
+    await logAdminAction(access.user.id, "invite.created", { type: "invite", id: created.id }, { email, memberRole, maxUses, expiresAt });
     let delivery: "sent" | "failed" | "not_requested" = "not_requested";
     let deliveryError: string | null = null;
     if (email) {

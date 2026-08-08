@@ -22,6 +22,12 @@ function bytes(value: number) {
     : `${(value / 1024 ** 2).toFixed(1)} MB`;
 }
 
+function role(value: string | undefined) {
+  if (value === "administrator") return "Team administrator";
+  if (value === "team_member") return "Team member";
+  return "Beta artist";
+}
+
 type OpaqueSnapshot = {
   id: string;
   createdAt: string;
@@ -172,7 +178,24 @@ export default function AdminUserPage({ params }: { params: { id: string } }) {
             ? `${user.invite.code} · ${date(user.invite.redeemedAt)}`
             : "Legacy or no recorded invite"}
         </p>
+        {user.invite ? <p className="mt-1 text-xs text-ice">{role(user.invite.memberRole)}</p> : null}
       </section>
+      {user.onboarding ? (
+        <section className="panel-quiet p-5">
+          <p className="label-mono">Onboarding health</p>
+          {!user.onboarding.eligible ? (
+            <p className="mt-2 text-sm text-text-lo">This account predates the tracked onboarding flow.</p>
+          ) : (
+            <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div><p className="text-xs text-text-lo">Main tour</p><p className="mt-1 text-sm text-text-hi">{user.onboarding.mainTourCompletedAt ? "Complete" : "Not finished"}</p></div>
+              <div><p className="text-xs text-text-lo">Starter checklist</p><p className="mt-1 text-sm text-text-hi">{user.onboarding.checklistCompletedAt ? "Complete" : user.onboarding.checklistDismissedAt ? "Removed" : `${user.onboarding.checklistSteps} of 6`}</p></div>
+              <div><p className="text-xs text-text-lo">Page introductions</p><p className="mt-1 text-sm text-text-hi">{user.onboarding.pageToursCompleted} completed</p></div>
+              <div><p className="text-xs text-text-lo">Welcome connection</p><p className="mt-1 text-sm text-text-hi">{user.onboarding.welcomeMessageSentAt ? "Message sent" : "Waiting for profile"}</p></div>
+              <div><p className="text-xs text-text-lo">Last onboarding activity</p><p className="mt-1 text-sm text-text-hi">{date(user.onboarding.lastSeenAt)}</p></div>
+            </div>
+          )}
+        </section>
+      ) : null}
       <section className="panel-quiet p-5">
         <p className="label-mono">Catalog backups</p>
         <p className="mt-2 text-sm text-text-lo">

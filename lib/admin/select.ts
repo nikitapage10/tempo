@@ -7,7 +7,7 @@ export const PROFILE_PUBLIC_COLUMNS = "id, handle, display_name, visibility";
 export const ACCOUNT_FLAG_COLUMNS =
   "user_id, status, reason, changed_at, changed_by";
 export const INVITE_COLUMNS =
-  "id, code, email, note, created_by, created_at, expires_at, max_uses, used_count, revoked_at, last_sent_at, send_count, email_provider_id, last_send_error";
+  "id, code, email, note, member_role, welcome_note, created_by, created_at, expires_at, max_uses, used_count, revoked_at, last_sent_at, send_count, email_provider_id, last_send_error";
 export const INVITE_REDEMPTION_COLUMNS =
   "invite_id, user_id, redeemed_at";
 export const REPORT_COLUMNS =

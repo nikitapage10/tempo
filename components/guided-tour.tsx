@@ -3,6 +3,7 @@
 import * as React from "react";
 import { ArrowRight, Check, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useMemberOnboarding } from "@/hooks/use-member-onboarding";
 import {
   completeGuidedTour,
   guidedTourIsPending,
@@ -76,6 +77,7 @@ function paddedRect(element: HTMLElement): DOMRect {
 }
 
 export function GuidedTour() {
+  const onboarding = useMemberOnboarding();
   const [phase, setPhase] = React.useState<TourPhase>("hidden");
   const [stepIndex, setStepIndex] = React.useState(0);
   const [targetRect, setTargetRect] = React.useState<DOMRect | null>(null);
@@ -86,10 +88,11 @@ export function GuidedTour() {
 
   const finish = React.useCallback(() => {
     completeGuidedTour();
+    onboarding.update.mutate({ mainTourCompleted: true });
     setPhase("hidden");
     setTargetRect(null);
     previousFocusRef.current?.focus();
-  }, []);
+  }, [onboarding.update]);
 
   React.useEffect(() => {
     if (!guidedTourIsPending()) return;
