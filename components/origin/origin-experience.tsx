@@ -417,9 +417,10 @@ export function OriginExperience({
     if (!ok) return;
     fadeSoundtrack();
 
-    // A deliberate revisit still gets the cinematic handoff, but only the
-    // account's first Origin completion should open the workspace tour.
-    if (!revisit && !replay) armGuidedTour();
+    // A normal revisit is for editing the artist reflection and stays quiet.
+    // A full Replay is also the deliberate way to experience/test the entire
+    // first-run sequence again, so it re-arms the tour even if it was completed.
+    if (!revisit || replay) armGuidedTour(artistId, { force: replay });
 
     // Claimed the instant the save lands, before anything that can await.
     //

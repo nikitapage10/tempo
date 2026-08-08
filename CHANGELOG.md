@@ -2,6 +2,13 @@
 
 Plain-English history of what changed in TEMPO, newest first.
 
+## 2026-08-08
+
+- Fixed (v0.91.1): the workspace tour reliably starts after first-time Origin
+  for each artist. A prior tour on the same browser no longer suppresses a new
+  artist's introduction, and **Replay introduction** now deliberately replays
+  the tour as well as the film so the complete handoff can be experienced again.
+
 ## 2026-08-07
 
 - Fixed (v0.91.0): creating a scene was failing outright with "Couldn't
