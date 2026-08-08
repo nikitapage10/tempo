@@ -4,6 +4,12 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-08
 
+- Fixed (v0.91.3): creating a scene works. The permission rule that decides
+  who can see a scene was checking the scene's membership by looking the
+  scene up — which fails for a scene that is still in the middle of being
+  created, so every new scene was rejected at the moment it was made. The
+  owner is now recognised directly.
+  Under the hood: needs migration 057 run.
 - Fixed (v0.91.2): the three "door" choices when starting a scene (Open, Ask
   to join, Invite only) now clearly show which one is picked — they were
   always clickable, but the selected one looked identical to the others, so
