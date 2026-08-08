@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowLeft, CalendarDays, LayoutDashboard, Shield, Users } from "lucide-react";
+import { ArrowLeft, CalendarDays, LayoutDashboard, Settings2, Shield, Users } from "lucide-react";
 import { ArtistMark } from "@/components/artists/artist-mark";
 import { FlareLine } from "@/components/flare-line";
 import type { Scene } from "@/lib/types";
@@ -34,6 +34,9 @@ export function SceneManageShell({
     { href: `${base}/members`, label: "Members", icon: Users, count: requestCount },
     { href: `${base}/events`, label: "Events", icon: CalendarDays, count: 0 },
     { href: `${base}/moderation`, label: "Reports", icon: Shield, count: reportCount },
+    ...(scene.my_role === "owner"
+      ? [{ href: `${base}/settings`, label: "Settings", icon: Settings2, count: 0 }]
+      : []),
   ];
 
   function isActive(href: string) {

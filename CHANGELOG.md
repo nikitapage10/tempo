@@ -4,6 +4,14 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-08
 
+- Added (v0.93.0): a scene's owner can now edit it after creation — name,
+  tagline, about text, banner, emblem, door, who can find it, and color — and
+  can delete the scene from a new Settings page on the Manage dashboard.
+  Deleting removes it from search and browse for everyone but keeps its
+  members' and posts' history rather than erasing it.
+- Fixed (v0.93.0): a scene's feed was rendering squeezed into a narrow sliver
+  of the page instead of using the full width, for any scene without more
+  than one topic (which is every scene until an owner adds one).
 - Fixed (v0.92.0): a scene you just created now correctly shows you as a
   member instead of "0 members."
 - Changed (v0.92.0): a new scene's page feels less bare — the banner has more

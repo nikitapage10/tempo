@@ -137,7 +137,12 @@ decide its door: **open** (anyone joins instantly), **ask to join** (you
 approve each request), or **invite only**. Browse Scenes you're in, discover
 others to join, and see any invites waiting for you. A scene has an owner and
 moderators, who review join requests, invite people directly, set roles, and
-remove members from the Manage dashboard reached from the scene itself. Being
+remove members from the Manage dashboard reached from the scene itself. Only
+the owner can reach Settings on that dashboard, where the scene's name,
+tagline, about text, banner, emblem, door, who can find it, and color can all
+be changed after the fact, and where the owner can delete the scene —
+which removes it from search and browse for everyone but keeps its members'
+and posts' history rather than erasing it. Being
 in a scene together grants nobody access to anyone's catalog, tracks, or
 private notes — it's a shared room, not shared access. A scene page has its
 own feed — post, like, comment, and @mention the same way you would on
@@ -156,9 +161,10 @@ only for now. A new member sees a welcome checklist if the scene has one;
 managers can review a moderation history of pins, removals, bans, role
 changes, and join decisions from the Manage dashboard, and escalate content
 to TEMPO Support when it needs the operator's attention. Scenes shows up in
-global search alongside your tracks and people. Scenes needs seven database
-updates (migrations 049 through 055) before it works — until they're all
-run, the Scenes tab explains that plainly instead of erroring.
+global search alongside your tracks and people. Scenes needs its database
+updates (migrations 049 through 057, skipping 056, which belongs to a
+different feature) before it works — until they're all run, the Scenes tab
+explains that plainly instead of erroring.
 
 **Stats.** Today, Board, Tracks and Tasks all show one space at a time; **Stats** (formerly "Artist", renamed and moved to its own tab when the Artist tab became the public profile page above) shows the whole artist's numbers at once, across every space they own. Reach it from the rail or the artist dropdown. It opens on that artist's banner and logo with a headline row — tracks, bounces, in progress, released, focus time — and then a set of sections: **the year in bounces** (twelve months of bounces uploaded against tracks started, so a year of work reads at a glance); **pipeline** (where tracks sit in each space's stages, one bar per space, with spaces that have nothing staged collected into a single quiet line); **spaces** (every space of that artist side by side with its own counts and when it was last touched — tap one to switch to it); **your sound** (the shape of your tempos, the keys you write in most, your genres and track types); **work rhythm** (when you actually work, by day and hour, with your busiest day, busiest hour and how many weeks in a row you've kept going); **longest in progress** (the oldest unfinished tracks and how long each has sat in its current stage); **releases** (countdowns to what's coming and a strip of what's already out); and **feedback received** (how much has come from guests versus your own notes, how much is still open, and the decisions logged). Every number comes from what's actually in your TEMPO — nothing is estimated or guessed.
 

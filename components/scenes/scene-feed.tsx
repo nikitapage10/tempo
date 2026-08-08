@@ -42,7 +42,7 @@ export function SceneFeed({
   const { data: polls } = useScenePollsForPosts(pollPostIds, myProfileId);
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[10rem_minmax(0,1fr)]">
+    <div className={cn("gap-4", topics.length > 1 && "grid lg:grid-cols-[10rem_minmax(0,1fr)]")}>
       {topics.length > 1 ? (
         <div className="flex gap-1.5 overflow-x-auto lg:flex-col lg:overflow-visible">
           <button

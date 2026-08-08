@@ -243,6 +243,59 @@ export async function createScene(input: CreateSceneInput): Promise<Scene> {
   );
 }
 
+export type UpdateSceneInput = Partial<{
+  name: string;
+  tagline: string | null;
+  about: string | null;
+  joinPolicy: SceneJoinPolicy;
+  visibility: SceneVisibility;
+  paletteId: Scene["palette_id"];
+  iceColor: string | null;
+  amberColor: string | null;
+}>;
+
+/** Owner-only edit of a scene's identity, door, and palette (update_scenes RLS). */
+export async function updateScene(scene: Scene, input: UpdateSceneInput): Promise<Scene> {
+  const supabase = createClient();
+  const patch: Record<string, unknown> = {};
+  if (input.name !== undefined) patch.name = input.name.trim();
+  if (input.tagline !== undefined) patch.tagline = input.tagline?.trim() || null;
+  if (input.about !== undefined) patch.about = input.about?.trim() || null;
+  if (input.joinPolicy !== undefined) patch.join_policy = input.joinPolicy;
+  if (input.visibility !== undefined) patch.visibility = input.visibility;
+  if (input.paletteId !== undefined) patch.palette_id = input.paletteId;
+  if (input.iceColor !== undefined) patch.ice_color = input.iceColor;
+  if (input.amberColor !== undefined) patch.amber_color = input.amberColor;
+
+  const { data, error } = await supabase
+    .from("scenes")
+    .update(patch)
+    .eq("id", scene.id)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return withCallerState(data as Scene, {
+    scene_id: scene.id,
+    role: scene.my_role ?? null,
+    status: scene.my_status ?? "active",
+    last_read_at: null,
+  });
+}
+
+/**
+ * Owner-only. Scenes are archived, never hard-deleted (SCENES-SPEC.md §1) —
+ * an archived scene drops out of browse/discover and stops accepting new
+ * posts or joins, but existing members' history stays intact.
+ */
+export async function archiveScene(sceneId: string): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("scenes")
+    .update({ archived_at: new Date().toISOString() })
+    .eq("id", sceneId);
+  if (error) throw error;
+}
+
 export async function uploadSceneBanner(scene: Scene, file: File): Promise<Scene> {
   const path = buildSceneMediaPath({
     sceneId: scene.id,

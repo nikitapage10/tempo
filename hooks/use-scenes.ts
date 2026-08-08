@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  archiveScene,
   checkScenesSchemaReady,
   createScene,
   declineSceneInvite,
@@ -11,9 +12,11 @@ import {
   fetchSceneBySlug,
   joinScene,
   leaveScene,
+  updateScene,
   uploadSceneBanner,
   uploadSceneEmblem,
   type CreateSceneInput,
+  type UpdateSceneInput,
 } from "@/lib/api/scenes";
 import type { Scene } from "@/lib/types";
 
@@ -90,6 +93,20 @@ export function useSceneMutations() {
     onSuccess: () => invalidateSceneLists(qc),
   });
 
+  const update = useMutation({
+    mutationFn: ({ scene, input }: { scene: Scene; input: UpdateSceneInput }) =>
+      updateScene(scene, input),
+    onSuccess: (updated) => {
+      qc.setQueryData(["scene", updated.slug], updated);
+      invalidateSceneLists(qc);
+    },
+  });
+
+  const archive = useMutation({
+    mutationFn: ({ sceneId }: { sceneId: string }) => archiveScene(sceneId),
+    onSuccess: () => invalidateSceneLists(qc),
+  });
+
   const uploadBanner = useMutation({
     mutationFn: ({ scene, file }: { scene: Scene; file: File }) =>
       uploadSceneBanner(scene, file),
@@ -108,5 +125,5 @@ export function useSceneMutations() {
     },
   });
 
-  return { create, join, leave, declineInvite, uploadBanner, uploadEmblem };
+  return { create, join, leave, declineInvite, update, archive, uploadBanner, uploadEmblem };
 }
