@@ -25,18 +25,10 @@ const pageStep = (kicker: string, title: string, copy: string): TourStep => ({
   copy,
 });
 
-const navStep = (id: string): TourStep => ({
-  selector: `[data-context-tour="${id}"]`,
-  kicker: "Your workspace",
-  title: "Come back here anytime.",
-  copy: "This page has a permanent place in the workspace navigation, so it is always one click away.",
-});
-
 const TOURS: Record<string, PageTour> = {
   "/calendar": {
     id: "calendar",
     steps: [
-      navStep("calendar"),
       pageStep("Hold the timing", "Your music in time.", "Deadlines, sessions, releases, and milestones meet here. The controls at the top let you change scope or add something new."),
       { selector: 'main [aria-label="Creative timeline"], main [role="grid"], main .panel', kicker: "See the whole arc", title: "Plan visually.", copy: "Use the timeline or calendar grid to see where creative work, deadlines, and releases overlap." },
       { selector: 'main [aria-label="Upcoming schedule"], main .panel-quiet', kicker: "What is next", title: "Keep the near future close.", copy: "The schedule view collects upcoming work so the next commitment never gets buried." },
@@ -45,7 +37,6 @@ const TOURS: Record<string, PageTour> = {
   "/board": {
     id: "board",
     steps: [
-      navStep("board"),
       pageStep("Shape the pipeline", "Move work by momentum.", "The board turns your process into stages. Use the top controls to sort, filter, edit stages, or add a track."),
       { selector: 'main [class*="lg:flex-row"], main .panel, main .panel-quiet', kicker: "Your stages", title: "See the whole process.", copy: "Each column represents a stage. Drag tracks forward as they develop, and keep notes beside the work they belong to." },
     ],
@@ -53,7 +44,6 @@ const TOURS: Record<string, PageTour> = {
   "/tracks": {
     id: "tracks",
     steps: [
-      navStep("tracks"),
       pageStep("The catalog", "Every track, close at hand.", "Search, sort, group, and filter the catalog from the controls at the top. Add a track whenever an idea is ready to become real."),
       { selector: 'main [role="group"][aria-label="List density"], main .panel, main .panel-quiet', kicker: "Choose the view", title: "Make the catalog readable.", copy: "Change the density, grouping, and order to match how you want to scan the work today." },
       { selector: 'main article, main a[href^="/track/"], main .panel', kicker: "Open the work", title: "Each track has its own room.", copy: "Open any track to find its bounces, notes, collaborators, details, and next move together." },
@@ -62,7 +52,6 @@ const TOURS: Record<string, PageTour> = {
   "/projects": {
     id: "projects",
     steps: [
-      navStep("projects"),
       pageStep("Gather the work", "Projects hold the bigger arc.", "Use projects for releases, campaigns, or any body of work that needs tracks and tasks moving together."),
       { selector: 'main a[href^="/projects/"], main .panel, main [class*="grid"]', kicker: "Project rooms", title: "Keep the release together.", copy: "Open a project to manage its tracks, milestones, notes, links, and release plan in one place." },
     ],
@@ -70,7 +59,6 @@ const TOURS: Record<string, PageTour> = {
   "/tasks": {
     id: "tasks",
     steps: [
-      navStep("tasks"),
       pageStep("The next action", "Keep small moves visible.", "Tasks hold the work that does not belong inside a single track, including pitching, social, and admin."),
       { selector: "main form", kicker: "Capture it quickly", title: "Get it out of your head.", copy: "Type the next action here, choose a category, and add more detail only when it helps." },
       { selector: "main section, main .panel-quiet", kicker: "Work the list", title: "Focus on what matters now.", copy: "Use the views below to find overdue work, upcoming tasks, and completed progress without losing the creative thread." },
@@ -79,7 +67,6 @@ const TOURS: Record<string, PageTour> = {
   "/artist": {
     id: "artist",
     steps: [
-      navStep("artist"),
       pageStep("Your identity", "This is how you show up.", "This profile carries your artist story, visual identity, and the context people see when they connect with you."),
       { selector: "#profile-visibility", kicker: "You control the door", title: "Private until you say otherwise.", copy: "Choose whether your profile stays private, appears to TEMPO members, or has a public link." },
       { selector: "main .panel-quiet", kicker: "Shape the story", title: "Make the profile sound like you.", copy: "Review what TEMPO drafted, then edit the story, roles, genres, links, and other details whenever they evolve." },
@@ -88,7 +75,6 @@ const TOURS: Record<string, PageTour> = {
   "/social": {
     id: "social",
     steps: [
-      navStep("social"),
       pageStep("The network", "Find the people around the work.", "Social is separate from your private workspace. Join when you want other artists to discover and follow you."),
       { selector: "main textarea, main .panel", kicker: "Share the signal", title: "Post without leaving the work behind.", copy: "Share an update, follow artists, and keep creative relationships moving in the same place." },
       { selector: "main aside, main .panel-quiet", matchIndex: 1, kicker: "Your circle", title: "Keep collaborators nearby.", copy: "The people and activity around your network stay visible alongside the main feed." },
@@ -97,7 +83,6 @@ const TOURS: Record<string, PageTour> = {
   "/scenes": {
     id: "scenes",
     steps: [
-      navStep("scenes"),
       pageStep("Shared rooms", "Step into a scene.", "Scenes are focused communities with their own people, conversations, events, and welcome steps."),
       { selector: 'main a[href="/scenes/new"], main [class*="flex-wrap"]', kicker: "Find your rooms", title: "Browse or start a scene.", copy: "Use the tabs to move between your scenes and discovery, or create a room for a community you already know." },
       { selector: 'main a[href^="/scenes/"], main .panel-quiet', matchIndex: 1, kicker: "Inside a scene", title: "Each community has its own rhythm.", copy: "Open a scene to see its feed, events, members, chat, and any onboarding steps from its hosts." },
@@ -106,7 +91,6 @@ const TOURS: Record<string, PageTour> = {
   "/stats": {
     id: "stats",
     steps: [
-      navStep("stats"),
       pageStep("Read the signal", "See how the work is moving.", "The opening summary rolls up tracks, bounces, progress, releases, and focus time across this artist."),
       { selector: "main section, main .panel", kicker: "Arrange the readout", title: "Your useful numbers, your way.", copy: "The modules below reveal output, momentum, catalog patterns, and work rhythm. Rearrange them to keep the most useful signals first." },
       { selector: "main section, main .panel-quiet", matchIndex: 1, kicker: "Bring in context", title: "Connect or track what matters.", copy: "Platform connections and custom statistics let you add signals TEMPO cannot infer from the catalog alone." },
@@ -115,7 +99,6 @@ const TOURS: Record<string, PageTour> = {
   "/settings": {
     id: "settings",
     steps: [
-      navStep("settings"),
       pageStep("Make it yours", "Your studio, your defaults.", "Settings brings artists, spaces, notifications, imports, backups, sign-in, and privacy into one place."),
       { selector: 'main [role="tablist"]', kicker: "Move by category", title: "Everything has a home.", copy: "Use these categories to jump directly to the part of TEMPO you want to adjust." },
       { selector: 'main [role="tabpanel"]', kicker: "Change with confidence", title: "The active settings live here.", copy: "Each category keeps related controls together, with explanations beside choices that affect your workspace or privacy." },

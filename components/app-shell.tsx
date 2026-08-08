@@ -80,6 +80,20 @@ const TASKS_MOBILE_NAV = [
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
 ] as const;
 
+const NAV_DESCRIPTIONS: Record<string, string> = {
+  "/": "See what is active, due, and ready for your attention today.",
+  "/calendar": "Plan sessions, deadlines, milestones, and release dates.",
+  "/board": "Move tracks and notes through the stages of your process.",
+  "/tracks": "Browse and manage every track in the active space.",
+  "/projects": "Organize releases, campaigns, tracks, and milestones together.",
+  "/tasks": "Capture and complete work that sits outside a single track.",
+  "/artist": "Shape your artist identity, story, links, and visibility.",
+  "/social": "Follow artists and share updates with your network.",
+  "/scenes": "Join focused communities with their own conversations and events.",
+  "/stats": "Read catalog activity, momentum, output, and connected signals.",
+  "/settings": "Manage artists, spaces, notifications, privacy, and account options.",
+};
+
 function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -147,8 +161,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   key={href}
                   href={href}
                   data-context-tour={href.slice(1) || "today"}
+                  title={NAV_DESCRIPTIONS[href]}
                   className={cn(
-                    "relative flex items-center gap-2.5 rounded-input px-3 py-2 text-sm transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
+                    "group relative flex items-center gap-2.5 rounded-input px-3 py-2 text-sm transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
                     active
                       ? "text-text-hi"
                       : "text-text-lo hover:bg-bg-2/60 hover:text-text-hi"
@@ -165,6 +180,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     strokeWidth={1.75}
                   />
                   {label}
+                  <span className="pointer-events-none absolute left-[calc(100%+12px)] top-1/2 z-[90] w-60 -translate-y-1/2 rounded-input border border-line bg-bg-1 px-3 py-2 text-xs leading-relaxed text-text-lo opacity-0 shadow-e3 transition-opacity delay-150 group-hover:opacity-100 group-focus-visible:opacity-100">
+                    {NAV_DESCRIPTIONS[href]}
+                  </span>
                 </Link>
               );
             })}
@@ -177,8 +195,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Link
               href="/settings"
               data-context-tour="settings"
+              title={NAV_DESCRIPTIONS["/settings"]}
               className={cn(
-                "relative flex items-center gap-2.5 rounded-input px-3 py-2 text-sm transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
+                "group relative flex items-center gap-2.5 rounded-input px-3 py-2 text-sm transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
                 isActive(pathname, "/settings")
                   ? "text-text-hi"
                   : "text-text-lo hover:bg-bg-2/60 hover:text-text-hi"
@@ -198,6 +217,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 strokeWidth={1.75}
               />
               Settings
+              <span className="pointer-events-none absolute left-[calc(100%+12px)] top-1/2 z-[90] w-60 -translate-y-1/2 rounded-input border border-line bg-bg-1 px-3 py-2 text-xs leading-relaxed text-text-lo opacity-0 shadow-e3 transition-opacity delay-150 group-hover:opacity-100 group-focus-visible:opacity-100">
+                {NAV_DESCRIPTIONS["/settings"]}
+              </span>
             </Link>
             <SupportReportDialog />
             <Link href="/beta" className="mt-3 block rounded-input px-3 py-1 font-mono text-[11px] text-text-lo/70 transition-colors hover:bg-bg-2 hover:text-ice">

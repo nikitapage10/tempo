@@ -56,7 +56,9 @@ const OPENING_LINES = [
 ];
 
 const SOUNDTRACK_SRC = "/onboarding/origin/signal-history.mp3";
-const SOUNDTRACK_VOLUME = 0.09;
+// The source averages roughly -14 dB. At 0.09 it landed near -35 dB in the
+// browser, which is effectively inaudible under the transition films.
+const SOUNDTRACK_VOLUME = 0.24;
 const SOUNDTRACK_FADE_IN_MS = 1400;
 const SOUNDTRACK_FADE_OUT_MS = 1100;
 
@@ -107,6 +109,12 @@ export function OriginExperience({
   const [soundOn, setSoundOn] = React.useState(false);
   const soundtrackRef = React.useRef<HTMLAudioElement | null>(null);
   const soundtrackFadeRef = React.useRef<number | null>(null);
+
+  React.useEffect(() => {
+    // Prime the file before the opening gesture so play() can begin immediately
+    // inside that gesture instead of waiting on its first network read.
+    soundtrackRef.current?.load();
+  }, []);
 
   /** Starts inside the Tune in gesture, which keeps playback browser-safe. */
   const startSoundtrack = React.useCallback(() => {

@@ -31,6 +31,35 @@ export type SpotifyArtistIdentity = {
 
 /** Cached across invocations of a warm lambda; tokens last an hour. */
 let cachedToken: { value: string; expiresAt: number } | null = null;
+const responseCache = new Map<string, { value: unknown; expiresAt: number }>();
+const inFlightRequests = new Map<string, Promise<unknown>>();
+const RESPONSE_CACHE_MS = 10 * 60 * 1000;
+const REQUEST_GAP_MS = 180;
+const MAX_RATE_LIMIT_RETRIES = 2;
+let requestQueue: Promise<void> = Promise.resolve();
+let nextRequestAt = 0;
+
+function wait(ms: number) {
+  return new Promise<void>((resolve) => setTimeout(resolve, ms));
+}
+
+/** Serializes this lambda's Spotify calls so one catalog cannot create a burst. */
+async function queuedSpotifyFetch(url: string, init: RequestInit): Promise<Response> {
+  const previous = requestQueue;
+  let release = () => {};
+  requestQueue = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await previous;
+  const delay = Math.max(0, nextRequestAt - Date.now());
+  if (delay) await wait(delay);
+  try {
+    return await fetch(url, init);
+  } finally {
+    nextRequestAt = Date.now() + REQUEST_GAP_MS;
+    release();
+  }
+}
 
 async function getAccessToken(): Promise<string> {
   const id = process.env.SPOTIFY_CLIENT_ID;
@@ -69,29 +98,62 @@ async function getAccessToken(): Promise<string> {
   return cachedToken.value;
 }
 
-async function spotifyGet<T>(path: string): Promise<T> {
+async function spotifyGetUncached<T>(path: string): Promise<T> {
   const token = await getAccessToken();
-  const res = await fetch(`${API}${path}`, {
-    headers: { Authorization: `Bearer ${token}` },
-    cache: "no-store",
-  });
-  if (res.status === 404) throw new Error("That Spotify artist wasn't found.");
-  if (res.status === 429) {
-    throw new Error("Spotify is rate-limiting us — try again in a minute.");
-  }
-  if (res.status === 403) {
-    const detail = await res.text().catch(() => "");
-    console.error("[spotify] catalog request denied", {
-      path,
-      status: res.status,
-      detail: detail.slice(0, 500),
+  for (let attempt = 0; attempt <= MAX_RATE_LIMIT_RETRIES; attempt += 1) {
+    const res = await queuedSpotifyFetch(`${API}${path}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
     });
-    throw new Error(
-      "Spotify denied catalog access. In Development Mode, make sure the app owner has an active Spotify Premium subscription."
-    );
+    if (res.status === 404) throw new Error("That Spotify artist wasn't found.");
+    if (res.status === 429) {
+      const retryAfter = Math.max(1, Number(res.headers.get("retry-after")) || 2);
+      if (attempt < MAX_RATE_LIMIT_RETRIES) {
+        await wait(Math.min(30, retryAfter) * 1000);
+        continue;
+      }
+      throw new Error(`Spotify asked us to slow down. Try again in about ${retryAfter} seconds.`);
+    }
+    if (res.status === 403) {
+      const detail = await res.text().catch(() => "");
+      console.error("[spotify] catalog request denied", {
+        path,
+        status: res.status,
+        detail: detail.slice(0, 500),
+      });
+      throw new Error(
+        "Spotify denied catalog access. In Development Mode, make sure the app owner has an active Spotify Premium subscription."
+      );
+    }
+    if (!res.ok) throw new Error(`Spotify request failed (${res.status}).`);
+    return (await res.json()) as T;
   }
-  if (!res.ok) throw new Error(`Spotify request failed (${res.status}).`);
-  return (await res.json()) as T;
+  throw new Error("Spotify couldn't be reached.");
+}
+
+async function spotifyGet<T>(path: string): Promise<T> {
+  const cached = responseCache.get(path);
+  if (cached && cached.expiresAt > Date.now()) return cached.value as T;
+  const existing = inFlightRequests.get(path);
+  if (existing) return existing as Promise<T>;
+
+  const request = spotifyGetUncached<T>(path)
+    .then((value) => {
+      if (responseCache.size >= 1000) {
+        const now = Date.now();
+        responseCache.forEach((entry, key) => {
+          if (entry.expiresAt <= now) responseCache.delete(key);
+        });
+        if (responseCache.size >= 1000) {
+          responseCache.delete(responseCache.keys().next().value as string);
+        }
+      }
+      responseCache.set(path, { value, expiresAt: Date.now() + RESPONSE_CACHE_MS });
+      return value;
+    })
+    .finally(() => inFlightRequests.delete(path));
+  inFlightRequests.set(path, request);
+  return request;
 }
 
 /** Accepts a bare id, an open.spotify.com URL, or a spotify:artist: URI. */
@@ -168,7 +230,7 @@ export async function fetchSpotifyCatalog(artistId: string): Promise<{
   const [artist, albums] = await Promise.all([
     spotifyGet<ArtistRes>(`/artists/${artistId}`),
     spotifyGet<AlbumsRes>(
-      `/artists/${artistId}/albums?limit=50&include_groups=album,single,compilation`
+      `/artists/${artistId}/albums?limit=10&include_groups=album,single,compilation`
     ).catch(() => ({ items: [] }) as AlbumsRes),
   ]);
 
@@ -268,6 +330,16 @@ type SpotifySimpleAlbum = {
   external_urls?: { spotify?: string };
   artists?: SpotifySimpleArtist[];
 };
+type SpotifySimpleTrack = {
+  id?: string;
+  name: string;
+  artists?: SpotifySimpleArtist[];
+  duration_ms?: number;
+  explicit?: boolean;
+  track_number?: number;
+  disc_number?: number;
+  external_urls?: { spotify?: string };
+};
 type SpotifyFullTrack = {
   id: string;
   name: string;
@@ -316,11 +388,12 @@ async function fetchAllArtistAlbums(artistId: string): Promise<SpotifySimpleAlbu
   const market = (process.env.SPOTIFY_MARKET || "US").toUpperCase();
   const albums: SpotifySimpleAlbum[] = [];
   // Since February 2026 this endpoint accepts at most ten releases per page.
-  // Two hundred releases is generous for an importer while keeping one request
-  // bounded on very large catalogs.
-  for (let offset = 0; offset < 200; offset += 10) {
+  // Bound the first pass to 80 primary releases. The previous 200-release crawl
+  // plus every appearance could fan out into hundreds of calls before the user
+  // had even confirmed the artist.
+  for (let offset = 0; offset < 80; offset += 10) {
     const page = await spotifyGet<AlbumsPage>(
-      `/artists/${artistId}/albums?include_groups=album,single,appears_on,compilation&market=${encodeURIComponent(market)}&limit=10&offset=${offset}`
+      `/artists/${artistId}/albums?include_groups=album,single,compilation&market=${encodeURIComponent(market)}&limit=10&offset=${offset}`
     );
     albums.push(...(page.items ?? []));
     if (!page.next || albums.length >= (page.total ?? albums.length)) break;
@@ -331,23 +404,45 @@ async function fetchAllArtistAlbums(artistId: string): Promise<SpotifySimpleAlbu
   return Array.from(byId.values());
 }
 
-async function fetchAlbumTrackIds(albumId: string): Promise<string[]> {
+async function fetchAlbumTracks(album: SpotifySimpleAlbum): Promise<SpotifyCatalogTrack[]> {
   type TracksPage = {
-    items?: { id?: string; artists?: SpotifySimpleArtist[] }[];
+    items?: SpotifySimpleTrack[];
     next?: string | null;
     total?: number;
   };
-  const ids: string[] = [];
-  for (let offset = 0; offset < 500; offset += 50) {
+  const tracks: SpotifyCatalogTrack[] = [];
+  // Ten is accepted by the restricted Development Mode endpoints. Most artist
+  // releases are singles or short albums, so this is usually one request.
+  for (let offset = 0; offset < 200; offset += 10) {
     const page = await spotifyGet<TracksPage>(
-      `/albums/${albumId}/tracks?limit=50&offset=${offset}`
+      `/albums/${album.id}/tracks?limit=10&offset=${offset}`
     );
     for (const track of page.items ?? []) {
-      if (track.id) ids.push(track.id);
+      if (!track.id) continue;
+      tracks.push({
+        id: track.id,
+        title: track.name,
+        artists: track.artists ?? [],
+        album: {
+          id: album.id,
+          name: album.name,
+          type: album.album_type ?? null,
+          releaseDate: album.release_date ?? null,
+          releaseDatePrecision: album.release_date_precision ?? null,
+          artworkUrl: album.images?.[0]?.url ?? null,
+          url: album.external_urls?.spotify ?? null,
+        },
+        durationMs: typeof track.duration_ms === "number" ? track.duration_ms : null,
+        explicit: track.explicit === true,
+        isrc: null,
+        trackNumber: typeof track.track_number === "number" ? track.track_number : null,
+        discNumber: typeof track.disc_number === "number" ? track.disc_number : null,
+        url: track.external_urls?.spotify ?? null,
+      });
     }
-    if (!page.next || ids.length >= (page.total ?? ids.length)) break;
+    if (!page.next || tracks.length >= (page.total ?? tracks.length)) break;
   }
-  return ids;
+  return tracks;
 }
 
 async function inBatches<T, R>(
@@ -399,14 +494,15 @@ export async function fetchSpotifyTrackCatalog(artistId: string): Promise<{
     fetchSpotifyArtist(artistId),
     fetchAllArtistAlbums(artistId),
   ]);
-  const idLists = await inBatches(albums, 5, (album) =>
-    fetchAlbumTrackIds(album.id)
+  const trackLists = await inBatches(albums, 4, (album) =>
+    fetchAlbumTracks(album)
   );
-  const fullTracks = await fetchSpotifyTracks(idLists.flat());
+  const byId = new Map<string, SpotifyCatalogTrack>();
+  for (const track of trackLists.flat()) if (!byId.has(track.id)) byId.set(track.id, track);
 
   return {
     artist: { ...identity, id: artistId },
-    tracks: fullTracks.filter((track) =>
+    tracks: Array.from(byId.values()).filter((track) =>
       track.artists.some((artist) => artist.id === artistId)
     ),
   };
