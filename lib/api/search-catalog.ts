@@ -4,6 +4,7 @@ import { fetchHomeTimeline } from "@/lib/api/feed";
 import { fetchArtistProfile } from "@/lib/api/artist-profile";
 import { fetchConversations } from "@/lib/api/messages";
 import { fetchSupportThreads, type SupportThread } from "@/lib/api/support-messages";
+import { fetchMyScenes } from "@/lib/api/scenes";
 import { normalizeTrackType } from "@/lib/track-style";
 import type {
   BoardNote,
@@ -12,6 +13,7 @@ import type {
   Post,
   Project,
   ProjectType,
+  Scene,
   Space,
   Stage,
   Task,
@@ -92,6 +94,17 @@ export type SearchMessageThread = {
   archived: boolean;
 };
 
+/** Scenes the caller belongs to — same scope as "posts" (your own network,
+ *  not a global index) since fetchMyScenes() is already RLS-scoped to that. */
+export type SearchScene = {
+  id: string;
+  slug: string;
+  name: string;
+  tagline: string | null;
+  kind: string;
+  emblem_url: string | null;
+};
+
 export type SearchCatalog = {
   tracks: SearchTrack[];
   projects: SearchProject[];
@@ -102,6 +115,7 @@ export type SearchCatalog = {
   spaces: Pick<Space, "id" | "name" | "focus">[];
   posts: SearchPost[];
   messages: SearchMessageThread[];
+  scenes: SearchScene[];
 };
 
 /**
@@ -179,6 +193,17 @@ async function fetchMessageThreads(artistId: string): Promise<SearchMessageThrea
   return threads;
 }
 
+function toSearchScenes(scenes: Scene[]): SearchScene[] {
+  return scenes.map((s) => ({
+    id: s.id,
+    slug: s.slug,
+    name: s.name,
+    tagline: s.tagline,
+    kind: s.kind,
+    emblem_url: s.emblem_url,
+  }));
+}
+
 function toSearchPosts(posts: Post[]): SearchPost[] {
   return posts.map((p) => ({
     id: p.id,
@@ -212,10 +237,11 @@ export async function fetchSearchCatalog(
   const spaceName = new Map(spaceList.map((s) => [s.id, s.name]));
 
   if (spaceIds.length === 0) {
-    const [people, feedPosts, messages] = await Promise.all([
+    const [people, feedPosts, messages, scenes] = await Promise.all([
       fetchPeople().catch(() => [] as Person[]),
       fetchHomeTimeline({ limit: 100 }).catch(() => [] as Post[]),
       fetchMessageThreads(artistId).catch(() => [] as SearchMessageThread[]),
+      fetchMyScenes().catch(() => [] as Scene[]),
     ]);
     return {
       tracks: [],
@@ -227,10 +253,11 @@ export async function fetchSearchCatalog(
       spaces: [],
       posts: toSearchPosts(feedPosts),
       messages,
+      scenes: toSearchScenes(scenes),
     };
   }
 
-  const [tracksRes, projectsRes, tasksRes, notesRes, stagesRes, people, feedPosts, messages] =
+  const [tracksRes, projectsRes, tasksRes, notesRes, stagesRes, people, feedPosts, messages, scenes] =
     await Promise.all([
       supabase
         .from("tracks")
@@ -264,6 +291,7 @@ export async function fetchSearchCatalog(
       fetchPeople().catch(() => [] as Person[]),
       fetchHomeTimeline({ limit: 100 }).catch(() => [] as Post[]),
       fetchMessageThreads(artistId).catch(() => [] as SearchMessageThread[]),
+      fetchMyScenes().catch(() => [] as Scene[]),
     ]);
 
   // Board notes / stages may fail if a migration hasn't been applied — soft-empty.
@@ -280,6 +308,7 @@ export async function fetchSearchCatalog(
     people,
     posts: toSearchPosts(feedPosts),
     messages,
+    scenes: toSearchScenes(scenes),
     tracks: (tracksRes.data ?? []).map((t) => ({
       id: t.id,
       space_id: t.space_id,

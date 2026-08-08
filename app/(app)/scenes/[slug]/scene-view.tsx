@@ -11,9 +11,10 @@ import { SceneMemberRow } from "@/components/scenes/scene-member-row";
 import { SceneFeed } from "@/components/scenes/scene-feed";
 import { SceneEvents } from "@/components/scenes/scene-events";
 import { SceneChatPanel } from "@/components/scenes/scene-chat-panel";
+import { SceneWelcomeChecklist } from "@/components/scenes/scene-welcome-checklist";
 import { EmptyShaderPanel } from "@/components/shader-empty";
 import { useToast } from "@/components/ui/toast";
-import { cn } from "@/lib/utils";
+import { cn, errorMessage } from "@/lib/utils";
 
 const TABS = [
   { id: "feed", label: "Feed" },
@@ -60,7 +61,7 @@ export default function SceneView({ slug }: { slug: string }) {
       const status = await join.mutateAsync({ sceneId: scene.id, profileId: myProfileId });
       toast(status === "active" ? "You're in." : "Request sent — waiting on approval.", "ok");
     } catch (err) {
-      toast(err instanceof Error ? err.message : "Couldn't join that scene.");
+      toast(errorMessage(err, "Couldn't join that scene."));
     }
   }
 
@@ -70,7 +71,7 @@ export default function SceneView({ slug }: { slug: string }) {
       await join.mutateAsync({ sceneId: scene.id, profileId: myProfileId });
       toast("You're in.", "ok");
     } catch (err) {
-      toast(err instanceof Error ? err.message : "Couldn't accept that invite.");
+      toast(errorMessage(err, "Couldn't accept that invite."));
     }
   }
 
@@ -80,7 +81,7 @@ export default function SceneView({ slug }: { slug: string }) {
       await leave.mutateAsync({ sceneId: scene.id, profileId: myProfileId });
       toast(`You left ${scene.name}.`, "ok");
     } catch (err) {
-      toast(err instanceof Error ? err.message : "Couldn't leave that scene.");
+      toast(errorMessage(err, "Couldn't leave that scene."));
     }
   }
 
@@ -109,6 +110,14 @@ export default function SceneView({ slug }: { slug: string }) {
         onAcceptInvite={() => void handleAcceptInvite()}
         onLeave={() => void handleLeave()}
       />
+
+      {isMember ? (
+        <SceneWelcomeChecklist
+          scene={scene}
+          myMember={members.find((m) => m.profile_id === myProfileId)}
+          myProfileId={myProfileId}
+        />
+      ) : null}
 
       <div className="flex flex-wrap gap-1.5">
         {TABS.map((t) => (

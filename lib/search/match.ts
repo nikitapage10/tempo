@@ -3,6 +3,7 @@ import type {
   SearchNote,
   SearchPost,
   SearchProject,
+  SearchScene,
   SearchStage,
   SearchTask,
   SearchTrack,
@@ -19,6 +20,7 @@ export type SearchCategory =
   | "stages"
   | "spaces"
   | "posts"
+  | "scenes"
   | "pages";
 
 export const SEARCH_CATEGORY_LABELS: Record<SearchCategory, string> = {
@@ -31,6 +33,7 @@ export const SEARCH_CATEGORY_LABELS: Record<SearchCategory, string> = {
   stages: "Stages",
   spaces: "Spaces",
   posts: "Posts",
+  scenes: "Scenes",
   pages: "Go to",
 };
 
@@ -106,6 +109,13 @@ export const SEARCH_PAGES: SearchPageDef[] = [
     keywords: ["social", "network", "feed", "people", "contacts"],
   },
   {
+    id: "page-scenes",
+    title: "Scenes",
+    subtitle: "Rooms for the people you make music with",
+    href: "/scenes",
+    keywords: ["scenes", "community", "communities", "group", "label", "school", "crew"],
+  },
+  {
     id: "page-messages",
     title: "Messages",
     subtitle: "Direct messages",
@@ -135,6 +145,7 @@ const CATEGORY_ORDER: SearchCategory[] = [
   "people",
   "messages",
   "posts",
+  "scenes",
   "notes",
   "stages",
   "spaces",
@@ -472,6 +483,28 @@ function postHit(p: SearchPost, tokens: string[]): SearchHit | null {
   };
 }
 
+function sceneHit(sc: SearchScene, tokens: string[]): SearchHit | null {
+  const { score } = scoreTokens(
+    [
+      { value: sc.name, weight: 40 },
+      { value: sc.tagline, weight: 20 },
+      { value: sc.kind, weight: 8 },
+      { value: "scene community room", weight: 4 },
+    ],
+    tokens
+  );
+  if (score <= 0) return null;
+  return {
+    id: `scene:${sc.id}`,
+    category: "scenes",
+    title: sc.name,
+    subtitle: sc.tagline ?? "Scene",
+    href: `/scenes/${sc.slug}`,
+    score,
+    artworkUrl: sc.emblem_url,
+  };
+}
+
 function noteHit(n: SearchNote, tokens: string[]): SearchHit | null {
   const { score } = scoreTokens(
     [
@@ -646,6 +679,12 @@ export function matchSearchCatalog(
   if (allow("posts")) {
     for (const p of catalog.posts) {
       const hit = postHit(p, tokens);
+      if (hit) hits.push(hit);
+    }
+  }
+  if (allow("scenes")) {
+    for (const sc of catalog.scenes ?? []) {
+      const hit = sceneHit(sc, tokens);
       if (hit) hits.push(hit);
     }
   }

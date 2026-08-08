@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useSceneEventMutations } from "@/hooks/use-scene-events";
 import { useToast } from "@/components/ui/toast";
 import type { SceneEventKind } from "@/lib/types";
+import { errorMessage } from "@/lib/utils";
 
 const KINDS: { value: SceneEventKind; label: string }[] = [
   { value: "session", label: "Session" },
@@ -74,7 +75,7 @@ export function SceneEventDialog({
       toast("Event added.", "ok");
       onOpenChange(false);
     } catch (err) {
-      toast(err instanceof Error ? err.message : "Couldn't add that event.");
+      toast(errorMessage(err, "Couldn't add that event."));
     }
   }
 

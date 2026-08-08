@@ -150,9 +150,13 @@ and what's past; a manager adds an event with a date, kind, location or
 link, an optional headcount limit, and details, and members RSVP going,
 interested, or can't go — a full event stops taking new "going" RSVPs. A
 scene also has its own Chat tab — a group thread for everyone in it, text
-only for now. Scenes needs six database updates (migrations 049
-through 054) before it works — until they're run, the Scenes tab explains
-that plainly instead of erroring.
+only for now. A new member sees a welcome checklist if the scene has one;
+managers can review a moderation history of pins, removals, bans, role
+changes, and join decisions from the Manage dashboard, and escalate content
+to TEMPO Support when it needs the operator's attention. Scenes shows up in
+global search alongside your tracks and people. Scenes needs seven database
+updates (migrations 049 through 055) before it works — until they're all
+run, the Scenes tab explains that plainly instead of erroring.
 
 **Stats.** Today, Board, Tracks and Tasks all show one space at a time; **Stats** (formerly "Artist", renamed and moved to its own tab when the Artist tab became the public profile page above) shows the whole artist's numbers at once, across every space they own. Reach it from the rail or the artist dropdown. It opens on that artist's banner and logo with a headline row — tracks, bounces, in progress, released, focus time — and then a set of sections: **the year in bounces** (twelve months of bounces uploaded against tracks started, so a year of work reads at a glance); **pipeline** (where tracks sit in each space's stages, one bar per space, with spaces that have nothing staged collected into a single quiet line); **spaces** (every space of that artist side by side with its own counts and when it was last touched — tap one to switch to it); **your sound** (the shape of your tempos, the keys you write in most, your genres and track types); **work rhythm** (when you actually work, by day and hour, with your busiest day, busiest hour and how many weeks in a row you've kept going); **longest in progress** (the oldest unfinished tracks and how long each has sat in its current stage); **releases** (countdowns to what's coming and a strip of what's already out); and **feedback received** (how much has come from guests versus your own notes, how much is still open, and the decisions logged). Every number comes from what's actually in your TEMPO — nothing is estimated or guessed.
 

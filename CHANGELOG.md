@@ -4,6 +4,17 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-07
 
+- Fixed (v0.91.0): creating a scene was failing outright with "Couldn't
+  create that scene." — a database permission was missing its "you can create
+  a scene you own" rule. Also fixed: errors from Scenes now show what
+  actually went wrong instead of a generic message, which is what made this
+  one hard to diagnose in the first place.
+  Under the hood: needs migration 055 run, after 049–054.
+- Added (v0.91.0): a scene now has a welcome checklist for new members, a
+  moderation history managers can review (pins, removals, bans, role
+  changes, approvals), and shows up in global search. Scene notifications
+  (join requests, approvals, invites, announcements, events) now sort into
+  the Social filter in your notification tray.
 - Fixed (v0.90.1): the first-workspace tour now waits for the complete Origin
   arrival animation before appearing, instead of interrupting the cinematic
   handoff shortly after the dashboard begins to show.

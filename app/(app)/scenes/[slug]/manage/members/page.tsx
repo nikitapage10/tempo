@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import type { SceneRole } from "@/lib/types";
+import { errorMessage } from "@/lib/utils";
 
 export default function SceneManageMembersPage() {
   const params = useParams<{ slug: string }>();
@@ -52,7 +53,7 @@ export default function SceneManageMembersPage() {
       setInviteQ("");
       setInviteResults([]);
     } catch (err) {
-      toast(err instanceof Error ? err.message : "Couldn't send that invite.");
+      toast(errorMessage(err, "Couldn't send that invite."));
     }
   }
 
@@ -60,7 +61,7 @@ export default function SceneManageMembersPage() {
     try {
       await respond.mutateAsync({ profileId, approve });
     } catch (err) {
-      toast(err instanceof Error ? err.message : "Couldn't update that request.");
+      toast(errorMessage(err, "Couldn't update that request."));
     }
   }
 
@@ -68,7 +69,7 @@ export default function SceneManageMembersPage() {
     try {
       await setRole.mutateAsync({ profileId, role });
     } catch (err) {
-      toast(err instanceof Error ? err.message : "Couldn't change that role.");
+      toast(errorMessage(err, "Couldn't change that role."));
     }
   }
 
@@ -76,7 +77,7 @@ export default function SceneManageMembersPage() {
     try {
       await setBanned.mutateAsync({ profileId, banned });
     } catch (err) {
-      toast(err instanceof Error ? err.message : "Couldn't update that member.");
+      toast(errorMessage(err, "Couldn't update that member."));
     }
   }
 

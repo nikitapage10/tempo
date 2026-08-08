@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { PageHeader } from "@/components/ui/page-header";
 import { useToast } from "@/components/ui/toast";
 import type { SceneJoinPolicy, SceneKind, SceneVisibility } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { cn, errorMessage } from "@/lib/utils";
 
 const KINDS: { value: SceneKind; label: string }[] = [
   { value: "other", label: "Scene" },
@@ -108,7 +108,7 @@ export default function NewScenePage() {
       toast(`${scene.name} is live.`, "ok");
       router.push(`/scenes/${scene.slug}`);
     } catch (err) {
-      toast(err instanceof Error ? err.message : "Couldn’t create that scene.");
+      toast(errorMessage(err, "Couldn’t create that scene."));
     }
   }
 

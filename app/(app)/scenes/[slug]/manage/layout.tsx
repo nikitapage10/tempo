@@ -3,6 +3,7 @@
 import { useParams } from "next/navigation";
 import { useScene } from "@/hooks/use-scenes";
 import { useScenePendingRequests } from "@/hooks/use-scene-members";
+import { useOpenSceneReportCount } from "@/hooks/use-scene-moderation";
 import { SceneManageShell } from "@/components/scenes/manage/scene-manage-shell";
 import { EmptyShaderPanel } from "@/components/shader-empty";
 
@@ -11,6 +12,7 @@ export default function SceneManageLayout({ children }: { children: React.ReactN
   const { data: scene, isLoading } = useScene(params.slug);
   const isManager = scene?.my_role === "owner" || scene?.my_role === "moderator";
   const { data: pending = [] } = useScenePendingRequests(scene?.id ?? null, isManager);
+  const { data: openReports = 0 } = useOpenSceneReportCount(scene?.id ?? null, isManager);
 
   if (isLoading) {
     return <div className="mx-auto max-w-5xl"><div className="panel h-64 animate-pulse" /></div>;
@@ -28,7 +30,7 @@ export default function SceneManageLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <SceneManageShell scene={scene} requestCount={pending.length}>
+    <SceneManageShell scene={scene} requestCount={pending.length} reportCount={openReports}>
       {children}
     </SceneManageShell>
   );

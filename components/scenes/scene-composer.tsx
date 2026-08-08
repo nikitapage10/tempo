@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useSceneFeedMutations } from "@/hooks/use-scene-feed";
 import { useScenePollMutations } from "@/hooks/use-scene-polls";
 import type { ScenePostKind, SceneTopic } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { cn, errorMessage } from "@/lib/utils";
 
 type ComposerKind = Exclude<ScenePostKind, "announcement"> | "announcement";
 
@@ -83,7 +83,7 @@ export function SceneComposer({
       }
       resetForm();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't post — try again.");
+      setError(errorMessage(err, "Couldn't post — try again."));
     }
   }
 

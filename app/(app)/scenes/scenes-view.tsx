@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
 import { useToast } from "@/components/ui/toast";
-import { cn } from "@/lib/utils";
+import { cn, errorMessage } from "@/lib/utils";
 
 type Tab = "mine" | "discover" | "invites";
 
@@ -49,7 +49,7 @@ export default function ScenesView() {
       await publish.mutateAsync("members");
       toast("You’re on the network — visible to TEMPO members.", "ok");
     } catch (err) {
-      toast(err instanceof Error ? err.message : "Couldn’t join the network.");
+      toast(errorMessage(err, "Couldn’t join the network."));
     }
   }
 
@@ -62,7 +62,7 @@ export default function ScenesView() {
         "ok"
       );
     } catch (err) {
-      toast(err instanceof Error ? err.message : "Couldn’t join that scene.");
+      toast(errorMessage(err, "Couldn’t join that scene."));
     }
   }
 
@@ -72,7 +72,7 @@ export default function ScenesView() {
       await join.mutateAsync({ sceneId, profileId: myProfileId });
       toast("You’re in.", "ok");
     } catch (err) {
-      toast(err instanceof Error ? err.message : "Couldn’t accept that invite.");
+      toast(errorMessage(err, "Couldn’t accept that invite."));
     }
   }
 
@@ -81,7 +81,7 @@ export default function ScenesView() {
     try {
       await declineInvite.mutateAsync({ sceneId, profileId: myProfileId });
     } catch (err) {
-      toast(err instanceof Error ? err.message : "Couldn’t decline that invite.");
+      toast(errorMessage(err, "Couldn’t decline that invite."));
     }
   }
 

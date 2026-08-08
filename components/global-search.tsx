@@ -13,6 +13,7 @@ import {
   Music2,
   StickyNote,
   UserRound,
+  Users2,
   type LucideIcon,
 } from "lucide-react";
 import { useActiveSpace } from "@/components/active-space-provider";
@@ -37,6 +38,7 @@ const CATEGORY_ICONS: Record<SearchCategory, LucideIcon> = {
   stages: Columns3,
   spaces: Disc3,
   posts: MessageCircle,
+  scenes: Users2,
   pages: Hash,
 };
 
@@ -48,6 +50,7 @@ const FILTER_OPTIONS: Array<{ id: SearchCategory | "all"; label: string }> = [
   { id: "people", label: "People" },
   { id: "messages", label: "Messages" },
   { id: "posts", label: "Posts" },
+  { id: "scenes", label: "Scenes" },
   { id: "notes", label: "Notes" },
   { id: "pages", label: "Go to" },
 ];

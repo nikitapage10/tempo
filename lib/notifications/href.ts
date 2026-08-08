@@ -74,7 +74,15 @@ export function notificationBreadth(n: AppNotification): Exclude<NotificationBre
     type === "post_comment" ||
     type === "mention" ||
     n.entity_type === "post" ||
-    n.entity_type === "profile"
+    n.entity_type === "profile" ||
+    // Scenes notifications (join requests/approvals, invites, announcements,
+    // events) always set link_url explicitly, since entity_id is a uuid and
+    // scene routes are slug-based — notificationHref() above needs no scene
+    // branch of its own because of that. This only sorts them into the
+    // existing Social filter rather than adding a dedicated breadth.
+    n.entity_type === "scene" ||
+    n.entity_type === "scene_event" ||
+    type.startsWith("scene_")
   ) {
     return "social";
   }
