@@ -7,7 +7,10 @@ import {
   SUPPRESS_INTRO_KEY,
 } from "@/lib/intro";
 import { setLightfieldPaused } from "@/lib/lightfield";
-import { ORIGIN_ARRIVAL_COMPLETE_EVENT } from "@/lib/guided-tour";
+import {
+  ORIGIN_ARRIVAL_COMPLETE_EVENT,
+  ORIGIN_ARRIVAL_RUNNING_CLASS,
+} from "@/lib/guided-tour";
 import { OriginFilmGrain } from "@/components/origin/origin-media-stage";
 
 const usePrePaintEffect =
@@ -187,6 +190,9 @@ export function markFirstOpenPending(frameCanvas: HTMLCanvasElement | null): Pro
     /* private mode — the reveal is a nicety, not a requirement */
   }
   // Begin over the final ORIGIN frame and stay mounted through navigation.
+  // This class lasts for the animation itself. `origin-arrival-pending` is a
+  // different, short-lived pre-paint cover and disappears after two frames.
+  document.documentElement.classList.add(ORIGIN_ARRIVAL_RUNNING_CLASS);
   void import("three").catch(() => {});
   window.dispatchEvent(
     new CustomEvent<FirstOpenStartDetail>(FIRST_OPEN_START_EVENT, {
@@ -274,6 +280,7 @@ export function FirstOpenReveal() {
     }
     if (!claimedRef.current) {
       document.documentElement.classList.remove("origin-arrival-pending");
+      document.documentElement.classList.remove(ORIGIN_ARRIVAL_RUNNING_CLASS);
       setPhase("done");
       return;
     }
@@ -291,6 +298,7 @@ export function FirstOpenReveal() {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const toDone = window.setTimeout(() => {
       document.documentElement.classList.remove("origin-arrival-pending");
+      document.documentElement.classList.remove(ORIGIN_ARRIVAL_RUNNING_CLASS);
       consumeFirstOpenFlag();
       claimedRef.current = false;
       setPhase("done");

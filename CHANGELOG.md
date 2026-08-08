@@ -4,6 +4,9 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-07
 
+- Fixed (v0.90.1): the first-workspace tour now waits for the complete Origin
+  arrival animation before appearing, instead of interrupting the cinematic
+  handoff shortly after the dashboard begins to show.
 - Added (v0.90.0): Scenes now has a Chat tab — a group thread for everyone
   in the scene. It works the same as any TEMPO message: text now, with
   images and files to follow. Leaving a scene takes you out of its chat too.

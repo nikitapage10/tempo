@@ -8,6 +8,8 @@
 export const GUIDED_TOUR_PENDING_KEY = "tempo.guidedTour.pending";
 export const GUIDED_TOUR_COMPLETE_KEY = "tempo.guidedTour.complete.v1";
 export const ORIGIN_ARRIVAL_COMPLETE_EVENT = "tempo:origin-arrival-complete";
+/** Lives for the full handoff animation; unlike the pre-paint cover class. */
+export const ORIGIN_ARRIVAL_RUNNING_CLASS = "origin-arrival-running";
 
 export function armGuidedTour() {
   if (typeof window === "undefined") return;

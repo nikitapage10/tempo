@@ -7,6 +7,7 @@ import {
   completeGuidedTour,
   guidedTourIsPending,
   ORIGIN_ARRIVAL_COMPLETE_EVENT,
+  ORIGIN_ARRIVAL_RUNNING_CLASS,
 } from "@/lib/guided-tour";
 import { cn } from "@/lib/utils";
 
@@ -101,7 +102,9 @@ export function GuidedTour() {
       }, 360);
     };
 
-    if (document.documentElement.classList.contains("origin-arrival-pending")) {
+    // The pre-paint cover clears almost immediately once the dashboard mounts.
+    // Wait on the marker that spans the full cinematic wipe instead.
+    if (document.documentElement.classList.contains(ORIGIN_ARRIVAL_RUNNING_CLASS)) {
       window.addEventListener(ORIGIN_ARRIVAL_COMPLETE_EVENT, open, { once: true });
       return () => window.removeEventListener(ORIGIN_ARRIVAL_COMPLETE_EVENT, open);
     }
