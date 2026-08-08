@@ -74,13 +74,25 @@ export function SceneHeader({
           scene.banner_url
             ? undefined
             : {
-                background: `linear-gradient(135deg, color-mix(in srgb, ${ice} 32%, transparent), color-mix(in srgb, ${amber} 24%, transparent))`,
+                background: `
+                  radial-gradient(120% 140% at 12% -10%, color-mix(in srgb, ${ice} 45%, transparent), transparent 55%),
+                  radial-gradient(110% 130% at 88% 120%, color-mix(in srgb, ${amber} 38%, transparent), transparent 60%),
+                  linear-gradient(135deg, color-mix(in srgb, ${ice} 20%, var(--bg-1)), color-mix(in srgb, ${amber} 16%, var(--bg-1)))
+                `,
               }
         }
       >
         {scene.banner_url ? (
           <SignedImage path={scene.banner_url} alt="" className="size-full object-cover" />
-        ) : null}
+        ) : (
+          <div
+            className="absolute inset-0 opacity-[0.15] mix-blend-overlay"
+            style={{
+              backgroundImage:
+                "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E\")",
+            }}
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-bg-1 via-bg-1/10 to-transparent" />
       </div>
 

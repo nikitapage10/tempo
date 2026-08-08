@@ -8,6 +8,8 @@ import { useScenePollsForPosts } from "@/hooks/use-scene-polls";
 import { SceneComposer } from "@/components/scenes/scene-composer";
 import { ScenePostRow } from "@/components/scenes/scene-post-row";
 import { PostDetailDialog } from "@/components/social/post-detail";
+import { EmptyShaderPanel } from "@/components/shader-empty";
+import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 
@@ -96,9 +98,22 @@ export function SceneFeed({
         {isLoading ? (
           <div className="panel-quiet h-24 animate-pulse" />
         ) : feed.length === 0 && visiblePinned.length === 0 ? (
-          <p className="py-4 text-sm text-text-lo">
-            Nobody&rsquo;s posted yet — be the first.
-          </p>
+          <EmptyShaderPanel
+            className="h-[220px]"
+            title="Nobody's posted yet"
+            copy="Be the first to share something with the scene."
+            action={
+              myProfileId ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => document.getElementById("scene-composer-input")?.focus()}
+                >
+                  Start the conversation
+                </Button>
+              ) : undefined
+            }
+          />
         ) : (
           feed.map((post) => (
             <ScenePostRow

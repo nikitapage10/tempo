@@ -226,12 +226,21 @@ export async function createScene(input: CreateSceneInput): Promise<Scene> {
     .select("*")
     .single();
   if (error) throw error;
-  return withCallerState(data as Scene, {
-    scene_id: (data as Scene).id,
-    role: "owner",
-    status: "active",
-    last_read_at: null,
-  });
+  // seed_new_scene() adds the owner's membership in an AFTER INSERT trigger
+  // chained off this row's own insert, so it runs after the RETURNING
+  // snapshot is already fixed — the row we get back still shows
+  // member_count: 0. Floor it at 1 so the creator doesn't see "0 members"
+  // on the scene they're standing in.
+  const created = data as Scene;
+  return withCallerState(
+    { ...created, member_count: Math.max(created.member_count, 1) },
+    {
+      scene_id: created.id,
+      role: "owner",
+      status: "active",
+      last_read_at: null,
+    }
+  );
 }
 
 export async function uploadSceneBanner(scene: Scene, file: File): Promise<Scene> {

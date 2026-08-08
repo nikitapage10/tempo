@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Megaphone, MessageCircleQuestion, Plus, Send, Trash2, Vote } from "lucide-react";
+import { Megaphone, MessageCircleQuestion, Plus, Send, SquarePen, Trash2, Vote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -101,29 +101,38 @@ export function SceneComposer({
     <form
       onSubmit={onSubmit}
       className={cn(
-        "panel space-y-3 transition-[padding] duration-150",
-        expanded ? "p-4" : "p-2.5",
+        "panel space-y-3 transition-[padding,border-color] duration-150",
+        expanded ? "p-4" : "cursor-text p-2.5 hover:border-ice/30",
         className
       )}
+      onClick={() => {
+        if (!expanded) document.getElementById("scene-composer-input")?.focus();
+      }}
     >
-      <Textarea
-        value={body}
-        onChange={(e) => setBody(e.target.value)}
-        onFocus={() => setExpanded(true)}
-        placeholder={
-          kind === "poll"
-            ? "Ask a question with a few answers…"
-            : kind === "question"
-              ? "Ask an open question…"
-              : "Share something with the scene…"
-        }
-        maxLength={5000}
-        rows={expanded ? 3 : 1}
-        className={cn(
-          "resize-y transition-[min-height] duration-150",
-          expanded ? "min-h-[4.5rem]" : "min-h-0 resize-none py-1.5"
-        )}
-      />
+      <div className={cn("flex items-center", expanded ? "" : "gap-2")}>
+        {!expanded ? <SquarePen className="size-4 shrink-0 text-text-lo" /> : null}
+        <Textarea
+          id="scene-composer-input"
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          onFocus={() => setExpanded(true)}
+          placeholder={
+            kind === "poll"
+              ? "Ask a question with a few answers…"
+              : kind === "question"
+                ? "Ask an open question…"
+                : "Share something with the scene…"
+          }
+          maxLength={5000}
+          rows={expanded ? 3 : 1}
+          className={cn(
+            "resize-y transition-[min-height] duration-150",
+            expanded
+              ? "min-h-[4.5rem]"
+              : "min-h-0 resize-none border-transparent bg-transparent py-1.5 placeholder:text-text-lo"
+          )}
+        />
+      </div>
 
       {expanded ? (
         <>

@@ -4,6 +4,12 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-08
 
+- Fixed (v0.92.0): a scene you just created now correctly shows you as a
+  member instead of "0 members."
+- Changed (v0.92.0): a new scene's page feels less bare — the banner has more
+  visual depth instead of a flat block of color, the post box no longer looks
+  greyed-out/disabled while empty, and an empty feed now invites you to post
+  instead of showing a plain line of text.
 - Fixed (v0.91.3): creating a scene works. The permission rule that decides
   who can see a scene was checking the scene's membership by looking the
   scene up — which fails for a scene that is still in the middle of being
