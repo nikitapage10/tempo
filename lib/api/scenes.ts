@@ -167,13 +167,18 @@ export async function fetchSceneBySlug(slug: string): Promise<Scene | null> {
   return withCallerState(data as Scene, mine);
 }
 
-/** True when the slug is free. Case-insensitive; the shape check happens server-side. */
+/**
+ * True when the slug is free. Case-insensitive; the shape check happens
+ * server-side. An archived scene's slug doesn't count as taken — migration
+ * 058 makes the same exception at the database level.
+ */
 export async function isSceneSlugAvailable(slug: string): Promise<boolean> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("scenes")
     .select("id")
     .eq("slug", slug.toLowerCase())
+    .is("archived_at", null)
     .maybeSingle();
   if (error) {
     if (isMissingSceneSchema(error)) return true;

@@ -75,8 +75,8 @@ export function SceneHeader({
             ? undefined
             : {
                 background: `
-                  radial-gradient(120% 140% at 12% -10%, color-mix(in srgb, ${ice} 45%, transparent), transparent 55%),
-                  radial-gradient(110% 130% at 88% 120%, color-mix(in srgb, ${amber} 38%, transparent), transparent 60%),
+                  radial-gradient(90% 100% at 10% -10%, color-mix(in srgb, ${ice} 45%, transparent), transparent 60%),
+                  radial-gradient(90% 100% at 90% 10%, color-mix(in srgb, ${amber} 34%, transparent), transparent 65%),
                   linear-gradient(135deg, color-mix(in srgb, ${ice} 20%, var(--bg-1)), color-mix(in srgb, ${amber} 16%, var(--bg-1)))
                 `,
               }

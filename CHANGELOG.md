@@ -4,6 +4,13 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-08
 
+- Fixed (v0.93.1): a deleted scene's name/address stayed locked forever, so
+  trying to start a new scene with the same name said "That address is
+  taken." Deleting a scene now frees its name for reuse.
+  Under the hood: needs migration 058 run.
+- Fixed (v0.93.1): a new scene's banner had a bright glow sitting directly
+  behind the Manage/Leave scene buttons, making them look cut off. The
+  banner's color highlights now stay clear of that corner.
 - Added (v0.93.0): a scene's owner can now edit it after creation — name,
   tagline, about text, banner, emblem, door, who can find it, and color — and
   can delete the scene from a new Settings page on the Manage dashboard.
