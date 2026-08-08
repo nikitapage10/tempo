@@ -20,7 +20,9 @@ export function MessageCenter() {
   const { activeArtist } = useActiveArtist();
   const { profile } = useArtistProfile(activeArtist?.id ?? null);
   const onNetwork = profile?.visibility === "members" || profile?.visibility === "public";
-  const direct = useConversations(onNetwork ? profile?.id ?? null : null);
+  // Existing conversations are private participant records, not network
+  // discovery. Only starting a conversation with a new artist requires access.
+  const direct = useConversations(profile?.id ?? null);
   const support = useSupportThreads(false);
   const directMutations = useMessageMutations(profile?.id ?? null);
   const directThreads = direct.data ?? [];

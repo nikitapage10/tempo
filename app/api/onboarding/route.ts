@@ -22,6 +22,7 @@ const allowedPageTours = new Set([
 type Row = {
   user_id: string;
   invite_id: string | null;
+  member_role: "artist" | "team_member" | "administrator";
   eligible: boolean;
   started_at: string;
   main_tour_completed_at: string | null;
@@ -54,27 +55,13 @@ async function stateFor(userId: string) {
     .single();
   if (error || !data) throw error ?? new Error("Missing onboarding state");
 
-  let memberRole: "beta_artist" | "team_member" | "administrator" = "beta_artist";
-  if (data.invite_id) {
-    const { data: invite } = await service
-      .from("invites")
-      .select("member_role")
-      .eq("id", data.invite_id)
-      .maybeSingle();
-    if (invite?.member_role === "team_member" || invite?.member_role === "administrator") {
-      memberRole = invite.member_role;
-    }
-  }
-  return serialize(data as Row, memberRole);
+  return serialize(data as Row);
 }
 
-function serialize(
-  row: Row,
-  memberRole: "beta_artist" | "team_member" | "administrator",
-) {
+function serialize(row: Row) {
   return {
     eligible: row.eligible,
-    memberRole,
+    memberRole: row.member_role ?? "artist",
     startedAt: row.started_at,
     mainTourCompletedAt: row.main_tour_completed_at,
     checklistOpenedAt: row.checklist_opened_at,

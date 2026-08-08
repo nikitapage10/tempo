@@ -45,6 +45,29 @@ const FALLBACK_LINES = [
 
 type FirstOpenStartDetail = { frameCanvas: HTMLCanvasElement | null };
 
+/** Arm the handoff before completion can update shared artist state. */
+export function prepareFirstOpenPending() {
+  try {
+    sessionStorage.setItem(FIRST_OPEN_FLAG, "1");
+    sessionStorage.setItem(SUPPRESS_INTRO_FLAG, "1");
+  } catch {
+    /* private mode: the reveal is a nicety, not a requirement */
+  }
+  document.documentElement.classList.add(ORIGIN_ARRIVAL_RUNNING_CLASS);
+  void import("three").catch(() => {});
+}
+
+export function cancelFirstOpenPending() {
+  try {
+    sessionStorage.removeItem(FIRST_OPEN_FLAG);
+    sessionStorage.removeItem(SUPPRESS_INTRO_FLAG);
+  } catch {
+    /* nothing to clear */
+  }
+  document.documentElement.classList.remove("origin-arrival-pending");
+  document.documentElement.classList.remove(ORIGIN_ARRIVAL_RUNNING_CLASS);
+}
+
 function shaderRandom(value: number) {
   const raw = Math.sin(value) * 1e4;
   return raw - Math.floor(raw);
@@ -183,17 +206,10 @@ export function captureOriginFrame(video: HTMLVideoElement | null): HTMLCanvasEl
 }
 
 export function markFirstOpenPending(frameCanvas: HTMLCanvasElement | null): Promise<void> {
-  try {
-    sessionStorage.setItem(FIRST_OPEN_FLAG, "1");
-    sessionStorage.setItem(SUPPRESS_INTRO_FLAG, "1");
-  } catch {
-    /* private mode — the reveal is a nicety, not a requirement */
-  }
+  prepareFirstOpenPending();
   // Begin over the final ORIGIN frame and stay mounted through navigation.
   // This class lasts for the animation itself. `origin-arrival-pending` is a
   // different, short-lived pre-paint cover and disappears after two frames.
-  document.documentElement.classList.add(ORIGIN_ARRIVAL_RUNNING_CLASS);
-  void import("three").catch(() => {});
   window.dispatchEvent(
     new CustomEvent<FirstOpenStartDetail>(FIRST_OPEN_START_EVENT, {
       detail: { frameCanvas },

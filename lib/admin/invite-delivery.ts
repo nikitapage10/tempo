@@ -2,7 +2,7 @@ import { sendInviteEmail } from "@/lib/admin/invite-email";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { INVITE_COLUMNS } from "@/lib/admin/select";
 
-export type DeliverableInvite = { id: string; code: string; email: string | null; member_role: "beta_artist" | "team_member" | "administrator"; welcome_note: string | null; expires_at: string | null; send_count: number };
+export type DeliverableInvite = { id: string; code: string; email: string | null; member_role: "artist" | "team_member" | "administrator"; welcome_note: string | null; expires_at: string | null; send_count: number };
 
 export async function deliverInvite(invite: DeliverableInvite) {
   if (!invite.email) throw new Error("Add an email address before sending this invite.");

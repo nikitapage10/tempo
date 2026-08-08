@@ -1,6 +1,7 @@
 "use client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { actOnAdminReport, createAdminInvite, deleteAdminUser, getAdminAnalytics, getAdminAudit, getAdminInvites, getAdminOverview, getAdminReports, getAdminSupport, getAdminUser, getAdminUsers, reactivateAdminUser, revokeAdminInvite, sendAdminInvite, suspendAdminUser, updateAdminSupport } from "@/lib/api/admin";
+import { actOnAdminReport, createAdminInvite, deleteAdminUser, getAdminAnalytics, getAdminAudit, getAdminInvites, getAdminOverview, getAdminReports, getAdminSupport, getAdminUser, getAdminUsers, reactivateAdminUser, revokeAdminInvite, sendAdminInvite, suspendAdminUser, updateAdminSupport, updateAdminUserRole } from "@/lib/api/admin";
+import type { AdminInviteRole } from "@/lib/api/admin";
 
 export function useAdminOverview() { return useQuery({ queryKey: ["admin", "overview"], queryFn: getAdminOverview, refetchInterval: 30_000 }); }
 export function useAdminAnalytics() { return useQuery({ queryKey: ["admin", "analytics"], queryFn: getAdminAnalytics }); }
@@ -9,7 +10,7 @@ export function useAdminUser(id: string) { return useQuery({ queryKey: ["admin",
 export function useAdminUserActions(id: string) {
   const client = useQueryClient();
   const settle = () => Promise.all([client.invalidateQueries({ queryKey: ["admin", "user", id] }), client.invalidateQueries({ queryKey: ["admin", "users"] }), client.invalidateQueries({ queryKey: ["admin", "overview"] })]);
-  return { suspend: useMutation({ mutationFn: (reason: string) => suspendAdminUser(id, reason), onSettled: settle }), reactivate: useMutation({ mutationFn: () => reactivateAdminUser(id), onSettled: settle }), remove: useMutation({ mutationFn: (email: string) => deleteAdminUser(id, email), onSettled: settle }) };
+  return { role: useMutation({ mutationFn: (memberRole: AdminInviteRole) => updateAdminUserRole(id, memberRole), onSettled: settle }), suspend: useMutation({ mutationFn: (reason: string) => suspendAdminUser(id, reason), onSettled: settle }), reactivate: useMutation({ mutationFn: () => reactivateAdminUser(id), onSettled: settle }), remove: useMutation({ mutationFn: (email: string) => deleteAdminUser(id, email), onSettled: settle }) };
 }
 export function useAdminInvites() {
   const client = useQueryClient(); const query = useQuery({ queryKey: ["admin", "invites"], queryFn: getAdminInvites }); const settle = () => Promise.all([client.invalidateQueries({ queryKey: ["admin", "invites"] }), client.invalidateQueries({ queryKey: ["admin", "overview"] })]);

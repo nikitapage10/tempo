@@ -7,6 +7,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { StatusChip } from "@/components/admin/admin-table";
 import { useAdminUser, useAdminUserActions } from "@/hooks/use-admin";
 import { useToast } from "@/components/ui/toast";
+import type { AdminInviteRole } from "@/lib/api/admin";
 
 function date(value: string | null) {
   return value
@@ -23,10 +24,16 @@ function bytes(value: number) {
 }
 
 function role(value: string | undefined) {
-  if (value === "administrator") return "Team administrator";
+  if (value === "administrator") return "Admin";
   if (value === "team_member") return "Team member";
-  return "Beta artist";
+  return "Artist";
 }
+
+const ROLE_OPTIONS: { value: AdminInviteRole; label: string; detail: string }[] = [
+  { value: "artist", label: "Artist", detail: "Standard product access" },
+  { value: "team_member", label: "Team member", detail: "Recognized as part of the TEMPO team" },
+  { value: "administrator", label: "Admin", detail: "Full access to private administration" },
+];
 
 type OpaqueSnapshot = {
   id: string;
@@ -83,6 +90,14 @@ export default function AdminUserPage({ params }: { params: { id: string } }) {
       toast("Member reactivated.", "ok");
     } catch (e) {
       toast(e instanceof Error ? e.message : "Couldn’t reactivate member.");
+    }
+  }
+  async function changeRole(memberRole: AdminInviteRole) {
+    try {
+      await actions.role.mutateAsync(memberRole);
+      toast(`Role changed to ${role(memberRole)}.`, "ok");
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Couldn’t update this member’s role.");
     }
   }
   async function remove() {
@@ -172,13 +187,38 @@ export default function AdminUserPage({ params }: { params: { id: string } }) {
         </section>
       ) : null}
       <section className="panel-quiet p-5">
-        <p className="label-mono">Invite</p>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="label-mono">Access role</p>
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-text-lo">
+              Promote or demote this account at any time. Admin access takes effect immediately.
+            </p>
+          </div>
+          <label className="min-w-[15rem]">
+            <span className="sr-only">Member role</span>
+            <select
+              value={actions.role.isPending ? actions.role.variables ?? user.memberRole : user.memberRole}
+              disabled={actions.role.isPending}
+              onChange={(event) => void changeRole(event.target.value as AdminInviteRole)}
+              className="h-10 w-full rounded-input border border-line bg-bg-2 px-3 text-sm text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice disabled:opacity-50"
+            >
+              {ROLE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}: {option.detail}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </section>
+      <section className="panel-quiet p-5">
+        <p className="label-mono">Original invite</p>
         <p className="mt-2 text-sm text-text-hi">
           {user.invite
             ? `${user.invite.code} · ${date(user.invite.redeemedAt)}`
             : "Legacy or no recorded invite"}
         </p>
-        {user.invite ? <p className="mt-1 text-xs text-ice">{role(user.invite.memberRole)}</p> : null}
+        {user.invite ? <p className="mt-1 text-xs text-ice">Invited as {role(user.invite.memberRole)}</p> : null}
       </section>
       {user.onboarding ? (
         <section className="panel-quiet p-5">

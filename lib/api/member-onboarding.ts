@@ -11,7 +11,7 @@ export type StarterChecklistId = (typeof STARTER_CHECKLIST_IDS)[number];
 
 export type MemberOnboardingState = {
   eligible: boolean;
-  memberRole: "beta_artist" | "team_member" | "administrator";
+  memberRole: "artist" | "team_member" | "administrator";
   startedAt: string;
   mainTourCompletedAt: string | null;
   checklistOpenedAt: string | null;

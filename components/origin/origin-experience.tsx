@@ -21,8 +21,10 @@ import {
 import { OriginStoryScroll } from "@/components/origin/origin-story-scroll";
 import { MorphingText } from "@/components/ui/morphing-text";
 import {
+  cancelFirstOpenPending,
   captureOriginFrame,
   markFirstOpenPending,
+  prepareFirstOpenPending,
 } from "@/components/origin/first-open-reveal";
 import { PHASE_GATES, useOriginMedia } from "@/hooks/use-origin-media";
 import { useOriginState } from "@/hooks/use-origin-state";
@@ -413,8 +415,14 @@ export function OriginExperience({
     // Capture the exact scrub frame already on screen before saving changes any
     // React state. It stays hidden until the app route replaces ORIGIN.
     const heldFrame = captureOriginFrame(activeVideoRef.current);
+    // Arm synchronously because completing Origin updates shared artist state.
+    // Any route guard that reacts first will still find the handoff claim.
+    prepareFirstOpenPending();
     const ok = await complete();
-    if (!ok) return;
+    if (!ok) {
+      cancelFirstOpenPending();
+      return;
+    }
     fadeSoundtrack();
 
     // A normal revisit is for editing the artist reflection and stays quiet.

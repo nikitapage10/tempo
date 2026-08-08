@@ -18,7 +18,7 @@ function onboardingStatus(row: AdminMember) {
   return "Starting";
 }
 const columns: AdminColumn<AdminMember>[] = [
-  { key: "member", label: "Member", className: "md:col-span-3", render: (row) => <div><Link href={`/admin/users/${row.id}`} className="font-medium text-text-hi hover:text-ice">{row.publicProfile?.display_name ?? row.email}</Link><p className="truncate text-xs text-text-lo">{row.email}</p></div> },
+  { key: "member", label: "Member", className: "md:col-span-3", render: (row) => <div><Link href={`/admin/users/${row.id}`} className="font-medium text-text-hi hover:text-ice">{row.publicProfile?.display_name ?? row.email}</Link><p className="truncate text-xs text-text-lo">{row.email}</p><p className="mt-0.5 text-[10px] text-ice">{row.memberRole === "administrator" ? "Admin" : row.memberRole === "team_member" ? "Team member" : "Artist"}</p></div> },
   { key: "status", label: "Status", className: "md:col-span-1", render: (row) => <StatusChip status={row.status} /> },
   { key: "onboarding", label: "Onboarding", className: "md:col-span-2", render: (row) => <div><StatusChip status={onboardingStatus(row)} />{row.onboarding?.welcomeMessageSentAt ? <p className="mt-1 text-[10px] text-ok">Welcome connected</p> : null}</div> },
   { key: "joined", label: "Joined", className: "md:col-span-2 tabular-nums text-text-lo", render: (row) => date(row.createdAt) },

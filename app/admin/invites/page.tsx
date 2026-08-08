@@ -13,9 +13,9 @@ import { useToast } from "@/components/ui/toast";
 import type { AdminInvite, AdminInviteRole } from "@/lib/api/admin";
 
 const ROLE_OPTIONS: { value: AdminInviteRole; label: string; detail: string }[] = [
-  { value: "beta_artist", label: "Beta artist", detail: "Standard member access and artist-first onboarding" },
+  { value: "artist", label: "Artist", detail: "Standard member access and artist-first onboarding" },
   { value: "team_member", label: "Team member", detail: "Team relationship recorded; standard product access" },
-  { value: "administrator", label: "Team administrator", detail: "Artist onboarding plus access to private operations" },
+  { value: "administrator", label: "Admin", detail: "Artist onboarding plus access to private operations" },
 ];
 
 function date(value: string | null) {
@@ -28,14 +28,14 @@ export default function AdminInvitesPage() {
   const [open, setOpen] = React.useState(false);
   const [email, setEmail] = React.useState("");
   const [note, setNote] = React.useState("");
-  const [memberRole, setMemberRole] = React.useState<AdminInviteRole>("beta_artist");
+  const [memberRole, setMemberRole] = React.useState<AdminInviteRole>("artist");
   const [welcomeNote, setWelcomeNote] = React.useState("");
   const [expiresAt, setExpiresAt] = React.useState("");
 
   async function create() {
     try {
       const result = await invites.create.mutateAsync({ email, note, memberRole, welcomeNote, expiresAt: expiresAt || undefined });
-      setOpen(false); setEmail(""); setNote(""); setMemberRole("beta_artist"); setWelcomeNote(""); setExpiresAt("");
+      setOpen(false); setEmail(""); setNote(""); setMemberRole("artist"); setWelcomeNote(""); setExpiresAt("");
       if (result.delivery === "sent") toast("Invitation email sent.", "ok");
       else if (result.delivery === "failed") toast(result.deliveryError ?? "Invite created, but email delivery failed.");
       else {
@@ -63,7 +63,7 @@ export default function AdminInvitesPage() {
 
   const columns: AdminColumn<AdminInvite>[] = [
     { key: "code", label: "Code", className: "md:col-span-2 font-medium text-text-hi", render: (row) => row.code },
-    { key: "recipient", label: "Recipient", className: "md:col-span-3 text-text-lo", render: (row) => <div><p>{row.email ?? row.note ?? "Open invite"}</p><p className="mt-0.5 text-[11px] text-ice">{ROLE_OPTIONS.find((option) => option.value === row.member_role)?.label ?? "Beta artist"}</p></div> },
+    { key: "recipient", label: "Recipient", className: "md:col-span-3 text-text-lo", render: (row) => <div><p>{row.email ?? row.note ?? "Open invite"}</p><p className="mt-0.5 text-[11px] text-ice">{ROLE_OPTIONS.find((option) => option.value === row.member_role)?.label ?? "Artist"}</p></div> },
     { key: "delivery", label: "Delivery", className: "md:col-span-2", render: (row) => <div><p className={row.last_send_error ? "text-warn" : row.last_sent_at ? "text-ok" : "text-text-lo"}>{row.last_send_error ? "Needs retry" : row.last_sent_at ? "Sent" : "Not sent"}</p>{row.last_send_error ? <p className="mt-1 line-clamp-3 text-[11px] leading-relaxed text-warn/80" title={row.last_send_error}>{row.last_send_error}</p> : null}{row.last_sent_at ? <p className="text-[11px] tabular-nums text-text-lo">{date(row.last_sent_at)} · {row.send_count}×</p> : null}</div> },
     { key: "uses", label: "Uses", className: "md:col-span-1 tabular-nums text-text-lo", render: (row) => `${row.used_count} / ${row.max_uses}` },
     { key: "expiry", label: "Expires", className: "md:col-span-2 tabular-nums text-text-lo", render: (row) => row.revoked_at ? "Revoked" : date(row.expires_at) },
@@ -79,7 +79,7 @@ export default function AdminInvitesPage() {
     <Dialog open={open} onOpenChange={setOpen}><DialogContent title="Create invitation" description="Add an email to send TEMPO’s invitation automatically. Leave it blank to create a copyable link." onClose={() => setOpen(false)}><div className="space-y-3">
       <Input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Recipient email" />
       <select value={memberRole} onChange={(event) => setMemberRole(event.target.value as AdminInviteRole)} className="h-10 w-full rounded-input border border-line bg-bg-2 px-3 text-sm text-text-hi">
-        {ROLE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label} — {option.detail}</option>)}
+        {ROLE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}: {option.detail}</option>)}
       </select>
       <Textarea value={welcomeNote} onChange={(event) => setWelcomeNote(event.target.value)} rows={4} placeholder="Personal welcome note from Nikita (optional)" />
       <Input value={note} onChange={(event) => setNote(event.target.value)} placeholder="Private admin note (optional)" />
