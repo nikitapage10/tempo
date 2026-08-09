@@ -6,6 +6,16 @@ alter table scene_events add column if not exists scene_section_id uuid referenc
 alter table conversations add column if not exists scene_section_id uuid references scene_sections(id) on delete cascade;
 alter table messages add column if not exists reply_to_message_id uuid references messages(id) on delete set null;
 
+-- Migration 053's original room index predates section-level chat and treats
+-- every non-topic conversation as the one Scene room. Narrow it so a Scene
+-- may retain that legacy room while also having one conversation per section.
+drop index if exists uq_conversations_scene_room;
+create unique index uq_conversations_scene_room
+  on conversations (scene_id)
+  where scene_id is not null
+    and scene_topic_id is null
+    and scene_section_id is null;
+
 update posts p set scene_section_id = s.id
 from scene_sections s
 where p.scene_id = s.scene_id and s.type = 'discussion' and s.slug = 'general'
