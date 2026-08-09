@@ -71,7 +71,7 @@ export function MessageCenter() {
         {unread ? <span className="absolute right-0 top-0 flex size-4 items-center justify-center rounded-full bg-amber font-mono text-[9px] font-bold text-bg-0">{unread > 9 ? "9+" : unread}</span> : null}
       </button>
       {open ? (
-        <div className="absolute right-0 z-[70] mt-2 w-[min(26rem,calc(100vw-1.5rem))] overflow-hidden rounded-card border border-line bg-bg-1 shadow-e3">
+        <div className="fixed inset-x-3 top-16 z-[70] max-h-[75vh] overflow-hidden rounded-card border border-line bg-bg-1 shadow-e3 sm:absolute sm:inset-x-auto sm:top-auto sm:right-0 sm:mt-2 sm:w-[min(26rem,calc(100vw-1.5rem))] sm:max-h-none">
           <div className="flex items-center justify-between border-b border-line px-3 py-2.5">
             {selected || composing ? (
               <button type="button" onClick={() => { setSelected(null); setComposing(false); }} className="flex items-center gap-1.5 text-xs text-text-lo hover:text-ice"><ArrowLeft className="size-3.5"/>Inbox</button>

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import * as React from "react";
 import {
   CalendarDays,
   SunMedium,
@@ -15,6 +16,7 @@ import {
   Orbit,
   BarChart3,
   Users2,
+  MoreHorizontal,
 } from "lucide-react";
 import { AssistantRoot } from "@/components/assistant/assistant-root";
 import { ArtistFavicon } from "@/components/artist-favicon";
@@ -31,6 +33,7 @@ import { useActiveSpace } from "@/components/active-space-provider";
 import { APP_VERSION } from "@/lib/version";
 import { cn } from "@/lib/utils";
 import { SlitDivider } from "@/components/ui/slit";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { SupportReportDialog } from "@/components/support/support-report-dialog";
 import { useRealtimeInbox } from "@/hooks/use-realtime-inbox";
 import { GlobalPlayerBar } from "@/components/player/global-player-bar";
@@ -109,6 +112,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const tasksFocused = activeSpace?.focus === "tasks";
   const mainNav = tasksFocused ? TASKS_MAIN_NAV : MUSIC_MAIN_NAV;
   const mobileNav = tasksFocused ? TASKS_MOBILE_NAV : MUSIC_MOBILE_NAV;
+  const [moreOpen, setMoreOpen] = React.useState(false);
+  // Everything the rail can reach that the 4-slot mobile tab bar can't —
+  // otherwise Tracks, Projects, Artist, Social, Scenes, Stats, and Settings
+  // are unreachable on a phone.
+  const moreNav = [
+    ...mainNav.filter((item) => !mobileNav.some((m) => m.href === item.href)),
+    { href: "/settings", label: "Settings", icon: Settings },
+  ];
 
   if (FOCUS_ROUTE.test(pathname)) {
     // Focus sessions get a distraction-free, full-bleed shell — no rail, no tab bar (FEATURE-SPECS §10).
@@ -276,6 +287,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         })}
         <button
           type="button"
+          className={cn(
+            "relative flex flex-1 flex-col items-center justify-center gap-1 py-2.5 text-[11px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ice",
+            moreOpen || moreNav.some((item) => isActive(pathname, item.href))
+              ? "text-ice"
+              : "text-text-lo"
+          )}
+          aria-haspopup="true"
+          aria-expanded={moreOpen}
+          aria-label="More"
+          onClick={() => setMoreOpen(true)}
+        >
+          <MoreHorizontal className="size-5" strokeWidth={1.75} />
+          More
+        </button>
+        <button
+          type="button"
           className="flex flex-1 flex-col items-center justify-center gap-1 py-2.5 text-[11px] text-text-lo focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ice"
           aria-label={tasksFocused ? "Add task" : "Add track"}
           onClick={() =>
@@ -288,6 +315,29 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           Add
         </button>
       </nav>
+
+      <Dialog open={moreOpen} onOpenChange={setMoreOpen}>
+        <DialogContent title="More" onClose={() => setMoreOpen(false)}>
+          <nav className="grid grid-cols-3 gap-2">
+            {moreNav.map(({ href, label, icon: Icon }) => (
+              <Link
+                key={href}
+                href={href}
+                onClick={() => setMoreOpen(false)}
+                className={cn(
+                  "flex flex-col items-center gap-2 rounded-input border px-2 py-3 text-center text-xs",
+                  isActive(pathname, href)
+                    ? "border-ice/40 bg-ice/10 text-ice"
+                    : "border-line bg-bg-2/40 text-text-lo hover:text-text-hi"
+                )}
+              >
+                <Icon className="size-5" strokeWidth={1.75} />
+                {label}
+              </Link>
+            ))}
+          </nav>
+        </DialogContent>
+      </Dialog>
 
       <AssistantRoot />
       <GuidedTour />

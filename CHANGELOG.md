@@ -2,6 +2,14 @@
 
 Plain-English history of what changed in TEMPO, newest first.
 
+## 2026-08-09 (2)
+
+- Fixed (v0.95.2): the Notifications and Messages popups no longer appear
+  partly off the left edge of the screen on a phone.
+- Added (v0.95.2): the bottom navigation on a phone now has a More button
+  that opens Tracks, Projects, Artist, Social, Scenes, Stats, and Settings —
+  previously those pages had no way to be reached from a phone at all.
+
 ## 2026-08-09
 
 - Fixed (v0.95.1): the Scene network (My Scenes, Discover, Scene Studio) now
