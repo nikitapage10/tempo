@@ -8,6 +8,11 @@ import {
   type PlayerTrack,
 } from "@/components/player/global-player-provider";
 import { SpectraCoverArt } from "@/components/spectra/spectra-cover-art";
+import {
+  resolveSpotifyTrackId,
+  SpotifyEmbedPlayer,
+} from "@/components/spotify/spotify-embed-player";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { InfiniteSlider } from "@/components/ui/infinite-slider-horizontal";
 import { useVersionsForTracks } from "@/hooks/use-versions";
 import type { Track } from "@/lib/types";
@@ -25,6 +30,7 @@ type TrackCoverSliderProps = {
 export function TrackCoverSlider({ tracks, className }: TrackCoverSliderProps) {
   const versionsQuery = useVersionsForTracks(tracks.map((track) => track.id));
   const { current, playing, play, toggle } = useGlobalPlayer();
+  const [spotifyTrack, setSpotifyTrack] = React.useState<Track | null>(null);
 
   const playableTracks = React.useMemo(() => {
     const map = new Map<string, PlayerTrack>();
@@ -55,7 +61,12 @@ export function TrackCoverSlider({ tracks, className }: TrackCoverSliderProps) {
 
   function handlePlay(track: Track) {
     const playerTrack = playableTracks.get(track.id);
-    if (!playerTrack) return;
+    if (!playerTrack) {
+      if (resolveSpotifyTrackId(track.spotify_track_id, track.spotify_url)) {
+        setSpotifyTrack(track);
+      }
+      return;
+    }
     if (current?.id === track.id) {
       toggle();
       return;
@@ -96,7 +107,13 @@ export function TrackCoverSlider({ tracks, className }: TrackCoverSliderProps) {
             <CoverTile
               key={`a-${track.id}-${index}`}
               track={track}
-              playable={playableTracks.has(track.id)}
+              source={
+                playableTracks.has(track.id)
+                  ? "bounce"
+                  : resolveSpotifyTrackId(track.spotify_track_id, track.spotify_url)
+                    ? "spotify"
+                    : null
+              }
               playing={current?.id === track.id && playing}
               onPlay={() => handlePlay(track)}
             />
@@ -113,28 +130,52 @@ export function TrackCoverSlider({ tracks, className }: TrackCoverSliderProps) {
             <CoverTile
               key={`b-${track.id}-${index}`}
               track={track}
-              playable={playableTracks.has(track.id)}
+              source={
+                playableTracks.has(track.id)
+                  ? "bounce"
+                  : resolveSpotifyTrackId(track.spotify_track_id, track.spotify_url)
+                    ? "spotify"
+                    : null
+              }
               playing={current?.id === track.id && playing}
               onPlay={() => handlePlay(track)}
             />
           ))}
         </InfiniteSlider>
       </div>
+      <Dialog open={spotifyTrack != null} onOpenChange={(open) => !open && setSpotifyTrack(null)}>
+        <DialogContent title="Listen on Spotify" className="max-w-xl">
+          {spotifyTrack ? (
+            <div>
+              <p className="label-mono mb-1">Listen on Spotify</p>
+              <h2 className="mb-4 font-display text-xl font-semibold text-text-hi">
+                {spotifyTrack.title}
+              </h2>
+              <SpotifyEmbedPlayer
+                trackTitle={spotifyTrack.title}
+                spotifyTrackId={spotifyTrack.spotify_track_id}
+                spotifyUrl={spotifyTrack.spotify_url}
+              />
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
 function CoverTile({
   track,
-  playable,
+  source,
   playing,
   onPlay,
 }: {
   track: Track;
-  playable: boolean;
+  source: "bounce" | "spotify" | null;
   playing: boolean;
   onPlay: () => void;
 }) {
+  const playable = source != null;
   return (
     <article className="group relative aspect-square w-[148px] shrink-0 overflow-hidden rounded-card border border-line/60 shadow-e1 opacity-[0.55] transition-[opacity,border-color,box-shadow,transform] duration-300 ease-out hover:z-10 hover:scale-[1.02] hover:border-ice/40 hover:opacity-100 hover:shadow-e2 focus-within:z-10 focus-within:border-ice/40 focus-within:opacity-100 focus-within:shadow-e2 sm:w-[168px]">
       <SpectraCoverArt
@@ -151,11 +192,18 @@ function CoverTile({
           playable
             ? playing
               ? `Pause ${track.title}`
-              : `Play ${track.title}`
+              : source === "spotify"
+                ? `Play ${track.title} on Spotify`
+                : `Play ${track.title}`
             : `${track.title} has no playable bounce`
         }
         className="absolute inset-x-0 bottom-14 top-0 z-10 flex items-center justify-center focus-visible:outline-none disabled:cursor-default"
       >
+        {source === "spotify" ? (
+          <span className="absolute right-2 top-2 rounded-full bg-[#1DB954] px-2 py-1 font-mono text-[9px] uppercase tracking-[0.08em] text-black shadow-e1">
+            Spotify
+          </span>
+        ) : null}
         <span
           className={cn(
             "flex size-11 items-center justify-center rounded-full bg-black/75 text-white shadow-e2 backdrop-blur-sm transition-[opacity,transform] duration-200",

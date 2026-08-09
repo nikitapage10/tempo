@@ -3,7 +3,11 @@
 import * as React from "react";
 import WaveSurfer from "wavesurfer.js";
 import { useActiveArtistPalette } from "@/components/active-artist-provider";
-import { ExternalLink, MessageSquarePlus, Pause, Play } from "lucide-react";
+import { MessageSquarePlus, Pause, Play } from "lucide-react";
+import {
+  resolveSpotifyTrackId,
+  SpotifyEmbedPlayer,
+} from "@/components/spotify/spotify-embed-player";
 import { formatDuration } from "@/lib/format";
 import { playbackCoordinator } from "@/lib/playback-coordinator";
 import { getSignedUrl } from "@/lib/storage";
@@ -74,9 +78,7 @@ export const VersionPlayer = React.forwardRef<VersionPlayerHandle, VersionPlayer
       null;
 
     const playbackId = `version-player:${trackId}`;
-    const spotifyId = spotifyTrackId?.match(/^[A-Za-z0-9]{10,40}$/)?.[0]
-      ?? spotifyUrl?.match(/open\.spotify\.com\/track\/([A-Za-z0-9]+)/i)?.[1]
-      ?? null;
+    const spotifyId = resolveSpotifyTrackId(spotifyTrackId, spotifyUrl);
 
     React.useImperativeHandle(
       ref,
@@ -206,41 +208,20 @@ export const VersionPlayer = React.forwardRef<VersionPlayerHandle, VersionPlayer
 
     if (!versions.length) {
       if (spotifyId) {
-        const canonicalUrl = spotifyUrl ?? `https://open.spotify.com/track/${spotifyId}`;
-        const embedUrl = `https://open.spotify.com/embed/track/${encodeURIComponent(spotifyId)}?utm_source=tempo`;
         return (
           <section className="panel p-5">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <h2 className="font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
-                  Player
-                </h2>
-                <p className="mt-1 text-xs text-text-lo">Playing the released track from Spotify.</p>
-              </div>
-              <a
-                href={canonicalUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-1.5 text-xs text-text-lo transition-colors duration-hover hover:text-ice"
-              >
-                Open in Spotify
-                <ExternalLink className="size-3.5" />
-              </a>
+            <div className="mb-3">
+              <h2 className="font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+                Player
+              </h2>
+              <p className="mt-1 text-xs text-text-lo">Playing the released track from Spotify.</p>
             </div>
-            <iframe
-              title={`Spotify player for ${trackTitle}`}
-              src={embedUrl}
-              width="100%"
-              height="152"
-              loading="lazy"
-              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-              allowFullScreen
-              className="block w-full rounded-card border-0 bg-bg-2"
+            <SpotifyEmbedPlayer
+              trackTitle={trackTitle}
+              spotifyTrackId={spotifyId}
+              spotifyUrl={spotifyUrl}
+              explainBounce
             />
-            <p className="mt-3 text-xs leading-relaxed text-text-lo">
-              Spotify handles this playback. Upload a bounce whenever you want TEMPO’s waveform,
-              timestamped comments, and version tools.
-            </p>
           </section>
         );
       }
