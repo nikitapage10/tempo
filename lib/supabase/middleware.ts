@@ -96,6 +96,15 @@ export async function updateSession(request: NextRequest) {
     path === "/api/p" ||
     path.startsWith("/api/p/");
 
+  // Published Scene pages and Scene invite previews must be reachable before
+  // sign-in. Their server/data layers still enforce visibility and token
+  // validity; this exemption only lets visitors reach those guarded surfaces.
+  const isPublicSceneRoute =
+    path === "/s" ||
+    path.startsWith("/s/") ||
+    path === "/scene/invite" ||
+    path.startsWith("/scene/invite/");
+
   // Local test sign-in. Reachable without a session for the obvious reason —
   // creating one is its entire job. Gated here on NODE_ENV so the path is not
   // even exempt in a deployed build, and gated again on NODE_ENV, a loopback
@@ -112,6 +121,7 @@ export async function updateSession(request: NextRequest) {
     !isInviteRoute &&
     !isInviteCodeCheckRoute &&
     !isPublicProfileRoute &&
+    !isPublicSceneRoute &&
     !isDevSessionRoute
   ) {
     const redirectUrl = request.nextUrl.clone();
