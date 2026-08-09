@@ -41,6 +41,9 @@ export default function SocialView() {
   const myProfileId = profile?.id ?? null;
   const onNetwork =
     profile?.visibility === "members" || profile?.visibility === "public";
+  // A private artist can still see the small starter feed provisioned for
+  // their own account. Their profile remains private until they opt in.
+  const socialDataProfileId = myProfileId;
   const { ice: accentIce, amber: accentAmber } = resolveArtistAccent(
     activeArtist?.palette_id,
     { ice: activeArtist?.ice_color, amber: activeArtist?.amber_color }
@@ -57,11 +60,14 @@ export default function SocialView() {
   );
 
   const { data: allPeople = [] } = usePeople({});
-  const { data: following = [] } = useFollowing(onNetwork ? myProfileId : null);
+  const { data: following = [] } = useFollowing(socialDataProfileId);
   const { data: followers = [] } = useFollowers(onNetwork ? myProfileId : null);
   const { data: timeline = [], isLoading: feedLoading } = useHomeTimeline(
-    onNetwork ? myProfileId : null
+    socialDataProfileId
   );
+  const starterPreview =
+    !onNetwork && (following.length > 0 || timeline.length > 0);
+  const canBrowseSocial = onNetwork || starterPreview;
   const { like, unlike } = useFeedMutations(myProfileId);
 
   React.useEffect(() => {
@@ -278,6 +284,8 @@ export default function SocialView() {
         subtitle={
           onNetwork
             ? "Your network, follows, and what people you follow are up to."
+            : starterPreview
+              ? "A private preview of your starter community. Join the network whenever you want to be discoverable."
             : "Your private contact book — join the network anytime if you want to socialize."
         }
         actions={
@@ -302,7 +310,17 @@ export default function SocialView() {
         }
       />
 
-      {!onNetwork && !profileLoading ? (
+      {starterPreview ? (
+        <div className="panel-quiet flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm text-text-lo">
+          <span className="flex items-center gap-2">
+            <Users className="size-3.5 shrink-0 text-ice" />
+            Starter community preview. Your artist profile is still private.
+          </span>
+          <button type="button" onClick={() => void joinNetwork()} className="text-xs text-ice hover:underline">
+            Join the network
+          </button>
+        </div>
+      ) : !onNetwork && !profileLoading ? (
         <div className="panel-quiet flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm text-text-lo">
           <span className="flex items-center gap-2">
             <Lock className="size-3.5 shrink-0 text-text-lo" />
@@ -339,7 +357,7 @@ export default function SocialView() {
           </div>
 
           {/* Persistent regardless of which tab is active — not tab content. */}
-          {onNetwork ? (
+          {canBrowseSocial ? (
             <>
               {globePeople.length === 0 ? (
                 <p className="text-xs text-text-lo">
@@ -360,11 +378,11 @@ export default function SocialView() {
           ) : null}
 
           {tab === "top8" ? (
-            onNetwork ? (
+            canBrowseSocial ? (
               <Top8Rail
                 top8={top8}
                 candidates={top8Candidates}
-                editable
+                editable={onNetwork}
                 saving={save.isPending}
                 onChange={saveTop8}
               />
@@ -374,7 +392,7 @@ export default function SocialView() {
           ) : null}
 
           {tab === "following" ? (
-            onNetwork ? (
+            canBrowseSocial ? (
               <div className="grid gap-6 sm:grid-cols-2">
                 <section>
                   <p className="label-mono mb-2 flex items-center gap-1.5">
@@ -412,7 +430,7 @@ export default function SocialView() {
                     )}
                   </ul>
                 </section>
-                <section>
+                {onNetwork ? <section>
                   <p className="label-mono mb-2">Followers ({followers.length})</p>
                   <ul className="space-y-1.5">
                     {followers.length === 0 ? (
@@ -445,7 +463,7 @@ export default function SocialView() {
                       ))
                     )}
                   </ul>
-                </section>
+                </section> : null}
               </div>
             ) : (
               networkGate
@@ -563,10 +581,10 @@ export default function SocialView() {
             </div>
             <div className="flare-line mx-4 mt-3" aria-hidden />
 
-            {onNetwork ? (
+            {canBrowseSocial ? (
               <div className="relative min-h-0 flex-1">
                 <div className="max-h-[34rem] space-y-3 overflow-y-auto px-4 pb-16 pt-3 lg:max-h-none lg:h-full">
-                  <FeedComposer myProfileId={myProfileId} />
+                  {onNetwork ? <FeedComposer myProfileId={myProfileId} /> : null}
                   {feedLoading ? (
                     <div className="well h-24 animate-pulse rounded-card" />
                   ) : timeline.length === 0 ? (

@@ -227,6 +227,11 @@ export type SpotifyCatalogBootstrap =
       preview: SpotifyImportPreview;
     };
 
+export type SpotifyCatalogMatchResult = {
+  plan: WorkspaceImportPlan;
+  preview: SpotifyImportPreview;
+};
+
 export async function bootstrapImportSpotifyCatalog(
   importId: string,
   spaceId: string,
@@ -255,11 +260,13 @@ export async function searchImportSpotifyArtists(
 export async function matchImportSpotifyCatalog(
   importId: string,
   artistId: string,
-  tracks: { ref: string; title: string }[]
-): Promise<SpotifyImportPreview> {
-  return request<SpotifyImportPreview>(`/api/import/${importId}/spotify`, {
+  tracks: { ref: string; title: string }[],
+  spaceId: string,
+  tempoArtistId: string,
+): Promise<SpotifyCatalogMatchResult> {
+  return request<SpotifyCatalogMatchResult>(`/api/import/${importId}/spotify`, {
     method: "POST",
-    body: JSON.stringify({ action: "match", artistId, tracks }),
+    body: JSON.stringify({ action: "match", artistId, tracks, spaceId, tempoArtistId }),
   });
 }
 

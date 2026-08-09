@@ -64,12 +64,12 @@ function distinctReleasedTracks(catalog: SpotifyCatalogTrack[]): SpotifyCatalogT
 export function buildSpotifyCatalogImport(args: {
   artist: SpotifyArtistIdentity & { id: string };
   catalog: SpotifyCatalogTrack[];
-  sourceId: string;
+  sourceId: string | null;
   space: { id: string; name: string; stageNames: string[] };
   existingTracks: ExistingTrack[];
 }): { plan: WorkspaceImportPlan; preview: SpotifyImportPreview } {
   const { artist, sourceId, space } = args;
-  const sourceIds = [sourceId];
+  const sourceIds = sourceId ? [sourceId] : [];
   const reason = `From ${artist.name}'s confirmed Spotify catalog.`;
   const releasedStage =
     space.stageNames.find((name) => name.toLowerCase() === "released") ?? null;
@@ -78,7 +78,10 @@ export function buildSpotifyCatalogImport(args: {
   );
   const catalog = distinctReleasedTracks(args.catalog);
 
-  const tracks = catalog.map((track) => {
+  const newCatalog = catalog.filter(
+    (track) => !existingTitles.has(normalizeTitle(track.title))
+  );
+  const tracks = newCatalog.map((track) => {
     const ref = `spotify_${track.id}`;
     const otherArtists = track.artists
       .filter((credit) => credit.id !== artist.id)
@@ -107,7 +110,7 @@ export function buildSpotifyCatalogImport(args: {
       collaborators: otherArtists,
       confidence: "high" as const,
       sourceIds,
-      possibleDuplicateOf: existingTitles.get(normalizeTitle(track.title)) ?? null,
+      possibleDuplicateOf: null,
     };
   });
 
@@ -149,7 +152,7 @@ export function buildSpotifyCatalogImport(args: {
       tasks: [],
       questions: [],
       warnings: [],
-      overview: `Found ${tracks.length} released track${tracks.length === 1 ? "" : "s"} on ${artist.name}'s Spotify profile.`,
+      overview: `Found ${catalog.length} released track${catalog.length === 1 ? "" : "s"} on ${artist.name}'s Spotify profile. ${tracks.length} ${tracks.length === 1 ? "is" : "are"} new to this TEMPO catalog.`,
     },
     preview,
   };

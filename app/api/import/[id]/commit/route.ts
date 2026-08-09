@@ -10,13 +10,31 @@ import {
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { toCommitPayload } from "@/lib/ai/commit-payload";
 import { validatePlan } from "@/lib/ai/synthesize-plan";
-import { fetchSpotifyTracks } from "@/lib/platforms/spotify";
+import {
+  fetchSpotifyTrackCatalog,
+  fetchSpotifyTracks,
+  type SpotifyCatalogTrack,
+} from "@/lib/platforms/spotify";
 import { buildStoragePath } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 const MAX_SPOTIFY_ARTWORK_BYTES = 15 * 1024 * 1024;
+
+function cachedSpotifyCatalog(
+  summary: Record<string, unknown> | null,
+  artistId: string,
+): SpotifyCatalogTrack[] | null {
+  const value = summary?.spotifyCatalog;
+  if (!value || typeof value !== "object") return null;
+  const snapshot = value as { artist?: { id?: unknown }; tracks?: unknown };
+  if (snapshot.artist?.id !== artistId || !Array.isArray(snapshot.tracks)) return null;
+  if (!snapshot.tracks.every(
+    (track) => track && typeof track === "object" && typeof (track as { id?: unknown }).id === "string"
+  )) return null;
+  return snapshot.tracks as SpotifyCatalogTrack[];
+}
 
 function isSpotifyArtworkHostname(hostname: string): boolean {
   const normalized = hostname.toLowerCase();
@@ -189,12 +207,22 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         .slice(0, 500)
     : [];
 
-  const spotifyByTrackRef = new Map<string, Awaited<ReturnType<typeof fetchSpotifyTracks>>[number]>();
+  const spotifyByTrackRef = new Map<string, SpotifyCatalogTrack>();
   if (/^[A-Za-z0-9]{22}$/.test(spotifyArtistId) && spotifyMatches.length > 0) {
-    const spotifyTracks = await fetchSpotifyTracks(
-      spotifyMatches.map((match: { spotifyTrackId: string }) => match.spotifyTrackId)
+    // Re-read the artist catalog in pages instead of making one Spotify call
+    // per released song. Only user-described tracks need the richer single-
+    // track response (primarily for ISRC); generated catalog additions already
+    // have everything needed for a released TEMPO entry.
+    const cachedTracks = cachedSpotifyCatalog(ctx.imp.summary, spotifyArtistId);
+    const catalogTracks = cachedTracks ?? (await fetchSpotifyTrackCatalog(spotifyArtistId)).tracks;
+    const detailedIds = spotifyMatches
+      .filter((match: { trackRef: string }) => !match.trackRef.startsWith("spotify_"))
+      .map((match: { spotifyTrackId: string }) => match.spotifyTrackId);
+    const detailedTracks = await fetchSpotifyTracks(detailedIds);
+    const spotifyById = new Map<string, SpotifyCatalogTrack>(
+      catalogTracks.map((track) => [track.id, track])
     );
-    const spotifyById = new Map(spotifyTracks.map((track) => [track.id, track]));
+    for (const track of detailedTracks) spotifyById.set(track.id, track);
     for (const match of spotifyMatches) {
       const spotifyTrack = spotifyById.get(match.spotifyTrackId);
       if (!spotifyTrack) continue;
@@ -224,6 +252,23 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         artistNames: spotifyTrack.artists.map((credit) => credit.name),
       };
     }
+
+    // If a described TEMPO track was matched to a released recording, prefer
+    // that richer user-authored row over the generated catalog addition for
+    // the same Spotify id. Unmatched catalog songs remain additive.
+    const describedSpotifyIds = new Set(
+      commitPayload.tracks
+        .filter((track) => !track.ref.startsWith("spotify_") && track.spotify)
+        .map((track) => track.spotify!.trackId)
+    );
+    commitPayload.tracks = commitPayload.tracks.filter(
+      (track) =>
+        !(
+          track.ref.startsWith("spotify_") &&
+          track.spotify &&
+          describedSpotifyIds.has(track.spotify.trackId)
+        )
+    );
   }
 
   const nothingSelected =

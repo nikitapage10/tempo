@@ -26,11 +26,13 @@ import {
   synthesize,
   type ImportSource,
   type SpotifyCatalogBootstrap,
+  type SpotifyCatalogMatchResult,
   type SpotifyImportPreview,
   type SpotifyImportSelection,
 } from "@/lib/api/onboarding-imports";
 import { DEFAULT_STAGE_NAMES } from "@/lib/constants";
 import type { WorkspaceImportPlan } from "@/lib/ai/import-plan-schema";
+import { matchSpotifyCatalog } from "@/lib/spotify-import-match";
 
 export type ImportStep =
   | "intake"
@@ -51,8 +53,12 @@ function normalizedImportTitle(value: string): string {
 
 function mergeSpotifyCatalogPlan(
   base: WorkspaceImportPlan,
-  spotify: Extract<SpotifyCatalogBootstrap, { found: true }>,
+  spotify: { plan: WorkspaceImportPlan; preview: SpotifyImportPreview },
 ): { plan: WorkspaceImportPlan; preview: SpotifyImportPreview } {
+  // Changing the selected Spotify artist replaces the previous catalog pass.
+  // Tracks described by the artist keep their original refs and are never
+  // removed here; only generated Spotify additions use this prefix.
+  const baseTracks = base.tracks.filter((track) => !track.ref.startsWith("spotify_"));
   const incomingSpace = spotify.plan.spaces[0];
   const reusedSpace = incomingSpace
     ? base.spaces.find(
@@ -65,7 +71,7 @@ function mergeSpotifyCatalogPlan(
     incomingSpace && !reusedSpace ? [...base.spaces, incomingSpace] : base.spaces;
 
   const trackByTitle = new Map(
-    base.tracks.map((track) => [normalizedImportTitle(track.title), track])
+    baseTracks.map((track) => [normalizedImportTitle(track.title), track])
   );
   const refMap = new Map<string, string>();
   const spotifyTracks = spotify.plan.tracks.flatMap((track) => {
@@ -79,7 +85,7 @@ function mergeSpotifyCatalogPlan(
     refMap.set(track.ref, next.ref);
     return [next];
   });
-  const tracks = [...base.tracks, ...spotifyTracks];
+  const tracks = [...baseTracks, ...spotifyTracks];
   const titleByRef = new Map(tracks.map((track) => [track.ref, track.title]));
   const seenPreviewRefs = new Set<string>();
   const matches = spotify.preview.matches.flatMap((match) => {
@@ -95,7 +101,7 @@ function mergeSpotifyCatalogPlan(
     ];
   });
 
-  const baseHasCatalog = base.tracks.length > 0 || base.projects.length > 0;
+  const baseHasCatalog = baseTracks.length > 0 || base.projects.length > 0;
   return {
     plan: {
       ...base,
@@ -108,6 +114,28 @@ function mergeSpotifyCatalogPlan(
         .join(" "),
     },
     preview: { ...spotify.preview, matches },
+  };
+}
+
+function matchPlanAgainstSpotifyCatalog(
+  base: WorkspaceImportPlan,
+  spotify: Extract<SpotifyCatalogBootstrap, { found: true }>,
+) {
+  const catalogById = new Map(
+    spotify.preview.matches.flatMap((match) =>
+      match.candidates.map((candidate) => [candidate.id, candidate] as const)
+    )
+  );
+  const sourceMatches = matchSpotifyCatalog(
+    base.tracks.map((track) => ({ ref: track.ref, title: track.title })),
+    Array.from(catalogById.values())
+  );
+  return {
+    ...spotify,
+    preview: {
+      ...spotify.preview,
+      matches: [...sourceMatches, ...spotify.preview.matches],
+    },
   };
 }
 
@@ -151,6 +179,10 @@ export function ImportExperience({
   const [answering, setAnswering] = React.useState(false);
   const [confirmDiscard, setConfirmDiscard] = React.useState(false);
   const [stagesBySpaceId, setStagesBySpaceId] = React.useState<Record<string, string[]>>({});
+  const spotifyTargetSpace =
+    activeSpace?.focus === "music"
+      ? activeSpace
+      : spaces.find((space) => space.focus === "music") ?? null;
 
   React.useEffect(() => {
     onStepChange?.(step);
@@ -223,12 +255,42 @@ export function ImportExperience({
     });
   }
 
+  function applySpotifyCatalog(result: SpotifyCatalogMatchResult) {
+    if (!plan) return;
+    const merged = mergeSpotifyCatalogPlan(plan, result);
+    setPlan(merged.plan);
+    setSpotifyPreview(merged.preview);
+    setSpotifySelection(null);
+    setSelection((current) => {
+      const validTrackRefs = new Set(merged.plan.tracks.map((track) => track.ref));
+      const trackRefs = new Set(
+        Array.from(current.trackRefs).filter((ref) => validTrackRefs.has(ref))
+      );
+      for (const track of merged.plan.tracks) {
+        if (track.ref.startsWith("spotify_")) trackRefs.add(track.ref);
+      }
+      return { ...current, trackRefs };
+    });
+  }
+
+  function clearSpotifyCatalog() {
+    setSpotifyPreview(null);
+    setSpotifySelection(null);
+    setPlan((current) =>
+      current
+        ? { ...current, tracks: current.tracks.filter((track) => !track.ref.startsWith("spotify_")) }
+        : current
+    );
+    setSelection((current) => ({
+      ...current,
+      trackRefs: new Set(
+        Array.from(current.trackRefs).filter((ref) => !ref.startsWith("spotify_"))
+      ),
+    }));
+  }
+
   async function handleProcess() {
     if (!importId) return;
-    const spotifyTargetSpace =
-      activeSpace?.focus === "music"
-        ? activeSpace
-        : spaces.find((space) => space.focus === "music") ?? null;
     setBusy(true);
     setStep("processing");
     setPhase("extracting");
@@ -266,7 +328,10 @@ export function ImportExperience({
         } satisfies WorkspaceImportPlan);
 
       if (spotifyBootstrap.found) {
-        const merged = mergeSpotifyCatalogPlan(nextPlan, spotifyBootstrap);
+        const merged = mergeSpotifyCatalogPlan(
+          nextPlan,
+          matchPlanAgainstSpotifyCatalog(nextPlan, spotifyBootstrap)
+        );
         nextPlan = merged.plan;
         setSpotifyPreview(merged.preview);
       } else {
@@ -465,13 +530,19 @@ export function ImportExperience({
           answering={answering}
           onContinue={() => setStep("spotify")}
         />
-      ) : step === "spotify" && plan && activeArtist ? (
+      ) : step === "spotify" && plan && activeArtist && spotifyTargetSpace ? (
         <SpotifyCatalogStep
           importId={importId}
           artistName={activeArtist.name}
           linkedSpotifyArtistId={activeArtist.spotify_artist_id}
+          spaceId={spotifyTargetSpace.id}
+          tempoArtistId={activeArtist.id}
           tracks={plan.tracks
-            .filter((track) => selection.trackRefs.has(track.ref))
+            .filter(
+              (track) =>
+                selection.trackRefs.has(track.ref) &&
+                !track.ref.startsWith("spotify_")
+            )
             .map((track) => ({ ref: track.ref, title: track.title }))}
           preview={
             spotifyPreview
@@ -483,10 +554,14 @@ export function ImportExperience({
                 }
               : null
           }
-          onPreviewChange={setSpotifyPreview}
+          onPreviewChange={(next) => {
+            if (next) setSpotifyPreview(next);
+            else clearSpotifyCatalog();
+          }}
+          onCatalogChange={applySpotifyCatalog}
           onBack={() => setStep("review")}
           onSkip={() => {
-            setSpotifySelection(null);
+            clearSpotifyCatalog();
             setStep("confirm");
           }}
           onContinue={(next) => {

@@ -9,6 +9,7 @@ import {
   matchImportSpotifyCatalog,
   searchImportSpotifyArtists,
   type SpotifyArtistCandidate,
+  type SpotifyCatalogMatchResult,
   type SpotifyImportPreview,
   type SpotifyImportSelection,
 } from "@/lib/api/onboarding-imports";
@@ -18,9 +19,12 @@ type Props = {
   importId: string;
   artistName: string;
   linkedSpotifyArtistId: string | null;
+  spaceId: string;
+  tempoArtistId: string;
   tracks: { ref: string; title: string }[];
   preview: SpotifyImportPreview | null;
   onPreviewChange: (preview: SpotifyImportPreview | null) => void;
+  onCatalogChange: (result: SpotifyCatalogMatchResult) => void;
   onBack: () => void;
   onSkip: () => void;
   onContinue: (selection: SpotifyImportSelection) => void;
@@ -36,9 +40,12 @@ export function SpotifyCatalogStep({
   importId,
   artistName,
   linkedSpotifyArtistId,
+  spaceId,
+  tempoArtistId,
   tracks,
   preview,
   onPreviewChange,
+  onCatalogChange,
   onBack,
   onSkip,
   onContinue,
@@ -56,8 +63,14 @@ export function SpotifyCatalogStep({
       setMatching(true);
       setError(null);
       try {
-        const next = await matchImportSpotifyCatalog(importId, candidate.id, tracks);
-        onPreviewChange(next);
+        const next = await matchImportSpotifyCatalog(
+          importId,
+          candidate.id,
+          tracks,
+          spaceId,
+          tempoArtistId,
+        );
+        onCatalogChange(next);
         setResults([]);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Couldn't read that catalog.");
@@ -65,15 +78,14 @@ export function SpotifyCatalogStep({
         setMatching(false);
       }
     },
-    [importId, onPreviewChange, tracks]
+    [importId, onCatalogChange, spaceId, tempoArtistId, tracks]
   );
 
   React.useEffect(() => {
     if (
       attemptedLinked.current ||
       preview ||
-      !linkedSpotifyArtistId ||
-      tracks.length === 0
+      !linkedSpotifyArtistId
     ) {
       return;
     }
@@ -109,6 +121,14 @@ export function SpotifyCatalogStep({
 
   const selectedCount =
     preview?.matches.filter((match) => match.selectedTrackId).length ?? 0;
+  const sourceTrackRefs = React.useMemo(
+    () => new Set(tracks.map((track) => track.ref)),
+    [tracks]
+  );
+  const matchedSourceCount =
+    preview?.matches.filter(
+      (match) => sourceTrackRefs.has(match.trackRef) && match.selectedTrackId
+    ).length ?? 0;
   const reviewCount =
     preview?.matches.filter((match) => {
       const candidate = match.candidates.find((c) => c.id === match.selectedTrackId);
@@ -125,12 +145,12 @@ export function SpotifyCatalogStep({
             </div>
             <div>
               <h2 className="font-display text-lg font-semibold text-text-hi">
-                Match your released catalog
+                Match tracks and bring in your released catalog
               </h2>
               <p className="mt-1 max-w-2xl text-sm leading-relaxed text-text-lo">
-                Confirm your Spotify artist once. TEMPO will compare every selected
-                track, bring in release metadata, and copy the cover files into your
-                private TEMPO storage.
+                Confirm your Spotify artist once. TEMPO will match the tracks you
+                already described, then add every other released song it finds.
+                Unreleased work stays in place without being forced into a match.
               </p>
             </div>
           </div>
@@ -153,8 +173,8 @@ export function SpotifyCatalogStep({
 
             {matching ? (
               <div className="mt-5 rounded-card border border-ice/25 bg-ice/5 p-4 text-sm text-text-hi">
-                Reading releases and matching {tracks.length} track
-                {tracks.length === 1 ? "" : "s"}…
+                Reading the full released catalog
+                {tracks.length ? ` and matching ${tracks.length} track${tracks.length === 1 ? "" : "s"}` : ""}…
               </div>
             ) : null}
 
@@ -223,7 +243,10 @@ export function SpotifyCatalogStep({
                 </span>
               ) : null}
               <span className="rounded-pill bg-bg-3 px-2.5 py-1 text-text-lo">
-                {tracks.length - selectedCount} unmatched
+                {tracks.length - matchedSourceCount} unmatched
+              </span>
+              <span className="rounded-pill bg-[#1DB954]/10 px-2.5 py-1 text-[#1DB954]">
+                Full released catalog included
               </span>
             </div>
           </div>
@@ -351,7 +374,7 @@ export function SpotifyCatalogStep({
               }
             >
               <Check className="size-4" />
-              Use {selectedCount} match{selectedCount === 1 ? "" : "es"}
+              Import catalog and use {selectedCount} match{selectedCount === 1 ? "" : "es"}
             </Button>
           ) : null}
         </div>

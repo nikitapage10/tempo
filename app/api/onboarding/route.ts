@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { STARTER_CHECKLIST_IDS } from "@/lib/api/member-onboarding";
+import { provisionStarterCommunity } from "@/lib/onboarding-starter-community";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 
@@ -48,6 +49,11 @@ async function stateFor(userId: string) {
   // Best effort: this also creates the mutual follow and welcome thread once
   // both the member and inviter have an artist profile.
   await service.rpc("provision_member_onboarding", { p_user_id: userId });
+  // The starter community is deliberately best-effort. A profile may not exist
+  // on the earliest request, and the next onboarding read safely retries it.
+  await provisionStarterCommunity(service, userId).catch((error) => {
+    console.error("[onboarding] starter community provisioning failed", error);
+  });
   const { data, error } = await service
     .from("member_onboarding")
     .select("*")

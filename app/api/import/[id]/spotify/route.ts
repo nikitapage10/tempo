@@ -11,6 +11,7 @@ import {
 } from "@/lib/platforms/spotify";
 import { matchSpotifyCatalog } from "@/lib/spotify-import-match";
 import { buildSpotifyCatalogImport } from "@/lib/spotify-import-plan";
+import type { SpotifyCatalogTrack, SpotifyArtistIdentity } from "@/lib/platforms/spotify";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -20,6 +21,29 @@ function fail(message: string, status = 400) {
     { error: message },
     { status, headers: noStoreHeaders() }
   );
+}
+
+async function cacheSpotifyCatalog(
+  ctx: NonNullable<Awaited<ReturnType<typeof resolveImport>>>,
+  artist: SpotifyArtistIdentity & { id: string },
+  tracks: SpotifyCatalogTrack[],
+) {
+  const summary = ctx.imp.summary ?? {};
+  const { error } = await ctx.admin
+    .from("onboarding_imports")
+    .update({
+      summary: {
+        ...summary,
+        spotifyCatalog: {
+          artist,
+          tracks,
+          cachedAt: new Date().toISOString(),
+        },
+      },
+    })
+    .eq("id", ctx.imp.id)
+    .eq("user_id", ctx.userId);
+  if (error) throw error;
 }
 
 /** Spotify discovery for one in-progress import. No catalog state is written. */
@@ -78,6 +102,7 @@ export async function POST(
       ]);
       if (stagesResult.error) throw stagesResult.error;
       if (tracksResult.error) throw tracksResult.error;
+      await cacheSpotifyCatalog(ctx, catalog.artist, catalog.tracks);
 
       const built = buildSpotifyCatalogImport({
         artist: catalog.artist,
@@ -123,14 +148,50 @@ export async function POST(
               title: track.title.trim().slice(0, 300),
             }))
         : [];
-      if (tracks.length === 0) return fail("There aren't any tracks to match.");
+      const spaceId = String(body.spaceId ?? "");
+      const tempoArtistId = String(body.tempoArtistId ?? "");
+      const { data: space, error: spaceError } = await ctx.admin
+        .from("spaces")
+        .select("id, name, focus")
+        .eq("id", spaceId)
+        .eq("artist_id", tempoArtistId)
+        .eq("user_id", ctx.userId)
+        .maybeSingle();
+      if (spaceError) throw spaceError;
+      if (!space || space.focus !== "music") {
+        return fail("Choose a music space before importing Spotify.");
+      }
 
-      const catalog = await fetchSpotifyTrackCatalog(artistId);
+      const [catalog, stagesResult, tracksResult] = await Promise.all([
+        fetchSpotifyTrackCatalog(artistId),
+        ctx.admin.from("stages").select("name").eq("space_id", space.id).order("sort"),
+        ctx.admin.from("tracks").select("title").eq("user_id", ctx.userId).limit(1000),
+      ]);
+      if (stagesResult.error) throw stagesResult.error;
+      if (tracksResult.error) throw tracksResult.error;
+      await cacheSpotifyCatalog(ctx, catalog.artist, catalog.tracks);
+
+      const built = buildSpotifyCatalogImport({
+        artist: catalog.artist,
+        catalog: catalog.tracks,
+        sourceId: null,
+        space: {
+          id: space.id,
+          name: space.name,
+          stageNames: (stagesResult.data ?? []).map((stage) => stage.name),
+        },
+        existingTracks: tracksResult.data ?? [],
+      });
       return NextResponse.json(
         {
-          artist: catalog.artist,
-          catalogTrackCount: catalog.tracks.length,
-          matches: matchSpotifyCatalog(tracks, catalog.tracks),
+          plan: built.plan,
+          preview: {
+            ...built.preview,
+            matches: [
+              ...matchSpotifyCatalog(tracks, catalog.tracks),
+              ...built.preview.matches,
+            ],
+          },
         },
         { headers: noStoreHeaders() }
       );

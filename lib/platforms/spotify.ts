@@ -36,6 +36,10 @@ const inFlightRequests = new Map<string, Promise<unknown>>();
 const RESPONSE_CACHE_MS = 10 * 60 * 1000;
 const REQUEST_GAP_MS = 180;
 const MAX_RATE_LIMIT_RETRIES = 2;
+const MAX_CATALOG_RELEASES = Math.min(
+  500,
+  Math.max(10, Number(process.env.SPOTIFY_MAX_CATALOG_RELEASES) || 250)
+);
 let requestQueue: Promise<void> = Promise.resolve();
 let nextRequestAt = 0;
 
@@ -388,10 +392,11 @@ async function fetchAllArtistAlbums(artistId: string): Promise<SpotifySimpleAlbu
   const market = (process.env.SPOTIFY_MARKET || "US").toUpperCase();
   const albums: SpotifySimpleAlbum[] = [];
   // Since February 2026 this endpoint accepts at most ten releases per page.
-  // Bound the first pass to 80 primary releases. The previous 200-release crawl
-  // plus every appearance could fan out into hundreds of calls before the user
-  // had even confirmed the artist.
-  for (let offset = 0; offset < 80; offset += 10) {
+  // Read the artist's primary discography, rather than appearances on other
+  // people's releases. The configurable ceiling is only a server-safety guard;
+  // the default covers 250 albums/singles and therefore the full portfolio for
+  // nearly every independent artist using TEMPO.
+  for (let offset = 0; offset < MAX_CATALOG_RELEASES; offset += 10) {
     const page = await spotifyGet<AlbumsPage>(
       `/artists/${artistId}/albums?include_groups=album,single,compilation&market=${encodeURIComponent(market)}&limit=10&offset=${offset}`
     );
