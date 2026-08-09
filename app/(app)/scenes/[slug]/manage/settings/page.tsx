@@ -12,7 +12,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useToast } from "@/components/ui/toast";
 import { ARTIST_PALETTES } from "@/lib/artist-theme";
-import type { SceneJoinPolicy, SceneVisibility } from "@/lib/types";
+import { SCENE_KIND_OPTIONS } from "@/lib/scene-options";
+import type { SceneJoinPolicy, SceneKind, SceneVisibility } from "@/lib/types";
 import { cn, errorMessage } from "@/lib/utils";
 
 const DOORS: { value: SceneJoinPolicy; label: string; hint: string }[] = [
@@ -29,6 +30,7 @@ export default function SceneSettingsPage() {
   const { update, archive, uploadBanner, uploadEmblem } = useSceneMutations();
 
   const [name, setName] = React.useState("");
+  const [kind, setKind] = React.useState<SceneKind>("other");
   const [tagline, setTagline] = React.useState("");
   const [about, setAbout] = React.useState("");
   const [joinPolicy, setJoinPolicy] = React.useState<SceneJoinPolicy>("request");
@@ -42,6 +44,7 @@ export default function SceneSettingsPage() {
   React.useEffect(() => {
     if (!scene) return;
     setName(scene.name);
+    setKind(scene.kind);
     setTagline(scene.tagline ?? "");
     setAbout(scene.about ?? "");
     setJoinPolicy(scene.join_policy);
@@ -57,6 +60,7 @@ export default function SceneSettingsPage() {
 
   const dirty =
     name.trim() !== scene.name ||
+    kind !== scene.kind ||
     tagline !== (scene.tagline ?? "") ||
     about !== (scene.about ?? "") ||
     joinPolicy !== scene.join_policy ||
@@ -71,6 +75,7 @@ export default function SceneSettingsPage() {
         scene,
         input: {
           name,
+          kind,
           tagline: tagline || null,
           about: about || null,
           joinPolicy,
@@ -208,6 +213,27 @@ export default function SceneSettingsPage() {
             className="mt-1.5"
             required
           />
+        </div>
+
+        <div>
+          <label htmlFor="settings-kind" className="label-mono">
+            Scene type
+          </label>
+          <select
+            id="settings-kind"
+            value={kind}
+            onChange={(e) => setKind(e.target.value as SceneKind)}
+            className="mt-1.5 h-9 w-full rounded-input border border-line bg-bg-2 px-3 text-sm text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+          >
+            {SCENE_KIND_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1.5 text-xs text-text-lo">
+            This label describes the community and can be changed at any time.
+          </p>
         </div>
 
         <div>

@@ -13,18 +13,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { PageHeader } from "@/components/ui/page-header";
 import { useToast } from "@/components/ui/toast";
+import { SCENE_KIND_OPTIONS } from "@/lib/scene-options";
 import type { SceneJoinPolicy, SceneKind, SceneVisibility } from "@/lib/types";
 import { cn, errorMessage } from "@/lib/utils";
-
-const KINDS: { value: SceneKind; label: string }[] = [
-  { value: "other", label: "Scene" },
-  { value: "label", label: "Label" },
-  { value: "school", label: "School" },
-  { value: "crew", label: "Crew" },
-  { value: "collective", label: "Collective" },
-  { value: "genre", label: "Genre" },
-  { value: "local", label: "Local" },
-];
 
 const DOORS: { value: SceneJoinPolicy; label: string; hint: string }[] = [
   { value: "open", label: "Open", hint: "Anyone can join" },
@@ -191,7 +182,7 @@ export default function NewScenePage() {
             onChange={(e) => setKind(e.target.value as SceneKind)}
             className="mt-1.5 h-9 w-full rounded-input border border-line bg-bg-2 px-3 text-sm text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
           >
-            {KINDS.map((k) => (
+            {SCENE_KIND_OPTIONS.map((k) => (
               <option key={k.value} value={k.value}>
                 {k.label}
               </option>

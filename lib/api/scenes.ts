@@ -257,6 +257,7 @@ export async function seedOwlsNestDemo(): Promise<Scene> {
 
 export type UpdateSceneInput = Partial<{
   name: string;
+  kind: SceneKind;
   tagline: string | null;
   about: string | null;
   joinPolicy: SceneJoinPolicy;
@@ -278,6 +279,7 @@ export async function updateScene(scene: Scene, input: UpdateSceneInput): Promis
   const supabase = createClient();
   const patch: Record<string, unknown> = {};
   if (input.name !== undefined) patch.name = input.name.trim();
+  if (input.kind !== undefined) patch.kind = input.kind;
   if (input.tagline !== undefined) patch.tagline = input.tagline?.trim() || null;
   if (input.about !== undefined) patch.about = input.about?.trim() || null;
   if (input.joinPolicy !== undefined) patch.join_policy = input.joinPolicy;
