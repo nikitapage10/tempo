@@ -4,7 +4,7 @@ import type { Scene, SceneLibraryItem, ScenePage, SceneSection, SceneShowcaseIte
 
 export async function fetchPublicScene(slug: string): Promise<{ scene: Scene; sections: SceneSection[]; pages: ScenePage[]; library: SceneLibraryItem[]; showcase: SceneShowcaseItem[] } | null> {
   const supabase = createAdminClient();
-  const { data: scene } = await supabase.from("scenes").select("*").eq("slug", slug).or("published_at.not.is.null,visibility.eq.listed").is("archived_at", null).maybeSingle();
+  const { data: scene } = await supabase.from("scenes").select("*").eq("slug", slug).or("published_at.not.is.null,visibility.eq.public").is("archived_at", null).maybeSingle();
   if (!scene) return null;
   const { data: sectionRows } = await supabase.from("scene_sections").select("*").eq("scene_id", scene.id).eq("public_visible", true).is("archived_at", null).order("sort_order");
   const sections = sectionRows ?? [];

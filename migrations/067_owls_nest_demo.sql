@@ -24,7 +24,7 @@ begin
   if v_scene.id is null then
     select id into v_profile from artist_profiles where owner_user_id = auth.uid() order by created_at limit 1;
     insert into scenes (owner_user_id, owner_profile_id, name, slug, tagline, about, kind, join_policy, visibility, location, palette_id, public_summary, rules, timezone, published_at)
-    values (auth.uid(), v_profile, 'The Owl''s Nest', 'owls-nest-' || left(replace(auth.uid()::text,'-',''), 10), 'Music makers learning, collaborating, and opening doors together.', 'The Owl''s Nest is a working collective for artists, producers, vocalists, managers, and creative people who believe progress moves faster in community.', 'collective', 'open', 'listed', 'Denver · New York · Online', 'afterglow', 'A music collective for honest feedback, meaningful relationships, and practical momentum.', 'Bring curiosity. Give specific feedback. Credit collaborators. Make room for emerging voices.', 'America/Denver', now()) returning * into v_scene;
+    values (auth.uid(), v_profile, 'The Owl''s Nest', 'owls-nest-' || left(replace(auth.uid()::text,'-',''), 10), 'Music makers learning, collaborating, and opening doors together.', 'The Owl''s Nest is a working collective for artists, producers, vocalists, managers, and creative people who believe progress moves faster in community.', 'collective', 'open', 'public', 'Denver · New York · Online', 'afterglow', 'A music collective for honest feedback, meaningful relationships, and practical momentum.', 'Bring curiosity. Give specific feedback. Credit collaborators. Make room for emerging voices.', 'America/Denver', now()) returning * into v_scene;
   end if;
 
   -- Replace the generic defaults with the full demonstration information architecture.
