@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowLeft, ExternalLink, ImagePlus } from "lucide-react";
+import { ArrowLeft, ImagePlus } from "lucide-react";
 import { FlareLine } from "@/components/flare-line";
 import { SpectraCoverArt } from "@/components/spectra/spectra-cover-art";
 import { useToast } from "@/components/ui/toast";
@@ -186,16 +186,6 @@ export function TrackHeader({
               {track.spotify_album_name ? <span>{track.spotify_album_name}</span> : null}
               {track.spotify_release_date ? <span>{track.spotify_release_date}</span> : null}
               {track.spotify_isrc ? <span>ISRC {track.spotify_isrc}</span> : null}
-              {track.spotify_url ? (
-                <a
-                  href={track.spotify_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1 text-[#1DB954] hover:underline"
-                >
-                  Open Spotify <ExternalLink className="size-2.5" />
-                </a>
-              ) : null}
             </div>
           ) : null}
 

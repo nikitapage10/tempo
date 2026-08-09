@@ -1,6 +1,5 @@
 "use client";
 
-import { ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type SpotifyEmbedPlayerProps = {
@@ -30,24 +29,14 @@ export function SpotifyEmbedPlayer({
   const spotifyId = resolveSpotifyTrackId(spotifyTrackId, spotifyUrl);
   if (!spotifyId) return null;
 
-  const canonicalUrl = spotifyUrl ?? `https://open.spotify.com/track/${spotifyId}`;
   const embedUrl = `https://open.spotify.com/embed/track/${encodeURIComponent(spotifyId)}?utm_source=tempo`;
 
   return (
     <div className={cn("space-y-3", className)}>
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <span className="rounded-full bg-[#1DB954]/15 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.08em] text-[#53db83]">
           Spotify playback
         </span>
-        <a
-          href={canonicalUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="flex items-center gap-1.5 text-xs text-text-lo transition-colors duration-hover hover:text-ice"
-        >
-          Open in Spotify
-          <ExternalLink className="size-3.5" />
-        </a>
       </div>
       <iframe
         title={`Spotify player for ${trackTitle}`}
