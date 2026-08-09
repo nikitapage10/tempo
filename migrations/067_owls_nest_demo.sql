@@ -28,6 +28,7 @@ begin
   end if;
 
   -- Replace the generic defaults with the full demonstration information architecture.
+  delete from scene_badges where scene_id = v_scene.id;
   delete from scene_sections where scene_id = v_scene.id;
   insert into scene_sections (scene_id,type,name,slug,description,icon,sort_order,public_visible) values
     (v_scene.id,'page','Welcome','welcome','Start here: the culture, expectations, and quickest way into the room.','sparkles',10,true) returning id into v_welcome;

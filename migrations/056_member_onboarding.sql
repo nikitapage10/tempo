@@ -8,7 +8,10 @@ alter table invites
 
 alter table invites drop constraint if exists invites_member_role_check;
 alter table invites add constraint invites_member_role_check
-  check (member_role in ('beta_artist', 'team_member', 'administrator'));
+  -- `artist` is the post-059 name for `beta_artist`. Migration automation
+  -- replays the numbered set, so 056 must accept both during that transition;
+  -- 059 immediately replaces this with the final three-role constraint.
+  check (member_role in ('beta_artist', 'artist', 'team_member', 'administrator'));
 
 create table if not exists member_onboarding (
   user_id uuid primary key references auth.users(id) on delete cascade,
