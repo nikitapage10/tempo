@@ -2,6 +2,17 @@
 
 Plain-English history of what changed in TEMPO, newest first.
 
+## 2026-08-09
+
+- Fixed (v0.95.1): the Scene network (My Scenes, Discover, Scene Studio) now
+  has a bottom navigation bar on phones — previously there was no way to move
+  between those sections on a small screen.
+- Fixed (v0.95.1): Messages, and the private support inbox in the admin
+  portal, now show either your conversation list or the open conversation on
+  a phone, not both stacked on top of each other. Opening a message now gives
+  it the full screen with a Back button, instead of burying it below a long
+  list.
+
 ## 2026-08-08
 
 - Added (v0.95.0): TEMPO now asks every member to explicitly accept the
