@@ -136,6 +136,16 @@ alter table scene_groups enable row level security;
 alter table scene_group_members enable row level security;
 alter table scene_section_groups enable row level security;
 
+drop policy if exists select_scene_sections on scene_sections;
+drop policy if exists insert_scene_sections on scene_sections;
+drop policy if exists update_scene_sections on scene_sections;
+drop policy if exists select_scene_groups on scene_groups;
+drop policy if exists manage_scene_groups on scene_groups;
+drop policy if exists select_scene_group_members on scene_group_members;
+drop policy if exists manage_scene_group_members on scene_group_members;
+drop policy if exists select_scene_section_groups on scene_section_groups;
+drop policy if exists manage_scene_section_groups on scene_section_groups;
+
 create policy select_scene_sections on scene_sections for select to authenticated
   using (can_view_scene_section(id) or is_scene_manager(scene_id));
 create policy insert_scene_sections on scene_sections for insert to authenticated

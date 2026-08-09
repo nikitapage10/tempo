@@ -27,6 +27,8 @@ create table if not exists scene_invite_redemptions (
 );
 alter table scene_invite_links enable row level security;
 alter table scene_invite_redemptions enable row level security;
+drop policy if exists manage_scene_invite_links on scene_invite_links;
+drop policy if exists view_own_scene_redemptions on scene_invite_redemptions;
 create policy manage_scene_invite_links on scene_invite_links for all to authenticated
   using (is_scene_manager(scene_id)) with check (is_scene_manager(scene_id));
 create policy view_own_scene_redemptions on scene_invite_redemptions for select to authenticated

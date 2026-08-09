@@ -53,6 +53,12 @@ alter table scene_badges enable row level security;
 alter table scene_badge_awards enable row level security;
 alter table scene_point_events enable row level security;
 alter table scene_activity_daily enable row level security;
+drop policy if exists view_scene_badges on scene_badges;
+drop policy if exists manage_scene_badges on scene_badges;
+drop policy if exists view_scene_badge_awards on scene_badge_awards;
+drop policy if exists manage_scene_badge_awards on scene_badge_awards;
+drop policy if exists view_own_scene_points on scene_point_events;
+drop policy if exists view_scene_activity on scene_activity_daily;
 create policy view_scene_badges on scene_badges for select to authenticated using (is_scene_member(scene_id));
 create policy manage_scene_badges on scene_badges for all to authenticated
   using (is_scene_manager(scene_id)) with check (is_scene_manager(scene_id));
