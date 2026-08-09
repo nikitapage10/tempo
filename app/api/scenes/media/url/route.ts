@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
   if (!user) {
     if (kind === "post") return NextResponse.json({ error: "Sign in first." }, { status: 401, headers });
     const service = createAdminClient();
-    const { data: published } = await service.from("scenes").select("id").eq("id", sceneId).or("published_at.not.is.null,visibility.eq.listed").is("archived_at", null).maybeSingle();
+    const { data: published } = await service.from("scenes").select("id").eq("id", sceneId).or("published_at.not.is.null,visibility.eq.public").is("archived_at", null).maybeSingle();
     if (!published) return NextResponse.json({ error: "That media isn’t available." }, { status: 404, headers });
     const { data, error } = await service.storage.from("audio").createSignedUrl(path, 3600);
     if (error || !data?.signedUrl) return NextResponse.json({ error: "Couldn’t open this image." }, { status: 500, headers });

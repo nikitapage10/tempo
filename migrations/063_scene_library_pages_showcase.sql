@@ -90,6 +90,16 @@ alter table scene_library_items enable row level security;
 alter table scene_pages enable row level security;
 alter table scene_showcase_items enable row level security;
 
+drop policy if exists view_scene_library_collections on scene_library_collections;
+drop policy if exists manage_scene_library_collections on scene_library_collections;
+drop policy if exists view_scene_library_items on scene_library_items;
+drop policy if exists manage_scene_library_items on scene_library_items;
+drop policy if exists view_scene_pages on scene_pages;
+drop policy if exists manage_scene_pages on scene_pages;
+drop policy if exists view_scene_showcase on scene_showcase_items;
+drop policy if exists create_scene_showcase on scene_showcase_items;
+drop policy if exists update_scene_showcase on scene_showcase_items;
+
 create policy view_scene_library_collections on scene_library_collections for select to authenticated
   using (can_view_scene_section(section_id));
 create policy manage_scene_library_collections on scene_library_collections for all to authenticated

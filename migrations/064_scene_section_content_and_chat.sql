@@ -35,6 +35,9 @@ create table if not exists scene_message_reactions (
   constraint scene_message_reaction_emoji_len check (char_length(emoji) between 1 and 16)
 );
 alter table scene_message_reactions enable row level security;
+drop policy if exists view_scene_message_reactions on scene_message_reactions;
+drop policy if exists create_scene_message_reactions on scene_message_reactions;
+drop policy if exists delete_scene_message_reactions on scene_message_reactions;
 create policy view_scene_message_reactions on scene_message_reactions for select to authenticated
   using (is_scene_member(scene_id));
 create policy create_scene_message_reactions on scene_message_reactions for insert to authenticated

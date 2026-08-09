@@ -13,8 +13,14 @@ on:
     branches: [main]
     paths:
       - "migrations/*.sql"
+      - ".github/workflows/supabase-migrations.yml"
   # Lets you re-run the full set by hand from the Actions tab if needed.
   workflow_dispatch: {}
+
+# Never let two full migration replays compete for table locks.
+concurrency:
+  group: supabase-migrations-main
+  cancel-in-progress: false
 
 jobs:
   migrate:
@@ -45,5 +51,14 @@ jobs:
           fi
           for f in $(printf '%s\n' "${files[@]}" | sort); do
             echo "== Applying $f =="
-            psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"
+            attempt=1
+            until psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"; do
+              if [ "$attempt" -ge 3 ]; then
+                echo "::error::Failed to apply $f after $attempt attempts."
+                exit 1
+              fi
+              echo "::warning::Attempt $attempt failed for $f; retrying after a short delay."
+              attempt=$((attempt + 1))
+              sleep $((attempt * 5))
+            done
           done
