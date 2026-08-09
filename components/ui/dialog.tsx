@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -8,9 +9,21 @@ type DialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   children: React.ReactNode;
+  workspaceCentered?: boolean;
 };
 
-export function Dialog({ open, onOpenChange, children }: DialogProps) {
+export function Dialog({
+  open,
+  onOpenChange,
+  children,
+  workspaceCentered = false,
+}: DialogProps) {
+  const [portalReady, setPortalReady] = React.useState(false);
+
+  React.useEffect(() => {
+    setPortalReady(true);
+  }, []);
+
   React.useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -24,10 +37,15 @@ export function Dialog({ open, onOpenChange, children }: DialogProps) {
     };
   }, [open, onOpenChange]);
 
-  if (!open) return null;
+  if (!open || !portalReady) return null;
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center">
+  return createPortal(
+    <div
+      className={cn(
+        "fixed inset-0 z-[200] flex items-end justify-center sm:items-center",
+        workspaceCentered && "md:pl-[220px]"
+      )}
+    >
       <button
         type="button"
         className="absolute inset-0 bg-black/70"
@@ -37,7 +55,8 @@ export function Dialog({ open, onOpenChange, children }: DialogProps) {
       <div className="relative z-10 w-full max-w-lg px-4 pb-4 sm:pb-0">
         {children}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

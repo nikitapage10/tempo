@@ -143,7 +143,11 @@ export function TrackCoverSlider({ tracks, className }: TrackCoverSliderProps) {
           ))}
         </InfiniteSlider>
       </div>
-      <Dialog open={spotifyTrack != null} onOpenChange={(open) => !open && setSpotifyTrack(null)}>
+      <Dialog
+        open={spotifyTrack != null}
+        onOpenChange={(open) => !open && setSpotifyTrack(null)}
+        workspaceCentered
+      >
         <DialogContent title="Listen on Spotify" className="max-w-xl">
           {spotifyTrack ? (
             <div>
