@@ -74,8 +74,6 @@ export function TrackCoverSlider({ tracks, className }: TrackCoverSliderProps) {
     play(playerTrack, playableQueue);
   }
 
-  if (tracks.length === 0) return null;
-
   // Cap how many covers the marquee ever renders — large catalogs (hundreds
   // of imported tracks) otherwise blow up DOM size and the fixed-duration
   // CSS animation ends up looking like it's "sliding too fast". A fresh
@@ -87,6 +85,8 @@ export function TrackCoverSlider({ tracks, className }: TrackCoverSliderProps) {
     const shuffled = [...tracks].sort(() => Math.random() - 0.5);
     return shuffled.slice(0, SLIDER_CAP);
   }, [tracks]);
+
+  if (tracks.length === 0) return null;
 
   // Enough tiles that one marquee half outruns a wide desktop viewport.
   const MIN_TILES = 12;
