@@ -29,11 +29,11 @@ import { CityInput } from "@/components/artists/city-input";
 import { ArtistProfileStoryView } from "@/components/artist/profile-story";
 import { useActiveArtist } from "@/components/active-artist-provider";
 import { useArtistProfile } from "@/hooks/use-artist-profile";
+import { useProfileReleasedTracks } from "@/hooks/use-profile-released-tracks";
 import { checkHandleAvailable } from "@/lib/api/artist-profile";
 import type {
   ArtistProfileUpdate,
   ProfileDmPolicy,
-  ProfileFeaturedMusic,
   ProfileLink,
   ProfileSoundMarker,
   ProfileStorySection,
@@ -69,7 +69,6 @@ type Draft = {
   sound_markers: ProfileSoundMarker[];
   current_focus_title: string;
   current_focus_body: string;
-  featured_music: ProfileFeaturedMusic[];
   accepts_dms: ProfileDmPolicy;
 };
 
@@ -80,6 +79,9 @@ type Draft = {
 export default function ArtistProfilePage() {
   const { activeArtist, isLoading: artistLoading } = useActiveArtist();
   const { profile, isLoading, save, publish, unpublish } = useArtistProfile(
+    activeArtist?.id ?? null
+  );
+  const { tracks: releasedTracks } = useProfileReleasedTracks(
     activeArtist?.id ?? null
   );
   const { toast } = useToast();
@@ -106,7 +108,6 @@ export default function ArtistProfilePage() {
       sound_markers: profile?.sound_markers ?? [],
       current_focus_title: profile?.current_focus_title ?? "",
       current_focus_body: profile?.current_focus_body ?? "",
-      featured_music: profile?.featured_music ?? [],
       accepts_dms: profile?.accepts_dms ?? "connections",
     });
     setEditing(true);
@@ -126,10 +127,7 @@ export default function ArtistProfilePage() {
         return;
       }
     }
-    const externalUrls = [
-      ...draft.links.map((link) => link.url),
-      ...draft.featured_music.map((item) => item.url),
-    ].filter((url) => url.trim());
+    const externalUrls = draft.links.map((link) => link.url).filter((url) => url.trim());
     if (externalUrls.some((url) => !isSafeWebUrl(url))) {
       toast("Links must begin with http:// or https://.");
       return;
@@ -153,9 +151,6 @@ export default function ArtistProfilePage() {
       sound_markers: draft.sound_markers.filter((marker) => marker.label.trim()),
       current_focus_title: draft.current_focus_title.trim() || null,
       current_focus_body: draft.current_focus_body.trim() || null,
-      featured_music: draft.featured_music.filter(
-        (item) => item.title.trim() && item.url.trim()
-      ),
       accepts_dms: draft.accepts_dms,
     };
     try {
@@ -310,6 +305,7 @@ export default function ArtistProfilePage() {
       ) : (
         <ArtistProfileStoryView
           profile={profile}
+          releasedTracks={releasedTracks}
           emptyAction={
             <Button type="button" size="sm" variant="secondary" onClick={startEditing} className="mt-1 w-fit">
               <Pencil className="size-3.5" />
@@ -425,25 +421,6 @@ function ProfileEditor({
     patch({ story_sections: sections });
   }
 
-  function addFeaturedMusic() {
-    if (draft.featured_music.length >= 6) return;
-    patch({
-      featured_music: [...draft.featured_music, { title: "", url: "", note: "" }],
-    });
-  }
-
-  function updateFeaturedMusic(i: number, next: Partial<ProfileFeaturedMusic>) {
-    patch({
-      featured_music: draft.featured_music.map((item, index) =>
-        index === i ? { ...item, ...next } : item
-      ),
-    });
-  }
-
-  function removeFeaturedMusic(i: number) {
-    patch({ featured_music: draft.featured_music.filter((_, index) => index !== i) });
-  }
-
   return (
     <div className="panel flex flex-col gap-6 p-6">
       <div className="grid gap-4 sm:grid-cols-2">
@@ -546,50 +523,6 @@ function ProfileEditor({
               className="flex items-center gap-1 rounded-chip border border-dashed border-line px-2.5 py-1 text-xs text-ice transition-colors hover:border-ice/50 hover:bg-ice/10"
             >
               <Plus className="size-3" /> Add a marker
-            </button>
-          ) : null}
-        </div>
-      </Field>
-
-      <Field label="Featured music" hint="Up to 6 public links to the work people should hear first.">
-        <div className="space-y-2">
-          {draft.featured_music.map((item, i) => (
-            <div key={i} className="well grid gap-2 rounded-input p-3 sm:grid-cols-[1fr_1.35fr_auto]">
-              <Input
-                value={item.title}
-                onChange={(e) => updateFeaturedMusic(i, { title: e.target.value })}
-                placeholder="Track or release title"
-                maxLength={120}
-              />
-              <Input
-                value={item.url}
-                onChange={(e) => updateFeaturedMusic(i, { url: e.target.value })}
-                placeholder="https://…"
-              />
-              <button
-                type="button"
-                onClick={() => removeFeaturedMusic(i)}
-                className="self-center rounded-input p-2 text-text-lo transition-colors hover:text-warn"
-                aria-label="Remove featured music"
-              >
-                <Trash2 className="size-3.5" />
-              </button>
-              <Input
-                value={item.note}
-                onChange={(e) => updateFeaturedMusic(i, { note: e.target.value })}
-                placeholder="Optional note"
-                maxLength={160}
-                className="sm:col-span-2"
-              />
-            </div>
-          ))}
-          {draft.featured_music.length < 6 ? (
-            <button
-              type="button"
-              onClick={addFeaturedMusic}
-              className="flex items-center gap-1 rounded-chip border border-dashed border-line px-2.5 py-1 text-xs text-ice transition-colors hover:border-ice/50 hover:bg-ice/10"
-            >
-              <Plus className="size-3" /> Feature music
             </button>
           ) : null}
         </div>

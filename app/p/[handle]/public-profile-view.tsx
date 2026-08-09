@@ -107,7 +107,10 @@ function ProfileContent({ profile }: { profile: PublicArtistProfile }) {
         </div>
       </div>
 
-      <ArtistProfileStoryView profile={profile} />
+      <ArtistProfileStoryView
+        profile={profile}
+        releasedTracks={profile.released_tracks}
+      />
 
       <FlareLine className="max-w-[240px] opacity-50" />
       <p className="text-center text-[11px] text-text-lo">Made with TEMPO</p>

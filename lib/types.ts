@@ -79,6 +79,17 @@ export type ProfileFeaturedMusic = {
   note: string;
 };
 
+/** Sanitized released-catalog entry shown on artist profiles. */
+export type ProfileReleasedTrack = {
+  id: string;
+  title: string;
+  artist_alias: string | null;
+  spotify_track_id: string | null;
+  spotify_url: string | null;
+  spotify_album_name: string | null;
+  spotify_release_date: string | null;
+};
+
 export type ProfileStorySection = {
   title: string;
   body: string;

@@ -14,6 +14,7 @@ import { ArtistProfileStoryView } from "@/components/artist/profile-story";
 import { FollowButton } from "@/components/social/follow-button";
 import { useActiveArtist } from "@/components/active-artist-provider";
 import { useArtistProfile } from "@/hooks/use-artist-profile";
+import { useProfileReleasedTracks } from "@/hooks/use-profile-released-tracks";
 import { useMessageMutations } from "@/hooks/use-messages";
 import { canDmProfile } from "@/lib/api/messages";
 import { fetchArtistProfileByHandle } from "@/lib/api/artist-profile";
@@ -39,6 +40,9 @@ export default function ArtistProfileByHandlePage() {
     queryFn: () => fetchArtistProfileByHandle(handle),
     enabled: !!handle,
   });
+  const { tracks: releasedTracks } = useProfileReleasedTracks(
+    query.data?.artist_id ?? null
+  );
 
   if (query.isLoading) {
     return (
@@ -179,7 +183,7 @@ export default function ArtistProfileByHandlePage() {
         <FlareLine className="relative z-[1] mx-6 mb-6 max-w-[420px] opacity-60 sm:mx-8" />
       </LfWindow>
 
-      <ArtistProfileStoryView profile={profile} />
+      <ArtistProfileStoryView profile={profile} releasedTracks={releasedTracks} />
     </div>
   );
 }

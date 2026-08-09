@@ -1,7 +1,11 @@
-import { ArrowUpRight, Headphones, Sparkles } from "lucide-react";
+"use client";
+
+import * as React from "react";
+import { ArrowUpRight, Play, Sparkles } from "lucide-react";
+import { SpotifyEmbedPlayer, resolveSpotifyTrackId } from "@/components/spotify/spotify-embed-player";
 import type {
-  ProfileFeaturedMusic,
   ProfileLink,
+  ProfileReleasedTrack,
   ProfileSoundMarker,
   ProfileStorySection,
 } from "@/lib/types";
@@ -17,18 +21,21 @@ export type ArtistProfileStory = {
   sound_markers?: ProfileSoundMarker[];
   current_focus_title?: string | null;
   current_focus_body?: string | null;
-  featured_music?: ProfileFeaturedMusic[];
 };
 
 export function ArtistProfileStoryView({
   profile,
+  releasedTracks = [],
   emptyAction,
 }: {
   profile: ArtistProfileStory | null;
+  releasedTracks?: ProfileReleasedTrack[];
   emptyAction?: React.ReactNode;
 }) {
   const markers = profile?.sound_markers ?? [];
-  const featured = (profile?.featured_music ?? []).filter((item) => isSafeWebUrl(item.url));
+  const released = releasedTracks
+    .filter((track) => resolveSpotifyTrackId(track.spotify_track_id, track.spotify_url))
+    .slice(0, 4);
   const links = (profile?.links ?? []).filter((link) => isSafeWebUrl(link.url));
   const storySections = (profile?.story_sections ?? []).filter(
     (section) => section.title.trim() || section.body.trim()
@@ -43,7 +50,7 @@ export function ArtistProfileStoryView({
     profile?.bio ||
       story.length ||
       markers.length ||
-      featured.length ||
+      released.length ||
       hasFocus ||
       hasIdentity ||
       links.length
@@ -70,33 +77,6 @@ export function ArtistProfileStoryView({
 
   return (
     <div className="grid gap-4 lg:grid-cols-12">
-      {featured.length ? (
-        <section className="panel-quiet relative overflow-hidden p-6 lg:col-span-12">
-          <ProfileSectionHeading kicker="Featured music" title="Start with the work" />
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {featured.map((item, index) => (
-              <a
-                key={`${item.title}-${index}`}
-                href={item.url}
-                target="_blank"
-                rel="noreferrer"
-                className="group well lift relative flex min-h-28 flex-col justify-between overflow-hidden rounded-card border border-line/80 p-4"
-              >
-                <span aria-hidden className="absolute inset-y-0 left-0 w-px bg-[linear-gradient(to_bottom,transparent,var(--ice),var(--amber),transparent)] opacity-70" />
-                <div className="flex items-start justify-between gap-3">
-                  <Headphones className="size-4 text-ice" strokeWidth={1.7} />
-                  <ArrowUpRight className="size-4 text-text-lo transition-colors group-hover:text-ice" />
-                </div>
-                <div className="mt-6">
-                  <h3 className="font-display text-base text-text-hi">{item.title}</h3>
-                  {item.note ? <p className="mt-1 text-xs leading-relaxed text-text-lo">{item.note}</p> : null}
-                </div>
-              </a>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
       {hasIdentity ? (
         <section className="panel-quiet relative overflow-hidden p-6 sm:p-7 lg:col-span-8">
           <ProfileSectionHeading kicker="About" title="Who they are and what they make" />
@@ -122,24 +102,29 @@ export function ArtistProfileStoryView({
         </section>
       ) : null}
 
-      {hasFocus ? (
-        <section
+      {released.length || hasFocus ? (
+        <div
           className={cn(
-            "panel-quiet relative overflow-hidden p-6 sm:p-7",
+            "space-y-4",
             hasIdentity ? "lg:col-span-4" : "lg:col-span-12"
           )}
         >
-          <span aria-hidden className="absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,var(--amber),transparent)]" />
-          <p className="label-mono text-amber">Right now</p>
-          {profile?.current_focus_title ? (
-            <h2 className="mt-4 font-display text-xl text-text-hi">
-              {profile.current_focus_title}
-            </h2>
+          {released.length ? <ReleasedTracksPanel tracks={released} /> : null}
+          {hasFocus ? (
+            <section className="panel-quiet relative overflow-hidden p-6 sm:p-7">
+              <span aria-hidden className="absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,var(--amber),transparent)]" />
+              <p className="label-mono text-amber">Right now</p>
+              {profile?.current_focus_title ? (
+                <h2 className="mt-4 font-display text-xl text-text-hi">
+                  {profile.current_focus_title}
+                </h2>
+              ) : null}
+              {profile?.current_focus_body ? (
+                <p className="mt-3 text-sm leading-6 text-text-lo">{profile.current_focus_body}</p>
+              ) : null}
+            </section>
           ) : null}
-          {profile?.current_focus_body ? (
-            <p className="mt-3 text-sm leading-6 text-text-lo">{profile.current_focus_body}</p>
-          ) : null}
-        </section>
+        </div>
       ) : null}
 
       {markers.length ? (
@@ -214,6 +199,69 @@ export function ArtistProfileStoryView({
         </section>
       ) : null}
     </div>
+  );
+}
+
+function ReleasedTracksPanel({ tracks }: { tracks: ProfileReleasedTrack[] }) {
+  const [selectedId, setSelectedId] = React.useState(tracks[0]?.id ?? null);
+  const selected =
+    tracks.find((track) => track.id === selectedId) ?? tracks[0] ?? null;
+
+  React.useEffect(() => {
+    if (!tracks.some((track) => track.id === selectedId)) {
+      setSelectedId(tracks[0]?.id ?? null);
+    }
+  }, [selectedId, tracks]);
+
+  if (!selected) return null;
+
+  return (
+    <section className="panel-quiet relative overflow-hidden p-5 sm:p-6">
+      <span aria-hidden className="absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,var(--ice),transparent)]" />
+      <p className="label-mono text-ice">Released music</p>
+      <h2 className="mt-2 font-display text-xl text-text-hi">Listen here</h2>
+
+      <SpotifyEmbedPlayer
+        className="mt-4"
+        trackTitle={selected.title}
+        spotifyTrackId={selected.spotify_track_id}
+        spotifyUrl={selected.spotify_url}
+      />
+
+      {tracks.length > 1 ? (
+        <div className="mt-3 space-y-1.5 border-t border-line/60 pt-3">
+          {tracks.map((track) => {
+            const active = track.id === selected.id;
+            return (
+              <button
+                key={track.id}
+                type="button"
+                aria-pressed={active}
+                onClick={() => setSelectedId(track.id)}
+                className={cn(
+                  "flex w-full items-center justify-between gap-3 rounded-input border px-3 py-2 text-left transition-colors",
+                  active
+                    ? "border-ice/35 bg-ice/10 text-text-hi"
+                    : "border-transparent text-text-lo hover:border-line hover:text-text-hi"
+                )}
+              >
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-medium">{track.title}</span>
+                  {track.spotify_album_name ? (
+                    <span className="mt-0.5 block truncate text-[11px] text-text-lo">
+                      {track.spotify_album_name}
+                    </span>
+                  ) : null}
+                </span>
+                <span className="grid size-7 shrink-0 place-items-center rounded-full bg-black/35 text-ice">
+                  <Play className="size-3.5 translate-x-px" fill="currentColor" />
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+    </section>
   );
 }
 
