@@ -14,11 +14,12 @@ import type { Post, ScenePostKind } from "@/lib/types";
 export function useSceneFeed(
   sceneId: string | null,
   topicId: string | null,
-  myProfileId: string | null
+  myProfileId: string | null,
+  sectionId: string | null = null
 ) {
   return useQuery({
-    queryKey: ["scene-feed", sceneId, topicId],
-    queryFn: () => fetchSceneFeed(sceneId!, { topicId, myProfileId }),
+    queryKey: ["scene-feed", sceneId, topicId, sectionId],
+    queryFn: () => fetchSceneFeed(sceneId!, { topicId, myProfileId, sectionId }),
     enabled: !!sceneId,
     staleTime: 15_000,
   });
@@ -50,7 +51,7 @@ function patchPostInLists(
   }
 }
 
-export function useSceneFeedMutations(sceneId: string | null, myProfileId: string | null) {
+export function useSceneFeedMutations(sceneId: string | null, myProfileId: string | null, sectionId: string | null = null) {
   const qc = useQueryClient();
 
   function invalidateFeed() {
@@ -67,7 +68,7 @@ export function useSceneFeedMutations(sceneId: string | null, myProfileId: strin
       trackId?: string | null;
       kind?: ScenePostKind;
       scheduledFor?: string | null;
-    }) => createScenePost({ sceneId: sceneId!, authorProfileId: myProfileId!, ...input }),
+    }) => createScenePost({ sceneId: sceneId!, sectionId, authorProfileId: myProfileId!, ...input }),
     onSuccess: invalidateFeed,
   });
 

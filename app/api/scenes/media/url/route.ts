@@ -19,8 +19,6 @@ export async function POST(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401, headers });
-
   const input = await request.json().catch(() => null);
   const path = typeof input?.path === "string" ? input.path : "";
   const match = path.match(PATH_SHAPE);
@@ -28,6 +26,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid scene media request." }, { status: 400, headers });
   }
   const [, sceneId, kind] = match;
+
+  // Published Scene identity artwork is part of its public front door. Post
+  // attachments remain private even when the Scene itself is published.
+  if (!user) {
+    if (kind === "post") return NextResponse.json({ error: "Sign in first." }, { status: 401, headers });
+    const service = createAdminClient();
+    const { data: published } = await service.from("scenes").select("id").eq("id", sceneId).or("published_at.not.is.null,visibility.eq.listed").is("archived_at", null).maybeSingle();
+    if (!published) return NextResponse.json({ error: "That media isn’t available." }, { status: 404, headers });
+    const { data, error } = await service.storage.from("audio").createSignedUrl(path, 3600);
+    if (error || !data?.signedUrl) return NextResponse.json({ error: "Couldn’t open this image." }, { status: 500, headers });
+    return NextResponse.json({ url: data.signedUrl }, { headers });
+  }
 
   // Banner/emblem are part of the scene shell, visible to anyone who can see
   // the scene at all (can_view_scene). Post media is feed content — visible

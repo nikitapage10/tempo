@@ -129,42 +129,43 @@ Every space has a **focus**, set when you create it and changeable anytime in Se
 
 **Social.** **Social** in the rail is your network layer, and everything on it unlocks once you're on the network — Social (and Messages) offer a one-tap join, or you can change it on Artist. A slowly spinning **globe** sits under the tabs at all times — the upper half cresting up from the page and fading into the background below — pinning you and the people you're connected to where you actually are in the world, drawn from the location on each artist's profile (anyone who hasn't set one simply isn't plotted). Scroll to zoom in; when several people sit close together (a busy Europe, for example), only some faces show until you zoom closer and they have room to separate. There's no hard ring around the planet; just a soft atmosphere past the edge. Hovering a face eases the spin down and shows their name, how you know them, and where they are; clicking opens their profile. You can drag the globe to spin it yourself. It's painted in your own artist palette, with the color washing slowly across the continents. Three tabs sit above it. **Top 8** is your own pick of up to eight people pinned for quick access — chosen from anyone you follow or any contact linked to a TEMPO profile — each one clicking through to their page. **Follows** shows who you follow and who follows you. **Discover** searches published artist profiles by name, and before you type anything it lists artists you've recently worked with, so it's a place to reconnect rather than an empty search box. Down the right-hand side, a **feed** column lets you post updates (optional image, optional attach one of your own tracks), @mention handles, like and comment; the composer starts as a single line and opens up when you click into it, visibility is followers-only, TEMPO members, or public, and your home feed is your posts plus posts from people you follow. A post can be reported from the feed, and another artist can be reported from their published profile; the operator receives only that specific public item. **Messages** (from Social or its own screen) is direct messaging between artist profiles, with unread counts that clear when you open the thread.
 
-**Scenes.** **Scenes** in the rail is a room for people outside your own
-catalog — a label roster, a school cohort, a crew, or any group you're part
-of, separate from the tracks, projects, and spaces that belong to you alone.
-Start one with a name, an address, a kind, a tagline and about text, and
-decide its door: **open** (anyone joins instantly), **ask to join** (you
-approve each request), or **invite only**. Browse Scenes you're in, discover
-others to join, and see any invites waiting for you. A scene has an owner and
-moderators, who review join requests, invite people directly, set roles, and
-remove members from the Manage dashboard reached from the scene itself. Only
-the owner can reach Settings on that dashboard, where the scene's name,
-tagline, about text, banner, emblem, door, who can find it, and color can all
-be changed after the fact, and where the owner can delete the scene —
-which removes it from search and browse for everyone but keeps its members'
-and posts' history rather than erasing it. Being
-in a scene together grants nobody access to anyone's catalog, tracks, or
-private notes — it's a shared room, not shared access. A scene page has its
-own feed — post, like, comment, and @mention the same way you would on
-Social — split into topics when a scene has more than one, with pinned posts
-held at the top and announcements from managers marked apart from ordinary
-posts. Managers can remove a post from the feed; it stays out for everyone
-and the removal is recorded. A post can also be a poll — up to ten options,
-single- or multi-select, with live results once you've voted or it's
-closed — or an open question, which skips the options and takes its answers
-as ordinary comments instead. A scene's Events tab holds what's coming up
-and what's past; a manager adds an event with a date, kind, location or
-link, an optional headcount limit, and details, and members RSVP going,
-interested, or can't go — a full event stops taking new "going" RSVPs. A
-scene also has its own Chat tab — a group thread for everyone in it, text
-only for now. A new member sees a welcome checklist if the scene has one;
-managers can review a moderation history of pins, removals, bans, role
-changes, and join decisions from the Manage dashboard, and escalate content
-to TEMPO Support when it needs the operator's attention. Scenes shows up in
-global search alongside your tracks and people. Scenes needs its database
-updates (migrations 049 through 057, skipping 056, which belongs to a
-different feature) before it works — until they're all run, the Scenes tab
-explains that plainly instead of erroring.
+**Scenes.** A Scene is a complete network for people making or learning
+together: a music collective, label roster, school cohort, local community,
+writing group, critique circle, or another kind of gathering. It can live
+inside an artist's TEMPO workspace or run independently from the dedicated
+Scenes home, so joining one never requires creating an artist or exposing a
+catalog. Each member has a Scene identity with their own name, picture, bio,
+location, and links; it can optionally connect to an artist profile without
+being owned by it.
+
+Every Scene opens on **Pulse**, a visual dashboard combining the current
+conversation with recently active people, recognition, and useful signals.
+Owners arrange the network from configurable sections: discussion boards
+with posts, questions, polls, announcements, pins, comments, and mentions;
+multiple live chat rooms; event calendars with capacity-aware RSVPs;
+libraries for replays, guides, files, links, and templates; member showcases
+for work and feedback requests; and composed pages for welcome material,
+rules, programs, or other evergreen information. Private groups can give a
+cohort, host team, editors' room, or other circle access to only the sections
+meant for them. Being in a Scene grants no access to anyone's tracks,
+projects, notes, or other private TEMPO work.
+
+**Scene Studio** is the independent management surface. It shows network
+health, lets owners and moderators add and organize sections and groups,
+shape the member experience, and tune the Scene's appearance. Uploaded
+banners keep a generous responsive canvas and an editable focal point;
+palette light and texture stay present over the artwork, while the emblem
+and Scene identity sit in a deliberate information block rather than between
+unrelated rows. Listed Scenes can present selected pages, events, resources,
+and showcase work on a public front door while member discussions and chats
+remain private. Owners can also install a complete **Owl's Nest** demo with
+sample members, posts, chat, an event, resources, a welcome page, showcase
+work, and recognition to see the system populated before building their own.
+
+Scenes still support open, approval-required, and invite-only doors;
+ownership and moderator roles; requests, invitations, removal, bans, and
+auditable moderation. Database migrations 049 through 067 are required for
+the complete network experience.
 
 **Stats.** Today, Board, Tracks and Tasks all show one space at a time; **Stats** (formerly "Artist", renamed and moved to its own tab when the Artist tab became the public profile page above) shows the whole artist's numbers at once, across every space they own. Reach it from the rail or the artist dropdown. It opens on that artist's banner and logo with a headline row — tracks, bounces, in progress, released, focus time — and then a set of sections: **the year in bounces** (twelve months of bounces uploaded against tracks started, so a year of work reads at a glance); **pipeline** (where tracks sit in each space's stages, one bar per space, with spaces that have nothing staged collected into a single quiet line); **spaces** (every space of that artist side by side with its own counts and when it was last touched — tap one to switch to it); **your sound** (the shape of your tempos, the keys you write in most, your genres and track types); **work rhythm** (when you actually work, by day and hour, with your busiest day, busiest hour and how many weeks in a row you've kept going); **longest in progress** (the oldest unfinished tracks and how long each has sat in its current stage); **releases** (countdowns to what's coming and a strip of what's already out); and **feedback received** (how much has come from guests versus your own notes, how much is still open, and the decisions logged). Every number comes from what's actually in your TEMPO — nothing is estimated or guessed.
 

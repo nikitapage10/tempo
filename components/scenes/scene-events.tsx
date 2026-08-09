@@ -1,11 +1,13 @@
 "use client";
 
 import * as React from "react";
+import { useSearchParams } from "next/navigation";
 import { Plus } from "lucide-react";
 import { useSceneEvents } from "@/hooks/use-scene-events";
 import { SceneEventCard } from "@/components/scenes/scene-event-card";
 import { SceneEventDialog } from "@/components/scenes/scene-event-dialog";
 import { Button } from "@/components/ui/button";
+import { useSceneSections } from "@/hooks/use-scene-v2";
 
 export function SceneEvents({
   sceneId,
@@ -16,7 +18,11 @@ export function SceneEvents({
   myProfileId: string | null;
   isManager: boolean;
 }) {
-  const { data: events = [], isLoading } = useSceneEvents(sceneId, myProfileId);
+  const searchParams = useSearchParams();
+  const { data: sections = [] } = useSceneSections(sceneId);
+  const sectionId = sections.find((section) => section.slug === searchParams.get("section") && section.type === "events")?.id ?? null;
+  const { data: allEvents = [], isLoading } = useSceneEvents(sceneId, myProfileId);
+  const events = sectionId ? allEvents.filter((event) => event.scene_section_id === sectionId) : allEvents;
   const [creating, setCreating] = React.useState(false);
 
   const today = new Date().toISOString().slice(0, 10);
@@ -63,6 +69,7 @@ export function SceneEvents({
         open={creating}
         onOpenChange={setCreating}
         sceneId={sceneId}
+        sectionId={sectionId}
         myProfileId={myProfileId}
       />
     </div>

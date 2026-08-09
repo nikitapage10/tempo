@@ -106,7 +106,8 @@ export async function fetchMessages(
 
 export async function sendMessage(input: {
   conversationId: string;
-  senderProfileId: string;
+    senderProfileId: string | null;
+    senderScenePersonaId?: string | null;
   body: string;
   media?: MessageAttachment[];
 }): Promise<ConversationMessage> {
@@ -120,7 +121,8 @@ export async function sendMessage(input: {
     .from("messages")
     .insert({
       conversation_id: input.conversationId,
-      sender_profile_id: input.senderProfileId,
+        sender_profile_id: input.senderProfileId,
+        sender_scene_persona_id: input.senderScenePersonaId ?? null,
       sender_user_id: user.id,
       body: input.body.trim(),
       media: input.media ?? [],

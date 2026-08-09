@@ -5,6 +5,13 @@
 database is built against. Read `.cursorrules` and `DESIGN-SYSTEM-V2.md`
 first — nothing here overrides them.*
 
+> **V2 planning note (2026-08-08):** This file documents the shipped,
+> artist-linked Scenes implementation. The approved full-network redesign is
+> specified in `SCENES-V2-ARCHITECTURE.md`, `SCENES-V2-TECHNICAL-DESIGN.md`,
+> `SCENES-V2-VISUAL-SPEC.md`, `SCENES-V2-IMPLEMENTATION-PLAN.md`, and
+> `SCENES-V2-DEMO-SPEC.md`. Those documents take precedence for V2 work; this
+> file remains authoritative for v1 behavior until the feature-gated cutover.
+
 ---
 
 ## 1. What a Scene is

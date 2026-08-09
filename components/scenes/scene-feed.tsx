@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useSearchParams } from "next/navigation";
 import { Hash } from "lucide-react";
 import { useSceneTopics } from "@/hooks/use-scene-topics";
 import { useSceneFeed, useScenePinnedPosts } from "@/hooks/use-scene-feed";
@@ -12,6 +13,7 @@ import { EmptyShaderPanel } from "@/components/shader-empty";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import { useSceneSections } from "@/hooks/use-scene-v2";
 
 export function SceneFeed({
   sceneId,
@@ -22,17 +24,19 @@ export function SceneFeed({
   myProfileId: string | null;
   isManager: boolean;
 }) {
+  const searchParams = useSearchParams();
+  const { data: sections = [] } = useSceneSections(sceneId);
+  const sectionId = sections.find((section) => section.slug === searchParams.get("section") && section.type === "discussion")?.id ?? null;
   const qc = useQueryClient();
   const { data: topics = [] } = useSceneTopics(sceneId);
   const [topicId, setTopicId] = React.useState<string | null>(null);
   const [openPostId, setOpenPostId] = React.useState<string | null>(null);
 
   const { data: pinned = [] } = useScenePinnedPosts(sceneId, myProfileId);
-  const { data: feed = [], isLoading } = useSceneFeed(sceneId, topicId, myProfileId);
+  const { data: feed = [], isLoading } = useSceneFeed(sceneId, topicId, myProfileId, sectionId);
 
-  const visiblePinned = topicId
-    ? pinned.filter((p) => p.scene_topic_id === topicId)
-    : pinned;
+  const sectionPinned = sectionId ? pinned.filter((post) => post.scene_section_id === sectionId) : pinned;
+  const visiblePinned = topicId ? sectionPinned.filter((post) => post.scene_topic_id === topicId) : sectionPinned;
 
   const pollPostIds = React.useMemo(
     () =>
@@ -80,6 +84,7 @@ export function SceneFeed({
           myProfileId={myProfileId}
           topics={topics}
           activeTopicId={topicId}
+          sectionId={sectionId}
           isManager={isManager}
         />
 
