@@ -10,6 +10,7 @@ import {
   LogOut,
   Mail,
   MessageCircle,
+  ShieldCheck,
   Trash2,
   UserRound,
 } from "lucide-react";
@@ -356,17 +357,28 @@ export function AccountPanel() {
       </div>
 
       <section className="panel-quiet p-5">
-        <p className="label-mono">Legal</p>
-        <p className="mt-2 text-sm text-text-lo">
-          How TEMPO handles your account and studio data.
-        </p>
-        <div className="mt-3 flex flex-wrap gap-3 text-sm">
-          <Link href="/terms" className="text-ice hover:underline">
-            Terms of use
-          </Link>
-          <Link href="/privacy" className="text-ice hover:underline">
-            Privacy policy
-          </Link>
+        <div className="flex items-start gap-3">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-ice/20 bg-ice/10">
+            <ShieldCheck className="size-4 text-ice" />
+          </div>
+          <div>
+            <p className="font-display text-base font-semibold tracking-tight text-text-hi">
+              Legal &amp; privacy
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-text-lo">
+              Your private music and workspace content stay yours. They are
+              stored to run TEMPO, not browsed in the admin portal, sold, used
+              for ads, or used to train AI models.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-3 text-sm">
+              <Link href="/terms" className="text-ice hover:underline">
+                Terms of use
+              </Link>
+              <Link href="/privacy" className="text-ice hover:underline">
+                Privacy policy
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
 

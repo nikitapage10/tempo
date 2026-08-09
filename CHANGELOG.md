@@ -4,6 +4,19 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-08
 
+- Added (v0.95.0): TEMPO now asks every member to explicitly accept the
+  current Terms and Privacy policy before entering the private app, and records
+  the policy version and time they agreed. New members accept while creating
+  their account; existing and provider-sign-in members get one clear agreement
+  screen.
+- Added (v0.95.0): the legal policies now clearly protect TEMPO from copying,
+  reverse engineering, resale, scraping, and use of private product access to
+  build a competing service, while confirming that artists keep ownership of
+  their music.
+- Changed (v0.95.0): Privacy now says plainly that private tracks, audio,
+  lyrics, notes, files, and messages are stored to run TEMPO but are not
+  routinely browsed through the admin portal, sold, used for ads, or used to
+  train AI models. The same promise is visible in Account settings.
 - Fixed (v0.94.1): the independent Scene network is now clearly linked from
   the existing Scenes page, and Scene Studio offers the Owl's Nest installer
   before you own a Scene. The populated demo is no longer hidden inside an

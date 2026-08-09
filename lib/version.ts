@@ -1,2 +1,2 @@
 /** App release version shown in the rail. Bump on every shipped change — see .cursorrules. */
-export const APP_VERSION = "0.94.1";
+export const APP_VERSION = "0.95.0";

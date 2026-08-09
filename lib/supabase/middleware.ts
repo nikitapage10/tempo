@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { hasAcceptedCurrentLegalTerms } from "@/lib/legal";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -55,7 +56,10 @@ export async function updateSession(request: NextRequest) {
     path.startsWith("/forgot-password") ||
     path.startsWith("/auth");
 
-  const isLegalRoute = path === "/terms" || path === "/privacy";
+  const isLegalRoute =
+    path === "/terms" ||
+    path === "/privacy" ||
+    path === "/legal/accept";
 
   // Password reset lands here after the email link exchanges a session.
   const isResetPasswordRoute = path.startsWith("/reset-password");
@@ -138,6 +142,38 @@ export async function updateSession(request: NextRequest) {
   ) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/";
+    return NextResponse.redirect(redirectUrl);
+  }
+
+  // New email signups accept during registration. Existing members and anyone
+  // whose account was created through an identity provider accept here once.
+  // Only page navigations are redirected; API routes keep their normal auth and
+  // error behavior, and public profiles/reviews/scenes remain public.
+  // Client-side Next.js navigations request an RSC payload rather than HTML,
+  // so recognize both forms while leaving manifests and media requests alone.
+  const isPageNavigation =
+    request.method === "GET" &&
+    ((request.headers.get("accept") ?? "").includes("text/html") ||
+      request.headers.has("rsc"));
+  const isPublicExperience =
+    isGuestReviewRoute ||
+    isInviteRoute ||
+    isPublicProfileRoute ||
+    isPublicSceneRoute;
+
+  if (
+    user &&
+    isPageNavigation &&
+    !hasAcceptedCurrentLegalTerms(user) &&
+    !isLegalRoute &&
+    !isAuthRoute &&
+    !isResetPasswordRoute &&
+    !isPublicExperience
+  ) {
+    const redirectUrl = request.nextUrl.clone();
+    const next = `${path}${request.nextUrl.search}`;
+    redirectUrl.pathname = "/legal/accept";
+    redirectUrl.search = `?next=${encodeURIComponent(next)}`;
     return NextResponse.redirect(redirectUrl);
   }
 

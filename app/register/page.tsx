@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Wordmark } from "@/components/wordmark";
 import { AuthShell } from "@/components/auth/auth-shell";
+import { LEGAL_VERSION } from "@/lib/legal";
 
 const INVITE_MAILTO =
   "mailto:connect@nikita.page?subject=" +
@@ -36,6 +37,7 @@ function RegisterForm() {
   const [confirm, setConfirm] = useState("");
   const [inviteCode, setInviteCode] = useState(() => searchParams.get("invite") ?? "");
   const [showPassword, setShowPassword] = useState(false);
+  const [acceptedLegal, setAcceptedLegal] = useState(false);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
 
@@ -49,6 +51,10 @@ function RegisterForm() {
     }
     if (password !== confirm) {
       setError("Passwords don't match.");
+      return;
+    }
+    if (!acceptedLegal) {
+      setError("Please agree to the Terms and acknowledge the Privacy policy.");
       return;
     }
 
@@ -71,6 +77,12 @@ function RegisterForm() {
     const { data, error: signUpError } = await supabase.auth.signUp({
       email: email.trim(),
       password,
+      options: {
+        data: {
+          legal_terms_version: LEGAL_VERSION,
+          legal_terms_accepted_at: new Date().toISOString(),
+        },
+      },
     });
 
     if (signUpError) {
@@ -225,6 +237,37 @@ function RegisterForm() {
             </p>
           </div>
 
+          <label className="flex cursor-pointer items-start gap-3 rounded-input border border-line bg-bg-2/70 p-3 text-xs leading-5 text-text-lo transition-colors hover:border-ice/35">
+            <input
+              type="checkbox"
+              required
+              checked={acceptedLegal}
+              onChange={(event) => setAcceptedLegal(event.target.checked)}
+              className="mt-0.5 size-4 shrink-0 accent-[var(--ice)]"
+            />
+            <span>
+              I agree to the{" "}
+              <Link
+                href="/terms"
+                target="_blank"
+                rel="noreferrer"
+                className="text-ice hover:underline"
+              >
+                Terms of use
+              </Link>{" "}
+              and acknowledge the{" "}
+              <Link
+                href="/privacy"
+                target="_blank"
+                rel="noreferrer"
+                className="text-ice hover:underline"
+              >
+                Privacy policy
+              </Link>
+              .
+            </span>
+          </label>
+
           {error && (
             <p className="text-sm text-warn" role="alert">
               {error}
@@ -239,7 +282,8 @@ function RegisterForm() {
               !email.trim() ||
               password.length < 1 ||
               confirm.length < 1 ||
-              !inviteCode.trim()
+              !inviteCode.trim() ||
+              !acceptedLegal
             }
           >
             {status === "loading" ? "Creating…" : "Create account"}
@@ -260,17 +304,6 @@ function RegisterForm() {
           </p>
         </form>
 
-        <p className="text-center text-[11px] text-text-lo">
-          By creating an account you agree to the{" "}
-          <Link href="/terms" className="text-ice hover:underline">
-            Terms
-          </Link>{" "}
-          and{" "}
-          <Link href="/privacy" className="text-ice hover:underline">
-            Privacy policy
-          </Link>
-          .
-        </p>
       </div>
     </AuthShell>
   );

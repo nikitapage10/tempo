@@ -13,7 +13,7 @@ export function LegalShell({
   return (
     <div className="min-h-screen bg-bg-0 px-6 py-12 text-text-hi sm:px-10">
       <div className="mx-auto max-w-2xl">
-        <Link href="/login" className="inline-block">
+        <Link href="/" className="inline-block">
           <Wordmark size={28} />
         </Link>
         <h1 className="mt-10 font-display text-3xl font-semibold tracking-tight">
@@ -25,8 +25,8 @@ export function LegalShell({
           {children}
         </div>
         <p className="mt-12 text-xs text-text-lo">
-          <Link href="/login" className="text-ice hover:underline">
-            Back to sign in
+          <Link href="/" className="text-ice hover:underline">
+            Back to TEMPO
           </Link>
           {" · "}
           <Link href="/terms" className="text-ice hover:underline">
