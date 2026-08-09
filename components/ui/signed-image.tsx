@@ -9,6 +9,7 @@ type SignedImageProps = {
   alt?: string;
   className?: string;
   fallback?: React.ReactNode;
+  style?: React.CSSProperties;
 };
 
 function isAbsoluteSrc(path: string): boolean {
@@ -69,6 +70,7 @@ export function SignedImage({
   alt = "",
   className,
   fallback,
+  style,
 }: SignedImageProps) {
   // Absolute URLs are safe for SSR; storage paths resolve after mount so we
   // don't mismatch hydration with sessionStorage.
@@ -110,6 +112,6 @@ export function SignedImage({
 
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={src} alt={alt} className={cn("object-cover", className)} />
+    <img src={src} alt={alt} className={cn("object-cover", className)} style={style} />
   );
 }

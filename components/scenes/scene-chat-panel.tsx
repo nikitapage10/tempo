@@ -1,8 +1,10 @@
 "use client";
 
 import * as React from "react";
+import { useSearchParams } from "next/navigation";
 import { Send } from "lucide-react";
 import { useSceneConversationId } from "@/hooks/use-scene-chat";
+import { useMyScenePersona, useSceneSections } from "@/hooks/use-scene-v2";
 import { useMessageMutations, useMessages } from "@/hooks/use-messages";
 import { ArtistMark } from "@/components/artists/artist-mark";
 import { EmptyShaderPanel } from "@/components/shader-empty";
@@ -20,23 +22,36 @@ import { cn } from "@/lib/utils";
 export function SceneChatPanel({
   sceneId,
   myProfileId,
+  myPersonaId = null,
+  sectionId = null,
   members,
 }: {
   sceneId: string;
   myProfileId: string | null;
+  myPersonaId?: string | null;
+  sectionId?: string | null;
   members: SceneMember[];
 }) {
+  const searchParams = useSearchParams();
+  const { data: sections = [] } = useSceneSections(sceneId);
+  const { data: ownPersona } = useMyScenePersona(sceneId);
+  const resolvedSectionId = sectionId ?? sections.find((section) => section.slug === searchParams.get("section") && section.type === "chat")?.id ?? null;
+  const resolvedPersonaId = myPersonaId ?? ownPersona?.id ?? null;
   const { data: conversationId, isLoading: resolvingConversation } =
-    useSceneConversationId(sceneId);
+    useSceneConversationId(sceneId, resolvedSectionId);
   const { data: messages = [], isLoading: messagesLoading } = useMessages(
     conversationId ?? null
   );
-  const { send } = useMessageMutations(myProfileId);
+  const { send } = useMessageMutations(myProfileId, resolvedPersonaId);
   const [text, setText] = React.useState("");
   const listRef = React.useRef<HTMLDivElement>(null);
 
   const byProfile = React.useMemo(
     () => new Map(members.map((m) => [m.profile_id, m.profile])),
+    [members]
+  );
+  const byPersona = React.useMemo(
+    () => new Map(members.filter((member) => member.persona).map((member) => [member.persona!.id, member.persona!])),
     [members]
   );
 
@@ -76,16 +91,17 @@ export function SceneChatPanel({
           </p>
         ) : (
           messages.map((m) => {
-            const mine = m.sender_profile_id === myProfileId;
-            const author = byProfile.get(m.sender_profile_id);
+            const mine = (resolvedPersonaId && m.sender_scene_persona_id === resolvedPersonaId) || (!!myProfileId && m.sender_profile_id === myProfileId);
+            const author = m.sender_profile_id ? byProfile.get(m.sender_profile_id) : undefined;
+            const persona = m.sender_scene_persona_id ? byPersona.get(m.sender_scene_persona_id) : null;
             return (
               <div key={m.id} className={cn("flex gap-2", mine && "flex-row-reverse")}>
                 <ArtistMark
-                  emblemUrl={author?.emblem_url ?? null}
+                  emblemUrl={persona?.avatar_url ?? author?.emblem_url ?? null}
                   paletteId={author?.palette_id}
                   iceColor={author?.ice_color}
                   amberColor={author?.amber_color}
-                  name={author?.display_name ?? "Artist"}
+                  name={persona?.display_name ?? author?.display_name ?? "Member"}
                   size={24}
                   className="mt-0.5 size-6 shrink-0"
                 />
@@ -99,7 +115,7 @@ export function SceneChatPanel({
                 >
                   {!mine ? (
                     <p className="mb-0.5 text-[11px] text-text-lo">
-                      {author?.display_name ?? "Artist"}
+                      {persona?.display_name ?? author?.display_name ?? "Member"}
                     </p>
                   ) : null}
                   <p className="whitespace-pre-wrap">{m.body}</p>

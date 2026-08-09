@@ -19,6 +19,7 @@ export function SceneComposer({
   myProfileId,
   topics,
   activeTopicId,
+  sectionId = null,
   isManager,
   className,
 }: {
@@ -27,10 +28,11 @@ export function SceneComposer({
   topics: SceneTopic[];
   /** The topic currently being viewed — pre-selects the composer's topic. */
   activeTopicId: string | null;
+  sectionId?: string | null;
   isManager: boolean;
   className?: string;
 }) {
-  const { create } = useSceneFeedMutations(sceneId, myProfileId);
+  const { create } = useSceneFeedMutations(sceneId, myProfileId, sectionId);
   const { createPoll, createQuestion } = useScenePollMutations(sceneId);
   const [body, setBody] = React.useState("");
   const [kind, setKind] = React.useState<ComposerKind>("post");

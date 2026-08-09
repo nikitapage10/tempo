@@ -2,30 +2,13 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Loader2, MapPin, Settings2, Users } from "lucide-react";
-import { ArtistMark } from "@/components/artists/artist-mark";
-import { SignedImage } from "@/components/ui/signed-image";
+import { Loader2, Settings2 } from "lucide-react";
+import { SceneHero } from "@/components/scenes/scene-hero";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { SceneThemeScope } from "@/components/scenes/scene-theme-scope";
-import { resolveArtistAccent } from "@/lib/artist-theme";
 import type { Scene } from "@/lib/types";
 
-const KIND_LABEL: Record<Scene["kind"], string> = {
-  label: "Label",
-  school: "School",
-  crew: "Crew",
-  collective: "Collective",
-  genre: "Genre",
-  local: "Local",
-  other: "Scene",
-};
-
-type JoinAction = {
-  disabled: boolean;
-  label: string;
-  onClick?: () => void;
-};
+type JoinAction = { disabled: boolean; label: string; onClick?: () => void };
 
 export function SceneHeader({
   scene,
@@ -41,10 +24,6 @@ export function SceneHeader({
   onLeave: () => void;
 }) {
   const [confirmLeave, setConfirmLeave] = React.useState(false);
-  const { ice, amber } = resolveArtistAccent(scene.palette_id, {
-    ice: scene.ice_color,
-    amber: scene.amber_color,
-  });
   const isManager = scene.my_role === "owner" || scene.my_role === "moderator";
 
   let action: JoinAction;
@@ -67,115 +46,43 @@ export function SceneHeader({
   }
 
   return (
-    <SceneThemeScope scene={scene} className="overflow-hidden rounded-panel border border-line shadow-e1">
-      <div
-        className="relative h-32 sm:h-40"
-        style={
-          scene.banner_url
-            ? undefined
-            : {
-                background: `
-                  radial-gradient(90% 100% at 10% -10%, color-mix(in srgb, ${ice} 45%, transparent), transparent 60%),
-                  radial-gradient(90% 100% at 90% 10%, color-mix(in srgb, ${amber} 34%, transparent), transparent 65%),
-                  linear-gradient(135deg, color-mix(in srgb, ${ice} 20%, var(--bg-1)), color-mix(in srgb, ${amber} 16%, var(--bg-1)))
-                `,
-              }
-        }
-      >
-        {scene.banner_url ? (
-          <SignedImage path={scene.banner_url} alt="" className="size-full object-cover" />
-        ) : (
-          <div
-            className="absolute inset-0 opacity-[0.15] mix-blend-overlay"
-            style={{
-              backgroundImage:
-                "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E\")",
-            }}
-          />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-bg-1 via-bg-1/10 to-transparent" />
-      </div>
-
-      <div className="bg-bg-1 px-5 pb-5">
-        {/*
-          Only the avatar/name block overlaps the banner (via -mt-8) — the
-          intentional "avatar over cover photo" look. The button row used to
-          share this same flex line under items-end, which put its top edge
-          inside the banner's own box (still behind the banner's fade
-          overlay in paint order) rather than in the solid area below, so it
-          rendered with a flat, unrounded top edge. Buttons now live in their
-          own row, entirely below the overlap zone.
-        */}
-        <div className="flex flex-wrap items-end gap-3 -mt-8">
-          <ArtistMark
-            emblemUrl={scene.emblem_url}
-            paletteId={scene.palette_id}
-            iceColor={scene.ice_color}
-            amberColor={scene.amber_color}
-            name={scene.name}
-            size={56}
-            className="size-14 border-4 border-bg-1 bg-bg-1"
-          />
-          <div className="min-w-0 pb-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="font-display text-xl font-semibold tracking-tight text-text-hi">
-                {scene.name}
-              </h1>
-              <span className="rounded-chip border border-line px-2 py-0.5 text-[11px] text-text-lo">
-                {KIND_LABEL[scene.kind]}
-              </span>
-            </div>
-            {scene.tagline ? (
-              <p className="mt-0.5 text-sm text-text-lo">{scene.tagline}</p>
+    <>
+      <SceneHero
+        scene={scene}
+        actions={
+          <>
+            {isManager ? (
+              <Button asChild size="sm" variant="secondary" className="border-white/10 bg-black/45 backdrop-blur-md hover:bg-black/65">
+                <Link href={`/scenes/${scene.slug}/manage`}>
+                  <Settings2 className="size-3.5" />
+                  Manage
+                </Link>
+              </Button>
             ) : null}
-            <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-text-lo">
-              <span className="flex items-center gap-1">
-                <Users className="size-3" />
-                {scene.member_count} {scene.member_count === 1 ? "member" : "members"}
-              </span>
-              {scene.location ? (
-                <span className="flex items-center gap-1">
-                  <MapPin className="size-3" />
-                  {scene.location}
-                </span>
-              ) : null}
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-3 flex items-center justify-end gap-2">
-          {isManager ? (
-            <Button asChild size="sm" variant="secondary">
-              <Link href={`/scenes/${scene.slug}/manage`}>
-                <Settings2 className="size-3.5" />
-                Manage
-              </Link>
+            <Button
+              type="button"
+              size="sm"
+              variant={action.onClick ? "default" : "secondary"}
+              disabled={action.disabled}
+              onClick={action.onClick}
+            >
+              {joinPending ? <Loader2 className="size-3.5 animate-spin" /> : null}
+              {action.label}
             </Button>
-          ) : null}
-          <Button
-            type="button"
-            size="sm"
-            variant={action.onClick ? "default" : "secondary"}
-            disabled={action.disabled}
-            onClick={action.onClick}
-          >
-            {joinPending ? <Loader2 className="size-3.5 animate-spin" /> : null}
-            {action.label}
-          </Button>
-        </div>
-      </div>
-
+          </>
+        }
+      />
       <ConfirmDialog
         open={confirmLeave}
         onOpenChange={setConfirmLeave}
         title={`Leave ${scene.name}?`}
-        description="You'll lose access to its feed, events, and chat until you join again."
+        description="You'll lose access to its discussions, events, library, and chat until you join again."
         confirmLabel="Leave scene"
         onConfirm={() => {
           setConfirmLeave(false);
           onLeave();
         }}
       />
-    </SceneThemeScope>
+    </>
   );
 }

@@ -8,14 +8,14 @@ import { isMissingSceneSchema } from "@/lib/api/scenes";
  * messaging stack, unchanged: fetchMessages/sendMessage/useMessages/
  * useMessageMutations all work on a conversationId alone.
  */
-export async function resolveSceneConversationId(sceneId: string): Promise<string | null> {
+export async function resolveSceneConversationId(sceneId: string, sectionId?: string | null): Promise<string | null> {
   const supabase = createClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("conversations")
     .select("id")
-    .eq("scene_id", sceneId)
-    .is("scene_topic_id", null)
-    .maybeSingle();
+    .eq("scene_id", sceneId);
+  query = sectionId ? query.eq("scene_section_id", sectionId) : query.is("scene_section_id", null);
+  const { data, error } = await query.maybeSingle();
   if (error) {
     if (isMissingSceneSchema(error)) return null;
     throw error;

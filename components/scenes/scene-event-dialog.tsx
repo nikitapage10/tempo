@@ -27,11 +27,13 @@ export function SceneEventDialog({
   open,
   onOpenChange,
   sceneId,
+  sectionId = null,
   myProfileId,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   sceneId: string;
+  sectionId?: string | null;
   myProfileId: string | null;
 }) {
   const { toast } = useToast();
@@ -62,6 +64,7 @@ export function SceneEventDialog({
     if (!myProfileId || !title.trim() || !startDate) return;
     try {
       await create.mutateAsync({
+        sectionId,
         createdByProfileId: myProfileId,
         title,
         kind,

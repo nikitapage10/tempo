@@ -4,6 +4,28 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-08
 
+- Fixed (v0.94.1): the independent Scene network is now clearly linked from
+  the existing Scenes page, and Scene Studio offers the Owl's Nest installer
+  before you own a Scene. The populated demo is no longer hidden inside an
+  existing Scene's management screen.
+- Added (v0.94.0): Scenes can now operate as full independent networks, with
+  their own `/scene` home and Scene Studio, while remaining available inside
+  each artist's TEMPO workspace.
+- Added (v0.94.0): owners can build a Scene from configurable discussion,
+  chat, event, library, showcase, and page sections; create private member
+  groups; see a network-health overview; and publish selected parts as a
+  public front door.
+- Added (v0.94.0): Scene membership now has an account-level identity, so a
+  collective, writing room, school, or community no longer depends on an
+  artist profile. Chats and sections understand those member identities.
+- Added (v0.94.0): Scene Studio can install a populated Owl's Nest demo with
+  realistic posts, live chat, a listening-room event, resources, a welcome
+  page, member showcase, badges, and available test accounts as members.
+- Changed (v0.94.0): Scene banners now have a generous responsive canvas,
+  editable focal point, persistent palette lighting, subtle texture, and a
+  deliberate identity block. Emblems no longer sit halfway between the
+  banner and the member row, and discovery cards use the same visual system.
+  Under the hood: run migrations 060 through 067 in order before deploying.
 - Fixed (v0.93.2): the Manage/Leave scene buttons on a scene page were
   rendering with their top edge flattened, like something was cut off. They
   were sharing a row with the avatar that intentionally overlaps the banner,

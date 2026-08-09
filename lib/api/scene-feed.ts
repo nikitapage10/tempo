@@ -56,7 +56,7 @@ async function hydrateAuthorsAndLikes(
  *  scene_feed() RPC (security invoker — posts RLS still applies). */
 export async function fetchSceneFeed(
   sceneId: string,
-  opts: { topicId?: string | null; limit?: number; before?: string; myProfileId?: string | null } = {}
+  opts: { topicId?: string | null; sectionId?: string | null; limit?: number; before?: string; myProfileId?: string | null } = {}
 ): Promise<Post[]> {
   const supabase = createClient();
   const { data, error } = await supabase.rpc("scene_feed", {
@@ -69,7 +69,8 @@ export async function fetchSceneFeed(
     if (isMissingSceneSchema(error)) return [];
     throw error;
   }
-  return hydrateAuthorsAndLikes((data ?? []) as Record<string, unknown>[], opts.myProfileId);
+  const rows = ((data ?? []) as Record<string, unknown>[]).filter((row) => !opts.sectionId || row.scene_section_id === opts.sectionId);
+  return hydrateAuthorsAndLikes(rows, opts.myProfileId);
 }
 
 export async function fetchScenePinnedPosts(
@@ -94,6 +95,7 @@ export async function fetchScenePinnedPosts(
 export async function createScenePost(input: {
   sceneId: string;
   topicId?: string | null;
+  sectionId?: string | null;
   authorProfileId: string;
   body: string;
   media?: string[];
@@ -118,6 +120,7 @@ export async function createScenePost(input: {
       visibility: "members",
       scene_id: input.sceneId,
       scene_topic_id: input.topicId ?? null,
+      scene_section_id: input.sectionId ?? null,
       kind: input.kind ?? "post",
       scheduled_for: input.scheduledFor ?? null,
     })

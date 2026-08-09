@@ -59,6 +59,7 @@ export async function fetchEventRsvpRoster(eventId: string): Promise<SceneEventR
 /** All-day only for now — a plain start/end date, no timezone handling. */
 export async function createSceneEvent(input: {
   sceneId: string;
+  sectionId?: string | null;
   createdByProfileId: string;
   title: string;
   description?: string | null;
@@ -80,6 +81,7 @@ export async function createSceneEvent(input: {
     .from("scene_events")
     .insert({
       scene_id: input.sceneId,
+      scene_section_id: input.sectionId ?? null,
       created_by_profile_id: input.createdByProfileId,
       created_by_user_id: user.id,
       title: input.title.trim(),

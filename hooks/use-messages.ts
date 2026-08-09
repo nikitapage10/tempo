@@ -53,7 +53,7 @@ export function useUnreadDmCount(myProfileId: string | null) {
   });
 }
 
-export function useMessageMutations(myProfileId: string | null) {
+export function useMessageMutations(myProfileId: string | null, myScenePersonaId: string | null = null) {
   const qc = useQueryClient();
 
   const startDm = useMutation({
@@ -68,7 +68,8 @@ export function useMessageMutations(myProfileId: string | null) {
     mutationFn: (input: { conversationId: string; body: string; media?: MessageAttachment[] }) =>
       sendMessage({
         conversationId: input.conversationId,
-        senderProfileId: myProfileId!,
+        senderProfileId: myProfileId,
+        senderScenePersonaId: myScenePersonaId,
         body: input.body,
         media: input.media,
       }),

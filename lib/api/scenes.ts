@@ -195,7 +195,7 @@ export type CreateSceneInput = {
   about?: string | null;
   joinPolicy: SceneJoinPolicy;
   visibility: SceneVisibility;
-  ownerProfileId: string;
+  ownerProfileId?: string | null;
 };
 
 /**
@@ -225,7 +225,7 @@ export async function createScene(input: CreateSceneInput): Promise<Scene> {
       about: input.about?.trim() || null,
       join_policy: input.joinPolicy,
       visibility: input.visibility,
-      owner_profile_id: input.ownerProfileId,
+      owner_profile_id: input.ownerProfileId ?? null,
       owner_user_id: user.id,
     })
     .select("*")
@@ -248,6 +248,13 @@ export async function createScene(input: CreateSceneInput): Promise<Scene> {
   );
 }
 
+export async function seedOwlsNestDemo(): Promise<Scene> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("seed_owls_nest_demo");
+  if (error) throw error;
+  return data as Scene;
+}
+
 export type UpdateSceneInput = Partial<{
   name: string;
   tagline: string | null;
@@ -257,6 +264,13 @@ export type UpdateSceneInput = Partial<{
   paletteId: Scene["palette_id"];
   iceColor: string | null;
   amberColor: string | null;
+  bannerFocalX: number;
+  bannerFocalY: number;
+  bannerAlt: string | null;
+  bannerTreatment: NonNullable<Scene["banner_treatment"]>;
+  publicSummary: string | null;
+  rules: string | null;
+  timezone: string | null;
 }>;
 
 /** Owner-only edit of a scene's identity, door, and palette (update_scenes RLS). */
@@ -271,6 +285,13 @@ export async function updateScene(scene: Scene, input: UpdateSceneInput): Promis
   if (input.paletteId !== undefined) patch.palette_id = input.paletteId;
   if (input.iceColor !== undefined) patch.ice_color = input.iceColor;
   if (input.amberColor !== undefined) patch.amber_color = input.amberColor;
+  if (input.bannerFocalX !== undefined) patch.banner_focal_x = input.bannerFocalX;
+  if (input.bannerFocalY !== undefined) patch.banner_focal_y = input.bannerFocalY;
+  if (input.bannerAlt !== undefined) patch.banner_alt = input.bannerAlt?.trim() || null;
+  if (input.bannerTreatment !== undefined) patch.banner_treatment = input.bannerTreatment;
+  if (input.publicSummary !== undefined) patch.public_summary = input.publicSummary?.trim() || null;
+  if (input.rules !== undefined) patch.rules = input.rules?.trim() || null;
+  if (input.timezone !== undefined) patch.timezone = input.timezone?.trim() || null;
 
   const { data, error } = await supabase
     .from("scenes")

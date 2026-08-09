@@ -12,6 +12,7 @@ import {
   fetchSceneBySlug,
   joinScene,
   leaveScene,
+  seedOwlsNestDemo,
   updateScene,
   uploadSceneBanner,
   uploadSceneEmblem,
@@ -75,6 +76,14 @@ export function useSceneMutations() {
     },
   });
 
+  const seedDemo = useMutation({
+    mutationFn: seedOwlsNestDemo,
+    onSuccess: (scene) => {
+      qc.setQueryData(["scene", scene.slug], scene);
+      invalidateSceneLists(qc);
+    },
+  });
+
   const join = useMutation({
     mutationFn: ({ sceneId, profileId }: { sceneId: string; profileId: string }) =>
       joinScene(sceneId, profileId),
@@ -125,5 +134,5 @@ export function useSceneMutations() {
     },
   });
 
-  return { create, join, leave, declineInvite, update, archive, uploadBanner, uploadEmblem };
+  return { create, seedDemo, join, leave, declineInvite, update, archive, uploadBanner, uploadEmblem };
 }

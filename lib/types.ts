@@ -236,6 +236,7 @@ export type Post = {
    */
   scene_id: string | null;
   scene_topic_id: string | null;
+  scene_section_id?: string | null;
   kind: ScenePostKind;
   pinned_at: string | null;
   scheduled_for: string | null;
@@ -308,7 +309,8 @@ export type MessageAttachment = {
 export type ConversationMessage = {
   id: string;
   conversation_id: string;
-  sender_profile_id: string;
+  sender_profile_id: string | null;
+  sender_scene_persona_id?: string | null;
   sender_user_id: string;
   body: string;
   media: (string | MessageAttachment)[];
@@ -949,7 +951,7 @@ export type Scene = {
   tagline: string | null;
   about: string | null;
   kind: SceneKind;
-  owner_profile_id: string;
+  owner_profile_id: string | null;
   owner_user_id: string;
   join_policy: SceneJoinPolicy;
   visibility: SceneVisibility;
@@ -957,6 +959,15 @@ export type Scene = {
   banner_url: string | null;
   banner_color: string | null;
   banner_color_end: string | null;
+  banner_focal_x?: number;
+  banner_focal_y?: number;
+  banner_alt?: string | null;
+  banner_treatment?: "wash" | "cinematic" | "clean";
+  default_section_id?: string | null;
+  public_summary?: string | null;
+  rules?: string | null;
+  timezone?: string | null;
+  published_at?: string | null;
   /**
    * The scene's accent pair. Applied to a SCOPED wrapper only — never to
    * document.documentElement, which stays the active artist's theme so
@@ -987,7 +998,10 @@ export type Scene = {
 };
 
 export type SceneMember = {
+  id?: string;
   scene_id: string;
+  persona_id?: string;
+  /** Legacy renderers require a profile id; persona-first callers should use persona_id. */
   profile_id: string;
   user_id: string;
   role: SceneRole;
@@ -1015,6 +1029,165 @@ export type SceneMember = {
     | "amber_color"
     | "location"
   > | null;
+  persona?: ScenePersona | null;
+};
+
+export type ScenePersona = {
+  id: string;
+  scene_id: string;
+  user_id: string;
+  artist_profile_id: string | null;
+  display_name: string;
+  handle: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  pronouns: string | null;
+  location: string | null;
+  country_code: string | null;
+  links: ProfileLink[];
+  source: "account" | "artist" | "invitation";
+  created_at: string;
+  updated_at: string;
+};
+
+export type SceneSectionType =
+  | "discussion"
+  | "chat"
+  | "events"
+  | "library"
+  | "showcase"
+  | "page";
+
+export type SceneSection = {
+  id: string;
+  scene_id: string;
+  type: SceneSectionType;
+  name: string;
+  slug: string;
+  description: string | null;
+  icon: string;
+  sort_order: number;
+  post_policy: "members" | "moderators" | "owners";
+  visibility: "members" | "groups";
+  config: Record<string, unknown>;
+  public_visible?: boolean;
+  archived_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type SceneGroup = {
+  id: string;
+  scene_id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  color: string | null;
+  sort_order: number;
+  archived_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type SceneLibraryItemKind =
+  | "article"
+  | "link"
+  | "file"
+  | "audio"
+  | "video"
+  | "replay"
+  | "template";
+
+export type SceneLibraryCollection = {
+  id: string;
+  scene_id: string;
+  section_id: string;
+  title: string;
+  description: string | null;
+  cover_url: string | null;
+  sort_order: number;
+  archived_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type SceneLibraryItem = {
+  id: string;
+  scene_id: string;
+  section_id: string;
+  collection_id: string | null;
+  created_by_persona_id: string | null;
+  kind: SceneLibraryItemKind;
+  title: string;
+  description: string | null;
+  body: string | null;
+  external_url: string | null;
+  file_url: string | null;
+  thumbnail_url: string | null;
+  media_meta: Record<string, unknown>;
+  sort_order: number;
+  scheduled_for: string | null;
+  published_at: string | null;
+  archived_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ScenePageBlock = {
+  id: string;
+  type: "heading" | "paragraph" | "image" | "callout" | "divider" | "button" | "links" | "embed";
+  data: Record<string, unknown>;
+};
+
+export type ScenePage = {
+  id: string;
+  scene_id: string;
+  section_id: string;
+  blocks: ScenePageBlock[];
+  draft_blocks: ScenePageBlock[];
+  published_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type SceneShowcaseItem = {
+  id: string;
+  scene_id: string;
+  section_id: string;
+  persona_id: string;
+  title: string;
+  description: string | null;
+  feedback_prompt: string | null;
+  external_url: string | null;
+  attachment_snapshot: Record<string, unknown> | null;
+  media: Record<string, unknown>[];
+  visibility: "groups" | "members" | "public";
+  status: "pending" | "published" | "removed";
+  featured_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type SceneBadge = {
+  id: string;
+  scene_id: string;
+  name: string;
+  description: string | null;
+  icon: string;
+  color: string | null;
+  points: number;
+  archived_at: string | null;
+};
+
+export type SceneAnalyticsSummary = {
+  days: number;
+  active_members: number;
+  new_members: number;
+  posts: number;
+  comments: number;
+  messages: number;
+  event_rsvps: number;
+  library_views: number;
 };
 
 export type SceneTopicKind = "feed" | "announcements";
@@ -1077,7 +1250,9 @@ export type SceneRsvpResponse = "going" | "interested" | "not_going";
 export type SceneEvent = {
   id: string;
   scene_id: string;
-  created_by_profile_id: string;
+  scene_section_id?: string | null;
+  created_by_profile_id: string | null;
+  created_by_persona_id?: string | null;
   created_by_user_id: string;
   title: string;
   description: string | null;
@@ -1104,8 +1279,10 @@ export type SceneEvent = {
 };
 
 export type SceneEventRsvp = {
+  id?: string;
   event_id: string;
-  profile_id: string;
+  profile_id: string | null;
+  persona_id?: string | null;
   scene_id: string;
   user_id: string;
   response: SceneRsvpResponse;
