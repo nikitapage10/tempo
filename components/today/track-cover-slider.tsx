@@ -87,16 +87,17 @@ export function TrackCoverSlider({ tracks, className }: TrackCoverSliderProps) {
         ).flat();
 
   return (
-    <div
-      className={cn("relative -mx-1 overflow-hidden py-1", className)}
-      style={{
-        maskImage:
-          "linear-gradient(to right, transparent, black 8%, black 92%, transparent)",
-        WebkitMaskImage:
-          "linear-gradient(to right, transparent, black 8%, black 92%, transparent)",
-      }}
-    >
-      <div className="flex flex-col gap-4">
+    <>
+      <div
+        className={cn("relative -mx-1 overflow-hidden py-1", className)}
+        style={{
+          maskImage:
+            "linear-gradient(to right, transparent, black 8%, black 92%, transparent)",
+          WebkitMaskImage:
+            "linear-gradient(to right, transparent, black 8%, black 92%, transparent)",
+        }}
+      >
+        <div className="flex flex-col gap-4">
         <InfiniteSlider
           direction="horizontal"
           gap={14}
@@ -142,6 +143,7 @@ export function TrackCoverSlider({ tracks, className }: TrackCoverSliderProps) {
             />
           ))}
         </InfiniteSlider>
+        </div>
       </div>
       <Dialog
         open={spotifyTrack != null}
@@ -164,7 +166,7 @@ export function TrackCoverSlider({ tracks, className }: TrackCoverSliderProps) {
           ) : null}
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }
 
