@@ -185,9 +185,12 @@ export default function FocusSessionPage() {
       <div className="mb-6">
         <VersionPlayer
           trackId={trackId}
+          trackTitle={track.title}
           versions={versions}
           selectedId={playerVersionId}
           onSelect={setPlayerVersionId}
+          spotifyTrackId={track.spotify_track_id}
+          spotifyUrl={track.spotify_url}
         />
       </div>
 

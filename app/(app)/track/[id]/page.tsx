@@ -265,9 +265,12 @@ function TrackDetailContent() {
       <VersionPlayer
         ref={playerRef}
         trackId={track.id}
+        trackTitle={track.title}
         versions={versions}
         selectedId={selectedVersionId}
         onSelect={setSelectedVersionId}
+        spotifyTrackId={track.spotify_track_id}
+        spotifyUrl={track.spotify_url}
         markers={markers}
         onMarkerClick={(id) => {
           const marker = markers.find((m) => m.id === id);

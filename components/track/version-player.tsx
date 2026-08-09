@@ -3,7 +3,7 @@
 import * as React from "react";
 import WaveSurfer from "wavesurfer.js";
 import { useActiveArtistPalette } from "@/components/active-artist-provider";
-import { MessageSquarePlus, Pause, Play } from "lucide-react";
+import { ExternalLink, MessageSquarePlus, Pause, Play } from "lucide-react";
 import { formatDuration } from "@/lib/format";
 import { playbackCoordinator } from "@/lib/playback-coordinator";
 import { getSignedUrl } from "@/lib/storage";
@@ -25,9 +25,12 @@ export type VersionPlayerHandle = {
 
 type VersionPlayerProps = {
   trackId: string;
+  trackTitle: string;
   versions: Version[];
   selectedId: string | null;
   onSelect: (id: string) => void;
+  spotifyTrackId?: string | null;
+  spotifyUrl?: string | null;
   /** Comment markers for the currently loaded version only (FEATURE-SPECS §4). */
   markers?: WaveformMarker[];
   onMarkerClick?: (id: string) => void;
@@ -40,9 +43,12 @@ export const VersionPlayer = React.forwardRef<VersionPlayerHandle, VersionPlayer
   function VersionPlayer(
     {
       trackId,
+      trackTitle,
       versions,
       selectedId,
       onSelect,
+      spotifyTrackId,
+      spotifyUrl,
       markers,
       onMarkerClick,
       onAddCommentClick,
@@ -68,6 +74,9 @@ export const VersionPlayer = React.forwardRef<VersionPlayerHandle, VersionPlayer
       null;
 
     const playbackId = `version-player:${trackId}`;
+    const spotifyId = spotifyTrackId?.match(/^[A-Za-z0-9]{10,40}$/)?.[0]
+      ?? spotifyUrl?.match(/open\.spotify\.com\/track\/([A-Za-z0-9]+)/i)?.[1]
+      ?? null;
 
     React.useImperativeHandle(
       ref,
@@ -196,13 +205,53 @@ export const VersionPlayer = React.forwardRef<VersionPlayerHandle, VersionPlayer
     }, [selected?.id, selected?.file_url, hues]);
 
     if (!versions.length) {
+      if (spotifyId) {
+        const canonicalUrl = spotifyUrl ?? `https://open.spotify.com/track/${spotifyId}`;
+        const embedUrl = `https://open.spotify.com/embed/track/${encodeURIComponent(spotifyId)}?utm_source=tempo`;
+        return (
+          <section className="panel p-5">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 className="font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+                  Player
+                </h2>
+                <p className="mt-1 text-xs text-text-lo">Playing the released track from Spotify.</p>
+              </div>
+              <a
+                href={canonicalUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1.5 text-xs text-text-lo transition-colors duration-hover hover:text-ice"
+              >
+                Open in Spotify
+                <ExternalLink className="size-3.5" />
+              </a>
+            </div>
+            <iframe
+              title={`Spotify player for ${trackTitle}`}
+              src={embedUrl}
+              width="100%"
+              height="152"
+              loading="lazy"
+              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+              allowFullScreen
+              className="block w-full rounded-card border-0 bg-bg-2"
+            />
+            <p className="mt-3 text-xs leading-relaxed text-text-lo">
+              Spotify handles this playback. Upload a bounce whenever you want TEMPO’s waveform,
+              timestamped comments, and version tools.
+            </p>
+          </section>
+        );
+      }
       return (
         <section className="rounded-card border border-dashed border-line bg-bg-1/60 p-4">
           <h2 className="mb-2 font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
             Player
           </h2>
           <p className="text-sm text-text-lo">
-            Upload a bounce and the waveform player will live here.
+            Upload a bounce and the waveform player will live here. Tracks imported from Spotify
+            can play here automatically when their Spotify track link is connected.
           </p>
         </section>
       );
