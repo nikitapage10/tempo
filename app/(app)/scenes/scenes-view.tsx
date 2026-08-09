@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Lock, Plus, Search, Users } from "lucide-react";
+import { ArrowUpRight, Lock, Plus, Search, Users } from "lucide-react";
 import { useActiveArtist } from "@/components/active-artist-provider";
 import { useArtistProfile } from "@/hooks/use-artist-profile";
 import {
@@ -142,14 +142,22 @@ export default function ScenesView() {
         title="Scenes"
         subtitle="Rooms for the people you make music with."
         actions={
-          onNetwork ? (
-            <Button asChild size="sm">
-              <Link href="/scenes/new">
-                <Plus className="size-3.5" />
-                Start a scene
+          <div className="flex flex-wrap items-center gap-2">
+            <Button asChild size="sm" variant="secondary">
+              <Link href="/scene">
+                Open Scene network
+                <ArrowUpRight className="size-3.5" />
               </Link>
             </Button>
-          ) : null
+            {onNetwork ? (
+              <Button asChild size="sm">
+                <Link href="/scenes/new">
+                  <Plus className="size-3.5" />
+                  Start a scene
+                </Link>
+              </Button>
+            ) : null}
+          </div>
         }
       />
 

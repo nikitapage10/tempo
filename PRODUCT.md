@@ -161,6 +161,8 @@ and showcase work on a public front door while member discussions and chats
 remain private. Owners can also install a complete **Owl's Nest** demo with
 sample members, posts, chat, an event, resources, a welcome page, showcase
 work, and recognition to see the system populated before building their own.
+That installer is available directly from Scene Studio even when the account
+does not yet manage a Scene.
 
 Scenes still support open, approval-required, and invite-only doors;
 ownership and moderator roles; requests, invitations, removal, bans, and

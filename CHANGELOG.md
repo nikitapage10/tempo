@@ -4,6 +4,10 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-08
 
+- Fixed (v0.94.1): the independent Scene network is now clearly linked from
+  the existing Scenes page, and Scene Studio offers the Owl's Nest installer
+  before you own a Scene. The populated demo is no longer hidden inside an
+  existing Scene's management screen.
 - Added (v0.94.0): Scenes can now operate as full independent networks, with
   their own `/scene` home and Scene Studio, while remaining available inside
   each artist's TEMPO workspace.
