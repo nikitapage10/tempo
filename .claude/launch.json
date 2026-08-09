@@ -27,6 +27,16 @@
         "3100"
       ],
       "port": 3100
+    },
+    {
+      "name": "tempo-dev-verify",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "port": 3200,
+      "autoPort": true
     }
   ]
 }

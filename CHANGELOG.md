@@ -2,6 +2,22 @@
 
 Plain-English history of what changed in TEMPO, newest first.
 
+## 2026-08-09 (3)
+
+- Fixed (v0.96.0): the Today page's scrolling cover art no longer glitches
+  and races out of control for artists with very large catalogs — it now
+  shows a fresh sample of up to 30 tracks each time you open the page
+  instead of trying to scroll every track at once.
+- Changed (v0.96.0): the Board now shows up to 30 tracks per stage by
+  default, with a "Show more" button to reveal the rest — huge catalogs no
+  longer flood a single stage column.
+- Changed (v0.96.0): when importing a large Spotify catalog, only your 100
+  most recently released tracks now get cover art and a Spotify link copied
+  in automatically. Every imported track still gets its title, type, and
+  album info — this just keeps very large imports (hundreds of tracks) fast
+  and reliable instead of bogging down on photo and link fetching for
+  everything at once.
+
 ## 2026-08-09 (2)
 
 - Fixed (v0.95.2): the Notifications and Messages popups no longer appear

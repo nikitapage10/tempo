@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { useActiveArtistPalette } from "@/components/active-artist-provider";
 import type { BoardNote, Stage, Track } from "@/lib/types";
@@ -59,6 +60,15 @@ export function KanbanColumn({
     id: stage.id,
     data: { stage },
   });
+
+  // A single stage can hold hundreds of tracks after a big catalog import —
+  // render only the first page by default so the board stays responsive,
+  // with an explicit toggle to reveal the rest.
+  const TRACK_CAP = 30;
+  const [showAll, setShowAll] = React.useState(false);
+  const visibleTracks =
+    showAll || tracks.length <= TRACK_CAP ? tracks : tracks.slice(0, TRACK_CAP);
+  const hiddenCount = tracks.length - visibleTracks.length;
 
   const hues = useActiveArtistPalette();
   const progress = stageProgressFromSort(stage.sort, stages);
@@ -193,7 +203,7 @@ export function KanbanColumn({
                     onDelete={() => onDeleteNote?.(note)}
                   />
                 ))}
-                {tracks.map((track) => (
+                {visibleTracks.map((track) => (
                   <TrackCard
                     key={track.id}
                     track={track}
@@ -203,6 +213,23 @@ export function KanbanColumn({
                     onRemoveFromBoard={onRemoveFromBoard}
                   />
                 ))}
+                {hiddenCount > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowAll(true)}
+                    className="rounded-card border border-dashed border-line/70 bg-bg-0/30 px-3 py-2 text-center text-[11px] font-medium text-text-lo/70 transition-colors duration-hover hover:border-ice/40 hover:text-text-hi"
+                  >
+                    Show {hiddenCount} more
+                  </button>
+                ) : showAll && tracks.length > TRACK_CAP ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowAll(false)}
+                    className="rounded-card border border-dashed border-line/70 bg-bg-0/30 px-3 py-2 text-center text-[11px] font-medium text-text-lo/70 transition-colors duration-hover hover:border-ice/40 hover:text-text-hi"
+                  >
+                    Show less
+                  </button>
+                ) : null}
               </>
             )}
           </div>

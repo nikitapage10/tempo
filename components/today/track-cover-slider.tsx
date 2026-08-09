@@ -76,14 +76,26 @@ export function TrackCoverSlider({ tracks, className }: TrackCoverSliderProps) {
 
   if (tracks.length === 0) return null;
 
+  // Cap how many covers the marquee ever renders — large catalogs (hundreds
+  // of imported tracks) otherwise blow up DOM size and the fixed-duration
+  // CSS animation ends up looking like it's "sliding too fast". A fresh
+  // random sample keeps it feeling alive across visits without re-rendering
+  // every track in the space.
+  const SLIDER_CAP = 30;
+  const sample = React.useMemo(() => {
+    if (tracks.length <= SLIDER_CAP) return tracks;
+    const shuffled = [...tracks].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, SLIDER_CAP);
+  }, [tracks]);
+
   // Enough tiles that one marquee half outruns a wide desktop viewport.
   const MIN_TILES = 12;
   const tiles =
-    tracks.length >= MIN_TILES
-      ? tracks
+    sample.length >= MIN_TILES
+      ? sample
       : Array.from(
-          { length: Math.ceil(MIN_TILES / tracks.length) },
-          () => tracks
+          { length: Math.ceil(MIN_TILES / sample.length) },
+          () => sample
         ).flat();
 
   return (

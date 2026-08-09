@@ -317,6 +317,24 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   let artworkImported = 0;
   let artworkFailed = 0;
   const shouldCopyArtwork = spotifyInput?.copyArtwork !== false;
+
+  // Full Spotify enrichment (link, ISRC, duration, artwork copy) is a
+  // per-track HTTP download + storage write + several DB round-trips — fine
+  // for a handful of tracks, but a 500-track catalog import turns it into
+  // hundreds of outbound requests. Every track already gets its basic
+  // metadata (title, type, album note) from the plan itself; only the most
+  // recently released tracks get the richer Spotify-backed enrichment below.
+  const ENRICHMENT_CAP = 100;
+  const enrichTrackRefs = new Set(
+    commitPayload.tracks
+      .filter((track) => track.spotify)
+      .sort((a, b) =>
+        (b.spotify!.releaseDate ?? "").localeCompare(a.spotify!.releaseDate ?? "")
+      )
+      .slice(0, ENRICHMENT_CAP)
+      .map((track) => track.ref)
+  );
+
   const trackIds =
     data && typeof data === "object" && data.trackIds && typeof data.trackIds === "object"
       ? (data.trackIds as Record<string, string>)
@@ -328,7 +346,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   for (const track of commitPayload.tracks) {
     const spotify = track.spotify;
     const trackId = trackIds[track.ref];
-    if (!spotify || !trackId) continue;
+    if (!spotify || !trackId || !enrichTrackRefs.has(track.ref)) continue;
     const { error: metadataError } = await ctx.admin
       .from("tracks")
       .update({
@@ -408,6 +426,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     // A small batch keeps catalog imports fast without creating a burst of
     // outbound downloads or storage writes.
     const jobs = commitPayload.tracks.flatMap((track) => {
+      if (!enrichTrackRefs.has(track.ref)) return [];
       const source = track.spotify?.artworkUrl;
       const trackId = trackIds[track.ref];
       return source && trackId ? [{ track, source, trackId }] : [];
