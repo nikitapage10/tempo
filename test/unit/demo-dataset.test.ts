@@ -16,6 +16,7 @@ import {
   DEMO_SOCIAL_POSTS,
   PRESIDENT_DEMO_KIND,
   PRESIDENT_DEMO_LOGO_URL,
+  PRESIDENT_DEMO_PROFILE_URL,
 } from "@/lib/demo/president";
 
 /**
@@ -31,9 +32,10 @@ const spaceRefs = new Set(DEMO_SPACES.map((s) => s.ref));
 const stages = new Set<string>(DEMO_STAGES);
 
 describe("PRESIDENT demo dataset", () => {
-  it("uses the supplied PRESIDENT wordmark in the current demo revision", () => {
-    expect(PRESIDENT_DEMO_KIND).toBe("president-v4");
+  it("keeps the supplied PRESIDENT wordmark and profile photo distinct", () => {
+    expect(PRESIDENT_DEMO_KIND).toBe("president-v5");
     expect(PRESIDENT_DEMO_LOGO_URL).toBe("/demo/president/logo.webp");
+    expect(PRESIDENT_DEMO_PROFILE_URL).toBe("/demo/president/profile.webp");
   });
 
   it("has no duplicate refs", () => {

@@ -38,6 +38,8 @@ type KanbanColumnProps = {
   dragging?: boolean;
   /** False when nothing is on the board at all, so we don't collapse every column to a rail. */
   allowCollapse?: boolean;
+  /** Fill one slot in the three-stage focused board window. */
+  fillAvailable?: boolean;
 };
 
 export function KanbanColumn({
@@ -55,6 +57,7 @@ export function KanbanColumn({
   roomy,
   dragging,
   allowCollapse = true,
+  fillAvailable,
 }: KanbanColumnProps) {
   const { setNodeRef } = useDroppable({
     id: stage.id,
@@ -90,9 +93,11 @@ export function KanbanColumn({
         "transition-[flex-grow,flex-basis,border-color,box-shadow] duration-300 ease-out motion-reduce:transition-none",
         // Stacked full-width below lg; sized columns from lg up.
         "w-full lg:min-h-[220px] lg:w-auto",
-        collapsed
-          ? "lg:w-11 lg:shrink-0 lg:grow-0 lg:basis-11"
-          : "lg:w-[280px] lg:min-w-[260px] lg:shrink-0 lg:grow-0 lg:basis-[280px]",
+        fillAvailable
+          ? "lg:min-w-0 lg:w-auto lg:basis-0 lg:grow"
+          : collapsed
+            ? "lg:w-11 lg:shrink-0 lg:grow-0 lg:basis-11"
+            : "lg:w-[280px] lg:min-w-[260px] lg:shrink-0 lg:grow-0 lg:basis-[280px]",
         isOver && "border-ice/40 glow-ice"
       )}
       aria-label={`${stage.name}, ${itemCount} ${
@@ -110,7 +115,7 @@ export function KanbanColumn({
         }}
       />
 
-      {collapsed ? (
+      {collapsed && !fillAvailable ? (
         /* Collapsed: a single-line bar when stacked, a slim vertical rail
            (~44px) when columns sit side by side. */
         <div className="relative flex flex-1 items-center gap-2 px-3.5 py-2.5 lg:flex-col lg:gap-3 lg:px-0 lg:py-3">

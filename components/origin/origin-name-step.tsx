@@ -108,7 +108,7 @@ export function OriginNameStep({
             maxLength={60}
             aria-invalid={Boolean(error)}
             aria-describedby={error ? errorId : undefined}
-            className="h-auto rounded-none border-0 bg-transparent px-0 py-2 font-display text-2xl uppercase tracking-[0.06em] text-text-hi shadow-none placeholder:normal-case placeholder:tracking-normal focus-visible:ring-0 sm:text-3xl"
+            className="h-auto rounded-none border-0 bg-transparent px-0 py-2 font-display text-2xl tracking-[0.03em] text-text-hi shadow-none placeholder:tracking-normal focus-visible:ring-0 sm:text-3xl"
           />
           <span
             aria-hidden

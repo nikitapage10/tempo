@@ -23,7 +23,6 @@ export function ArtistMark({
   size?: number;
   className?: string;
 }) {
-  const isPresidentWordmark = emblemUrl === "/demo/president/logo.webp";
   const { ice, amber } = resolveArtistAccent(paletteId, {
     ice: iceColor,
     amber: amberColor,
@@ -35,7 +34,6 @@ export function ArtistMark({
         alt={name}
         className={cn(
           "aspect-square shrink-0 rounded-full border border-line bg-bg-2 object-cover",
-          isPresidentWordmark && "bg-black object-contain p-[8%]",
           className
         )}
         fallback={<MonogramMark ice={ice} amber={amber} name={name} size={size} className={className} />}
@@ -70,7 +68,6 @@ export function ArtistProfileImage({
   name: string;
   className?: string;
 }) {
-  const isPresidentWordmark = emblemUrl === "/demo/president/logo.webp";
   const { ice, amber } = resolveArtistAccent(paletteId, {
     ice: iceColor,
     amber: amberColor,
@@ -104,21 +101,12 @@ export function ArtistProfileImage({
           maskRepeat: "no-repeat",
           WebkitMaskSize: "100% 100%",
           maskSize: "100% 100%",
-          ...(isPresidentWordmark
-            ? {
-                WebkitMaskImage: "none",
-                maskImage: "none",
-              }
-            : {}),
         }}
       >
         <SignedImage
           path={emblemUrl}
           alt={name}
-          className={cn(
-            "size-full object-cover object-[50%_18%]",
-            isPresidentWordmark && "object-contain"
-          )}
+          className="size-full object-cover object-[50%_18%]"
         />
       </span>
     </span>

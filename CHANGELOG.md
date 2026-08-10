@@ -4,6 +4,16 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-10
 
+- Fixed (v0.98.2): Signal 1 in Origin now displays an artist name with the
+  exact lowercase and uppercase characters entered instead of visually forcing
+  every name into capitals.
+- Fixed (v0.98.2): migration 060 can now resume after a partial application.
+  Its Scene membership backfill no longer calls an older chat-participant
+  trigger with a conflict key that the first attempt already replaced.
+- Improved (v0.98.2): Board now keeps three detailed stages open at a time and
+  minimizes the rest into clickable, droppable rails. A separate See all mode
+  fits the entire pipeline on screen as a compact overview of titles, momentum,
+  notes, and attention counts without forcing horizontal scrolling.
 - Improved (v0.98.2): the PRESIDENT demo now uses the supplied official
   wordmark as its artist logo. Existing demos are offered the refreshed sample
   revision so the new identity artwork appears there too.

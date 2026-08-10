@@ -12,14 +12,25 @@ import {
   type DragOverEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-import { Plus, Rows2, Rows3, Settings2 } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Columns3,
+  LayoutGrid,
+  Plus,
+  Rows2,
+  Rows3,
+  Settings2,
+} from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useActiveSpace } from "@/components/active-space-provider";
 import {
   BoardNoteCard,
   parseNoteDragId,
 } from "@/components/board/board-note-card";
+import { BoardOverview } from "@/components/board/board-overview";
 import { KanbanColumn } from "@/components/board/kanban-column";
+import { StageRail } from "@/components/board/stage-rail";
 import type { StageAddAction } from "@/components/board/stage-add-menu";
 import { EmptyShaderPanel } from "@/components/shader-empty";
 import { Button } from "@/components/ui/button";
@@ -41,6 +52,11 @@ import {
 import { useStages } from "@/hooks/use-stages";
 import { useStageTransitionController } from "@/hooks/use-stage-transition";
 import { useTrackMutations, useTracks } from "@/hooks/use-tracks";
+import {
+  BOARD_FOCUS_COUNT,
+  clampBoardFocusStart,
+  focusStartForStage,
+} from "@/lib/board/view";
 import { TRACK_TYPES } from "@/lib/constants";
 import { deriveAttentionSignals } from "@/lib/attention/signals";
 import type { BoardNote, Track, TrackInsert, TrackType } from "@/lib/types";
@@ -56,6 +72,8 @@ const BOARD_SORTS: { value: BoardSort; label: string }[] = [
 ];
 
 const BOARD_SORT_KEY = "tempo.boardSort";
+const BOARD_VIEW_KEY = "tempo.boardView";
+type BoardViewMode = "focus" | "overview";
 
 function readBoardSort(): BoardSort {
   if (typeof window === "undefined") return "custom";
@@ -144,9 +162,16 @@ export function BoardView() {
     return (
       (localStorage.getItem("tempo.boardDensity") as
         | "comfortable"
-        | "compact") || "comfortable"
+      | "compact") || "comfortable"
     );
   });
+  const [viewMode, setViewMode] = React.useState<BoardViewMode>(() => {
+    if (typeof window === "undefined") return "focus";
+    return localStorage.getItem(BOARD_VIEW_KEY) === "overview"
+      ? "overview"
+      : "focus";
+  });
+  const [focusStart, setFocusStart] = React.useState(0);
   const [trackModalOpen, setTrackModalOpen] = React.useState(false);
   const [trackModalStageId, setTrackModalStageId] = React.useState<
     string | null
@@ -222,6 +247,20 @@ export function BoardView() {
     }
     return map;
   }, [stages, notes]);
+
+  React.useEffect(() => {
+    setFocusStart((current) => clampBoardFocusStart(stages.length, current));
+  }, [stages.length]);
+
+  function setBoardView(mode: BoardViewMode) {
+    setViewMode(mode);
+    localStorage.setItem(BOARD_VIEW_KEY, mode);
+  }
+
+  function focusStage(index: number) {
+    setFocusStart(focusStartForStage(stages.length, index));
+    setBoardView("focus");
+  }
 
   /** Tracks with no stage — only shown in the Existing track… picker. */
   const unstagedTracks = React.useMemo(() => {
@@ -546,6 +585,44 @@ export function BoardView() {
 
             <div
               role="group"
+              aria-label="Board view"
+              className="flex items-center gap-0.5 rounded-input border border-line bg-bg-2/60 p-0.5"
+            >
+              <button
+                type="button"
+                aria-pressed={viewMode === "focus"}
+                title="Three detailed stages"
+                onClick={() => setBoardView("focus")}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-[6px] px-2 py-1.5 text-xs transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
+                  viewMode === "focus"
+                    ? "bg-bg-1 text-ice shadow-e1"
+                    : "text-text-lo hover:text-text-hi"
+                )}
+              >
+                <Columns3 className="size-3.5" />
+                Focus
+              </button>
+              <button
+                type="button"
+                aria-pressed={viewMode === "overview"}
+                title="See every stage at once"
+                onClick={() => setBoardView("overview")}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-[6px] px-2 py-1.5 text-xs transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
+                  viewMode === "overview"
+                    ? "bg-bg-1 text-ice shadow-e1"
+                    : "text-text-lo hover:text-text-hi"
+                )}
+              >
+                <LayoutGrid className="size-3.5" />
+                See all
+              </button>
+            </div>
+
+            {viewMode === "focus" ? (
+            <div
+              role="group"
               aria-label="Card density"
               className="flex items-center gap-0.5 rounded-input border border-line bg-bg-2/60 p-0.5"
             >
@@ -576,6 +653,7 @@ export function BoardView() {
                 </button>
               ))}
             </div>
+            ) : null}
             <Button
               variant="secondary"
               size="sm"
@@ -629,55 +707,91 @@ export function BoardView() {
             setOverStageId(null);
           }}
         >
-          {/* Columns share the available width instead of scrolling off-screen.
-              Empty stages collapse to slim rails so the pipeline stays visible
-              at a glance; a drag expands everything so any stage is droppable. */}
-          {/* Below lg the stages stack vertically — columns would be too narrow
-              to read, and vertical scrolling beats horizontal on touch. */}
-          <div
-            className="flex flex-col gap-2 pb-3 lg:flex-row lg:items-stretch lg:overflow-x-auto lg:overscroll-x-contain"
-            aria-label="Board stages — scroll horizontally to see the full pipeline"
-          >
-            {stages.map((stage) => (
-              <KanbanColumn
-                key={stage.id}
-                stage={stage}
-                stages={stages}
-                tracks={tracksByStage.get(stage.id) ?? []}
-                notes={notesByStage.get(stage.id) ?? []}
-                isOver={overStageId === stage.id}
-                onOpenTrack={(t) => router.push(`/track/${t.id}`)}
-                onRemoveFromBoard={(t) => void removeFromBoard(t)}
-                onStageAdd={(action) => handleStageAdd(stage.id, action)}
-                onSaveNote={(note, patch) => {
-                  void updateNote
-                    .mutateAsync({ id: note.id, patch })
-                    .catch((err) => {
-                      toast(
-                        err instanceof Error
-                          ? err.message
-                          : "Couldn’t save that note."
-                      );
-                    });
-                }}
-                onDeleteNote={(note) => {
-                  void removeNote.mutateAsync(note.id).then(
-                    () => toast("Note deleted.", "ok"),
-                    (err) =>
-                      toast(
-                        err instanceof Error
-                          ? err.message
-                          : "Couldn’t delete that note."
-                      )
+          {viewMode === "overview" ? (
+            <BoardOverview
+              stages={stages}
+              tracksByStage={tracksByStage}
+              notesByStage={notesByStage}
+              onFocusStage={focusStage}
+            />
+          ) : (
+            <>
+              {stages.length > BOARD_FOCUS_COUNT ? (
+                <div className="mb-2 flex items-center justify-between gap-3 rounded-card border border-line/70 bg-bg-1/45 px-3 py-2">
+                  <button
+                    type="button"
+                    onClick={() => setFocusStart((current) => clampBoardFocusStart(stages.length, current - 1))}
+                    disabled={focusStart === 0}
+                    className="inline-flex items-center gap-1 text-xs text-text-lo hover:text-text-hi disabled:pointer-events-none disabled:opacity-30"
+                  >
+                    <ChevronLeft className="size-3.5" /> Previous
+                  </button>
+                  <p className="truncate text-center text-[11px] text-text-lo">
+                    Showing {focusStart + 1}–{Math.min(stages.length, focusStart + BOARD_FOCUS_COUNT)} of {stages.length} stages
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setFocusStart((current) => clampBoardFocusStart(stages.length, current + 1))}
+                    disabled={focusStart >= stages.length - BOARD_FOCUS_COUNT}
+                    className="inline-flex items-center gap-1 text-xs text-text-lo hover:text-text-hi disabled:pointer-events-none disabled:opacity-30"
+                  >
+                    Next <ChevronRight className="size-3.5" />
+                  </button>
+                </div>
+              ) : null}
+              <div
+                className="flex flex-col gap-2 pb-3 lg:flex-row lg:items-stretch lg:overflow-hidden"
+                aria-label={`Board stages, ${Math.min(BOARD_FOCUS_COUNT, stages.length)} detailed at a time`}
+              >
+                {stages.map((stage, index) => {
+                  const inFocus = index >= focusStart && index < focusStart + BOARD_FOCUS_COUNT;
+                  const stageTracks = tracksByStage.get(stage.id) ?? [];
+                  const stageNotes = notesByStage.get(stage.id) ?? [];
+                  if (!inFocus) {
+                    return (
+                      <StageRail
+                        key={stage.id}
+                        stage={stage}
+                        stages={stages}
+                        itemCount={stageTracks.length + stageNotes.length}
+                        isOver={overStageId === stage.id}
+                        onOpen={() => focusStage(index)}
+                      />
+                    );
+                  }
+                  return (
+                    <KanbanColumn
+                      key={stage.id}
+                      stage={stage}
+                      stages={stages}
+                      tracks={stageTracks}
+                      notes={stageNotes}
+                      isOver={overStageId === stage.id}
+                      onOpenTrack={(t) => router.push(`/track/${t.id}`)}
+                      onRemoveFromBoard={(t) => void removeFromBoard(t)}
+                      onStageAdd={(action) => handleStageAdd(stage.id, action)}
+                      onSaveNote={(note, patch) => {
+                        void updateNote.mutateAsync({ id: note.id, patch }).catch((err) => {
+                          toast(err instanceof Error ? err.message : "Couldn’t save that note.");
+                        });
+                      }}
+                      onDeleteNote={(note) => {
+                        void removeNote.mutateAsync(note.id).then(
+                          () => toast("Note deleted.", "ok"),
+                          (err) => toast(err instanceof Error ? err.message : "Couldn’t delete that note.")
+                        );
+                      }}
+                      compact={density === "compact"}
+                      roomy={roomy}
+                      dragging={!!activeDrag}
+                      allowCollapse={onBoardCount > 0 || tracks.length > 0}
+                      fillAvailable
+                    />
                   );
-                }}
-                compact={density === "compact"}
-                roomy={roomy}
-                dragging={!!activeDrag}
-                allowCollapse={onBoardCount > 0 || tracks.length > 0}
-              />
-            ))}
-          </div>
+                })}
+              </div>
+            </>
+          )}
           <DragOverlay>
             {activeDrag?.kind === "track" ? (
               <TrackCard

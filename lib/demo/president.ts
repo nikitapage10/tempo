@@ -27,8 +27,9 @@
  */
 
 /** Bump when persisted demo rows change so an existing sample can rebuild. */
-export const PRESIDENT_DEMO_KIND = "president-v4";
+export const PRESIDENT_DEMO_KIND = "president-v5";
 export const PRESIDENT_DEMO_LOGO_URL = "/demo/president/logo.webp";
+export const PRESIDENT_DEMO_PROFILE_URL = "/demo/president/profile.webp";
 
 export const PRESIDENT_SPOTIFY_ARTIST_ID = "40nPYop0FOD9Syyu5y4dAU";
 export const PRESIDENT_SPOTIFY_URL = `https://open.spotify.com/artist/${PRESIDENT_SPOTIFY_ARTIST_ID}`;

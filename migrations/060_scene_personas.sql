@@ -76,6 +76,43 @@ on conflict (scene_id, user_id) do nothing;
 alter table scene_members add column if not exists id uuid default gen_random_uuid();
 alter table scene_members add column if not exists persona_id uuid references scene_personas(id) on delete cascade;
 
+-- A previous attempt can fail after conversation_participants has moved from
+-- its legacy (conversation_id, profile_id) primary key to the account-level
+-- id/user constraints below. On retry, the migration-053 membership trigger
+-- would otherwise fire during this backfill while still targeting that removed
+-- profile conflict key. Install a constraint-agnostic bridge first so both a
+-- fresh schema and a partially applied 060 can safely reach the final trigger.
+alter table conversation_participants add column if not exists scene_persona_id uuid references scene_personas(id) on delete cascade;
+
+create or replace function sync_scene_chat_participant() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare v_conv uuid; v_role text;
+begin
+  select id into v_conv from conversations
+  where scene_id = new.scene_id and scene_topic_id is null;
+  if v_conv is null then return new; end if;
+  v_role := case when new.role in ('owner', 'moderator') then 'admin' else 'member' end;
+
+  if new.status = 'active' then
+    update conversation_participants set
+      left_at = null,
+      role = v_role,
+      scene_persona_id = new.persona_id
+    where conversation_id = v_conv and user_id = new.user_id;
+
+    if not found then
+      insert into conversation_participants (
+        conversation_id, profile_id, scene_persona_id, user_id, role
+      ) values (v_conv, new.profile_id, new.persona_id, new.user_id, v_role);
+    end if;
+  else
+    update conversation_participants set left_at = coalesce(left_at, now())
+    where conversation_id = v_conv and user_id = new.user_id;
+  end if;
+  return new;
+end;
+$$;
+
 update scene_members m
 set persona_id = p.id
 from scene_personas p
@@ -158,6 +195,21 @@ alter table conversation_participants add column if not exists id uuid default g
 alter table conversation_participants drop constraint if exists conversation_participants_pkey;
 alter table conversation_participants alter column profile_id drop not null;
 alter table conversation_participants add primary key (id);
+
+-- The same legacy account could enter one Scene through several artist
+-- profiles. scene_members was consolidated above; mirror that consolidation
+-- in its room before enforcing one participant row per account.
+with ranked as (
+  select id, row_number() over (
+    partition by conversation_id, user_id
+    order by (left_at is null) desc, (role = 'admin') desc, joined_at, id
+  ) as rn
+  from conversation_participants
+)
+delete from conversation_participants cp
+using ranked r
+where cp.id = r.id and r.rn > 1;
+
 create unique index if not exists uq_conversation_participant_user
   on conversation_participants (conversation_id, user_id);
 
