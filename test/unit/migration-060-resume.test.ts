@@ -22,4 +22,10 @@ describe("migration 060 partial-run recovery", () => {
     expect(dedupe).toBeGreaterThan(-1);
     expect(uniqueIndex).toBeGreaterThan(dedupe);
   });
+
+  it("does not copy dotted legacy handles into Scene personas", () => {
+    expect(sql).toContain(
+      "case when ap.handle ~ '^[a-z0-9_]{2,30}$' then ap.handle else null end"
+    );
+  });
 });

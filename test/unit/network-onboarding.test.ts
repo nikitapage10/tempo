@@ -26,12 +26,14 @@ describe("network onboarding boundaries", () => {
     expect(provisioning).not.toContain("async function seedSocial");
     expect(provisioning).not.toContain('from("profile_follows").upsert');
     expect(provisioning).toContain("removeLegacyStarterFollows");
+    expect(provisioning).toContain('.is("demo_kind", null)');
   });
 
   it("removes the retired synthetic posts and their automatic follow edges", () => {
     const migration = read("migrations/077_remove_synthetic_starter_feed.sql");
     expect(migration).toContain("delete from profile_follows");
     expect(migration).toContain("delete from posts");
+    expect(migration).toContain("delete from scene_personas");
     expect(migration).toContain("starter_community_provisioned_at is not null");
   });
 });

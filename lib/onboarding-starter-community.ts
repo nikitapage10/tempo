@@ -4,6 +4,7 @@ type AdminClient = ReturnType<typeof createAdminClient>;
 
 type StarterProfile = {
   id: string;
+  artist_id: string;
   owner_user_id: string;
   handle: string | null;
   display_name: string;
@@ -17,7 +18,7 @@ type StarterProfile = {
 };
 
 const starterProfileFields =
-  "id, owner_user_id, handle, display_name, emblem_url, bio, location, country_code, links, visibility, published_at";
+  "id, artist_id, owner_user_id, handle, display_name, emblem_url, bio, location, country_code, links, visibility, published_at";
 
 function missingDemoKind(error: { code?: string; message?: string } | null) {
   return !!error && (
@@ -201,6 +202,26 @@ async function starterProfiles(
       .order("published_at", { ascending: false })
       .limit(12);
     for (const profile of data ?? []) byId.set(profile.id, profile as StarterProfile);
+  }
+
+  // Team/admin accounts can also own demo workspaces. Only their real artist
+  // profiles may be made visible or added to the shared Green Room.
+  const artistIds = Array.from(new Set(
+    Array.from(byId.values()).map((profile) => profile.artist_id)
+  ));
+  if (artistIds.length) {
+    const { data: realArtists, error } = await service
+      .from("artists")
+      .select("id")
+      .in("id", artistIds)
+      .is("demo_kind", null);
+    if (error && !missingDemoKind(error)) throw error;
+    if (!error) {
+      const realArtistIds = new Set((realArtists ?? []).map((artist) => artist.id));
+      for (const [profileId, profile] of Array.from(byId.entries())) {
+        if (!realArtistIds.has(profile.artist_id)) byId.delete(profileId);
+      }
+    }
   }
 
   // An explicitly configured demo identity, the inviter, and TEMPO team

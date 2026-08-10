@@ -56,7 +56,7 @@ select distinct on (m.scene_id, m.user_id)
   m.user_id,
   m.profile_id,
   coalesce(nullif(trim(ap.display_name), ''), nullif(trim(a.name), ''), 'Member'),
-  ap.handle,
+  case when ap.handle ~ '^[a-z0-9_]{2,30}$' then ap.handle else null end,
   ap.emblem_url,
   ap.bio,
   ap.location,
@@ -254,7 +254,9 @@ language plpgsql security definer set search_path = public as $$
 declare v_persona uuid; v_name text; v_handle text; v_avatar text;
 begin
   if new.owner_profile_id is not null then
-    select display_name, handle, emblem_url into v_name, v_handle, v_avatar
+    select display_name,
+      case when handle ~ '^[a-z0-9_]{2,30}$' then handle else null end,
+      emblem_url into v_name, v_handle, v_avatar
     from artist_profiles where id = new.owner_profile_id;
   end if;
   if v_name is null then

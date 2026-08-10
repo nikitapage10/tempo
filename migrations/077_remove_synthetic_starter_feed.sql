@@ -5,6 +5,15 @@
 -- this cleanup prevents its placeholder Test Artist-style content from
 -- resurfacing when an older private account later joins the network.
 
+-- Demo workspaces are never members of the real community. Older starter
+-- provisioning could select a demo owned by a team/admin account as one of
+-- the Green Room's welcome identities.
+delete from scene_personas persona
+using artist_profiles profile, artists artist
+where persona.artist_profile_id = profile.id
+  and profile.artist_id = artist.id
+  and artist.demo_kind is not null;
+
 delete from profile_follows f
 using artist_profiles follower, member_onboarding onboarding
 where f.follower_profile_id = follower.id
