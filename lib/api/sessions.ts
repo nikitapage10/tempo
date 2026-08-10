@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { recordProductEvent } from "@/lib/product-events/client";
 import type { Session } from "@/lib/types";
 
 export async function fetchSessions(trackId: string): Promise<Session[]> {
@@ -100,6 +101,10 @@ export async function startFocusSession(
     }
     throw error;
   }
+  recordProductEvent(
+    "focus_session_started",
+    { source_surface: "track", has_goal: Boolean(input.goal?.trim()) }
+  );
   return data;
 }
 
@@ -130,6 +135,7 @@ export async function endFocusSession(
   if (fetchError) throw fetchError;
 
   const endedAt = new Date().toISOString();
+  const elapsedSec = computeElapsedSec(existing.started_at);
   const { data, error } = await supabase
     .from("sessions")
     .update({
@@ -139,14 +145,27 @@ export async function endFocusSession(
       next_action_after: input.nextActionAfter?.trim() || null,
       ...(input.versionId !== undefined ? { version_id: input.versionId } : {}),
       ended_at: endedAt,
-      elapsed_sec: computeElapsedSec(existing.started_at),
+      elapsed_sec: elapsedSec,
       logged_at: endedAt,
     })
     .eq("id", sessionId)
     .select()
     .single();
   if (error) throw error;
+  recordProductEvent("focus_session_completed", {
+    duration_bucket: durationBucket(elapsedSec),
+    next_move_updated: Boolean(input.nextActionAfter?.trim()),
+    bounce_uploaded: Boolean(input.versionId),
+  });
   return data;
+}
+
+function durationBucket(seconds: number): string {
+  const minutes = seconds / 60;
+  if (minutes < 15) return "under_15m";
+  if (minutes < 30) return "15_30m";
+  if (minutes < 60) return "30_60m";
+  return "over_60m";
 }
 
 /** Ends an active focus session without keeping any notes (discarded). */

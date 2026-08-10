@@ -143,6 +143,27 @@ describe("comment access", () => {
   });
 });
 
+describe("product_events access (AR-3)", () => {
+  it("no browser role — not even the owner — can SELECT product_events directly", async () => {
+    const client = await clientForRole("owner");
+    const { data, error } = await client.from("product_events").select("id").limit(1);
+    // RLS enabled with zero policies: either an empty result or a denial —
+    // never actual rows.
+    expect(data ?? []).toHaveLength(0);
+    void error;
+  });
+
+  it("no browser role can INSERT into product_events directly (must go through /api/product-events)", async () => {
+    const client = await clientForRole("owner");
+    const { error } = await client.from("product_events").insert({
+      user_id: manifest.users.owner.id,
+      event_name: "first_track_created",
+      properties: {},
+    });
+    expect(error).not.toBeNull();
+  });
+});
+
 describe("cross-track enumeration", () => {
   it("unauthorized account cannot enumerate tracks by guessing IDs", async () => {
     const client = await clientForRole("unauthorized");

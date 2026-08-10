@@ -52,6 +52,21 @@ export async function GET() {
 
   const emailDelivery = inviteDeliveryConfig();
 
+  const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const [{ count: accepted }, { count: rejected }, { count: duplicate }] = await Promise.all([
+    service.from("product_events").select("id", { count: "exact", head: true }).gte("received_at", since24h),
+    service
+      .from("product_event_ingestion_errors")
+      .select("id", { count: "exact", head: true })
+      .in("reason", ["rejected_event_name", "rejected_shape"])
+      .gte("created_at", since24h),
+    service
+      .from("product_event_ingestion_errors")
+      .select("id", { count: "exact", head: true })
+      .eq("reason", "duplicate")
+      .gte("created_at", since24h),
+  ]);
+
   return adminJson({
     migrations: migrationHealth,
     emailDelivery: {
@@ -60,11 +75,18 @@ export async function GET() {
       fromPresent: emailDelivery.fromPresent,
       domain: emailDelivery.domain,
     },
+    productEvents: {
+      instrumented: true,
+      last24h: {
+        accepted: accepted ?? 0,
+        rejected: rejected ?? 0,
+        duplicate: duplicate ?? 0,
+      },
+    },
     // Populated once the corresponding package ships — reported explicitly
     // as "not yet instrumented" rather than omitted, so the Admin surface
     // never implies a false "healthy" for something that doesn't exist yet.
     scheduler: { instrumented: false },
-    productEvents: { instrumented: false },
     pulseDelivery: { instrumented: false },
     checkedAt: new Date().toISOString(),
   });

@@ -382,6 +382,30 @@ export function AccountPanel() {
         </div>
       </section>
 
+      <section className="panel-quiet p-5">
+        <div className="flex items-start gap-3">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-ice/20 bg-ice/10">
+            <ShieldCheck className="size-4 text-ice" />
+          </div>
+          <div>
+            <p className="font-display text-base font-semibold tracking-tight text-text-hi">
+              Product improvement data
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-text-lo">
+              TEMPO records a small set of anonymous product events — things
+              like &quot;a track was created&quot; or &quot;a focus session
+              finished&quot; — to understand whether the app is actually
+              helping and where people get stuck. These events never include
+              titles, filenames, lyrics, notes, messages, comments, feedback
+              text, prompts, or anything you wrote. They&apos;re tied to your
+              account only to avoid double-counting, and are never shown to
+              anyone as a per-person activity timeline — only combined,
+              aggregate numbers.
+            </p>
+          </div>
+        </div>
+      </section>
+
       <section className="panel-quiet border-warn/20 p-5">
         <div className="flex items-start gap-3">
           <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-warn/25 bg-warn/10">

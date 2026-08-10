@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/client";
 import { logActivity } from "@/lib/api/activity";
 import { normalizeTrackType } from "@/lib/track-style";
+import { recordProductEvent } from "@/lib/product-events/client";
 import type { Track, TrackInsert, TrackUpdate } from "@/lib/types";
 
 export async function fetchTracks(spaceId: string): Promise<Track[]> {
@@ -73,6 +74,15 @@ export async function createTrack(input: TrackInsert): Promise<Track> {
     .select()
     .single();
   if (error) throw error;
+  // Dedupe key is per-user, not per-track — the unique (user_id, dedupe_key)
+  // constraint naturally collapses this to "first track only" without an
+  // extra query. Every later track creation still fires the request but
+  // lands as an expected, harmless duplicate.
+  recordProductEvent(
+    "first_track_created",
+    { creation_path: "manual" },
+    { spaceId: input.space_id, dedupeKey: "first_track_created:v1" }
+  );
   return normalizeTrack(data);
 }
 
