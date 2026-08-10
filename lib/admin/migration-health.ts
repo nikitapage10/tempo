@@ -5,4 +5,4 @@
  * locally and silently fail in production. Bump this whenever a new
  * migration file is added, the same way APP_VERSION gets bumped per change.
  */
-export const EXPECTED_LATEST_MIGRATION = 68;
+export const EXPECTED_LATEST_MIGRATION = 72;
