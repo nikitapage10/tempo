@@ -390,14 +390,23 @@ async function seedSceneContent(
  * Gives first-run accounts a small, real community to explore.
  * Every write is naturally idempotent so the onboarding endpoint can retry
  * after the artist profile appears without duplicating starter content.
+ *
+ * Returns true only when it ran all the way through. It bails out early and
+ * returns false while the account is still too new to seed against (no
+ * onboarding row yet, or no artist profile yet) — the caller uses that to
+ * decide whether the work is finished for good, so returning true when a step
+ * was skipped would strand the account without its starter community.
  */
-export async function provisionStarterCommunity(service: AdminClient, userId: string) {
+export async function provisionStarterCommunity(
+  service: AdminClient,
+  userId: string
+): Promise<boolean> {
   const { data: onboarding, error: onboardingError } = await service
     .from("member_onboarding")
     .select("invite_id")
     .eq("user_id", userId)
     .maybeSingle();
-  if (onboardingError || !onboarding) return;
+  if (onboardingError || !onboarding) return false;
 
   const { data: memberProfile, error: profileError } = await service
     .from("artist_profiles")
@@ -406,7 +415,7 @@ export async function provisionStarterCommunity(service: AdminClient, userId: st
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
-  if (profileError || !memberProfile) return;
+  if (profileError || !memberProfile) return false;
 
   const profiles = await starterProfiles(service, userId, onboarding.invite_id);
   if (profiles.length) await seedSocial(service, memberProfile.id, profiles);
@@ -418,4 +427,5 @@ export async function provisionStarterCommunity(service: AdminClient, userId: st
   }
   await addMemberToScene(service, scene.id, userId, memberProfile as StarterProfile);
   await seedSceneContent(service, scene, sceneProfiles.length ? sceneProfiles : [memberProfile as StarterProfile]);
+  return true;
 }

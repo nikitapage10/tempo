@@ -4,6 +4,45 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-10
 
+- Fixed (v0.98.0): every screen in TEMPO now opens faster. Some first-run
+  setup — building the small starter community you land in, and looking up
+  your artist list — was quietly being redone from scratch every single time
+  you opened any page, long after it was finished. It now runs once and stays
+  done, and a couple of lookups the app was making twice per page now happen
+  once. Nothing looks different; there's just less waiting before a screen
+  fills in.
+  Under the hood: run migration 074 in Supabase before this works.
+- Added (v0.98.0): you can now look around a demo workspace instead of
+  bringing your own music in first. Wherever TEMPO offers to import your
+  catalog — inside the opening story, and on the Import screen — there's
+  now an "Explore a demo artist" option. It loads a sample catalog built
+  around PRESIDENT, the masked band whose debut album lands in September:
+  their songs sitting at different stages on the board, the album and EP
+  as projects, launch tasks with real deadlines, a few weeks of logged
+  studio sessions, guest feedback waiting to be answered, and a filled-in
+  artist page. It's enough to see what every screen looks like with a
+  real record in progress behind it.
+  The released songs actually play. TEMPO connects each one to its real
+  recording and the built-in Spotify player handles it, so ten of the
+  demo's tracks are audible straight away; the unfinished ones stay
+  silent, exactly as they would in real life.
+  Alongside the real catalog there are six made-up songs in the early
+  stages — sketches, half-written things, one stuck in a second verse —
+  under a project called "Record two (working)". They're there because a
+  released discography has nothing sitting in Idea, Writing or Production,
+  and that's the half of the board a new artist most needs to see working.
+  The demo arrives as its own artist alongside yours, so none of it mixes
+  into your own catalog, and a strip across the top says so on every
+  screen while you're in it. "Remove demo data" takes the whole thing
+  away in one click — and if you were partway through setting your own
+  artist up when you started looking, you pick straight back up where you
+  left off. Nothing you'd entered is lost.
+  Song titles, release dates, track order and running times come from
+  PRESIDENT's actual discography, read back from their live catalog rather
+  than typed from memory. The things TEMPO stores that aren't public —
+  BPMs, keys, session notes, feedback — are made up so those parts of the
+  app have something to show, as are the six early-stage songs.
+  Under the hood: run migration 073 in Supabase before this works.
 - Added (v0.97.0): a quiet guide on Today, "Your TEMPO loop," suggests one
   next step for artists just getting going — bring in a song, name the
   next move, focus on it, upload a bounce, get feedback, close the loop.

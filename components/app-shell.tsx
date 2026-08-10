@@ -40,6 +40,7 @@ import { GlobalPlayerBar } from "@/components/player/global-player-bar";
 import { GuidedTour } from "@/components/guided-tour";
 import { StarterChecklist } from "@/components/onboarding/starter-checklist";
 import { ContextualPageTour } from "@/components/onboarding/contextual-page-tour";
+import { DemoBanner } from "@/components/demo/demo-banner";
 
 // Artist sits above the space-scoped screens: it rolls up every space the
 // artist owns, so it stays in the rail whatever the active space's focus is.
@@ -248,6 +249,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <GlobalSearch className="ml-1" />
               </div>
             </div>
+            {/* Above the page, not inside it: whether this catalog is real is
+                context for every screen, not a fact about any one of them. */}
+            <DemoBanner />
             <div className="pb-6 pt-1">{children}</div>
           </div>
         </main>

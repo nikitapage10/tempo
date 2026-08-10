@@ -35,6 +35,7 @@ type Row = {
   page_tours_skipped: string[];
   welcome_connected_at: string | null;
   welcome_message_sent_at: string | null;
+  starter_community_provisioned_at: string | null;
   last_seen_at: string;
 };
 
@@ -44,24 +45,57 @@ async function currentUser() {
   return user;
 }
 
-async function stateFor(userId: string) {
-  const service = createAdminClient();
-  // Best effort: this also creates the mutual follow and welcome thread once
-  // both the member and inviter have an artist profile.
+/** Reads the onboarding row, ensuring it exists first. */
+async function readState(service: ReturnType<typeof createAdminClient>, userId: string) {
+  // One round trip, all of it server-side in Postgres: creates the row on
+  // first sight, refreshes last_seen_at, and settles the inviter follow and
+  // welcome thread once both sides have an artist profile.
   await service.rpc("provision_member_onboarding", { p_user_id: userId });
-  // The starter community is deliberately best-effort. A profile may not exist
-  // on the earliest request, and the next onboarding read safely retries it.
-  await provisionStarterCommunity(service, userId).catch((error) => {
-    console.error("[onboarding] starter community provisioning failed", error);
-  });
   const { data, error } = await service
     .from("member_onboarding")
     .select("*")
     .eq("user_id", userId)
     .single();
   if (error || !data) throw error ?? new Error("Missing onboarding state");
+  return data as Row;
+}
 
-  return serialize(data as Row);
+/**
+ * Seeds the starter community once, then never again.
+ *
+ * This costs ~25 sequential round trips. It is genuinely first-run-only work,
+ * but this endpoint runs on every authenticated page load, so without the
+ * marker every navigation paid for it again. Mutates `row` in place so the
+ * caller can serialize the state it already holds.
+ *
+ * The marker is only written once provisioning reports it ran to completion,
+ * so an account still too new to seed retries on the next request — the
+ * original best-effort behaviour, minus the repetition.
+ */
+async function ensureStarterCommunity(
+  service: ReturnType<typeof createAdminClient>,
+  row: Row,
+  userId: string
+) {
+  if (row.starter_community_provisioned_at) return;
+  try {
+    if (!(await provisionStarterCommunity(service, userId))) return;
+    const provisionedAt = new Date().toISOString();
+    await service
+      .from("member_onboarding")
+      .update({ starter_community_provisioned_at: provisionedAt })
+      .eq("user_id", userId);
+    row.starter_community_provisioned_at = provisionedAt;
+  } catch (error) {
+    console.error("[onboarding] starter community provisioning failed", error);
+  }
+}
+
+async function stateFor(userId: string) {
+  const service = createAdminClient();
+  const row = await readState(service, userId);
+  await ensureStarterCommunity(service, row, userId);
+  return serialize(row);
 }
 
 function serialize(row: Row) {
@@ -102,13 +136,7 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const service = createAdminClient();
-    await service.rpc("provision_member_onboarding", { p_user_id: user.id });
-    const { data: existing, error: readError } = await service
-      .from("member_onboarding")
-      .select("*")
-      .eq("user_id", user.id)
-      .single();
-    if (readError || !existing) throw readError;
+    const existing = await readState(service, user.id);
 
     const now = new Date().toISOString();
     const patch: Record<string, unknown> = { last_seen_at: now };
@@ -146,12 +174,19 @@ export async function PATCH(request: NextRequest) {
       ]));
     }
 
-    const { error: updateError } = await service
+    // `.select()` returns the saved row, so the response no longer costs a
+    // second provision-and-read cycle on top of the one above.
+    const { data: updated, error: updateError } = await service
       .from("member_onboarding")
       .update(patch)
-      .eq("user_id", user.id);
-    if (updateError) throw updateError;
-    return NextResponse.json(await stateFor(user.id), { headers });
+      .eq("user_id", user.id)
+      .select("*")
+      .single();
+    if (updateError || !updated) throw updateError ?? new Error("Missing onboarding state");
+
+    const row = updated as Row;
+    await ensureStarterCommunity(service, row, user.id);
+    return NextResponse.json(serialize(row), { headers });
   } catch {
     return NextResponse.json({ error: "Couldn’t save onboarding progress." }, { status: 500, headers });
   }

@@ -26,6 +26,8 @@ export async function fetchArtists(): Promise<Artist[]> {
     origin_status: row.origin_status ?? null,
     origin_completed_at: row.origin_completed_at ?? null,
     origin_skipped_at: row.origin_skipped_at ?? null,
+    // Null until migration 073 — an un-migrated database simply has no demo.
+    demo_kind: row.demo_kind ?? null,
   }));
 }
 
@@ -196,9 +198,14 @@ export async function clearArtistEmblem(artist: Artist): Promise<Artist> {
   return updated;
 }
 
-/** Seed one default artist when the user has none (first sign-in). */
-export async function ensureDefaultArtist(): Promise<Artist> {
+/**
+ * The artist list, seeding a default artist when the user has none (first
+ * sign-in). Returns the list it already read instead of leaving the caller to
+ * fetch it a second time — that pairing cost two identical round trips on
+ * every page load.
+ */
+export async function ensureArtists(): Promise<Artist[]> {
   const existing = await fetchArtists();
-  if (existing.length > 0) return existing[0];
-  return createArtist(DEFAULT_ARTIST_NAME, 0);
+  if (existing.length > 0) return existing;
+  return [await createArtist(DEFAULT_ARTIST_NAME, 0)];
 }

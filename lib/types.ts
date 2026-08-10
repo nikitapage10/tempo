@@ -33,6 +33,12 @@ export type Artist = {
   origin_status: OriginStatus | null;
   origin_completed_at: string | null;
   origin_skipped_at: string | null;
+  /**
+   * Migration 073. Non-null marks a seeded demo artist (never real member
+   * data) and names the sample catalog it came from. Null on a database that
+   * hasn't run the migration, which reads correctly as "not a demo".
+   */
+  demo_kind: string | null;
   created_at: string;
 };
 

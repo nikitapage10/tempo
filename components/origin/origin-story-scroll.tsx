@@ -17,6 +17,7 @@ import {
   ImportExperience,
   type ImportStep,
 } from "@/components/import/import-experience";
+import { TryDemoButton } from "@/components/demo/try-demo-button";
 import { useOriginScrollScrub } from "@/hooks/use-origin-scroll-scrub";
 import type {
   ArtistOriginInterpretation,
@@ -728,6 +729,19 @@ export function OriginStoryScroll({
             >
               {importPending ? "Begin with open space" : "Not now"}
             </Button>
+          </div>
+          {/* The third answer to "bring your music in": look at someone
+              else's first. Handing over a catalog is a bigger ask than
+              anyone has been given a reason for yet. */}
+          <div className="flex flex-col gap-2 border-t border-line pt-4">
+            <p className="text-sm leading-relaxed text-text-lo">
+              Not ready to hand anything over? You can walk through a finished
+              workspace instead — a real band four weeks out from an album, with
+              the songs, the deadlines and the loose ends already in it. It sits
+              alongside your own work rather than in it, and removing it takes
+              one click.
+            </p>
+            <TryDemoButton variant="ghost" size="sm" label="Explore a demo artist first" />
           </div>
           {importChoice === "empty" ? (
             <p className="text-xs text-ice">

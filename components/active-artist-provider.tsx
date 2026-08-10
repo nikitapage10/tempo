@@ -6,8 +6,7 @@ import {
   clearArtistEmblem,
   clearArtistLogo,
   deleteArtist,
-  ensureDefaultArtist,
-  fetchArtists,
+  ensureArtists,
   renameArtist,
   reorderArtists,
   setArtistBannerColor,
@@ -53,8 +52,7 @@ function writeStoredArtistId(id: string) {
 }
 
 async function bootstrapArtists(): Promise<Artist[]> {
-  await ensureDefaultArtist();
-  return fetchArtists();
+  return ensureArtists();
 }
 
 export function ActiveArtistProvider({
