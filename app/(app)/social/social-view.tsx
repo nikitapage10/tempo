@@ -42,9 +42,9 @@ export default function SocialView() {
   const myProfileId = profile?.id ?? null;
   const onNetwork =
     profile?.visibility === "members" || profile?.visibility === "public";
-  // A private artist can still see the small starter feed provisioned for
-  // their own account. Their profile remains private until they opt in.
-  const socialDataProfileId = myProfileId;
+  // A private artist has not joined Social yet. Keep follows and feed data
+  // out of the UI until they explicitly opt into the network.
+  const socialDataProfileId = onNetwork ? myProfileId : null;
   const { ice: accentIce, amber: accentAmber } = resolveArtistAccent(
     activeArtist?.palette_id,
     { ice: activeArtist?.ice_color, amber: activeArtist?.amber_color }
@@ -66,9 +66,7 @@ export default function SocialView() {
   const { data: timeline = [], isLoading: feedLoading } = useHomeTimeline(
     socialDataProfileId
   );
-  const starterPreview =
-    !onNetwork && (following.length > 0 || timeline.length > 0);
-  const canBrowseSocial = onNetwork || starterPreview;
+  const canBrowseSocial = onNetwork;
   const { like, unlike } = useFeedMutations(myProfileId);
 
   React.useEffect(() => {
@@ -289,8 +287,6 @@ export default function SocialView() {
         subtitle={
           onNetwork
             ? "Your network, follows, and what people you follow are up to."
-            : starterPreview
-              ? "A private preview of your starter community. Join the network whenever you want to be discoverable."
             : "Your private contact book — join the network anytime if you want to socialize."
         }
         actions={
@@ -315,17 +311,7 @@ export default function SocialView() {
         }
       />
 
-      {starterPreview ? (
-        <div className="panel-quiet flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm text-text-lo">
-          <span className="flex items-center gap-2">
-            <Users className="size-3.5 shrink-0 text-ice" />
-            Starter community preview. Your artist profile is still private.
-          </span>
-          <button type="button" onClick={() => void joinNetwork()} className="text-xs text-ice hover:underline">
-            Join the network
-          </button>
-        </div>
-      ) : !onNetwork && !profileLoading ? (
+      {!onNetwork && !profileLoading ? (
         <div className="panel-quiet flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm text-text-lo">
           <span className="flex items-center gap-2">
             <Lock className="size-3.5 shrink-0 text-text-lo" />

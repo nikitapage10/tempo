@@ -4,6 +4,10 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-10
 
+- Fixed (v0.98.2): joining the member network now remains successful even if
+  Green Room reconciliation needs a retry, and the repaired Scene migration is
+  live. Private new accounts no longer receive or display a pre-populated
+  starter feed; Green Room membership begins only after they opt in.
 - Fixed (v0.98.2): Signal 1 in Origin now displays an artist name with the
   exact lowercase and uppercase characters entered instead of visually forcing
   every name into capitals.

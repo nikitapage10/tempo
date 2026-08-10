@@ -9,9 +9,7 @@ const headers = { "Cache-Control": "private, no-store" };
 
 /**
  * Publish an artist to the member network and reconcile the account's Green
- * Room membership as one user-visible action. The older client-only update
- * could succeed while first-run community provisioning had not finished,
- * leaving a newly joined artist with no starter Scene.
+ * Room membership as one user-visible action.
  */
 export async function POST(request: NextRequest) {
   const supabase = createClient();
@@ -50,11 +48,11 @@ export async function POST(request: NextRequest) {
     .maybeSingle();
   if (artistError || !artist) {
     return NextResponse.json(
-      { error: "Couldn’t verify this artist." },
+      { error: "Couldn't verify this artist." },
       { status: 404, headers }
     );
   }
-  if (artist?.demo_kind) {
+  if (artist.demo_kind) {
     return NextResponse.json(
       { error: "Demo artists stay separate from the live member network." },
       { status: 400, headers }
@@ -70,7 +68,7 @@ export async function POST(request: NextRequest) {
     .single();
   if (publishError || !profile) {
     return NextResponse.json(
-      { error: publishError?.message ?? "Couldn’t join the network." },
+      { error: publishError?.message ?? "Couldn't join the network." },
       { status: 500, headers }
     );
   }
@@ -85,14 +83,10 @@ export async function POST(request: NextRequest) {
       .update({ starter_community_provisioned_at: new Date().toISOString() })
       .eq("user_id", user.id);
   } catch (error) {
-    // Roll the visible choice back if its promised starter membership could not
-    // be reconciled. The next attempt is safe: provisioning is idempotent.
-    await supabase
-      .from("artist_profiles")
-      .update({ visibility: existing.visibility, published_at: existing.published_at })
-      .eq("id", existing.id);
-    const message = error instanceof Error ? error.message : "Couldn’t join the Green Room.";
-    return NextResponse.json({ error: message }, { status: 500, headers });
+    // Network membership is the primary action. Keep it active if the starter
+    // Scene is temporarily unavailable; authenticated loads retry the
+    // idempotent Green Room reconciliation until it succeeds.
+    console.error("[network/join] Green Room reconciliation pending", error);
   }
 
   return NextResponse.json(profile, { headers });

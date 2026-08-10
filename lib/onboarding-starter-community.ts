@@ -75,7 +75,12 @@ export async function hasRealArtistProfile(service: AdminClient, userId: string)
   return !!(await memberProfileForProvisioning(service, userId));
 }
 
-const SOCIAL_STARTERS = [
+export async function isRealArtistOnNetwork(service: AdminClient, userId: string) {
+  const profile = await memberProfileForProvisioning(service, userId);
+  return profile?.visibility === "members" || profile?.visibility === "public";
+}
+
+const LEGACY_SOCIAL_STARTERS = [
   "Welcome to TEMPO. Share what you are making, what you are figuring out, or the next step you want to take.",
   "What is moving in your studio this week? A rough idea counts just as much as a finished release.",
   "Use this feed like an open studio door. Ask for ears, share a small win, or leave a note about the process.",
@@ -111,6 +116,28 @@ function oneProfilePerAccount(profiles: StarterProfile[]) {
     seen.add(profile.owner_user_id);
     return true;
   });
+}
+
+async function removeLegacyStarterFollows(
+  service: AdminClient,
+  memberProfileId: string
+) {
+  const { data: posts, error: postError } = await service
+    .from("posts")
+    .select("author_profile_id")
+    .in("body", [...LEGACY_SOCIAL_STARTERS])
+    .is("scene_id", null);
+  if (postError) throw postError;
+  const followeeIds = Array.from(new Set(
+    (posts ?? []).map((post) => post.author_profile_id).filter(Boolean)
+  ));
+  if (!followeeIds.length) return;
+  const { error } = await service
+    .from("profile_follows")
+    .delete()
+    .eq("follower_profile_id", memberProfileId)
+    .in("followee_profile_id", followeeIds);
+  if (error) throw error;
 }
 
 async function starterProfiles(
@@ -209,46 +236,6 @@ async function starterProfiles(
     .slice(0, 3);
 }
 
-async function seedSocial(
-  service: AdminClient,
-  memberProfileId: string,
-  profiles: StarterProfile[]
-) {
-  if (!profiles.length) return;
-  const { error: followError } = await service.from("profile_follows").upsert(
-    profiles.map((profile) => ({
-      follower_profile_id: memberProfileId,
-      followee_profile_id: profile.id,
-    })),
-    { onConflict: "follower_profile_id,followee_profile_id", ignoreDuplicates: true }
-  );
-  if (followError) throw followError;
-
-  for (let index = 0; index < profiles.length; index += 1) {
-    const profile = profiles[index];
-    const body = SOCIAL_STARTERS[index % SOCIAL_STARTERS.length];
-    const { data: existing, error: existingError } = await service
-      .from("posts")
-      .select("id")
-      .eq("author_profile_id", profile.id)
-      .eq("body", body)
-      .is("scene_id", null)
-      .limit(1)
-      .maybeSingle();
-    if (existingError) throw existingError;
-    if (!existing) {
-      const { error } = await service.from("posts").insert({
-        author_profile_id: profile.id,
-        author_user_id: profile.owner_user_id,
-        body,
-        media: [],
-        visibility: "followers",
-      });
-      if (error) throw error;
-    }
-  }
-}
-
 async function ensureStarterScene(service: AdminClient, owner: StarterProfile) {
   const slug = (process.env.ONBOARDING_DEMO_SCENE_SLUG ?? "tempo-green-room")
     .trim()
@@ -343,7 +330,7 @@ async function addMemberToScene(
       if (error || !persona) throw error ?? new Error("Starter Scene persona could not be created");
       personaId = persona.id;
     }
-    const { error } = await service.from("scene_members").upsert({
+    const membershipRow = {
       scene_id: sceneId,
       persona_id: personaId,
       profile_id: profile.id,
@@ -351,8 +338,22 @@ async function addMemberToScene(
       role: "member",
       status: "active",
       joined_at: new Date().toISOString(),
-    }, { onConflict: "scene_id,user_id" });
-    if (error) throw error;
+    };
+    // Some deployments can be paused midway through migration 060, before the
+    // account-level unique index exists. Update-then-insert works on both the
+    // legacy profile key and the final account key without relying on either
+    // ON CONFLICT specification.
+    const { data: updated, error: updateError } = await service
+      .from("scene_members")
+      .update(membershipRow)
+      .eq("scene_id", sceneId)
+      .eq("user_id", userId)
+      .select("user_id");
+    if (updateError) throw updateError;
+    if (!updated?.length) {
+      const { error } = await service.from("scene_members").insert(membershipRow);
+      if (error) throw error;
+    }
     return;
   }
 
@@ -467,8 +468,12 @@ export async function provisionStarterCommunity(
   const memberProfile = await memberProfileForProvisioning(service, userId);
   if (!memberProfile) return false;
 
+  // Accounts created while the old private-preview experiment was active may
+  // already follow profiles that were selected solely to populate that mock
+  // feed. Remove only those exact synthetic connections before joining.
+  await removeLegacyStarterFollows(service, memberProfile.id);
+
   const profiles = await starterProfiles(service, userId, onboarding.invite_id);
-  if (profiles.length) await seedSocial(service, memberProfile.id, profiles);
   const sceneProfiles = oneProfilePerAccount(profiles);
   const sceneOwner = sceneProfiles[0] ?? (memberProfile as StarterProfile);
   const scene = await ensureStarterScene(service, sceneOwner);

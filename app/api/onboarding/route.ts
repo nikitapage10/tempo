@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { STARTER_CHECKLIST_IDS } from "@/lib/api/member-onboarding";
 import {
   hasRealArtistProfile,
+  isRealArtistOnNetwork,
   provisionStarterCommunity,
 } from "@/lib/onboarding-starter-community";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -109,6 +110,9 @@ async function ensureStarterCommunity(
 ) {
   if (row.starter_community_provisioned_at) return;
   try {
+    // Social and Scene membership are opt-in. Merely loading an authenticated
+    // page must not populate follows, feed posts, or Scene membership.
+    if (!(await isRealArtistOnNetwork(service, userId))) return;
     if (!(await provisionStarterCommunity(service, userId))) return;
     const provisionedAt = new Date().toISOString();
     await service
