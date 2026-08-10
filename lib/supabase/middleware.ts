@@ -109,6 +109,21 @@ export async function updateSession(request: NextRequest) {
     path === "/scene/invite" ||
     path.startsWith("/scene/invite/");
 
+  // Token-scoped, no-sign-in email unsubscribe (AR-6). Exact prefix only,
+  // mirroring the guest-review/invite/public-profile pattern above. The
+  // route handler independently validates the hashed token and can only
+  // disable optional email — it cannot read or change anything else.
+  const isEmailUnsubscribeRoute = path.startsWith("/api/email/unsubscribe/");
+
+  // Server-to-server routes that authorize themselves (CRON_SECRET header
+  // or a provider webhook signature) rather than a member session — a
+  // scheduled invoker or a webhook provider never has a TEMPO cookie, so
+  // without this exemption every call would be redirected to /login before
+  // the route's own check ever ran (discovered via AR-6's E2E tests; this
+  // silently affected the pre-existing catalog-snapshots cron too).
+  const isServerAuthorizedRoute =
+    path.startsWith("/api/cron/") || path.startsWith("/api/webhooks/");
+
   // Local test sign-in. Reachable without a session for the obvious reason —
   // creating one is its entire job. Gated here on NODE_ENV so the path is not
   // even exempt in a deployed build, and gated again on NODE_ENV, a loopback
@@ -126,6 +141,8 @@ export async function updateSession(request: NextRequest) {
     !isInviteCodeCheckRoute &&
     !isPublicProfileRoute &&
     !isPublicSceneRoute &&
+    !isEmailUnsubscribeRoute &&
+    !isServerAuthorizedRoute &&
     !isDevSessionRoute
   ) {
     const redirectUrl = request.nextUrl.clone();

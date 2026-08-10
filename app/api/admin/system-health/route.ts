@@ -67,6 +67,32 @@ export async function GET() {
       .gte("created_at", since24h),
   ]);
 
+  const [
+    { count: pendingCount },
+    { count: claimedCount },
+    { count: retryCount },
+    { count: failedCount },
+    { data: oldestPending },
+    { data: lastSent },
+  ] = await Promise.all([
+    service.from("notification_deliveries").select("id", { count: "exact", head: true }).eq("status", "pending"),
+    service.from("notification_deliveries").select("id", { count: "exact", head: true }).eq("status", "claimed"),
+    service.from("notification_deliveries").select("id", { count: "exact", head: true }).eq("status", "retry"),
+    service.from("notification_deliveries").select("id", { count: "exact", head: true }).eq("status", "failed"),
+    service
+      .from("notification_deliveries")
+      .select("scheduled_for")
+      .in("status", ["pending", "retry"])
+      .order("scheduled_for", { ascending: true })
+      .limit(1),
+    service
+      .from("notification_deliveries")
+      .select("sent_at")
+      .eq("status", "sent")
+      .order("sent_at", { ascending: false })
+      .limit(1),
+  ]);
+
   return adminJson({
     migrations: migrationHealth,
     emailDelivery: {
@@ -74,6 +100,7 @@ export async function GET() {
       apiKeyPresent: emailDelivery.apiKeyPresent,
       fromPresent: emailDelivery.fromPresent,
       domain: emailDelivery.domain,
+      webhookConfigured: Boolean(process.env.RESEND_WEBHOOK_SECRET?.trim()),
     },
     productEvents: {
       instrumented: true,
@@ -83,11 +110,19 @@ export async function GET() {
         duplicate: duplicate ?? 0,
       },
     },
+    pulseDelivery: {
+      instrumented: true,
+      pending: pendingCount ?? 0,
+      claimed: claimedCount ?? 0,
+      retry: retryCount ?? 0,
+      failed: failedCount ?? 0,
+      oldestPendingScheduledFor: oldestPending?.[0]?.scheduled_for ?? null,
+      lastSuccessfulSendAt: lastSent?.[0]?.sent_at ?? null,
+    },
     // Populated once the corresponding package ships — reported explicitly
     // as "not yet instrumented" rather than omitted, so the Admin surface
     // never implies a false "healthy" for something that doesn't exist yet.
     scheduler: { instrumented: false },
-    pulseDelivery: { instrumented: false },
     checkedAt: new Date().toISOString(),
   });
 }

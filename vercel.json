@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/reconcile-product-events",
       "schedule": "30 7 * * *"
+    },
+    {
+      "path": "/api/cron/pulse-dispatch",
+      "schedule": "*/15 * * * *"
     }
   ]
 }
