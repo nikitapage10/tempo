@@ -1,7 +1,12 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchPeople, fetchPersonAppearances, updatePerson } from "@/lib/api/people";
+import {
+  fetchPeople,
+  fetchPersonAppearances,
+  fetchRecentlyActiveProfiles,
+  updatePerson,
+} from "@/lib/api/people";
 import type { Person } from "@/lib/types";
 
 export function usePeople(filters?: {
@@ -22,6 +27,15 @@ export function usePersonAppearances(personId: string | null) {
     queryKey: ["person-appearances", personId],
     queryFn: () => fetchPersonAppearances(personId!),
     enabled: !!personId,
+  });
+}
+
+export function useRecentlyActiveProfiles(myProfileId: string | null) {
+  return useQuery({
+    queryKey: ["recently-active-profiles", myProfileId],
+    queryFn: () => fetchRecentlyActiveProfiles(myProfileId ?? undefined),
+    enabled: !!myProfileId,
+    staleTime: 60_000,
   });
 }
 

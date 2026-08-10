@@ -1,6 +1,32 @@
 import { createClient } from "@/lib/supabase/client";
 import type { Person, PersonAppearance } from "@/lib/types";
 
+export type ActiveArtistProfile = Pick<
+  import("@/lib/types").ArtistProfile,
+  | "id"
+  | "handle"
+  | "display_name"
+  | "emblem_url"
+  | "palette_id"
+  | "ice_color"
+  | "amber_color"
+  | "tagline"
+  | "location"
+  | "country_code"
+  | "genres"
+  | "roles"
+> & { last_active_at: string };
+
+const LEGACY_SYNTHETIC_HANDLES = new Set([
+  "autotuneauntie",
+  "basslinebarry",
+  "choruscrisis",
+  "harmonylawsuit",
+  "pluginpriest",
+  "softlaunch",
+  "velvetstatic",
+]);
+
 export async function fetchPeople(opts?: {
   source?: string;
   role?: string;
@@ -118,4 +144,78 @@ export async function searchArtistProfiles(
     .limit(limit);
   if (error) throw error;
   return data ?? [];
+}
+
+/**
+ * A broad Discover pool, independent of the member's CRM and follows.
+ * Readable Social posts provide the strongest activity signal; recently
+ * updated/published member profiles round out the list so a newcomer can
+ * discover people before the follow graph has much activity.
+ */
+export async function fetchRecentlyActiveProfiles(
+  excludeProfileId?: string,
+  limit = 48
+): Promise<ActiveArtistProfile[]> {
+  const supabase = createClient();
+  const profileFields =
+    "id, handle, display_name, emblem_url, palette_id, ice_color, amber_color, tagline, location, country_code, genres, roles, updated_at, published_at";
+
+  const [postsResult, profilesResult] = await Promise.all([
+    supabase
+      .from("posts")
+      .select(`created_at, author:artist_profiles!posts_author_profile_id_fkey(${profileFields})`)
+      .is("scene_id", null)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .limit(Math.max(limit * 3, 96)),
+    (() => {
+      let query = supabase
+        .from("artist_profiles")
+        .select(profileFields)
+        .in("visibility", ["members", "public"])
+        .not("handle", "is", null)
+        .order("updated_at", { ascending: false })
+        .limit(Math.max(limit * 2, 64));
+      if (excludeProfileId) query = query.neq("id", excludeProfileId);
+      return query;
+    })(),
+  ]);
+
+  if (postsResult.error) throw postsResult.error;
+  if (profilesResult.error) throw profilesResult.error;
+
+  const found = new Map<string, ActiveArtistProfile>();
+  for (const row of postsResult.data ?? []) {
+    const raw = row.author as unknown;
+    const author = (Array.isArray(raw) ? raw[0] : raw) as
+      | (Omit<ActiveArtistProfile, "last_active_at"> & {
+          updated_at?: string;
+          published_at?: string | null;
+        })
+      | null;
+    if (
+      !author?.handle ||
+      LEGACY_SYNTHETIC_HANDLES.has(author.handle.toLowerCase()) ||
+      author.id === excludeProfileId ||
+      found.has(author.id)
+    ) continue;
+    found.set(author.id, { ...author, last_active_at: row.created_at });
+    if (found.size >= limit) break;
+  }
+
+  for (const profile of profilesResult.data ?? []) {
+    if (
+      !profile.handle ||
+      LEGACY_SYNTHETIC_HANDLES.has(profile.handle.toLowerCase()) ||
+      profile.id === excludeProfileId ||
+      found.has(profile.id)
+    ) continue;
+    found.set(profile.id, {
+      ...profile,
+      last_active_at: profile.updated_at ?? profile.published_at ?? new Date(0).toISOString(),
+    });
+    if (found.size >= limit) break;
+  }
+
+  return Array.from(found.values());
 }

@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { Lock, MessageSquare, Search, Users } from "lucide-react";
 import { useActiveArtist } from "@/components/active-artist-provider";
 import { useArtistProfile } from "@/hooks/use-artist-profile";
-import { usePeople } from "@/hooks/use-people";
+import { usePeople, useRecentlyActiveProfiles } from "@/hooks/use-people";
 import { useFollowers, useFollowing } from "@/hooks/use-follows";
 import { useHomeTimeline, useFeedMutations } from "@/hooks/use-feed";
 import { searchArtistProfiles } from "@/lib/api/people";
@@ -31,6 +31,16 @@ import { cn } from "@/lib/utils";
 import { DemoSocialView } from "@/components/demo/demo-social-view";
 
 type Tab = "top8" | "following" | "discover";
+
+function activityLabel(value: string) {
+  const elapsed = Date.now() - new Date(value).getTime();
+  const days = Math.max(0, Math.floor(elapsed / 86_400_000));
+  if (days === 0) return "Active today";
+  if (days === 1) return "Active yesterday";
+  if (days < 7) return `Active ${days} days ago`;
+  if (days < 35) return `Active ${Math.floor(days / 7)}w ago`;
+  return "Recently active";
+}
 
 export default function SocialView() {
   const searchParams = useSearchParams();
@@ -61,6 +71,9 @@ export default function SocialView() {
   );
 
   const { data: allPeople = [] } = usePeople({});
+  const { data: activeProfiles = [] } = useRecentlyActiveProfiles(
+    onNetwork ? myProfileId : null
+  );
   const { data: following = [] } = useFollowing(socialDataProfileId);
   const { data: followers = [] } = useFollowers(onNetwork ? myProfileId : null);
   const { data: timeline = [], isLoading: feedLoading } = useHomeTimeline(
@@ -164,6 +177,26 @@ export default function SocialView() {
     return out;
   }, [profile, following, allPeople]);
 
+  const discoverGlobePeople = React.useMemo<GlobePerson[]>(
+    () =>
+      activeProfiles.map((p) => ({
+        id: `discover-${p.id}`,
+        name: p.display_name,
+        handle: p.handle,
+        emblemUrl: p.emblem_url,
+        paletteId: p.palette_id,
+        iceColor: p.ice_color,
+        amberColor: p.amber_color,
+        location: p.location,
+        countryCode: p.country_code,
+        detail: activityLabel(p.last_active_at),
+        personId: null,
+      })),
+    [activeProfiles]
+  );
+  const displayedGlobePeople =
+    tab === "discover" ? discoverGlobePeople : globePeople;
+
   /** Anyone with an artist_profiles id — the only kind of person a Top 8 pick
    *  can be, since a pick links straight to a profile. */
   const top8Candidates = React.useMemo<Top8Candidate[]>(() => {
@@ -213,8 +246,12 @@ export default function SocialView() {
    * (see fetchPeople), so this is just "the recent ones with a live profile,
    * minus anyone you already follow."
    */
+  const followingIds = React.useMemo(
+    () => new Set(following.map((f) => f.followee_profile_id)),
+    [following]
+  );
+
   const recentlyInteracted = React.useMemo<Top8Candidate[]>(() => {
-    const followingIds = new Set(following.map((f) => f.followee_profile_id));
     const seen = new Set<string>();
     const out: Top8Candidate[] = [];
     for (const person of allPeople) {
@@ -233,7 +270,7 @@ export default function SocialView() {
       if (out.length >= 6) break;
     }
     return out;
-  }, [allPeople, following]);
+  }, [allPeople, followingIds]);
 
   const tabs: { id: Tab; label: string; needsNetwork?: boolean }[] = [
     { id: "top8", label: "Top 8", needsNetwork: true },
@@ -350,14 +387,28 @@ export default function SocialView() {
           {/* Persistent regardless of which tab is active — not tab content. */}
           {canBrowseSocial ? (
             <>
-              {globePeople.length === 0 ? (
+              {tab === "discover" ? (
+                <div className="flex flex-wrap items-end justify-between gap-2">
+                  <div>
+                    <p className="label-mono">Recently active around TEMPO</p>
+                    <p className="mt-1 text-xs text-text-lo">
+                      Zoom in to uncover more artists, including people outside your follows.
+                    </p>
+                  </div>
+                  <span className="text-xs text-text-lo">
+                    {activeProfiles.length} {activeProfiles.length === 1 ? "artist" : "artists"}
+                  </span>
+                </div>
+              ) : null}
+              {displayedGlobePeople.length === 0 ? (
                 <p className="text-xs text-text-lo">
                   Nobody has set a location yet — add yours on the Artist page and
                   you’ll show up here too.
                 </p>
               ) : null}
               <ConnectionGlobe
-                people={globePeople}
+                people={displayedGlobePeople}
+                max={tab === "discover" ? 120 : 80}
                 onOpenPerson={(id) => {
                   const p = allPeople.find((x) => x.id === id) ?? null;
                   setContact(p);
@@ -463,7 +514,7 @@ export default function SocialView() {
 
           {tab === "discover" ? (
             onNetwork ? (
-              <div className="max-w-lg space-y-3">
+              <div className="max-w-2xl space-y-3">
                 <div className="relative">
                   <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-text-lo" />
                   <Input
@@ -514,6 +565,54 @@ export default function SocialView() {
                   </>
                 ) : (
                   <>
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="label-mono">Active around TEMPO</p>
+                      <span className="text-[11px] text-text-lo">
+                        Followed and new-to-you artists
+                      </span>
+                    </div>
+                    {activeProfiles.length === 0 ? (
+                      <p className="text-sm text-text-lo">
+                        No recent public activity yet. Try searching for an artist above.
+                      </p>
+                    ) : (
+                      <ul className="grid gap-1.5 sm:grid-cols-2">
+                        {activeProfiles.slice(0, 12).map((p) => (
+                          <li key={p.id}>
+                            <Link
+                              href={`/artist/${p.handle}`}
+                              className="well lift flex h-full items-center gap-3 rounded-input px-3 py-2.5"
+                            >
+                              <ArtistMark
+                                emblemUrl={p.emblem_url}
+                                paletteId={p.palette_id}
+                                iceColor={p.ice_color}
+                                amberColor={p.amber_color}
+                                name={p.display_name}
+                                size={20}
+                                className="size-5"
+                              />
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <p className="truncate text-sm text-text-hi">
+                                    {p.display_name}
+                                  </p>
+                                  {followingIds.has(p.id) ? (
+                                    <span className="shrink-0 rounded-chip border border-ice/25 px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-ice">
+                                      Following
+                                    </span>
+                                  ) : null}
+                                </div>
+                                <p className="truncate text-xs text-text-lo">
+                                  @{p.handle} · {activityLabel(p.last_active_at)}
+                                </p>
+                              </div>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <div className="flare-line" aria-hidden />
                     <p className="label-mono">Recently interacted with</p>
                     {recentlyInteracted.length === 0 ? (
                       <p className="text-sm text-text-lo">

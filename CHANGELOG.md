@@ -4,6 +4,10 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-10
 
+- Improved (v0.98.2): Discover now has its own broader globe and artist list,
+  ranked by recent visible activity and profile updates. It can surface both
+  followed and new-to-you artists, while Top 8 and Follows keep their existing
+  globe behavior; demo and private profiles remain outside real discovery.
 - Fixed (v0.98.2): joining the member network now remains successful even if
   Green Room reconciliation needs a retry, and the repaired Scene migration is
   live. Private new accounts no longer receive or display a pre-populated

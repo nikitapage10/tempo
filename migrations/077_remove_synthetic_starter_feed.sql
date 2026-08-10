@@ -14,6 +14,57 @@ where persona.artist_profile_id = profile.id
   and profile.artist_id = artist.id
   and artist.demo_kind is not null;
 
+-- A demo profile may have been made member-visible by the same retired
+-- starter selection. Keep every demo workspace out of real Discover results.
+update artist_profiles profile
+set visibility = 'private', published_at = null
+from artists artist
+where profile.artist_id = artist.id
+  and artist.demo_kind is not null
+  and (profile.visibility <> 'private' or profile.published_at is not null);
+
+-- These accounts came from the retired local Social cast seed. Preserve their
+-- data for development history, but remove them from every member-facing
+-- discovery surface by making the profiles private.
+update artist_profiles
+set visibility = 'private', published_at = null
+where lower(handle) = any(array[
+  'autotuneauntie',
+  'basslinebarry',
+  'choruscrisis',
+  'harmonylawsuit',
+  'pluginpriest',
+  'softlaunch',
+  'velvetstatic'
+])
+  and (visibility <> 'private' or published_at is not null);
+
+delete from scene_personas persona
+using artist_profiles profile
+where persona.artist_profile_id = profile.id
+  and lower(profile.handle) = any(array[
+    'autotuneauntie',
+    'basslinebarry',
+    'choruscrisis',
+    'harmonylawsuit',
+    'pluginpriest',
+    'softlaunch',
+    'velvetstatic'
+  ]);
+
+delete from profile_follows follow
+using artist_profiles profile
+where (follow.follower_profile_id = profile.id or follow.followee_profile_id = profile.id)
+  and lower(profile.handle) = any(array[
+    'autotuneauntie',
+    'basslinebarry',
+    'choruscrisis',
+    'harmonylawsuit',
+    'pluginpriest',
+    'softlaunch',
+    'velvetstatic'
+  ]);
+
 delete from profile_follows f
 using artist_profiles follower, member_onboarding onboarding
 where f.follower_profile_id = follower.id

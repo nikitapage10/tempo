@@ -35,5 +35,9 @@ describe("network onboarding boundaries", () => {
     expect(migration).toContain("delete from posts");
     expect(migration).toContain("delete from scene_personas");
     expect(migration).toContain("starter_community_provisioned_at is not null");
+    expect(migration).toContain("set visibility = 'private', published_at = null");
+    expect(migration).toContain("artist.demo_kind is not null");
+    expect(migration).toContain("'autotuneauntie'");
+    expect(migration).toContain("'velvetstatic'");
   });
 });
