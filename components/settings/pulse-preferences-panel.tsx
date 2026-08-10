@@ -29,9 +29,10 @@ const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 export function PulsePreferencesPanel() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { data: prefs, isLoading } = useQuery({
+  const { data: prefs, isLoading, error, refetch, isRefetching } = useQuery({
     queryKey: ["notification-preferences"],
     queryFn: ensureNotificationPreferences,
+    retry: 1,
   });
 
   const [saving, setSaving] = React.useState(false);
@@ -52,8 +53,27 @@ export function PulsePreferencesPanel() {
     }
   }
 
-  if (isLoading || !prefs) {
+  if (isLoading) {
     return <div className="h-40 animate-pulse rounded-card bg-bg-2" />;
+  }
+
+  if (error || !prefs) {
+    return (
+      <div className="panel-quiet p-5 text-sm text-warn">
+        <p>Couldn’t load your Pulse settings right now.</p>
+        <p className="mt-1 text-xs text-text-lo">
+          {(error as { message?: string } | null)?.message ?? "Please try again in a moment."}
+        </p>
+        <button
+          type="button"
+          className="mt-3 text-xs text-ice hover:underline disabled:opacity-50"
+          disabled={isRefetching}
+          onClick={() => refetch()}
+        >
+          {isRefetching ? "Retrying…" : "Try again"}
+        </button>
+      </div>
+    );
   }
 
   return (
