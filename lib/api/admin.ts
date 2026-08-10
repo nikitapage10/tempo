@@ -1,5 +1,13 @@
 export type AdminOverview = { totalMembers: number; signupsWeek: number; signupsMonth: number; active7: number; active30: number; openReports: number; openSupportReports: number; outstandingInvites: number; totalStorageBytes: number; signups: { date: string; count: number }[] };
 export type AdminAnalytics = { totals: { aiMessages: number; aiMessages30: number; aiEscalations30: number; aiUsers30: number; storageBytes: number; storageAdded30: number; uploads30: number; focusSeconds30: number; sessions30: number; tracks30: number; projects30: number; members: number }; days: { date: string; aiMessages: number; aiEscalations: number; storageAddedBytes: number; uploads: number; focusSeconds: number }[]; tracking: { aiCostAvailable: boolean; storageIncludes: string[] } };
+export type AdminActivationPulse = {
+  definitionVersion: number;
+  computedAt: string;
+  funnel: { eligibleAccounts: number; firstTrackCreated: number | null; focusSessionStarted: number | null; focusSessionCompleted: number | null; instrumentedMilestones: string[]; pendingMilestones: string[] };
+  returnRates: { d1: number; d7: number; d30: number };
+  guide: { viewed: number; actioned: number; snoozed: number; hidden: number; loopCompleted: number };
+  pulse: { optedIn: number; totalWithPreferences: number; sent: number; noContent: number; failed: number; suppressed: number };
+};
 export type AdminOnboardingSummary = { eligible: boolean; mainTourCompletedAt: string | null; checklistSteps: number; checklistDismissedAt: string | null; checklistCompletedAt: string | null; pageToursCompleted: number; welcomeMessageSentAt: string | null; lastSeenAt: string };
 export type AdminMember = { id: string; email: string; createdAt: string; lastSignInAt: string | null; provider: string; status: "active" | "suspended"; memberRole: AdminInviteRole; publicProfile: { id: string; handle: string | null; display_name: string; visibility: string } | null; trackCount: number; projectCount: number; storageBytes: number; onboarding: AdminOnboardingSummary | null };
 export type AdminUserDetail = AdminMember & { emailConfirmedAt: string | null; assistant: { messages: number; escalations: number }; invite: { code: string; memberRole: AdminInviteRole; redeemedAt: string } | null; accountEvents: { id: string; event_type: string; created_at: string }[] };
@@ -21,6 +29,7 @@ export async function adminFetch<T>(path: string, init?: RequestInit): Promise<T
 
 export const getAdminOverview = () => adminFetch<AdminOverview>("/api/admin/overview");
 export const getAdminAnalytics = () => adminFetch<AdminAnalytics>("/api/admin/analytics");
+export const getAdminActivationPulse = () => adminFetch<AdminActivationPulse>("/api/admin/activation-pulse");
 export const getAdminUsers = (params: { q?: string; status?: string; page: number; sort?: string }) => adminFetch<{ users: AdminMember[]; page: number; totalPages: number; total: number }>(`/api/admin/users?${new URLSearchParams({ q: params.q ?? "", status: params.status ?? "", page: String(params.page), sort: params.sort ?? "newest" })}`);
 export const getAdminUser = (id: string) => adminFetch<AdminUserDetail>(`/api/admin/users/${id}`);
 export const suspendAdminUser = (id: string, reason: string) => adminFetch(`/api/admin/users/${id}/suspend`, { method: "POST", body: JSON.stringify({ reason }) });
