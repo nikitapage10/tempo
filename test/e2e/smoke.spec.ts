@@ -26,3 +26,10 @@ test("unauthenticated access to a protected route redirects to /login", async ({
   await page.goto("/board");
   await expect(page).toHaveURL(/\/login/);
 });
+
+test("admin system-health route is forbidden without admin session", async ({ request }) => {
+  const res = await request.get("/api/admin/system-health", { maxRedirects: 0 });
+  // Middleware redirects unauthenticated requests to /login (307); a signed-in
+  // non-admin would instead get an explicit 403 from requireAdmin(). Never 200.
+  expect([307, 403]).toContain(res.status());
+});
