@@ -251,6 +251,7 @@ function SettingsPageInner() {
               role="tabpanel"
               id="settings-panel-notifications"
               aria-labelledby="settings-tab-notifications"
+              className="space-y-10"
             >
               <SettingsPanel
                 eyebrow="Pulse"
