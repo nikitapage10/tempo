@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
+import { useCalendarCategoryPalette } from "@/components/calendar/calendar-category-provider";
 import { useCalendarCommentMutation, useCalendarDiscussion, useCalendarEventMutations } from "@/hooks/use-calendar";
 import {
   browserTimezone,
@@ -14,7 +15,6 @@ import {
   zonedLocalToUtc,
 } from "@/lib/calendar/date";
 import {
-  CALENDAR_EVENT_KINDS,
   type CalendarEvent,
   type CalendarEventInput,
   type CalendarEventKind,
@@ -62,6 +62,9 @@ export function CalendarEventEditor({
   onClose: () => void;
 }) {
   const { toast } = useToast();
+  const eventCategories = useCalendarCategoryPalette().filter(
+    (category) => category.group === "event"
+  );
   const mutations = useCalendarEventMutations();
   const [title, setTitle] = React.useState("");
   const [kind, setKind] = React.useState<CalendarEventKind>("other");
@@ -278,8 +281,8 @@ export function CalendarEventEditor({
                 onChange={(e) => setKind(e.target.value as CalendarEventKind)}
                 className="mt-1 h-9 w-full rounded-input border border-line bg-bg-2 px-3 text-sm text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
               >
-                {CALENDAR_EVENT_KINDS.map((option) => (
-                  <option key={option.value} value={option.value}>
+                {eventCategories.map((option) => (
+                  <option key={option.key} value={option.key}>
                     {option.label}
                   </option>
                 ))}

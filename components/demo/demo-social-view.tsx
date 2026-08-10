@@ -2,8 +2,9 @@
 
 import { Radio, Users } from "lucide-react";
 import { ArtistMark } from "@/components/artists/artist-mark";
+import { ConnectionGlobe, type GlobePerson } from "@/components/social/connection-globe";
 import { PageHeader } from "@/components/ui/page-header";
-import { DEMO_SOCIAL_ARTISTS } from "@/lib/demo/president";
+import { DEMO_SOCIAL_ARTISTS, DEMO_SOCIAL_POSTS } from "@/lib/demo/president";
 
 /**
  * A recognisable social surface for the shared PRESIDENT demo.
@@ -14,6 +15,20 @@ import { DEMO_SOCIAL_ARTISTS } from "@/lib/demo/president";
  * real artists with interactive profiles or authored posts.
  */
 export function DemoSocialView() {
+  const globePeople: GlobePerson[] = DEMO_SOCIAL_ARTISTS.map((artist, index) => ({
+    id: `demo-social-${artist.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+    name: artist.name,
+    handle: null,
+    emblemUrl: null,
+    paletteId: index % 2 === 0 ? "noir" : "spectra",
+    iceColor: null,
+    amberColor: null,
+    location: artist.location,
+    countryCode: artist.countryCode,
+    detail: artist.connection,
+    personId: null,
+  }));
+
   return (
     <div className="space-y-5">
       <PageHeader
@@ -24,11 +39,27 @@ export function DemoSocialView() {
       <div className="panel-quiet flex items-start gap-3 px-4 py-3 text-sm text-text-lo">
         <Radio className="mt-0.5 size-4 shrink-0 text-ice" />
         <p>
-          These recognisable artists are shared examples, not official TEMPO
-          accounts or real posts. Your own Social feed only contains people who
-          actually join the network.
+          These recognisable artists and conversations are fictional shared examples,
+          not official TEMPO accounts or real posts. Your own Social feed only
+          contains people who actually join the network.
         </p>
       </div>
+
+      <section className="panel relative overflow-hidden px-4 pt-4 sm:px-6 sm:pt-5">
+        <div className="relative z-10 flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <p className="label-mono text-ice">Connections in motion</p>
+            <h2 className="mt-1 font-display text-xl font-semibold text-text-hi">
+              A heavy-music world around the project
+            </h2>
+          </div>
+          <p className="max-w-sm text-xs leading-5 text-text-lo">
+            Drag to spin, scroll to zoom, and hover a marker. The globe keeps
+            moving gently while the demo is open.
+          </p>
+        </div>
+        <ConnectionGlobe people={globePeople} max={globePeople.length} className="min-h-[360px]" />
+      </section>
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_23rem]">
         <section className="min-w-0">
@@ -84,19 +115,19 @@ export function DemoSocialView() {
           </div>
           <div className="flare-line mx-4 mt-3" aria-hidden />
           <div className="max-h-[34rem] space-y-3 overflow-y-auto p-4">
-            {DEMO_SOCIAL_ARTISTS.map((artist, index) => (
-              <article key={artist.name} className="well rounded-card p-3.5">
+            {DEMO_SOCIAL_POSTS.map((post, index) => (
+              <article key={`${post.author}:${index}`} className="well rounded-card p-3.5">
                 <div className="flex items-center gap-2.5">
                   <ArtistMark
                     emblemUrl={null}
                     paletteId={index % 2 === 0 ? "noir" : "spectra"}
-                    name={artist.name}
+                    name={post.author}
                     size={24}
                     className="size-6 shrink-0"
                   />
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-text-hi">
-                      {artist.name}
+                      {post.author}
                     </p>
                     <p className="text-[10px] uppercase tracking-[0.1em] text-text-lo">
                       Sample feed card
@@ -104,8 +135,14 @@ export function DemoSocialView() {
                   </div>
                 </div>
                 <p className="mt-3 text-sm leading-6 text-text-lo">
-                  {artist.sampleUpdate}
+                  {post.body}
                 </p>
+                {post.reply ? (
+                  <div className="mt-3 border-l-2 border-ice/25 pl-3">
+                    <p className="text-[11px] font-medium text-ice">{post.reply.author}</p>
+                    <p className="mt-1 text-xs leading-5 text-text-lo">{post.reply.body}</p>
+                  </div>
+                ) : null}
               </article>
             ))}
           </div>

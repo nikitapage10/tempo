@@ -13,6 +13,9 @@ import {
   DEMO_TRACK_GROUPS,
   DEMO_PROFILE,
   DEMO_SOCIAL_ARTISTS,
+  DEMO_SOCIAL_POSTS,
+  PRESIDENT_DEMO_KIND,
+  PRESIDENT_DEMO_LOGO_URL,
 } from "@/lib/demo/president";
 
 /**
@@ -28,6 +31,11 @@ const spaceRefs = new Set(DEMO_SPACES.map((s) => s.ref));
 const stages = new Set<string>(DEMO_STAGES);
 
 describe("PRESIDENT demo dataset", () => {
+  it("uses the supplied PRESIDENT wordmark in the current demo revision", () => {
+    expect(PRESIDENT_DEMO_KIND).toBe("president-v4");
+    expect(PRESIDENT_DEMO_LOGO_URL).toBe("/demo/president/logo.webp");
+  });
+
   it("has no duplicate refs", () => {
     expect(trackRefs.size).toBe(DEMO_TRACKS.length);
     expect(projectRefs.size).toBe(DEMO_PROJECTS.length);
@@ -80,7 +88,13 @@ describe("PRESIDENT demo dataset", () => {
     const names = DEMO_SOCIAL_ARTISTS.map((artist) => artist.name);
     expect(names).toContain("Sleep Token");
     expect(names).toContain("Linkin Park");
+    expect(names).toContain("My Chemical Romance");
     expect(new Set(names).size).toBe(names.length);
+    for (const artist of DEMO_SOCIAL_ARTISTS) {
+      expect(artist.location.length).toBeGreaterThan(2);
+      expect(artist.countryCode).toMatch(/^[A-Z]{2}$/);
+    }
+    expect(DEMO_SOCIAL_POSTS.some((post) => post.reply)).toBe(true);
   });
 
   it("resolves every session, feedback and group reference", () => {
@@ -152,5 +166,7 @@ describe("PRESIDENT demo dataset", () => {
       expect(item.note.length).toBeLessThanOrEqual(160);
     }
     expect((DEMO_PROFILE.currentFocusTitle ?? "").length).toBeLessThanOrEqual(120);
+    expect(DEMO_PROFILE.bio.length).toBeLessThanOrEqual(2000);
+    expect(DEMO_PROFILE.bio.split("\n\n")).toHaveLength(3);
   });
 });

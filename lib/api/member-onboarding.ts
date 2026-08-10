@@ -27,6 +27,7 @@ export type MemberOnboardingState = {
 
 export type MemberOnboardingPatch = {
   mainTourCompleted?: boolean;
+  skipAllPageTours?: boolean;
   checklistOpened?: boolean;
   checklistDismissed?: boolean;
   checklistSteps?: StarterChecklistId[];

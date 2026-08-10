@@ -12,7 +12,38 @@ import {
   scheduleUnscheduledItem,
   updateCalendarEvent,
 } from "@/lib/api/calendar-events";
+import {
+  deleteCalendarCategory,
+  fetchCalendarCategories,
+  saveCalendarCategory,
+} from "@/lib/api/calendar-categories";
 import type { CalendarEvent, CalendarEventInput, CalendarItem, UnscheduledCalendarItem } from "@/lib/calendar/types";
+import type { CalendarCategory } from "@/lib/calendar/categories";
+
+export function useCalendarCategories() {
+  return useQuery({
+    queryKey: ["calendar-categories"],
+    queryFn: fetchCalendarCategories,
+    staleTime: 60_000,
+  });
+}
+
+export function useCalendarCategoryMutations() {
+  const qc = useQueryClient();
+  const invalidate = () => qc.invalidateQueries({ queryKey: ["calendar-categories"] });
+  const save = useMutation({
+    mutationFn: (category: CalendarCategory) => saveCalendarCategory(category),
+    onSuccess: invalidate,
+  });
+  const remove = useMutation({
+    mutationFn: (key: string) => deleteCalendarCategory(key),
+    onSuccess: () => {
+      invalidate();
+      qc.invalidateQueries({ queryKey: ["calendar"] });
+    },
+  });
+  return { save, remove };
+}
 
 export function useCalendarData(input: {
   artistId: string | null;

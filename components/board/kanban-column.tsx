@@ -92,7 +92,7 @@ export function KanbanColumn({
         "w-full lg:min-h-[220px] lg:w-auto",
         collapsed
           ? "lg:w-11 lg:shrink-0 lg:grow-0 lg:basis-11"
-          : "lg:min-w-[164px] lg:shrink lg:grow lg:basis-[280px]",
+          : "lg:w-[280px] lg:min-w-[260px] lg:shrink-0 lg:grow-0 lg:basis-[280px]",
         isOver && "border-ice/40 glow-ice"
       )}
       aria-label={`${stage.name}, ${itemCount} ${

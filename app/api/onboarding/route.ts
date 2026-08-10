@@ -1,6 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { STARTER_CHECKLIST_IDS } from "@/lib/api/member-onboarding";
-import { provisionStarterCommunity } from "@/lib/onboarding-starter-community";
+import {
+  hasRealArtistProfile,
+  provisionStarterCommunity,
+} from "@/lib/onboarding-starter-community";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 
@@ -50,7 +53,34 @@ async function readState(service: ReturnType<typeof createAdminClient>, userId: 
   // One round trip, all of it server-side in Postgres: creates the row on
   // first sight, refreshes last_seen_at, and settles the inviter follow and
   // welcome thread once both sides have an artist profile.
-  await service.rpc("provision_member_onboarding", { p_user_id: userId });
+  if (await hasRealArtistProfile(service, userId)) {
+    await service.rpc("provision_member_onboarding", { p_user_id: userId });
+  } else {
+    // Keep onboarding readable while a member explores the demo before their
+    // real profile exists. Calling the legacy RPC here would let the demo
+    // profile become the actor in the automatic inviter follow.
+    const { data: existing, error: readError } = await service
+      .from("member_onboarding")
+      .select("user_id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (readError) throw readError;
+    if (existing) {
+      const { error } = await service
+        .from("member_onboarding")
+        .update({ last_seen_at: new Date().toISOString() })
+        .eq("user_id", userId);
+      if (error) throw error;
+    } else {
+      const { error } = await service.from("member_onboarding").insert({
+        user_id: userId,
+        eligible: false,
+        main_tour_completed_at: new Date().toISOString(),
+        checklist_dismissed_at: new Date().toISOString(),
+      });
+      if (error) throw error;
+    }
+  }
   const { data, error } = await service
     .from("member_onboarding")
     .select("*")
@@ -143,6 +173,9 @@ export async function PATCH(request: NextRequest) {
     if (body.mainTourCompleted === true && !existing.main_tour_completed_at) {
       patch.main_tour_completed_at = now;
     }
+    if (body.skipAllPageTours === true) {
+      patch.page_tours_skipped = Array.from(allowedPageTours);
+    }
     if (body.checklistOpened === true && !existing.checklist_opened_at) {
       patch.checklist_opened_at = now;
     }
@@ -167,7 +200,11 @@ export async function PATCH(request: NextRequest) {
         body.completedPageTour,
       ]));
     }
-    if (typeof body.skippedPageTour === "string" && allowedPageTours.has(body.skippedPageTour)) {
+    if (
+      body.skipAllPageTours !== true &&
+      typeof body.skippedPageTour === "string" &&
+      allowedPageTours.has(body.skippedPageTour)
+    ) {
       patch.page_tours_skipped = Array.from(new Set([
         ...(existing.page_tours_skipped ?? []),
         body.skippedPageTour,

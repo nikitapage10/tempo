@@ -8,6 +8,7 @@ import {
   ChevronRight,
   Filter,
   FolderPlus,
+  Palette,
   Plus,
   Search,
   WandSparkles,
@@ -15,6 +16,8 @@ import {
 import { useActiveArtist } from "@/components/active-artist-provider";
 import { useActiveSpace } from "@/components/active-space-provider";
 import { CalendarEventEditor } from "@/components/calendar/event-editor";
+import { CalendarCategoryManager } from "@/components/calendar/calendar-category-manager";
+import { CalendarCategoryProvider } from "@/components/calendar/calendar-category-provider";
 import { CalendarItemSurface } from "@/components/calendar/calendar-item-surface";
 import {
   CalendarExportActions,
@@ -28,7 +31,7 @@ import { EmptyShaderPanel } from "@/components/shader-empty";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { PageHeader } from "@/components/ui/page-header";
-import { useCalendarData, useCalendarEventMutations } from "@/hooks/use-calendar";
+import { useCalendarCategories, useCalendarData, useCalendarEventMutations } from "@/hooks/use-calendar";
 import { useTaskMutations } from "@/hooks/use-tasks";
 import {
   addDateKey,
@@ -52,6 +55,7 @@ import type {
 import { localDateString } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { deliverCalendarReminders } from "@/lib/api/calendar-events";
+import { DEFAULT_CALENDAR_CATEGORIES } from "@/lib/calendar/categories";
 
 type CalendarView = "month" | "agenda" | "timeline";
 type Scope = "space" | "all";
@@ -186,7 +190,9 @@ function CalendarContent() {
   const [presets, setPresets] = React.useState<CalendarPreset[]>([]);
   const [showWeekNumbers, setShowWeekNumbers] = React.useState(false);
   const [weekStartsMonday, setWeekStartsMonday] = React.useState(true);
+  const [categoryManagerOpen, setCategoryManagerOpen] = React.useState(false);
   const calendarMutations = useCalendarEventMutations();
+  const categoriesQuery = useCalendarCategories();
   const taskMutations = useTaskMutations(activeSpaceId);
 
   React.useEffect(() => {
@@ -428,6 +434,7 @@ function CalendarContent() {
   }
 
   return (
+    <CalendarCategoryProvider categories={categoriesQuery.data?.categories ?? DEFAULT_CALENDAR_CATEGORIES}>
     <div className="space-y-4">
       <PageHeader
         title="Calendar"
@@ -456,6 +463,9 @@ function CalendarContent() {
             <Button type="button" variant="secondary" onClick={() => createMilestone("writing")} disabled={!spaceIds.length || data?.eventsAvailable === false}><FolderPlus className="size-4" />Milestone</Button>
             <Button type="button" variant="secondary" onClick={() => void generateReleasePlan()} disabled={!filteredItems.some((item) => item.source === "release_date") || data?.eventsAvailable === false}>
               <WandSparkles className="size-4" /> Release plan
+            </Button>
+            <Button type="button" variant="secondary" onClick={() => setCategoryManagerOpen(true)}>
+              <Palette className="size-4" /> Categories
             </Button>
           </>
         }
@@ -636,7 +646,9 @@ function CalendarContent() {
         defaultMilestoneStage={eventStage}
         onClose={closeEditor}
       />
+      <CalendarCategoryManager open={categoryManagerOpen} onClose={() => setCategoryManagerOpen(false)} />
     </div>
+    </CalendarCategoryProvider>
   );
 }
 

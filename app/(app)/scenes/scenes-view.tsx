@@ -13,6 +13,7 @@ import {
   useSceneMutations,
 } from "@/hooks/use-scenes";
 import { SceneCard } from "@/components/scenes/scene-card";
+import { DemoScenesView } from "@/components/demo/demo-scenes-view";
 import { EmptyShaderPanel } from "@/components/shader-empty";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -83,6 +84,10 @@ export default function ScenesView() {
     } catch (err) {
       toast(errorMessage(err, "Couldn’t decline that invite."));
     }
+  }
+
+  if (activeArtist?.demo_kind) {
+    return <DemoScenesView />;
   }
 
   if (schemaLoading) {

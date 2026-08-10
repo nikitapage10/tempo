@@ -12,6 +12,8 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
+import { useCalendarCategoryPalette } from "@/components/calendar/calendar-category-provider";
+import { categoryKeyForItem } from "@/lib/calendar/categories";
 import { timeInTimeZone } from "@/lib/calendar/date";
 import type { CalendarItem } from "@/lib/calendar/types";
 import { cn } from "@/lib/utils";
@@ -87,7 +89,23 @@ export function CalendarItemSurface({
   selected?: boolean;
   onSelect?: (item: CalendarItem, selected: boolean) => void;
 }) {
-  const { tone, label, Icon } = presentation(item);
+  const categories = useCalendarCategoryPalette();
+  const base = presentation(item);
+  const category = categories.find(
+    (candidate) => candidate.key === categoryKeyForItem(item.source, item.event?.kind)
+  );
+  const tone = base.tone;
+  const label =
+    item.state === "overdue" || item.state === "blocked" || item.state === "completed"
+      ? base.label
+      : category?.label ?? base.label;
+  const color =
+    item.state === "overdue" || item.state === "blocked"
+      ? "#ef6b73"
+      : item.state === "completed"
+        ? "#74d6a0"
+        : category?.color;
+  const Icon = base.Icon;
   const time = timeLabel(item);
   const accessible = [
     item.title,
@@ -102,7 +120,7 @@ export function CalendarItemSurface({
 
   if (compact) {
     return (
-      <SpotlightCard tone={tone} radius={7} borderWidth={1} size={110}>
+      <SpotlightCard tone={tone} accent={color} radius={7} borderWidth={1} size={110}>
         <button
           type="button"
           draggable={!!onDragStart}
@@ -118,7 +136,7 @@ export function CalendarItemSurface({
             selected && "ring-2 ring-ice"
           )}
         >
-          <Icon className="size-3 shrink-0" aria-hidden />
+          <Icon className="size-3 shrink-0" style={{ color }} aria-hidden />
           {time ? (
             <span className="shrink-0 font-mono text-[9px] text-text-lo">
               {time}
@@ -141,6 +159,7 @@ export function CalendarItemSurface({
     <SpotlightCard
       as="article"
       tone={tone}
+      accent={color}
       radius={10}
       size={180}
       className="rounded-card"
@@ -155,14 +174,8 @@ export function CalendarItemSurface({
         )}
       >
         <button type="button" onClick={() => onActivate(item)} aria-label={accessible} className="flex min-w-0 flex-1 items-start gap-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"><span
-          className={cn(
-            "mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-input border border-line bg-bg-2",
-            tone === "amber" && "text-amber",
-            tone === "violet" && "text-violet",
-            tone === "warn" && "text-warn",
-            tone === "ok" && "text-ok",
-            (tone === "ice" || tone === "ramp") && "text-ice"
-          )}
+          className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-input border border-line bg-bg-2"
+          style={{ color, borderColor: color ? `color-mix(in srgb, ${color} 32%, transparent)` : undefined }}
         >
           <Icon className="size-4" aria-hidden />
         </span>
@@ -185,16 +198,8 @@ export function CalendarItemSurface({
           </span>
           <span className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-text-lo">
             <span
-              className={cn(
-                "rounded-chip border px-1.5 py-0.5 font-mono uppercase tracking-wide",
-                tone === "warn"
-                  ? "border-warn/30 bg-warn/10 text-warn"
-                  : tone === "amber"
-                    ? "border-amber/30 bg-amber/10 text-amber"
-                    : tone === "violet"
-                      ? "border-violet/30 bg-violet/10 text-violet"
-                      : "border-ice/25 bg-ice/10 text-ice"
-              )}
+              className="rounded-chip border px-1.5 py-0.5 font-mono uppercase tracking-wide"
+              style={color ? { color, borderColor: `color-mix(in srgb, ${color} 35%, transparent)`, backgroundColor: `color-mix(in srgb, ${color} 10%, transparent)` } : undefined}
             >
               {label}
             </span>

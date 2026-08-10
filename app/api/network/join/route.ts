@@ -42,6 +42,25 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const { data: artist, error: artistError } = await supabase
+    .from("artists")
+    .select("demo_kind")
+    .eq("id", artistId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (artistError || !artist) {
+    return NextResponse.json(
+      { error: "Couldn’t verify this artist." },
+      { status: 404, headers }
+    );
+  }
+  if (artist?.demo_kind) {
+    return NextResponse.json(
+      { error: "Demo artists stay separate from the live member network." },
+      { status: 400, headers }
+    );
+  }
+
   const publishedAt = existing.published_at ?? new Date().toISOString();
   const { data: profile, error: publishError } = await supabase
     .from("artist_profiles")

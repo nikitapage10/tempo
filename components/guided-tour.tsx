@@ -52,7 +52,7 @@ const TOUR_STEPS: TourStep[] = [
   },
 ];
 
-type TourPhase = "hidden" | "welcome" | "tour";
+type TourPhase = "hidden" | "welcome" | "tour" | "skip";
 type Point = { top: number; left: number };
 
 function visibleTarget(selector: string): HTMLElement | null {
@@ -85,14 +85,25 @@ export function GuidedTour() {
   const panelRef = React.useRef<HTMLDivElement>(null);
   const closeButtonRef = React.useRef<HTMLButtonElement>(null);
   const previousFocusRef = React.useRef<HTMLElement | null>(null);
+  const phaseBeforeSkipRef = React.useRef<Exclude<TourPhase, "hidden" | "skip">>("welcome");
 
-  const finish = React.useCallback(() => {
+  const finish = React.useCallback((skipAllPageTours = false) => {
     completeGuidedTour();
-    onboarding.update.mutate({ mainTourCompleted: true });
+    onboarding.update.mutate({ mainTourCompleted: true, skipAllPageTours });
     setPhase("hidden");
     setTargetRect(null);
     previousFocusRef.current?.focus();
   }, [onboarding.update]);
+
+  const requestSkip = React.useCallback(() => {
+    setPhase((current) => {
+      if (current === "welcome" || current === "tour") {
+        phaseBeforeSkipRef.current = current;
+      }
+      return "skip";
+    });
+    setTargetRect(null);
+  }, []);
 
   React.useEffect(() => {
     if (!guidedTourIsPending()) return;
@@ -121,7 +132,10 @@ export function GuidedTour() {
     const before = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") finish();
+      if (event.key === "Escape") {
+        if (phase === "skip") setPhase(phaseBeforeSkipRef.current);
+        else requestSkip();
+      }
     };
     document.addEventListener("keydown", onKey);
     window.setTimeout(() => closeButtonRef.current?.focus(), 0);
@@ -129,7 +143,7 @@ export function GuidedTour() {
       document.body.style.overflow = before;
       document.removeEventListener("keydown", onKey);
     };
-  }, [finish, phase]);
+  }, [phase, requestSkip]);
 
   const measure = React.useCallback(() => {
     if (phase !== "tour") return;
@@ -198,6 +212,44 @@ export function GuidedTour() {
 
   if (phase === "hidden") return null;
 
+  if (phase === "skip") {
+    return (
+      <div className="fixed inset-0 z-[121] flex items-center justify-center p-4">
+        <div aria-hidden className="absolute inset-0 bg-bg-0/88 backdrop-blur-sm" />
+        <div
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="guided-tour-skip-title"
+          aria-describedby="guided-tour-skip-copy"
+          className="panel relative w-full max-w-[460px] p-6 shadow-raise sm:p-7"
+        >
+          <p className="label-mono text-amber">Tour preferences</p>
+          <h2 id="guided-tour-skip-title" className="mt-2 font-display text-2xl font-semibold text-text-hi">
+            Do you want to skip all tours?
+          </h2>
+          <p id="guided-tour-skip-copy" className="mt-3 text-sm leading-6 text-text-lo">
+            You can leave this introduction and still get a short guide the first time you open each workspace page, or turn every tour off now.
+          </p>
+          <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <Button type="button" onClick={() => finish(false)}>
+              Skip this tour only
+            </Button>
+            <Button type="button" variant="secondary" onClick={() => finish(true)}>
+              Skip all tours
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setPhase(phaseBeforeSkipRef.current)}
+            >
+              Keep touring
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (phase === "welcome") {
     return (
       <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
@@ -212,7 +264,7 @@ export function GuidedTour() {
           <button
             ref={closeButtonRef}
             type="button"
-            onClick={finish}
+            onClick={requestSkip}
             className="absolute right-4 top-4 rounded-input p-2 text-text-lo transition-colors hover:bg-bg-2 hover:text-text-hi"
             aria-label="Skip workspace tour"
           >
@@ -242,7 +294,7 @@ export function GuidedTour() {
             >
               Show me around <ArrowRight />
             </Button>
-            <Button type="button" variant="ghost" onClick={finish}>
+            <Button type="button" variant="ghost" onClick={requestSkip}>
               Skip tour
             </Button>
           </div>
@@ -290,7 +342,7 @@ export function GuidedTour() {
           <button
             ref={closeButtonRef}
             type="button"
-            onClick={finish}
+            onClick={requestSkip}
             className="rounded-input p-1.5 text-text-lo transition-colors hover:bg-bg-2 hover:text-text-hi"
             aria-label="Skip workspace tour"
           >
@@ -304,7 +356,7 @@ export function GuidedTour() {
 
         <div className="mt-5 h-px w-full bg-[linear-gradient(90deg,var(--ice),white,var(--amber),transparent)] opacity-40" />
         <div className="mt-4 flex items-center justify-between gap-3">
-          <button type="button" onClick={finish} className="text-xs text-text-lo hover:text-text-hi">
+          <button type="button" onClick={requestSkip} className="text-xs text-text-lo hover:text-text-hi">
             Skip tour
           </button>
           <div className="flex items-center gap-2">
@@ -317,7 +369,7 @@ export function GuidedTour() {
               type="button"
               size="sm"
               onClick={() => {
-                if (isLast) finish();
+                if (isLast) finish(false);
                 else setStepIndex((value) => value + 1);
               }}
             >

@@ -5,7 +5,8 @@ export type CalendarEventKind =
   | "live_show"
   | "personal"
   | "milestone"
-  | "other";
+  | "other"
+  | (string & Record<never, never>);
 
 export type CalendarRecurrence = "none" | "daily" | "weekly" | "monthly";
 export type CalendarMilestoneStage =

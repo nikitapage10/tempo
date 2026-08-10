@@ -230,6 +230,14 @@ fully to silence before its scene is released.
 
 **Program administration.** TEMPO has a private, unlisted Admin console for running the invited program. A platform administrator can see account identity, join and sign-in dates, public profile identity, and aggregate usage analytics—including 90-day assistant-request, storage-growth, upload, and focus-time trends, plus an Activation & Pulse section covering signup-to-first-song funnel progress, return rates, and how much the Today guide and Pulse digests get used and opted into — always aggregate counts, never a per-member activity view. Admins can issue or revoke one-person signup links; send a branded email containing an individual code and one-click signup link; see delivery status and resend; triage member-submitted bugs, help requests, and product feedback; suspend, reactivate, or permanently remove an account; review reports that point to content a member published to the network; and inspect an audit trail of every privileged change. The console cannot fetch members’ track or project names, audio, lyrics, notes, checklists, feedback, ordinary comments, session contents, direct messages, private profiles, or private contact books.
 
+## Current interaction refinements
+
+Needs attention on Today shows five items by default and expands on request. Skipping the homepage workspace introduction asks whether to skip only that tour or every remaining contextual tour.
+
+Populated Board stages keep a readable desktop width and form a horizontally scrollable pipeline when they no longer fit; empty stages still collapse and phone layouts still stack. Calendar ships a distinct default color for each workspace date and event type, with a Categories panel for saved label, color, and custom event-category choices through migration 075.
+
+The PRESIDENT demo uses the Blood Of Your Empire artwork as its shared banner, carries a three-paragraph About section, and keeps a moving Social globe with a wider rock and metal circle plus fictional funny and serious conversations. Scenes opens its read-only **It’s Not Just a Phase** emo and old-metal room instead of presenting the demo artist as off the network.
+
 ## How it’s hosted
 
 The live app is at **https://tempo-ten-sigma.vercel.app** (sign-in at `/login`). Pushes to the main branch deploy there automatically. For local work on a Mac, double-click **Launch TEMPO.command** in the project folder — it starts a local server and opens the app in your browser (keep that Terminal window open; Ctrl+C stops it). Local development uses your `.env.local` keys; anything that ships uses the production address for absolute links, not localhost.

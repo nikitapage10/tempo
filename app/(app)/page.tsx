@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -79,7 +79,10 @@ export default function TodayPage() {
   const [focusPickerOpen, setFocusPickerOpen] = React.useState(false);
   const [focusPickTrackId, setFocusPickTrackId] = React.useState("");
   const [focusTrackId, setFocusTrackId] = React.useState<string | null>(null);
+  const [attentionExpanded, setAttentionExpanded] = React.useState(false);
   const weeklyQuery = useWeeklyElapsed();
+
+  React.useEffect(() => setAttentionExpanded(false), [activeSpaceId]);
 
   const statsQuery = useQuery({
     queryKey: ["today-stats", activeSpaceId],
@@ -104,6 +107,9 @@ export default function TodayPage() {
   const prioritized = sortTracksByAttention(
     activeTracks.map((track) => ({ track }))
   );
+  const visibleAttention = attentionExpanded
+    ? prioritized
+    : prioritized.slice(0, 5);
   const waiting = prioritized.filter((x) =>
     deriveAttentionSignals(x).some((s) => s.id === "waiting" || s.id === "blocked")
   );
@@ -336,7 +342,7 @@ export default function TodayPage() {
               </QuietEmpty>
             ) : (
               <ul className="space-y-2">
-                {prioritized.map(({ track }) => {
+                {visibleAttention.map(({ track }) => {
                   const signals = deriveAttentionSignals({ track });
                   const top = signals[0];
                   return (
@@ -364,6 +370,24 @@ export default function TodayPage() {
                 })}
               </ul>
             )}
+            {prioritized.length > 5 ? (
+              <button
+                type="button"
+                onClick={() => setAttentionExpanded((value) => !value)}
+                className="mt-3 inline-flex items-center gap-1.5 text-xs text-ice transition-colors hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+                aria-expanded={attentionExpanded}
+              >
+                {attentionExpanded ? (
+                  <>
+                    <ChevronUp className="size-3.5" /> Show five
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="size-3.5" /> Show {prioritized.length - 5} more
+                  </>
+                )}
+              </button>
+            ) : null}
             {waiting.length > 0 || review.length > 0 ? (
               <>
                 <SlitDivider className="mt-4" />

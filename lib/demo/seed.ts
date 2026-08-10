@@ -33,6 +33,7 @@ import {
   DEMO_TRACKS,
   DEMO_TRACK_GROUPS,
   PRESIDENT_DEMO_KIND,
+  PRESIDENT_DEMO_LOGO_URL,
   PRESIDENT_SPOTIFY_ARTIST_ID,
 } from "@/lib/demo/president";
 
@@ -231,7 +232,7 @@ async function seedProfile(supabase: Client, artistId: string): Promise<void> {
         sound_markers: DEMO_PROFILE.soundMarkers,
         story_sections: DEMO_PROFILE.storySections,
         featured_music: DEMO_PROFILE.featuredMusic,
-        emblem_url: "/demo/president/profile.webp",
+        emblem_url: PRESIDENT_DEMO_LOGO_URL,
         banner_url: "/demo/president/banner.jpg",
         // Deliberately not published. The demo shows the Artist page fully
         // filled in; putting a sample identity onto the member network or a
@@ -297,7 +298,7 @@ export async function seedPresidentDemo(supabase: Client): Promise<SeedResult> {
       sort: -1,
       demo_kind: PRESIDENT_DEMO_KIND,
       origin_status: "legacy_complete",
-      emblem_url: "/demo/president/profile.webp",
+      emblem_url: PRESIDENT_DEMO_LOGO_URL,
       banner_url: "/demo/president/banner.jpg",
     })
     .select("id, name, demo_kind")

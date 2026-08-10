@@ -27,7 +27,8 @@
  */
 
 /** Bump when persisted demo rows change so an existing sample can rebuild. */
-export const PRESIDENT_DEMO_KIND = "president-v2";
+export const PRESIDENT_DEMO_KIND = "president-v4";
+export const PRESIDENT_DEMO_LOGO_URL = "/demo/president/logo.webp";
 
 export const PRESIDENT_SPOTIFY_ARTIST_ID = "40nPYop0FOD9Syyu5y4dAU";
 export const PRESIDENT_SPOTIFY_URL = `https://open.spotify.com/artist/${PRESIDENT_SPOTIFY_ARTIST_ID}`;
@@ -876,6 +877,8 @@ export type DemoSocialArtist = {
   genres: string[];
   connection: string;
   sampleUpdate: string;
+  location: string;
+  countryCode: string;
 };
 
 /**
@@ -887,25 +890,95 @@ export const DEMO_SOCIAL_ARTISTS: DemoSocialArtist[] = [
     name: "Sleep Token",
     genres: ["Alternative metal", "Progressive metal"],
     connection: "Adjacent live circuit",
-    sampleUpdate: "A tour announcement, production still, or new-release note from a followed artist would land here.",
+    sampleUpdate: "A production still lands with one useful detail: the new set finally leaves enough silence before the last hit.",
+    location: "London, United Kingdom",
+    countryCode: "GB",
   },
   {
     name: "Linkin Park",
     genres: ["Alternative rock", "Nu metal"],
     connection: "Influence and discovery",
-    sampleUpdate: "This sample card shows how a major release update reads beside independent studio notes in the feed.",
+    sampleUpdate: "The serious work today is arrangement triage: if every section is the biggest section, none of them feel big.",
+    location: "Los Angeles, California",
+    countryCode: "US",
   },
   {
     name: "Bring Me The Horizon",
     genres: ["Alternative metal", "Rock"],
     connection: "UK heavy-music network",
-    sampleUpdate: "A followed artist's festival clip, collaboration note, or campaign update could be shared here.",
+    sampleUpdate: "Festival prep update: the computers are calm, the guitars are loud, and somebody has once again lost the correct USB-C adapter.",
+    location: "Sheffield, United Kingdom",
+    countryCode: "GB",
   },
   {
     name: "Bad Omens",
     genres: ["Alternative metal", "Metalcore"],
     connection: "Related audience",
-    sampleUpdate: "Use the feed for work in motion: rehearsal fragments, release context, and the next thing taking shape.",
+    sampleUpdate: "The first mix sounded expensive and emotionally unavailable. The second one finally sounds like the song means it.",
+    location: "Los Angeles, California",
+    countryCode: "US",
+  },
+  {
+    name: "My Chemical Romance",
+    genres: ["Alternative rock", "Emo"],
+    connection: "Theatrical rock lineage",
+    sampleUpdate: "Wardrobe note: apparently ‘subtle black’ and ‘stage black’ are two completely different colors under lights.",
+    location: "Newark, New Jersey",
+    countryCode: "US",
+  },
+  {
+    name: "Spiritbox",
+    genres: ["Progressive metal", "Metalcore"],
+    connection: "Modern heavy community",
+    sampleUpdate: "A vocal can be technically perfect and still miss the center of the song. Keeping the imperfect take that tells the truth.",
+    location: "Victoria, British Columbia",
+    countryCode: "CA",
+  },
+  {
+    name: "Architects",
+    genres: ["Metalcore", "Alternative metal"],
+    connection: "UK touring circle",
+    sampleUpdate: "Today’s glamorous headline-band activity: deciding which road case is allowed to contain the emergency kettle.",
+    location: "Brighton, United Kingdom",
+    countryCode: "GB",
+  },
+  {
+    name: "Evanescence",
+    genres: ["Alternative metal", "Gothic rock"],
+    connection: "Dark-rock influence",
+    sampleUpdate: "The piano demo keeps winning every comparison. Building the production around its restraint instead of burying it.",
+    location: "Nashville, Tennessee",
+    countryCode: "US",
+  },
+];
+
+export type DemoSocialPost = {
+  author: string;
+  body: string;
+  reply?: { author: string; body: string };
+};
+
+/** Fictional, clearly labelled sample conversations for the demo feed. */
+export const DEMO_SOCIAL_POSTS: DemoSocialPost[] = [
+  {
+    author: "PRESIDENT",
+    body: "Production rehearsal question: how many minutes of total darkness becomes 'an artistic choice' instead of 'someone missed a lighting cue'?",
+    reply: { author: "Architects", body: "The official threshold is exactly one second longer than your lighting director can tolerate." },
+  },
+  {
+    author: "Spiritbox",
+    body: "Kept the vocal take with the small break in it. Precision made the line cleaner; the break made it believable.",
+    reply: { author: "Linkin Park", body: "The detail people remember is often the one the grid would have removed." },
+  },
+  {
+    author: "My Chemical Romance",
+    body: "Load-in complete. Four road cases, six coffees, and one garment bag being treated with the security protocol of a head of state.",
+    reply: { author: "Bring Me The Horizon", body: "As it should be. The garment bag knows what it did." },
+  },
+  {
+    author: "PRESIDENT",
+    body: "The album sequence finally works. The closer does not answer the opening track; it makes the original question harder, which feels more honest.",
+    reply: { author: "Evanescence", body: "That unresolved feeling is sometimes the resolution. Let the listener carry it out." },
   },
 ];
 
@@ -1162,7 +1235,7 @@ export const DEMO_PROFILE = {
   genres: ["Alternative metal", "Hard rock", "Post-hardcore"],
   roles: ["Artist", "Producer"],
   bio:
-    "An anonymous masked English rock band. PRESIDENT appeared without warning on the Download festival poster in February 2025, played five songs at the festival that June, and released the King Of Terrors EP that September. The debut album Blood Of Your Empire follows on 4 September 2026 through Atlantic Records. Nobody in the band has confirmed who they are, and that is the point — the record is meant to arrive without a face attached to it.",
+    "PRESIDENT is an anonymous masked English rock band built around weight, restraint and carefully controlled mystery. The name appeared without warning on the Download festival poster in February 2025, before there was a catalog or public identity to explain it. The first performance that June introduced the project the same way the songs do: through atmosphere, ritual and impact rather than biography.\n\nThe King Of Terrors EP arrived that September, moving between alternative metal, post-hardcore, electronics and moments where silence carries as much force as the guitars. Religious language, mortality and the fear of time running out recur across the work, but the writing leaves those questions open instead of turning them into doctrine. The masks are part of that choice. With no confirmed faces or personalities to resolve the story, the listener is left with the music, the artwork and what happens on stage.\n\nThe debut album Blood Of Your Empire follows on 4 September 2026 through Atlantic Records. Self-produced and ten tracks long, it expands the same world into a record about belief, existential crisis and humanity’s relationship with faith. The current work is less about introducing who PRESIDENT might be and more about making the album, release campaign and live show feel like one coherent statement.",
   currentFocusTitle: "Four weeks from the debut album",
   currentFocusBody:
     "Blood Of Your Empire is out 4 September. Six of the ten tracks are still moving through mastering and delivery, the split sheet on the feature is holding up a mix, and the live set for release week is being built around the closer.",

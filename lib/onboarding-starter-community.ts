@@ -19,6 +19,62 @@ type StarterProfile = {
 const starterProfileFields =
   "id, owner_user_id, handle, display_name, emblem_url, bio, location, country_code, links, visibility, published_at";
 
+function missingDemoKind(error: { code?: string; message?: string } | null) {
+  return !!error && (
+    error.code === "42703" ||
+    error.code === "PGRST204" ||
+    error.message?.includes("demo_kind") === true
+  );
+}
+
+/**
+ * The demo profile is a visual sandbox, never the member's social identity.
+ * Resolve through artists.demo_kind before choosing the profile so opening a
+ * demo early cannot make PRESIDENT follow an inviter or join the Green Room.
+ */
+async function memberProfileForProvisioning(
+  service: AdminClient,
+  userId: string
+): Promise<StarterProfile | null> {
+  const { data: artists, error: artistError } = await service
+    .from("artists")
+    .select("id")
+    .eq("user_id", userId)
+    .is("demo_kind", null)
+    .order("sort", { ascending: true });
+
+  if (artistError && !missingDemoKind(artistError)) throw artistError;
+  if (!artistError) {
+    const artistIds = (artists ?? []).map((artist) => artist.id);
+    if (!artistIds.length) return null;
+    const { data, error } = await service
+      .from("artist_profiles")
+      .select(starterProfileFields)
+      .eq("owner_user_id", userId)
+      .in("artist_id", artistIds)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (error) throw error;
+    return (data as StarterProfile | null) ?? null;
+  }
+
+  // Pre-073 databases have no demo feature, so every profile is real.
+  const { data, error } = await service
+    .from("artist_profiles")
+    .select(starterProfileFields)
+    .eq("owner_user_id", userId)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as StarterProfile | null) ?? null;
+}
+
+export async function hasRealArtistProfile(service: AdminClient, userId: string) {
+  return !!(await memberProfileForProvisioning(service, userId));
+}
+
 const SOCIAL_STARTERS = [
   "Welcome to TEMPO. Share what you are making, what you are figuring out, or the next step you want to take.",
   "What is moving in your studio this week? A rough idea counts just as much as a finished release.",
@@ -408,14 +464,8 @@ export async function provisionStarterCommunity(
     .maybeSingle();
   if (onboardingError || !onboarding) return false;
 
-  const { data: memberProfile, error: profileError } = await service
-    .from("artist_profiles")
-    .select(starterProfileFields)
-    .eq("owner_user_id", userId)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-  if (profileError || !memberProfile) return false;
+  const memberProfile = await memberProfileForProvisioning(service, userId);
+  if (!memberProfile) return false;
 
   const profiles = await starterProfiles(service, userId, onboarding.invite_id);
   if (profiles.length) await seedSocial(service, memberProfile.id, profiles);

@@ -4,6 +4,29 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-10
 
+- Improved (v0.98.2): the PRESIDENT demo now uses the supplied official
+  wordmark as its artist logo. Existing demos are offered the refreshed sample
+  revision so the new identity artwork appears there too.
+- Fixed (v0.98.2): PRESIDENT and future demo artists are now isolated from the
+  live social graph. Opening a demo can no longer make it follow the inviting
+  account, join the member network, or send a follow notification. Migration
+  076 removes accidental demo notifications and moves any valid inviter
+  connection to the member’s real artist identity.
+- Improved (v0.98.2): leaving the main workspace introduction now asks whether
+  to skip only that tour or every remaining page tour. Today shows at most five
+  Needs attention items until expanded, and a full Board keeps every populated
+  stage readable in a horizontal pipeline instead of squeezing cards into thin
+  columns.
+- Added (v0.98.2): Calendar now has a distinct default color for every TEMPO
+  date and event type. A Categories panel lets members rename or recolor those
+  categories and add their own event categories. The defaults work without a
+  database change; saving custom categories requires migration 075.
+- Improved (v0.98.2): the PRESIDENT demo uses the Blood Of Your Empire artwork
+  as its banner, has a longer three-paragraph About section, adds more artists
+  to a continuously moving Social globe, and includes a mix of funny and
+  serious fictional sample conversations. Scenes now opens a full read-only
+  demo room, “It’s Not Just a Phase,” rather than treating PRESIDENT as off the
+  network.
 - Improved (v0.98.1): the PRESIDENT demo now arrives with its supplied profile
   portrait and live banner, Spotify cover art on linked releases, a run of
   shows and production holds in Calendar, and separate social, live-production,

@@ -98,6 +98,8 @@ export type SpotlightCardProps = {
   className?: string;
   /** Palette token driving the halo. Defaults to ice (interactive). */
   tone?: SpotlightTone;
+  /** Optional exact accent, used by user-configurable category palettes. */
+  accent?: string;
   /** Corner radius in px — match the surface it wraps. */
   radius?: number;
   /** Border thickness of the lit edge, in px. */
@@ -115,6 +117,7 @@ export function SpotlightCard({
   id,
   className,
   tone = "ramp",
+  accent,
   radius = 16,
   borderWidth = 1.5,
   size = 220,
@@ -129,7 +132,7 @@ export function SpotlightCard({
       className={cn("spotlight", className)}
       style={
         {
-          "--spot-color": TONE_VAR[tone],
+          "--spot-color": accent ?? TONE_VAR[tone],
           "--spot-radius": radius,
           "--spot-border": borderWidth,
           "--spot-size": size,

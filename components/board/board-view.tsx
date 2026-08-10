@@ -634,7 +634,10 @@ export function BoardView() {
               at a glance; a drag expands everything so any stage is droppable. */}
           {/* Below lg the stages stack vertically — columns would be too narrow
               to read, and vertical scrolling beats horizontal on touch. */}
-          <div className="flex flex-col gap-2 pb-2 lg:flex-row lg:items-stretch lg:overflow-x-auto">
+          <div
+            className="flex flex-col gap-2 pb-3 lg:flex-row lg:items-stretch lg:overflow-x-auto lg:overscroll-x-contain"
+            aria-label="Board stages — scroll horizontally to see the full pipeline"
+          >
             {stages.map((stage) => (
               <KanbanColumn
                 key={stage.id}
