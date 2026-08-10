@@ -57,3 +57,10 @@ next-env.d.ts
 
 # Local seed/test fixtures (contain test-account credentials)
 /scripts/_*.json
+/test/support/fixtures.json
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

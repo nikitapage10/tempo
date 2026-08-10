@@ -1,0 +1,42 @@
+// CI check: migration filenames must be numbered, and any NEW duplicate
+// number must be caught before merge. The 058_* pair (member onboarding
+// refinements / scenes slug reuse) is a pre-existing, already-applied-to-
+// production collision — grandfathered here rather than treated as an error,
+// since migrations are never renamed once applied (see CLAUDE.md).
+import fs from "node:fs";
+import path from "node:path";
+
+const MIGRATIONS_DIR = path.resolve(process.cwd(), "migrations");
+const GRANDFATHERED_DUPLICATE_NUMBERS = new Set([58]);
+
+const files = fs
+  .readdirSync(MIGRATIONS_DIR)
+  .filter((f) => /^\d+/.test(f) && f.endsWith(".sql"));
+
+const byNumber = new Map();
+for (const f of files) {
+  const n = parseInt(f.match(/^(\d+)/)[1], 10);
+  if (!byNumber.has(n)) byNumber.set(n, []);
+  byNumber.get(n).push(f);
+}
+
+let failed = false;
+for (const [n, group] of [...byNumber.entries()].sort((a, b) => a[0] - b[0])) {
+  if (group.length > 1) {
+    if (GRANDFATHERED_DUPLICATE_NUMBERS.has(n)) {
+      console.log(`OK (grandfathered): migration number ${n} used by ${group.length} files: ${group.join(", ")}`);
+    } else {
+      console.error(`FAIL: migration number ${n} used by ${group.length} files: ${group.join(", ")}`);
+      failed = true;
+    }
+  }
+}
+
+const numbers = [...byNumber.keys()].sort((a, b) => a - b);
+console.log(`Checked ${files.length} migration files, numbers ${numbers[0]}-${numbers[numbers.length - 1]}.`);
+
+if (failed) {
+  console.error("\nMigration order check failed.");
+  process.exit(1);
+}
+console.log("Migration order check passed.");
