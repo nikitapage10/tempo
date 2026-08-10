@@ -14,6 +14,7 @@ type SignedImageProps = {
 
 function isAbsoluteSrc(path: string): boolean {
   return (
+    path.startsWith("/") ||
     path.startsWith("http://") ||
     path.startsWith("https://") ||
     path.startsWith("data:") ||
@@ -64,7 +65,7 @@ async function resolveSignedImage(path: string): Promise<string> {
   }
 }
 
-/** Resolves a storage path (or absolute URL) to a signed img src. */
+/** Resolves a storage path (or shared/public URL) to an img src. */
 export function SignedImage({
   path,
   alt = "",

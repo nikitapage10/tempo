@@ -1,9 +1,23 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { findDemoArtist, removeDemo, seedPresidentDemo } from "@/lib/demo/seed";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
+
+const PAGE_TOUR_IDS = [
+  "calendar",
+  "board",
+  "tracks",
+  "projects",
+  "tasks",
+  "artist",
+  "social",
+  "scenes",
+  "stats",
+  "settings",
+] as const;
 
 function noStore() {
   return { "Cache-Control": "no-store" };
@@ -80,6 +94,25 @@ export async function DELETE(req: NextRequest) {
 
   try {
     await removeDemo(supabase, demo.artistId);
+    const service = createAdminClient();
+    if (body?.repeatTours === true) {
+      await service
+        .from("member_onboarding")
+        .update({
+          main_tour_completed_at: null,
+          page_tours_completed: [],
+          page_tours_skipped: [],
+        })
+        .eq("user_id", user.id);
+    } else {
+      await service
+        .from("member_onboarding")
+        .update({
+          main_tour_completed_at: new Date().toISOString(),
+          page_tours_skipped: [...PAGE_TOUR_IDS],
+        })
+        .eq("user_id", user.id);
+    }
     return NextResponse.json({ removed: true }, { headers: noStore() });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Couldn't remove the demo.";

@@ -83,3 +83,28 @@ export function completeGuidedTour() {
     /* A failed preference write should never trap the artist in the tour. */
   }
 }
+
+/** Mark one artist's main tour as already handled without opening it. */
+export function skipGuidedTourForArtist(artistId: string) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(completionKey(artistId), "1");
+    const pending = readPendingTour();
+    if (pending?.artistId === artistId) {
+      sessionStorage.removeItem(GUIDED_TOUR_PENDING_KEY);
+    }
+  } catch {
+    /* The tour is optional; storage failure must not block navigation. */
+  }
+}
+
+/** Clear completion and force one artist's main tour on the next app mount. */
+export function replayGuidedTourForArtist(artistId: string) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(completionKey(artistId));
+  } catch {
+    /* armGuidedTour still gets a chance below. */
+  }
+  armGuidedTour(artistId, { force: true });
+}

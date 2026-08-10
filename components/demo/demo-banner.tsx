@@ -5,7 +5,12 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useActiveArtist } from "@/components/active-artist-provider";
-import { forgetDemo, removeDemoWorkspace } from "@/lib/api/demo";
+import { focusDemo, forgetDemo, removeDemoWorkspace, seedDemo } from "@/lib/api/demo";
+import { PRESIDENT_DEMO_KIND } from "@/lib/demo/president";
+import {
+  replayGuidedTourForArtist,
+  skipGuidedTourForArtist,
+} from "@/lib/guided-tour";
 
 /**
  * The strip that sits above the workspace whenever the demo artist is the one
@@ -16,11 +21,12 @@ import { forgetDemo, removeDemoWorkspace } from "@/lib/api/demo";
  * can't tell sample data from their own catalog will not trust either.
  */
 export function DemoBanner() {
-  const { activeArtist } = useActiveArtist();
+  const { activeArtist, artists } = useActiveArtist();
   const queryClient = useQueryClient();
   const [confirming, setConfirming] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [repeatTours, setRepeatTours] = React.useState(false);
 
   const demoKind = activeArtist?.demo_kind ?? null;
   if (!demoKind) return null;
@@ -30,7 +36,13 @@ export function DemoBanner() {
     setBusy(true);
     setError(null);
     try {
-      await removeDemoWorkspace(activeArtist.id);
+      const realArtists = artists.filter((artist) => !artist.demo_kind);
+      await removeDemoWorkspace(activeArtist.id, { repeatTours });
+      if (repeatTours && realArtists[0]) {
+        replayGuidedTourForArtist(realArtists[0].id);
+      } else {
+        for (const artist of realArtists) skipGuidedTourForArtist(artist.id);
+      }
       forgetDemo();
       queryClient.clear();
       // A hard load rather than a router push. The artist this page is built
@@ -42,6 +54,20 @@ export function DemoBanner() {
       setError(err instanceof Error ? err.message : "Couldn't remove the demo.");
       setBusy(false);
       setConfirming(false);
+    }
+  }
+
+  async function refreshDemo() {
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await seedDemo();
+      focusDemo(result);
+      queryClient.clear();
+      window.location.assign("/");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't update the demo.");
+      setBusy(false);
     }
   }
 
@@ -66,15 +92,22 @@ export function DemoBanner() {
             </p>
           ) : null}
         </div>
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          onClick={() => setConfirming(true)}
-          disabled={busy}
-        >
-          {busy ? "Removing…" : "Remove demo data"}
-        </Button>
+        <div className="flex items-center gap-2">
+          {demoKind !== PRESIDENT_DEMO_KIND ? (
+            <Button type="button" size="sm" onClick={() => void refreshDemo()} disabled={busy}>
+              {busy ? "Updating…" : "Update demo data"}
+            </Button>
+          ) : null}
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() => setConfirming(true)}
+            disabled={busy}
+          >
+            {busy ? "Removing…" : "Remove demo data"}
+          </Button>
+        </div>
       </div>
 
       <ConfirmDialog
@@ -87,7 +120,23 @@ export function DemoBanner() {
         confirmLabel="Remove demo data"
         busy={busy}
         onConfirm={remove}
-      />
+      >
+        <label className="mb-4 flex cursor-pointer items-start gap-3 rounded-input border border-line bg-bg-2/50 p-3">
+          <input
+            type="checkbox"
+            checked={repeatTours}
+            onChange={(event) => setRepeatTours(event.target.checked)}
+            className="mt-0.5 accent-[var(--ice)]"
+          />
+          <span>
+            <span className="block text-sm text-text-hi">Show the workspace tours again</span>
+            <span className="mt-0.5 block text-xs leading-5 text-text-lo">
+              Leave this off to return to your own artist without repeating the
+              tour you just saw in the demo.
+            </span>
+          </span>
+        </label>
+      </ConfirmDialog>
     </>
   );
 }

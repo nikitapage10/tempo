@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   ALBUM_RELEASE,
   DEMO_BOARD_NOTES,
+  DEMO_CALENDAR_EVENTS,
   DEMO_FEEDBACK,
   DEMO_PROJECTS,
   DEMO_SESSIONS,
@@ -11,6 +12,7 @@ import {
   DEMO_TRACKS,
   DEMO_TRACK_GROUPS,
   DEMO_PROFILE,
+  DEMO_SOCIAL_ARTISTS,
 } from "@/lib/demo/president";
 
 /**
@@ -58,6 +60,27 @@ describe("PRESIDENT demo dataset", () => {
       if (task.projectRef) expect(projectRefs).toContain(task.projectRef);
       if (task.trackRef) expect(trackRefs).toContain(task.trackRef);
     }
+  });
+
+  it("resolves every calendar event and keeps timed events well formed", () => {
+    for (const event of DEMO_CALENDAR_EVENTS) {
+      expect(spaceRefs).toContain(event.spaceRef);
+      if (event.projectRef) {
+        expect(projectRefs).toContain(event.projectRef);
+        expect(DEMO_PROJECTS.find((project) => project.ref === event.projectRef)?.spaceRef)
+          .toBe(event.spaceRef);
+      }
+      expect(new Date(event.startsAt).getTime()).toBeLessThan(new Date(event.endsAt).getTime());
+      expect(event.timezone).toBe("Europe/London");
+    }
+    expect(DEMO_CALENDAR_EVENTS.some((event) => event.kind === "live_show")).toBe(true);
+  });
+
+  it("uses recognisable, explicitly curated demo social examples", () => {
+    const names = DEMO_SOCIAL_ARTISTS.map((artist) => artist.name);
+    expect(names).toContain("Sleep Token");
+    expect(names).toContain("Linkin Park");
+    expect(new Set(names).size).toBe(names.length);
   });
 
   it("resolves every session, feedback and group reference", () => {

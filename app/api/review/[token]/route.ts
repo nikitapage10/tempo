@@ -54,7 +54,13 @@ export async function GET(
 
   let artworkUrl: string | null = null;
   if (ctx.track.artwork_url) {
-    try {
+    if (
+      ctx.track.artwork_url.startsWith("/") ||
+      ctx.track.artwork_url.startsWith("https://") ||
+      ctx.track.artwork_url.startsWith("http://")
+    ) {
+      artworkUrl = ctx.track.artwork_url;
+    } else try {
       const admin = createAdminClient();
       const { data } = await admin.storage
         .from("audio")

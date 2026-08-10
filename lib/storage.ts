@@ -227,7 +227,13 @@ export function peekSignedUrl(
   expiresInSeconds = DEFAULT_EXPIRY
 ): string | null {
   if (!path) return null;
-  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  if (
+    path.startsWith("/") ||
+    path.startsWith("http://") ||
+    path.startsWith("https://") ||
+    path.startsWith("data:") ||
+    path.startsWith("blob:")
+  ) return path;
 
   const key = signedUrlCacheKey(path, expiresInSeconds);
   const mem = signedUrlMemory.get(key);
@@ -246,7 +252,13 @@ export async function getSignedUrl(
   expiresInSeconds = DEFAULT_EXPIRY
 ): Promise<string> {
   if (!path) throw new Error("Missing file path.");
-  if (path.startsWith("http://") || path.startsWith("https://")) {
+  if (
+    path.startsWith("/") ||
+    path.startsWith("http://") ||
+    path.startsWith("https://") ||
+    path.startsWith("data:") ||
+    path.startsWith("blob:")
+  ) {
     return path;
   }
 
@@ -297,7 +309,14 @@ export function invalidateSignedUrl(path: string): void {
 }
 
 export async function deleteFile(path: string): Promise<void> {
-  if (!path || path.startsWith("http://") || path.startsWith("https://")) {
+  if (
+    !path ||
+    path.startsWith("/") ||
+    path.startsWith("http://") ||
+    path.startsWith("https://") ||
+    path.startsWith("data:") ||
+    path.startsWith("blob:")
+  ) {
     return;
   }
   invalidateSignedUrl(path);

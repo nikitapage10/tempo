@@ -26,7 +26,8 @@
  * reads the same whenever someone opens the demo.
  */
 
-export const PRESIDENT_DEMO_KIND = "president";
+/** Bump when persisted demo rows change so an existing sample can rebuild. */
+export const PRESIDENT_DEMO_KIND = "president-v2";
 
 export const PRESIDENT_SPOTIFY_ARTIST_ID = "40nPYop0FOD9Syyu5y4dAU";
 export const PRESIDENT_SPOTIFY_URL = `https://open.spotify.com/artist/${PRESIDENT_SPOTIFY_ARTIST_ID}`;
@@ -114,6 +115,33 @@ export const DEMO_PROJECTS: DemoProject[] = [
     description:
       "Everything around the record that isn't the record: announce, press, visuals, retail, and the run of shows into release week.",
     deadline: ALBUM_RELEASE,
+    spaceRef: "campaign",
+  },
+  {
+    ref: "socials",
+    name: "Release-week social campaign",
+    projectType: "general",
+    description:
+      "A coordinated month of short-form edits, rehearsal footage, artwork reveals, press clips, and release-day posts. This is the campaign work around the album rather than another music project.",
+    deadline: ALBUM_RELEASE,
+    spaceRef: "campaign",
+  },
+  {
+    ref: "live",
+    name: "Autumn headline shows",
+    projectType: "general",
+    description:
+      "Production, rehearsals, travel, guest list, and show-day details for the first headline run after the album arrives.",
+    deadline: "2026-09-11",
+    spaceRef: "campaign",
+  },
+  {
+    ref: "merch",
+    name: "Blood Of Your Empire merch capsule",
+    projectType: "general",
+    description:
+      "A small release-week collection: two shirts, a signed art card, and a numbered poster. Inventory and fulfilment live here instead of inside the album project.",
+    deadline: "2026-08-28",
     spaceRef: "campaign",
   },
 ];
@@ -695,6 +723,189 @@ export const DEMO_TASKS: DemoTask[] = [
     projectRef: "launch",
     trackRef: null,
     notes: null,
+  },
+  {
+    title: "Cut the 15-second album countdown edits",
+    category: "social",
+    status: "doing",
+    dueOffsetDays: -18,
+    spaceRef: "campaign",
+    projectRef: "socials",
+    trackRef: null,
+    notes: "One visual system, five versions. Keep the masks readable on a phone screen.",
+  },
+  {
+    title: "Schedule the release-day post sequence",
+    category: "social",
+    status: "todo",
+    dueOffsetDays: -5,
+    spaceRef: "campaign",
+    projectRef: "socials",
+    trackRef: null,
+    notes: "Midnight link, morning film, afternoon credits, evening show reminder.",
+  },
+  {
+    title: "Approve the vertical rehearsal cut",
+    category: "social",
+    status: "todo",
+    dueOffsetDays: -12,
+    spaceRef: "campaign",
+    projectRef: "socials",
+    trackRef: "white-devil",
+    notes: "Use the last chorus; avoid any unmasked backstage angles.",
+  },
+  {
+    title: "Confirm lighting cues with every venue",
+    category: "production",
+    status: "doing",
+    dueOffsetDays: -9,
+    spaceRef: "originals",
+    projectRef: null,
+    trackRef: null,
+    notes: "White Devil needs the full blackout cue before the final hit.",
+  },
+  {
+    title: "Lock van, hotels, and late check-ins",
+    category: "admin",
+    status: "todo",
+    dueOffsetDays: -7,
+    spaceRef: "originals",
+    projectRef: null,
+    trackRef: null,
+    notes: "Four shows, six crew, backline travelling separately.",
+  },
+  {
+    title: "Send final merch quantities to the printer",
+    category: "admin",
+    status: "todo",
+    dueOffsetDays: -16,
+    spaceRef: "campaign",
+    projectRef: "merch",
+    trackRef: null,
+    notes: "Hold ten percent back for the online store after the shows.",
+  },
+];
+
+export type DemoCalendarEvent = {
+  title: string;
+  kind: "studio_session" | "meeting" | "content" | "live_show" | "personal" | "other";
+  description: string;
+  location: string | null;
+  startsAt: string;
+  endsAt: string;
+  timezone: string;
+  spaceRef: "originals" | "campaign";
+  projectRef: string | null;
+};
+
+/**
+ * Invented demo itinerary. These are deliberately plausible sample shows and
+ * production holds, not claims about PRESIDENT's real touring schedule.
+ */
+export const DEMO_CALENDAR_EVENTS: DemoCalendarEvent[] = [
+  {
+    title: "Release campaign content shoot",
+    kind: "content",
+    description: "Capture the album countdown edits, a rehearsal-room loop, and clean stills for release week.",
+    location: "London studio",
+    startsAt: "2026-08-20T11:00:00+01:00",
+    endsAt: "2026-08-20T17:00:00+01:00",
+    timezone: "Europe/London",
+    spaceRef: "campaign",
+    projectRef: "socials",
+  },
+  {
+    title: "Full production rehearsal",
+    kind: "studio_session",
+    description: "First complete run with lights, masks, playback, changeovers, and the release-show set list.",
+    location: "Rehearsal room, London",
+    startsAt: "2026-08-24T13:00:00+01:00",
+    endsAt: "2026-08-24T20:00:00+01:00",
+    timezone: "Europe/London",
+    spaceRef: "originals",
+    projectRef: null,
+  },
+  {
+    title: "Album release show — London",
+    kind: "live_show",
+    description: "Demo itinerary: doors, headline set, and the first full play-through after Blood Of Your Empire arrives.",
+    location: "London, United Kingdom",
+    startsAt: "2026-09-04T19:30:00+01:00",
+    endsAt: "2026-09-04T22:30:00+01:00",
+    timezone: "Europe/London",
+    spaceRef: "originals",
+    projectRef: null,
+  },
+  {
+    title: "Headline show — Birmingham",
+    kind: "live_show",
+    description: "Demo itinerary: load-in at 14:00, soundcheck at 17:00, headline set at 21:00.",
+    location: "Birmingham, United Kingdom",
+    startsAt: "2026-09-07T19:30:00+01:00",
+    endsAt: "2026-09-07T22:30:00+01:00",
+    timezone: "Europe/London",
+    spaceRef: "originals",
+    projectRef: null,
+  },
+  {
+    title: "Headline show — Manchester",
+    kind: "live_show",
+    description: "Demo itinerary: guest list closes at noon; local support arrives for soundcheck at 16:30.",
+    location: "Manchester, United Kingdom",
+    startsAt: "2026-09-09T19:30:00+01:00",
+    endsAt: "2026-09-09T22:30:00+01:00",
+    timezone: "Europe/London",
+    spaceRef: "campaign",
+    projectRef: "live",
+  },
+  {
+    title: "Headline show — Glasgow",
+    kind: "live_show",
+    description: "Demo itinerary: final night of the sample run, with a late hotel check-in after load-out.",
+    location: "Glasgow, United Kingdom",
+    startsAt: "2026-09-11T19:30:00+01:00",
+    endsAt: "2026-09-11T22:30:00+01:00",
+    timezone: "Europe/London",
+    spaceRef: "campaign",
+    projectRef: "live",
+  },
+];
+
+export type DemoSocialArtist = {
+  name: string;
+  genres: string[];
+  connection: string;
+  sampleUpdate: string;
+};
+
+/**
+ * Recognisable demo-only network examples. They are rendered with an explicit
+ * "not an official account or post" label and never inserted as TEMPO users.
+ */
+export const DEMO_SOCIAL_ARTISTS: DemoSocialArtist[] = [
+  {
+    name: "Sleep Token",
+    genres: ["Alternative metal", "Progressive metal"],
+    connection: "Adjacent live circuit",
+    sampleUpdate: "A tour announcement, production still, or new-release note from a followed artist would land here.",
+  },
+  {
+    name: "Linkin Park",
+    genres: ["Alternative rock", "Nu metal"],
+    connection: "Influence and discovery",
+    sampleUpdate: "This sample card shows how a major release update reads beside independent studio notes in the feed.",
+  },
+  {
+    name: "Bring Me The Horizon",
+    genres: ["Alternative metal", "Rock"],
+    connection: "UK heavy-music network",
+    sampleUpdate: "A followed artist's festival clip, collaboration note, or campaign update could be shared here.",
+  },
+  {
+    name: "Bad Omens",
+    genres: ["Alternative metal", "Metalcore"],
+    connection: "Related audience",
+    sampleUpdate: "Use the feed for work in motion: rehearsal fragments, release context, and the next thing taking shape.",
   },
 ];
 

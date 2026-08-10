@@ -28,6 +28,7 @@ import { resolveArtistAccent } from "@/lib/artist-theme";
 import { resolveLocation } from "@/lib/geo";
 import type { Person } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { DemoSocialView } from "@/components/demo/demo-social-view";
 
 type Tab = "top8" | "following" | "discover";
 
@@ -250,6 +251,10 @@ export default function SocialView() {
       toast(err instanceof Error ? err.message : "Couldn’t join the network.");
     }
   }
+
+  // The shared demo has a curated, explicitly non-interactive network preview.
+  // Never leak arbitrary test or member profiles into PRESIDENT's sample feed.
+  if (activeArtist?.demo_kind) return <DemoSocialView />;
 
   const networkGate = (
     <EmptyShaderPanel

@@ -109,15 +109,14 @@ export async function publishArtistProfile(
   artistId: string,
   visibility: "members" | "public"
 ): Promise<ArtistProfile> {
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .from("artist_profiles")
-    .update({ visibility, published_at: new Date().toISOString() })
-    .eq("artist_id", artistId)
-    .select("*")
-    .single();
-  if (error) throw error;
-  return data as ArtistProfile;
+  const response = await fetch("/api/network/join", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ artistId, visibility }),
+  });
+  const body = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(body?.error ?? "Couldn’t join the network.");
+  return body as ArtistProfile;
 }
 
 export async function unpublishArtistProfile(artistId: string): Promise<ArtistProfile> {

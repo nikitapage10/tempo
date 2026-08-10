@@ -4,6 +4,23 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-10
 
+- Improved (v0.98.1): the PRESIDENT demo now arrives with its supplied profile
+  portrait and live banner, Spotify cover art on linked releases, a run of
+  shows and production holds in Calendar, and separate social, live-production,
+  and merch projects with their own tasks. Social no longer leaks whichever
+  test or member profiles happen to be in the database; it uses a clearly
+  labelled, shared preview with recognisable rock artists instead. The demo's
+  photos and catalog artwork are shared references rather than duplicate files
+  copied into every member's private storage.
+- Improved (v0.98.1): opening the demo now offers the workspace tour even if
+  you've toured your own artist already. Removing the demo defaults to not
+  repeating those tours on your real workspace, with a checkbox if you want to
+  see them again. Older PRESIDENT demos show an Update demo data action so the
+  richer sample can be rebuilt in place.
+- Fixed (v0.98.1): joining the member network now reconciles Green Room
+  membership as part of the same action, instead of relying on a first-run job
+  that may have finished too early. The released-music panel on artist profiles
+  also uses one compact picker rather than a tall stack of track buttons.
 - Fixed (v0.98.0): every screen in TEMPO now opens faster. Some first-run
   setup — building the small starter community you land in, and looking up
   your artist list — was quietly being redone from scratch every single time

@@ -13,14 +13,16 @@
  *     touched, so whatever onboarding they had in progress is still there
  *     — and still gated — the moment the demo goes away.
  *
- * Demo tracks carry no audio. TEMPO's placeholder Spectra covers stand in when
- * Spotify artwork isn't available, which is a real feature doing real work.
+ * Demo tracks carry no audio. Released tracks reference Spotify's shared
+ * catalog artwork, and the PRESIDENT identity images are bundled once with the
+ * app. Per-member storage is never filled with duplicate demo binaries.
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   ALBUM_RELEASE,
   DEMO_BOARD_NOTES,
+  DEMO_CALENDAR_EVENTS,
   DEMO_FEEDBACK,
   DEMO_PROFILE,
   DEMO_PROJECTS,
@@ -52,6 +54,7 @@ export type SeedResult = DemoArtistSummary & {
     tasks: number;
     sessions: number;
     feedback: number;
+    events: number;
     /** Tracks connected to a real Spotify recording, so they play. */
     spotifyLinked: number;
   };
@@ -145,6 +148,10 @@ async function enrichFromSpotify(
         // seeded, because the demo's campaign timeline is built on them.
         spotify_duration_ms: spotify.durationMs ?? null,
         spotify_artist_names: spotify.artists.map((a) => a.name),
+        // Demo artwork is shared catalog media. Keep the remote HTTPS address
+        // instead of copying the same album image into every member's private
+        // bucket; SignedImage already accepts trusted web URLs.
+        artwork_url: spotify.album.artworkUrl,
         spotify_synced_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
@@ -224,6 +231,8 @@ async function seedProfile(supabase: Client, artistId: string): Promise<void> {
         sound_markers: DEMO_PROFILE.soundMarkers,
         story_sections: DEMO_PROFILE.storySections,
         featured_music: DEMO_PROFILE.featuredMusic,
+        emblem_url: "/demo/president/profile.webp",
+        banner_url: "/demo/president/banner.jpg",
         // Deliberately not published. The demo shows the Artist page fully
         // filled in; putting a sample identity onto the member network or a
         // public link is not something exploring a demo should ever do.
@@ -239,8 +248,8 @@ async function seedProfile(supabase: Client, artistId: string): Promise<void> {
 }
 
 /**
- * Seeds the demo. Safe to call twice — an account that already has a demo
- * artist gets that one back untouched rather than a second copy.
+ * Seeds the demo. Safe to call twice: a current demo is returned untouched,
+ * while an older version is removed and rebuilt from the latest shared data.
  */
 export async function seedPresidentDemo(supabase: Client): Promise<SeedResult> {
   const {
@@ -249,7 +258,9 @@ export async function seedPresidentDemo(supabase: Client): Promise<SeedResult> {
   if (!user) throw new Error("Sign in first.");
 
   const existing = await findDemoArtist(supabase);
-  if (existing) {
+  if (existing && existing.demoKind !== PRESIDENT_DEMO_KIND) {
+    await removeDemo(supabase, existing.artistId);
+  } else if (existing) {
     const { data: space } = await supabase
       .from("spaces")
       .select("id")
@@ -267,6 +278,7 @@ export async function seedPresidentDemo(supabase: Client): Promise<SeedResult> {
         tasks: 0,
         sessions: 0,
         feedback: 0,
+        events: 0,
         spotifyLinked: 0,
       },
     };
@@ -285,6 +297,8 @@ export async function seedPresidentDemo(supabase: Client): Promise<SeedResult> {
       sort: -1,
       demo_kind: PRESIDENT_DEMO_KIND,
       origin_status: "legacy_complete",
+      emblem_url: "/demo/president/profile.webp",
+      banner_url: "/demo/president/banner.jpg",
     })
     .select("id, name, demo_kind")
     .single();
@@ -314,6 +328,7 @@ async function buildWorkspace(
   const fail = (label: string, error: { message?: string } | null) => {
     if (error) throw new Error(`${label}: ${error.message ?? "unknown error"}`);
   };
+  const userId = (await supabase.auth.getUser()).data.user!.id;
 
   // ---------- Spaces and stages ----------
   const spaceIds = new Map<string, string>();
@@ -371,7 +386,7 @@ async function buildWorkspace(
     const { data, error } = await supabase
       .from("track_groups")
       .insert({
-        user_id: (await supabase.auth.getUser()).data.user!.id,
+        user_id: userId,
         space_id: spaceIds.get("originals"),
         name: group.name,
         sort: index,
@@ -449,8 +464,27 @@ async function buildWorkspace(
   const { error: taskError } = await supabase.from("tasks").insert(taskRows);
   fail("tasks", taskError);
 
+  // ---------- Calendar events and shows ----------
+  const eventRows = DEMO_CALENDAR_EVENTS.map((event) => ({
+    user_id: userId,
+    space_id: spaceIds.get(event.spaceRef),
+    project_id: event.projectRef ? projectIds.get(event.projectRef) : null,
+    track_id: null,
+    title: event.title,
+    kind: event.kind,
+    description: event.description,
+    location: event.location,
+    all_day: false,
+    start_date: null,
+    end_date: null,
+    starts_at: event.startsAt,
+    ends_at: event.endsAt,
+    timezone: event.timezone,
+  }));
+  const { error: eventError } = await supabase.from("calendar_events").insert(eventRows);
+  fail("calendar events", eventError);
+
   // ---------- Focus sessions ----------
-  const userId = (await supabase.auth.getUser()).data.user!.id;
   const sessionRows = DEMO_SESSIONS.map((session) => {
     const startedAt = isoDaysAgo(session.daysAgo, session.startHour);
     const endedAt = new Date(
@@ -518,6 +552,7 @@ async function buildWorkspace(
       tasks: taskRows.length,
       sessions: sessionRows.length,
       feedback: feedbackRows.length,
+      events: eventRows.length,
       spotifyLinked: enriched,
     },
   };

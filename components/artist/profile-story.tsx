@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ArrowUpRight, Play, Sparkles } from "lucide-react";
+import { ArrowUpRight, Sparkles } from "lucide-react";
 import { SpotifyEmbedPlayer, resolveSpotifyTrackId } from "@/components/spotify/spotify-embed-player";
 import type {
   ProfileLink,
@@ -229,36 +229,22 @@ function ReleasedTracksPanel({ tracks }: { tracks: ProfileReleasedTrack[] }) {
       />
 
       {tracks.length > 1 ? (
-        <div className="mt-3 space-y-1.5 border-t border-line/60 pt-3">
-          {tracks.map((track) => {
-            const active = track.id === selected.id;
-            return (
-              <button
-                key={track.id}
-                type="button"
-                aria-pressed={active}
-                onClick={() => setSelectedId(track.id)}
-                className={cn(
-                  "flex w-full items-center justify-between gap-3 rounded-input border px-3 py-2 text-left transition-colors",
-                  active
-                    ? "border-ice/35 bg-ice/10 text-text-hi"
-                    : "border-transparent text-text-lo hover:border-line hover:text-text-hi"
-                )}
-              >
-                <span className="min-w-0">
-                  <span className="block truncate text-sm font-medium">{track.title}</span>
-                  {track.spotify_album_name ? (
-                    <span className="mt-0.5 block truncate text-[11px] text-text-lo">
-                      {track.spotify_album_name}
-                    </span>
-                  ) : null}
-                </span>
-                <span className="grid size-7 shrink-0 place-items-center rounded-full bg-black/35 text-ice">
-                  <Play className="size-3.5 translate-x-px" fill="currentColor" />
-                </span>
-              </button>
-            );
-          })}
+        <div className="mt-3 border-t border-line/60 pt-3">
+          <label htmlFor="released-track-picker" className="mb-1.5 block text-[11px] text-text-lo">
+            Choose another release
+          </label>
+          <select
+            id="released-track-picker"
+            value={selected.id}
+            onChange={(event) => setSelectedId(event.target.value)}
+            className="h-9 w-full rounded-input border border-line bg-bg-2 px-3 text-sm text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+          >
+            {tracks.map((track) => (
+              <option key={track.id} value={track.id}>
+                {track.title}{track.spotify_album_name ? ` — ${track.spotify_album_name}` : ""}
+              </option>
+            ))}
+          </select>
         </div>
       ) : null}
     </section>

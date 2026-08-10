@@ -24,6 +24,7 @@ export type DemoSeedResult = DemoArtist & {
     tasks: number;
     sessions: number;
     feedback: number;
+    events: number;
   };
 };
 
@@ -45,11 +46,14 @@ export async function seedDemo(): Promise<DemoSeedResult> {
   return res.json();
 }
 
-export async function removeDemoWorkspace(artistId: string): Promise<void> {
+export async function removeDemoWorkspace(
+  artistId: string,
+  options: { repeatTours?: boolean } = {}
+): Promise<void> {
   const res = await fetch("/api/demo", {
     method: "DELETE",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ artistId }),
+    body: JSON.stringify({ artistId, repeatTours: options.repeatTours === true }),
   });
   if (!res.ok) throw new Error(await readError(res, "Couldn't remove the demo workspace."));
 }

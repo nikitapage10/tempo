@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { PlayCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { focusDemo, seedDemo } from "@/lib/api/demo";
+import { armGuidedTour } from "@/lib/guided-tour";
 
 /**
  * "See TEMPO with a demo artist" — builds the PRESIDENT sample workspace and
@@ -43,6 +44,9 @@ export function TryDemoButton({
     try {
       const result = await seedDemo();
       focusDemo(result);
+      // The demo is its own artist, so it gets a complete first-workspace tour
+      // even when this member already toured their real workspace.
+      armGuidedTour(result.artistId, { force: true });
       onStarted?.();
       // Every cached list is about to describe the wrong artist.
       await queryClient.invalidateQueries();

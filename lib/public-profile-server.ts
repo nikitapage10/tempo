@@ -160,7 +160,7 @@ async function signPublicAssetPath(
   admin: ReturnType<typeof createAdminClient>,
   path: string
 ): Promise<string | null> {
-  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  if (path.startsWith("/") || path.startsWith("http://") || path.startsWith("https://")) return path;
   const { data, error } = await admin.storage
     .from("audio")
     .createSignedUrl(path, 3600);
