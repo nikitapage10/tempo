@@ -2,6 +2,45 @@
 
 Plain-English history of what changed in TEMPO, newest first.
 
+## 2026-08-10
+
+- Added (v0.97.0): a quiet guide on Today, "Your TEMPO loop," suggests one
+  next step for artists just getting going — bring in a song, name the
+  next move, focus on it, upload a bounce, get feedback, close the loop.
+  It only ever recommends one thing at a time, explains why, and never
+  turns into a forced tour or a score. "Not now" snoozes it for a week;
+  "Hide this guide" turns it off until you turn it back on. Existing
+  artists see a small one-line invitation instead of the full guide.
+- Added (v0.97.0): TEMPO Pulse — an optional briefing instead of a stream
+  of separate notifications. A small "what changed while you were away"
+  card can appear on Today, and Settings → Notifications now has a Pulse
+  section where you can turn on a daily or weekly email summary, pick a
+  delivery time and timezone, choose which categories it covers, and
+  decide whether it uses generic wording or actual track/project names.
+  Pulse email is off until you turn it on, is easy to pause or
+  unsubscribe from with one click, and never includes the body of a
+  message, comment, or note.
+- Added (v0.97.0): a small, private "product improvement data" explanation
+  in Settings → Account describes the limited, anonymous usage events
+  TEMPO now records (like "a track was created") and states plainly what
+  they never include — titles, lyrics, notes, messages, or anything you
+  wrote.
+- Added (v0.97.0): the private Admin console's usage analytics page gained
+  an aggregate-only Activation & Pulse section (signup-to-first-song
+  progress, return rates, guide and Pulse engagement) — still no
+  per-member activity view, ever.
+- Under the hood: this release adds four new database tables behind the
+  scenes (usage-pattern tracking, guide preferences, notification
+  preferences, and the Pulse email queue) plus a migration recording which
+  database updates have been applied. None of them touch your tracks,
+  files, or any existing data. These migrations still need to be run in
+  Supabase before this release is deployed — see migrations 068 through
+  071.
+- Under the hood: this release also adds an automated test setup (a
+  separate, isolated test database — never your real one — plus automatic
+  checks that run before changes ship) so future changes can be verified
+  without any risk to your real catalog.
+
 ## 2026-08-09 (3)
 
 - Fixed (v0.96.0): the Today page's scrolling cover art no longer glitches
