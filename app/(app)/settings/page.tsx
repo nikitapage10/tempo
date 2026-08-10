@@ -9,6 +9,7 @@ import { SpacesManager } from "@/components/spaces/spaces-manager";
 import { AccountPanel } from "@/components/settings/account-panel";
 import { CatalogBackupPanel } from "@/components/settings/catalog-backup-panel";
 import { NotificationsPanel } from "@/components/settings/notifications-panel";
+import { PulsePreferencesPanel } from "@/components/settings/pulse-preferences-panel";
 import { FlareLine } from "@/components/flare-line";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
@@ -251,6 +252,14 @@ function SettingsPageInner() {
               id="settings-panel-notifications"
               aria-labelledby="settings-tab-notifications"
             >
+              <SettingsPanel
+                eyebrow="Pulse"
+                title="Your briefing cadence"
+                description="Choose when and how much TEMPO summarizes for you — in-app is always on; email is opt-in."
+              >
+                <PulsePreferencesPanel />
+              </SettingsPanel>
+
               <SettingsPanel
                 eyebrow="Notifications"
                 title="Everything that pinged you"

@@ -46,6 +46,7 @@ import { SlitDivider } from "@/components/ui/slit";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { TrackCoverSlider } from "@/components/today/track-cover-slider";
 import { ActivationGuideModule } from "@/components/today/activation-guide-module";
+import { PulseModule } from "@/components/today/pulse-module";
 import { useCurrentUser } from "@/hooks/use-current-user";
 
 function greetingForHour(h: number): string {
@@ -272,12 +273,15 @@ export default function TodayPage() {
       </LfWindow>
 
       {!empty && !tasksFocused && activeArtist && currentUser ? (
-        <ActivationGuideModule
-          spaceId={activeSpaceId ?? ""}
-          artistId={activeArtist.id}
-          ownerId={currentUser.id}
-          isExistingMember={activeArtist.origin_status === "legacy_complete"}
-        />
+        <>
+          <ActivationGuideModule
+            spaceId={activeSpaceId ?? ""}
+            artistId={activeArtist.id}
+            ownerId={currentUser.id}
+            isExistingMember={activeArtist.origin_status === "legacy_complete"}
+          />
+          <PulseModule />
+        </>
       ) : null}
 
       {empty ? (
