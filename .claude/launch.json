@@ -37,6 +37,15 @@
       ],
       "port": 3200,
       "autoPort": true
+    },
+    {
+      "name": "tempo-test-preview",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev:test"
+      ],
+      "port": 3200
     }
   ]
 }

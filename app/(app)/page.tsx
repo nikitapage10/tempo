@@ -45,6 +45,8 @@ import { useQuery } from "@tanstack/react-query";
 import { SlitDivider } from "@/components/ui/slit";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { TrackCoverSlider } from "@/components/today/track-cover-slider";
+import { ActivationGuideModule } from "@/components/today/activation-guide-module";
+import { useCurrentUser } from "@/hooks/use-current-user";
 
 function greetingForHour(h: number): string {
   if (h < 12) return "Good morning";
@@ -57,6 +59,7 @@ export default function TodayPage() {
   const { toast } = useToast();
   const { activeSpaceId, activeSpace } = useActiveSpace();
   const { activeArtist } = useActiveArtist();
+  const currentUser = useCurrentUser();
   const tasksFocused = activeSpace?.focus === "tasks";
   const tracksQuery = useTracks(activeSpaceId);
   const stagesQuery = useStages(activeSpaceId);
@@ -267,6 +270,15 @@ export default function TodayPage() {
           </div>
         </div>
       </LfWindow>
+
+      {!empty && !tasksFocused && activeArtist && currentUser ? (
+        <ActivationGuideModule
+          spaceId={activeSpaceId ?? ""}
+          artistId={activeArtist.id}
+          ownerId={currentUser.id}
+          isExistingMember={activeArtist.origin_status === "legacy_complete"}
+        />
+      ) : null}
 
       {empty ? (
         <EmptyShaderPanel
