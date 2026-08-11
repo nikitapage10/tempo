@@ -150,6 +150,25 @@
   }
 
   /**
+   * Soft variant — same ≥85% legibility floor, but blurred into an ambient
+   * wash instead of a flat tint, for glass regions where the window itself
+   * is the backdrop several translucent panels float over (calendar), not a
+   * single hero image. Panels layered on top add their own blur again, so
+   * the two compound into real depth instead of one flat haze.
+   */
+  .lf-window-scrim-soft {
+    background: rgb(10 10 12 / 0.82);
+    backdrop-filter: blur(28px) saturate(1.2);
+    -webkit-backdrop-filter: blur(28px) saturate(1.2);
+  }
+
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .lf-window-scrim-soft {
+      background: rgb(10 10 12 / 0.94);
+    }
+  }
+
+  /**
    * Pre-paint intro cover. Set by components/intro-preflight.tsx during HTML
    * parse and cleared by the intro once it has the screen, so the app shell
    * never flashes in the gap between first paint and the overlay mounting.

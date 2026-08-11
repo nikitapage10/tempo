@@ -17,6 +17,7 @@ import { CalendarToolbar } from "@/components/calendar/calendar-toolbar";
 import { CalendarFiltersPopover } from "@/components/calendar/calendar-filters-popover";
 import { CalendarOverflowMenu } from "@/components/calendar/calendar-overflow-menu";
 import { CalendarTimeline } from "@/components/calendar/calendar-planning-panels";
+import { LfWindow } from "@/components/lf-windows";
 import { useCalendarViewState } from "@/components/calendar/use-calendar-view-state";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
@@ -249,6 +250,16 @@ function CalendarContent() {
       <div className="space-y-4">
         <PageHeader title="Calendar" subtitle="Deadlines, releases, and scheduled work." />
 
+        {/* Real shader canvas behind the glass, not a static gradient — same
+            technique as the Today hero and Scenes tab bar. The soft scrim
+            keeps it ≥85% legible at rest; every .glass panel floating on top
+            adds its own blur, so panels read a layer deeper than the gaps
+            between them. */}
+        <div className="relative">
+          <LfWindow className="absolute inset-0 rounded-panel" />
+          <div className="lf-window-scrim-soft pointer-events-none absolute inset-0 rounded-panel" aria-hidden />
+          <div className="relative z-[1] space-y-4">
+
         <CalendarAiScheduler today={today} timezone={vs.displayTimezone} onSchedule={scheduleFromParsed} />
 
         <CalendarToolbar
@@ -458,6 +469,8 @@ function CalendarContent() {
             ) : null}
           </div>
         )}
+          </div>
+        </div>
       </div>
 
       <CalendarEventEditor
