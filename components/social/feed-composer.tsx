@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ImagePlus, Music2, Send } from "lucide-react";
+import { ImagePlus, Music2, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useFeedMutations } from "@/hooks/use-feed";
@@ -24,6 +24,9 @@ export function FeedComposer({
   const [tracks, setTracks] = React.useState<Pick<Track, "id" | "title">[]>([]);
   const [showTracks, setShowTracks] = React.useState(false);
   const [imageFile, setImageFile] = React.useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = React.useState<string | null>(
+    null
+  );
   const [error, setError] = React.useState<string | null>(null);
   const fileRef = React.useRef<HTMLInputElement>(null);
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
@@ -44,6 +47,28 @@ export function FeedComposer({
       setTracks((data as Pick<Track, "id" | "title">[]) ?? []);
     })();
   }, [showTracks]);
+
+  React.useEffect(() => {
+    if (!imageFile) {
+      setImagePreviewUrl(null);
+      return;
+    }
+    const previewUrl = URL.createObjectURL(imageFile);
+    setImagePreviewUrl(previewUrl);
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [imageFile]);
+
+  function clearImage() {
+    setImageFile(null);
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
+  function openImagePicker() {
+    if (!fileRef.current) return;
+    // Clearing the native value lets an artist choose the same file again.
+    fileRef.current.value = "";
+    fileRef.current.click();
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -71,7 +96,7 @@ export function FeedComposer({
       });
       setBody("");
       setTrackId(null);
-      setImageFile(null);
+      clearImage();
       setShowTracks(false);
       setExpanded(false);
     } catch (err) {
@@ -111,17 +136,47 @@ export function FeedComposer({
       />
       {expanded ? (
         <>
-          {imageFile ? (
-            <p className="text-xs text-text-lo">
-              Image ready: {imageFile.name}{" "}
-              <button
-                type="button"
-                className="text-ice hover:underline"
-                onClick={() => setImageFile(null)}
-              >
-                remove
-              </button>
-            </p>
+          {imageFile && imagePreviewUrl ? (
+            <div className="overflow-hidden rounded-card border border-line bg-bg-1 shadow-e1">
+              <div className="relative aspect-video overflow-hidden bg-bg-0">
+                {/* A blob URL is the exact local file the artist selected; it
+                    is revoked whenever the attachment changes or unmounts. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={imagePreviewUrl}
+                  alt={`Preview of ${imageFile.name}`}
+                  className="size-full object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={clearImage}
+                  aria-label="Remove attached image"
+                  title="Remove image"
+                  className="absolute right-2 top-2 grid size-7 place-items-center rounded-full border border-white/15 bg-black/65 text-white/80 backdrop-blur transition-colors hover:bg-black/85 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+                >
+                  <X className="size-3.5" />
+                </button>
+              </div>
+              <div className="flex min-w-0 items-center gap-2 px-3 py-2">
+                <span className="min-w-0 flex-1 truncate text-xs text-text-lo">
+                  {imageFile.name}
+                </span>
+                <button
+                  type="button"
+                  className="shrink-0 text-xs text-ice hover:underline"
+                  onClick={openImagePicker}
+                >
+                  Replace
+                </button>
+                <button
+                  type="button"
+                  className="shrink-0 text-xs text-text-lo hover:text-warn"
+                  onClick={clearImage}
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
           ) : null}
           {trackId ? (
             <p className="text-xs text-text-lo">
@@ -177,7 +232,7 @@ export function FeedComposer({
               type="button"
               size="sm"
               variant="ghost"
-              onClick={() => fileRef.current?.click()}
+              onClick={openImagePicker}
             >
               <ImagePlus className="size-3.5" />
               Image

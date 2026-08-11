@@ -4,6 +4,9 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-10
 
+- Improved (v0.98.2): the Social post composer now shows a full image preview
+  before publishing, with the same widescreen crop used in the feed plus clear
+  Replace and Remove controls.
 - Fixed (v0.98.2): artists can now delete their own Social posts from either
   the feed or post detail after confirmation; removal is immediate, rolls back
   on failure, and no longer treats a rejected zero-row update as success.
