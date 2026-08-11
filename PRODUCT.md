@@ -61,6 +61,9 @@ deleted messages remain as placeholders and edits are marked. Scene chat uses
 the same experience, with shared pins limited to Scene owners and moderators.
 Support keeps replies, edits, search, voice, and media while omitting reactions
 and pins. Inbox controls include mute, mark unread, archive, and shared media.
+Message controls float beside a bubble without shifting the conversation away
+from its edge, sent messages leave breathing room before the slim coloured
+transcript scrollbar, and each side stays easy to scan.
 The composer accepts pasted and dropped files with previews and upload progress,
 up to four private files of 10 MB each.
 Selecting a thread in the mini-inbox replaces the list with a focused quick
@@ -74,9 +77,11 @@ notification. Support replies also update the notification center. Reconnects
 reconcile missed changes, with polling retained only as a temporary fallback.
 Dictation and voice notes are separate actions: dictated text remains editable,
 while voice notes include duration, a waveform, playback progress, and playback
-speed. Desktop recording uses the operating-system default microphone unless a
-remembered input is selected, falls back when that device disappears, and gives
-clear Windows or macOS permission-recovery guidance when access is denied.
+speed. The preferred input for the web app lives under Settings > Account;
+TEMPO Desktop also keeps a quick microphone picker beneath the composer.
+Recording uses the operating-system default unless a remembered input is
+selected, falls back when that device disappears, and gives clear Windows or
+macOS permission-recovery guidance when access is denied.
 
 **Desktop updates.** TEMPO Desktop stays current without asking artists to
 understand how an update is delivered. When something newer is ready, one calm

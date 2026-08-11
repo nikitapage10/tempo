@@ -4,6 +4,11 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-11
 
+- Changed (v0.110.0): message controls now float beside each bubble instead of
+  pushing received messages away from the left edge. Sent messages have more
+  room before the new slim Spectra-coloured scrollbar, and the web app's
+  microphone picker now lives under Settings > Account; TEMPO Desktop keeps
+  the quick picker below the message box.
 - Changed (v0.109.0): the Calendar's background is now slow concentric rings
   with soft rainbow edges, drifting outward about one ring every half minute.
   It was rebuilt to move smoothly at that speed: the previous versions either

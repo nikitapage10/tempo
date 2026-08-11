@@ -930,6 +930,53 @@
   display: none;
 }
 
+/* A quiet Spectra treatment for dense conversation history. */
+.spectra-scrollbar {
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--ice-rgb) / 0.5) rgb(255 255 255 / 0.025);
+}
+
+.spectra-scrollbar::-webkit-scrollbar {
+  width: 11px;
+}
+
+.spectra-scrollbar::-webkit-scrollbar-track {
+  margin-block: 8px;
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgb(255 255 255 / 0.035) 18%,
+    rgb(255 255 255 / 0.035) 82%,
+    transparent
+  );
+}
+
+.spectra-scrollbar::-webkit-scrollbar-thumb {
+  min-height: 44px;
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background:
+    linear-gradient(
+      180deg,
+      rgb(var(--ice-rgb) / 0.78),
+      rgb(var(--violet-rgb) / 0.58) 58%,
+      rgb(var(--amber-rgb) / 0.48)
+    ) padding-box;
+  box-shadow: 0 0 12px rgb(var(--ice-rgb) / 0.16);
+}
+
+.spectra-scrollbar::-webkit-scrollbar-thumb:hover {
+  background:
+    linear-gradient(
+      180deg,
+      rgb(var(--ice-rgb) / 0.95),
+      rgb(var(--violet-rgb) / 0.76) 58%,
+      rgb(var(--amber-rgb) / 0.62)
+    ) padding-box;
+}
+
 /* The scroll cue's dot, drifting down its track. */
 @keyframes origin-scroll-cue {
   0%, 100% { transform: translateY(0); opacity: 1; }
