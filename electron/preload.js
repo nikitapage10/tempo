@@ -45,4 +45,13 @@ contextBridge.exposeInMainWorld("tempoDesktop", {
     reset: () => ipcRenderer.invoke("zoom:reset"),
     get: () => ipcRenderer.invoke("zoom:get"),
   },
+
+  notifications: {
+    show: (input) => ipcRenderer.invoke("notifications:show", input),
+    onOpen: (callback) => {
+      const listener = (_event, url) => callback(url);
+      ipcRenderer.on("notifications:open", listener);
+      return () => ipcRenderer.removeListener("notifications:open", listener);
+    },
+  },
 });

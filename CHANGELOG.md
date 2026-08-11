@@ -4,6 +4,11 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-11
 
+- Added (v0.101.0; Desktop v0.100.8): incoming messages and general
+  notifications now have separate soft chimes. TEMPO Desktop stays active in
+  the Windows tray after its window closes, keeps realtime delivery awake,
+  shows native pop-ups while unfocused, and uses the real TEMPO icon in the
+  hidden-icons panel. Clicking a pop-up restores the relevant conversation.
 - Fixed (v0.100.12): joining a Scene from Discover or accepting a Scene invite
   now uses the signed-in account's Scene identity. The Owl's Nest Join button
   no longer fails on another account with a database conflict-constraint error.

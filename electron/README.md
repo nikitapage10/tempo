@@ -33,7 +33,9 @@ common case.
 ## What's implemented (Package 1)
 
 - Window + tray/menu-bar residency; closing the window hides it rather than
-  quitting, as long as background sync is on.
+  quitting. Realtime delivery remains awake while the window is hidden.
+- Distinct quiet message/notification chimes, native background alerts that
+  restore the relevant destination when clicked, and packaged TEMPO tray art.
 - Launch-at-login via `app.setLoginItemSettings`.
 - A background sync-tick stub on a 5-minute interval — the seam later
   packages (media vault, offline cache) attach real work to.

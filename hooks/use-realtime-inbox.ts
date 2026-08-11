@@ -4,10 +4,24 @@ import * as React from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/toast";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import {
+  onDesktopNotificationOpen,
+  showDesktopNotification,
+} from "@/lib/desktop/bridge";
+import {
+  incomingAlertKind,
+  playIncomingAlert,
+  primeIncomingAlertSounds,
+} from "@/lib/notifications/incoming-alerts";
 import { isDirectMessageSignal } from "@/lib/notifications/visibility";
 import { createClient } from "@/lib/supabase/client";
 
-type RealtimeNotification = { type?: string; title?: string; link_url?: string | null };
+type RealtimeNotification = {
+  type?: string;
+  title?: string;
+  body?: string | null;
+  link_url?: string | null;
+};
 const memberMessageTypes = new Set(["support_reply"]);
 const adminMessageTypes = new Set(["support_member_reply", "support_new"]);
 
@@ -19,6 +33,13 @@ export function useRealtimeInbox(admin = false) {
   const currentUser = useCurrentUser();
   const userId = currentUser?.id ?? null;
 
+  React.useEffect(() => primeIncomingAlertSounds(), []);
+
+  React.useEffect(
+    () => onDesktopNotificationOpen((url) => window.location.assign(url)),
+    []
+  );
+
   React.useEffect(() => {
     if (!userId) return;
     const supabase = createClient();
@@ -26,6 +47,17 @@ export function useRealtimeInbox(admin = false) {
       .channel(`tempo-inbox-${userId}-${crypto.randomUUID()}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` }, (payload) => {
         const notification = payload.new as RealtimeNotification;
+        const alertKind = incomingAlertKind(notification.type);
+        const title = notification.title ?? (alertKind === "message" ? "New message" : "New notification");
+
+        playIncomingAlert(alertKind);
+        void showDesktopNotification({
+          kind: alertKind,
+          title,
+          body: notification.body,
+          url: notification.link_url,
+        });
+
         if (isDirectMessageSignal(notification.type)) {
           // A DM belongs exclusively to Messages. Use this internal row to
           // refresh its thread and unread badge, but do not touch the bell or

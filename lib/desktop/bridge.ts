@@ -34,6 +34,16 @@ export type DesktopBridge = {
     reset: () => Promise<number>;
     get: () => Promise<number>;
   };
+  /** Optional while older desktop shells roll forward to native alerts. */
+  notifications?: {
+    show: (input: {
+      kind: "message" | "notification";
+      title: string;
+      body?: string | null;
+      url?: string | null;
+    }) => Promise<boolean>;
+    onOpen: (callback: (url: string) => void) => () => void;
+  };
 };
 
 declare global {
@@ -140,6 +150,27 @@ export function desktopPlatform(): "windows" | "mac" | null {
 
 export function desktopAppVersion(): string | null {
   return bridge()?.appVersion ?? null;
+}
+
+export async function showDesktopNotification(input: {
+  kind: "message" | "notification";
+  title: string;
+  body?: string | null;
+  url?: string | null;
+}): Promise<boolean> {
+  const notifications = bridge()?.notifications;
+  if (!notifications) return false;
+  try {
+    return await notifications.show(input);
+  } catch {
+    return false;
+  }
+}
+
+export function onDesktopNotificationOpen(callback: (url: string) => void): () => void {
+  const notifications = bridge()?.notifications;
+  if (!notifications) return () => {};
+  return notifications.onOpen(callback);
 }
 
 /**
