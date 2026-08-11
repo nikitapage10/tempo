@@ -155,7 +155,7 @@ export default function TodayPage() {
 
       {/* Today hero — one tall surface carrying greeting, stats and actions.
           Scrim clears toward the right so the lightfield is actually visible. */}
-      <LfWindow data-tour="today" className="relative overflow-hidden rounded-panel border border-line shadow-e3">
+      <LfWindow data-tour="today" className="glass relative overflow-hidden">
         <div className="absolute inset-0">
           <div className="scrim-reveal absolute inset-0" aria-hidden />
           {activeArtist ? (
@@ -177,7 +177,7 @@ export default function TodayPage() {
         ) : null}
         <div className="relative z-[1] flex flex-col gap-6 px-6 py-7 sm:px-8 sm:py-9">
           <div className="min-w-0">
-            <h1 className="font-display text-3xl font-semibold tracking-tight text-text-hi sm:text-[40px] sm:leading-[1.05]">
+            <h1 className="font-display text-3xl font-medium tracking-[0.025em] text-text-hi sm:text-[40px] sm:leading-[1.05]">
               {greetingForHour(now.getHours())}
             </h1>
             <p className="mt-1.5 text-sm text-text-lo">{dateLabel}</p>

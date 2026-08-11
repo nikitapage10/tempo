@@ -1,27 +1,20 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono, Space_Grotesk } from "next/font/google";
+import { Inter, Jura } from "next/font/google";
 import { LightfieldRoot } from "@/components/lightfield";
 import { FirstOpenReveal } from "@/components/origin/first-open-reveal";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
-const spaceGrotesk = Space_Grotesk({
+const jura = Jura({
   subsets: ["latin"],
-  variable: "--font-space-grotesk",
-  weight: ["500", "600", "700"],
+  variable: "--font-jura",
+  weight: "variable",
   display: "swap",
 });
 
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
-  weight: ["400", "500"],
-  display: "swap",
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-jetbrains-mono",
   weight: ["400", "500"],
   display: "swap",
 });
@@ -53,7 +46,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable}`}
+      className={`${jura.variable} ${inter.variable}`}
     >
       <body>
         <Providers>

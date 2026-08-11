@@ -72,10 +72,10 @@ const config: Config = {
         panel: "var(--radius-panel)",
       },
       fontFamily: {
-        // Two-typeface system: Space Grotesk gives titles distinctness,
-        // Inter carries everything else (body copy and data alike — the
-        // former JetBrains Mono role folded into Inter to keep it to two).
-        display: ["var(--font-space-grotesk)", "sans-serif"],
+        // Two-typeface system: light, geometric Jura gives titles their
+        // elongated technical character; Inter carries everything else
+        // (body copy and data alike).
+        display: ["var(--font-jura)", "sans-serif"],
         sans: ["var(--font-inter)", "sans-serif"],
         mono: ["var(--font-inter)", "sans-serif"],
       },

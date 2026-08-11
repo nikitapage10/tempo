@@ -89,7 +89,7 @@ export function KanbanColumn({
       ref={setNodeRef}
       className={cn(
         "relative flex flex-col overflow-hidden rounded-panel border border-line",
-        "bg-gradient-to-b from-[#141419] to-[#0e0e12] shadow-e2",
+        "bg-gradient-to-b from-[rgb(20_20_25/0.70)] to-[rgb(14_14_18/0.55)] shadow-e2 backdrop-blur-xl",
         "transition-[flex-grow,flex-basis,border-color,box-shadow] duration-300 ease-out motion-reduce:transition-none",
         // Stacked full-width below lg; sized columns from lg up.
         "w-full lg:min-h-[220px] lg:w-auto",

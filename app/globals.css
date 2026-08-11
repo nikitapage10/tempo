@@ -47,8 +47,9 @@
     --ok-rgb: 111 217 154;
     --warn-rgb: 255 122 107;
 
-    /* Top Spectra lightfield strip — visible animated sliver */
-    --edge-strip-h: 6px;
+    /* The app shell no longer reserves a top lightfield strip. Individual
+     * shader moments still use the root field where explicitly requested. */
+    --edge-strip-h: 0px;
 
     /* --- Depth layer (v0.13) ---------------------------------------------
      * Spectra shipped with flat fills and no elevation, which read as an
@@ -511,7 +512,6 @@
   }
 
   .font-data {
-    /* TEMP one-font preview — was var(--font-jetbrains-mono), ui-monospace, monospace; */
     font-family: var(--font-inter), sans-serif;
   }
 
@@ -524,9 +524,11 @@
   .panel {
     position: relative;
     border-radius: var(--radius-panel);
-    background: linear-gradient(180deg, #16161d 0%, var(--bg-1) 100%);
-    border: 1px solid var(--line);
-    box-shadow: var(--shadow-2);
+    background-color: rgb(var(--bg-0-rgb) / 0.46);
+    border: 1px solid rgb(var(--line-rgb) / 0.7);
+    box-shadow: var(--shadow-3);
+    backdrop-filter: blur(20px) saturate(1.1);
+    -webkit-backdrop-filter: blur(20px) saturate(1.1);
   }
 
   /* Lit top edge. Inset so it hugs the radius. */
@@ -550,16 +552,18 @@
   .panel-quiet {
     position: relative;
     border-radius: var(--radius-panel);
-    background: rgb(18 18 22 / 0.6);
-    border: 1px solid rgb(38 38 46 / 0.7);
+    background-color: rgb(var(--bg-1-rgb) / 0.42);
+    border: 1px solid rgb(var(--line-rgb) / 0.62);
     box-shadow: var(--shadow-1);
+    backdrop-filter: blur(14px) saturate(1.05);
+    -webkit-backdrop-filter: blur(14px) saturate(1.05);
   }
 
   /* Inset well — for lists/rows sitting inside a panel. */
   .well {
     border-radius: 12px;
-    background: rgb(10 10 12 / 0.45);
-    border: 1px solid rgb(38 38 46 / 0.6);
+    background-color: rgb(var(--bg-0-rgb) / 0.38);
+    border: 1px solid rgb(var(--line-rgb) / 0.56);
   }
 
   /* ---------------------------------------------------------------------
@@ -622,9 +626,11 @@
   /* backdrop-filter unsupported (very old browsers / some in-app webviews):
      fall back to a solid enough fill that text stays legible. */
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .panel,
     .glass {
       background: var(--bg-1);
     }
+    .panel-quiet,
     .glass-quiet,
     .glass-chip {
       background: var(--bg-2);
@@ -640,7 +646,7 @@
   }
 
   .lift:hover {
-    background-color: var(--bg-2);
+    background-color: rgb(var(--bg-2-rgb) / 0.72);
     border-color: rgb(127 180 255 / 0.22);
     box-shadow: var(--shadow-2);
   }
@@ -666,9 +672,9 @@
       0 0 32px -8px rgb(255 181 107 / 0.3);
   }
 
-  /* Section label — mono, uppercase, tracked. Replaces ad-hoc h2 styling. */
+  /* Section label — compact, uppercase, tracked. Replaces ad-hoc h2 styling. */
   .label-mono {
-    font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+    font-family: var(--font-inter), sans-serif;
     font-size: 11px;
     line-height: 1;
     text-transform: uppercase;
@@ -676,9 +682,9 @@
     color: var(--text-lo);
   }
 
-  /* Big glanceable numerals. Mono per spec — data is always mono. */
+  /* Big glanceable numerals in the shared UI family. */
   .stat-value {
-    font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+    font-family: var(--font-inter), sans-serif;
     font-size: 34px;
     line-height: 1;
     font-weight: 500;

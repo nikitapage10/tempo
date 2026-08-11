@@ -25,7 +25,7 @@ import { GlobalSearch } from "@/components/global-search";
 import { SpaceSwitcher } from "@/components/space-switcher";
 import { NotificationCenter } from "@/components/notification-center";
 import { MessageCenter } from "@/components/message-center";
-import { EdgeStrip, IntroMoment } from "@/components/intro-moment";
+import { IntroMoment } from "@/components/intro-moment";
 import { FlareLine } from "@/components/flare-line";
 import { Wordmark } from "@/components/wordmark";
 import { LfWindow } from "@/components/lf-windows";
@@ -45,6 +45,7 @@ import { DownloadButton } from "@/components/desktop/download-button";
 import { ZoomControl } from "@/components/desktop/zoom-control";
 import { OfflineBanner } from "@/components/offline-banner";
 import { DesktopUpdateBanner } from "@/components/desktop/update-banner";
+import { AppVideoBackdrop } from "@/components/app-video-backdrop";
 
 // Artist sits above the space-scoped screens: it rolls up every space the
 // artist owns, so it stays in the rail whatever the active space's focus is.
@@ -127,22 +128,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   ];
 
   if (FOCUS_ROUTE.test(pathname)) {
-    // Focus sessions get a distraction-free, full-bleed shell — no rail, no tab bar (FEATURE-SPECS §10).
-    return <main className="min-h-screen">{children}</main>;
+    // Focus sessions keep the persistent workspace backdrop but remain
+    // distraction-free: no rail, toolbar, tab bar, or edge treatment.
+    return (
+      <main className="relative isolate min-h-screen">
+        <AppVideoBackdrop className="fixed inset-0 z-0" />
+        <div className="relative z-[1]">{children}</div>
+      </main>
+    );
   }
 
   return (
     <div className="flex min-h-screen flex-col" data-lf-chrome>
       <ArtistFavicon />
       <IntroMoment />
-      <EdgeStrip />
 
-      {/* Desktop-app window-drag handle, full viewport width — EdgeStrip and
-          the toolbar row (below) are only draggable within their own
-          layout bounds (EdgeStrip is thin; the toolbar sits inside a
-          centered max-w-[1440px] column), which left the gutters on a wide
-          window, and the whole left rail, with no way to drag the window
-          at all. This sits behind both (lower z-index) so every real
+      {/* Desktop-app window-drag handle, full viewport width. The toolbar row
+          below is only draggable within its centered max-w-[1440px] column,
+          which otherwise leaves the gutters on a wide window, and the whole
+          left rail, with no way to drag the window at all. This sits behind
+          both (lower z-index) so every real
           clickable element still wins the hit test; only the genuinely
           empty space around them becomes draggable. No-op outside Electron. */}
       <div
@@ -153,7 +158,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="flex flex-1">
         {/* Left 2px gutter stays transparent so active-nav windows can punch through */}
         <aside
-          className="sticky top-[var(--edge-strip-h)] z-30 hidden h-[calc(100vh-var(--edge-strip-h))] w-[220px] shrink-0 flex-col border-r border-line md:flex"
+          className="sticky top-0 z-30 hidden h-screen w-[220px] shrink-0 flex-col border-r border-line md:flex"
           style={{
             background:
               "linear-gradient(to right, transparent 2px, var(--bg-1) 2px)",
@@ -258,14 +263,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </aside>
 
-        <main className="flex-1 overflow-x-hidden pb-20 md:pb-0">
-          <div className="mx-auto w-full max-w-[1440px] px-4 md:px-8">
+        <main className="relative isolate flex-1 overflow-x-hidden pb-20 md:pb-0">
+          <AppVideoBackdrop className="fixed inset-x-0 bottom-0 top-0 z-0 md:bottom-[6px] md:left-[220px]" />
+          <div className="relative z-[1] mx-auto w-full max-w-[1440px] px-4 md:px-8">
             {/* [-webkit-app-region:drag] makes this row double as the desktop
                 app's window-drag handle (a no-op outside Electron, so it's
                 safe unconditionally) — each interactive child below is
                 explicitly carved out with the matching no-drag utility so
                 clicks still reach them instead of moving the window. */}
-            <div className="sticky top-[var(--edge-strip-h)] z-40 mb-2 flex items-center justify-end gap-1.5 bg-bg-0/85 pb-4 pt-1.5 backdrop-blur-md [-webkit-app-region:drag]">
+            <div className="sticky top-0 z-40 mb-2 flex items-center justify-end gap-1.5 pb-4 pt-1.5 [-webkit-app-region:drag]">
               <div className="[-webkit-app-region:no-drag]">
                 <NotificationCenter />
               </div>
@@ -289,8 +295,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </main>
       </div>
 
-      {/* Bottom edge — bookends the top strip so the field frames the app
-          rather than only capping it. Thinner, so it reads as an echo. */}
+      {/* A restrained bottom-edge echo; the former top shader strip is gone. */}
       <LfWindow
         className="hidden h-[6px] w-full shrink-0 md:block"
         aria-hidden

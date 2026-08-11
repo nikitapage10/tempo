@@ -1178,7 +1178,7 @@ export default function TracksPage() {
           }
         />
       ) : displayed.length === 0 ? (
-        <div className="rounded-card border border-dashed border-line/70 px-4 py-10 text-center">
+        <div className="panel-quiet border-dashed px-4 py-10 text-center">
           <p className="text-sm text-text-lo">Nothing matches these filters.</p>
           <button
             type="button"
@@ -1194,7 +1194,7 @@ export default function TracksPage() {
           </button>
         </div>
       ) : (
-        <>
+        <section className="panel p-3 sm:p-4">
           {sortSelection === "custom" && !selecting ? (
             <p className="mb-2 text-[11px] text-text-lo/70">
               {showGroups
@@ -1320,7 +1320,7 @@ export default function TracksPage() {
               )}
             </SortableContext>
           </DndContext>
-        </>
+        </section>
       )}
 
       {activeSpaceId ? (

@@ -128,7 +128,7 @@ export default function ArtistStatsPage() {
   return (
     <div className="space-y-5">
       {/* Identity hero — the one fixed part of the page. */}
-      <LfWindow className="relative overflow-hidden rounded-panel border border-line shadow-e3">
+      <LfWindow className="glass relative overflow-hidden">
         <div className="absolute inset-0">
           <div className="scrim-reveal absolute inset-0" aria-hidden />
           {activeArtist ? (
@@ -180,7 +180,7 @@ export default function ArtistStatsPage() {
         <div className="relative z-[1] flex flex-col gap-6 px-6 py-7 sm:px-8 sm:py-9">
           <div className="min-w-0">
             <p className="label-mono mb-2">Stats</p>
-            <h1 className="font-display text-3xl font-semibold tracking-tight text-text-hi sm:text-[40px] sm:leading-[1.05]">
+            <h1 className="font-display text-3xl font-medium tracking-[0.025em] text-text-hi sm:text-[40px] sm:leading-[1.05]">
               {activeArtist?.name ?? "No artist"}
             </h1>
             <p className="mt-1.5 text-sm text-text-lo">

@@ -66,7 +66,7 @@ export default function ArtistProfileByHandlePage() {
 
   return (
     <div className="space-y-5">
-      <LfWindow className="relative overflow-hidden rounded-panel border border-line shadow-e3">
+      <LfWindow className="glass relative overflow-hidden">
         <div className="absolute inset-0">
           <div className="scrim-reveal absolute inset-0" aria-hidden />
           {profile.banner_url || profile.banner_color ? (
@@ -114,7 +114,7 @@ export default function ArtistProfileByHandlePage() {
         <div className="relative z-[2] flex items-start justify-between gap-3 px-6 py-8 sm:px-8 sm:py-10">
           <div className="min-w-0">
             <p className="label-mono mb-1.5">Artist profile</p>
-            <h1 className="min-w-0 font-display text-3xl font-semibold tracking-tight text-text-hi sm:text-[40px] sm:leading-[1.05]">
+            <h1 className="min-w-0 font-display text-3xl font-medium tracking-[0.025em] text-text-hi sm:text-[40px] sm:leading-[1.05]">
               {profile.display_name}
             </h1>
             {profile.handle ? (

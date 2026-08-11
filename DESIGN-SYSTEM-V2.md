@@ -28,6 +28,12 @@ Added tokens (`app/globals.css`):
 Added utilities: `.panel`, `.panel-quiet`, `.well`, `.lift`, `.glow-ice`,
 `.glow-amber`, `.label-mono`, `.stat-value`, `.scrim-reveal`, `.scrim-center`.
 
+As of v0.113, `.panel` and `.panel-quiet` are the app-wide glass surfaces:
+they keep the existing radius, top edge, elevation, gradients and accent
+layers, but use translucent fills and backdrop blur over the persistent
+workspace video. `.well` remains the quieter nested surface and deliberately
+does not add a second backdrop blur.
+
 Also added: `.spotlight` / `<SpotlightCard>` (`components/ui/spotlight-card.tsx`)
 — a cursor-tracked highlight for clickable surfaces. Default tone is `ramp`,
 which cross-fades ice → white → amber with pointer X (one shared listener via
@@ -74,7 +80,8 @@ Rules that changed:
 | `--warn` | `#FF7A6B` | Danger / overdue |
 
 ### Typography (v0.16 — two families, not three)
-- **Space Grotesk** — display, track titles, the wordmark
+- **Jura** — light geometric display face for titles, track identity and the
+  wordmark; primary page titles use weight 500 with gently positive tracking
 - **Inter** — everything else: body UI *and* BPM, keys, timestamps, version
   numbers, durations, counts, deadlines. JetBrains Mono was dropped at the
   user's request (three fonts read as inconsistent); `font-mono` and
@@ -87,7 +94,7 @@ Rules that changed:
 - Ice = interaction; amber = status. Never both as competing CTAs.
 - Radius: 10px cards, 8px inputs, 999px chips.
 - `.flare-line` for active dividers / markers.
-- Spectra shader only in already-approved atmospheric moments (intro, top edge, empty states, Today banner) — **not** behind dense track data.
+- The root Spectra shader stays in approved atmospheric moments (intro, empty states, active marks, selected feature areas), not as the dense-data backdrop. A separate softly focused video is the persistent signed-in workspace backdrop behind the shared glass surfaces; the former top-edge shader strip is removed.
 - `prefers-reduced-motion`: pause shaders; disable non-essential transitions; ambient tint may be static.
 
 ---

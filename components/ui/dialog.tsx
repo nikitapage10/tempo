@@ -73,7 +73,7 @@ export function DialogContent({
       aria-modal="true"
       aria-labelledby="dialog-title"
       className={cn(
-        "max-h-[90vh] overflow-y-auto rounded-card border border-line bg-bg-1 p-5 shadow-raise",
+        "glass max-h-[90vh] overflow-y-auto rounded-card p-5",
         className
       )}
     >

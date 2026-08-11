@@ -4,6 +4,30 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-11
 
+- Fixed (v0.114.2): the populated Tracks catalog now sits inside the same
+  darker glass depth as Calendar instead of placing its faint rows directly
+  over the moving wash. Group colours, cursor lighting, and row interactions
+  remain visible above the new surface.
+- Changed (v0.114.1): the persistent workspace background is one restrained
+  step darker, keeping its softened motion visible while letting content and
+  glass surfaces hold the foreground more firmly.
+- Changed (v0.114.0): Jura now gives titles and the TEMPO wordmark a lighter,
+  more elongated geometric voice in the Eurostile vein. Primary page titles
+  use a restrained medium weight and slightly more breathing room, while
+  Inter remains the workhorse for controls, body copy, and data.
+- Changed (v0.113.0): the softly moving background now stays mounted across
+  the whole signed-in workspace, so changing pages does not restart it. The
+  bright top-edge strip is gone, and the app's panels, quieter sections,
+  dialogs, Board columns, and shader-backed feature areas now share the
+  Calendar's translucent glass depth while retaining their own colour washes
+  and animated accents. The background is also a tiny bit darker, and the
+  legacy third font load has been removed so TEMPO's current two-font system
+  resolves consistently.
+- Changed (v0.112.2): the Calendar's moving background is a little clearer
+  and brighter, while staying soft enough to sit behind dates and controls.
+- Changed (v0.112.1): the Calendar's moving background is a touch brighter,
+  and it now continues cleanly behind the global search controls instead of
+  being covered by a dark rectangular strip.
 - Fixed (v0.112.0): the Calendar's video background is actually visible now.
   As shipped it was effectively invisible — the clip's brightness sat in a
   small hot spot dead centre, hidden behind the calendar panels, while the
