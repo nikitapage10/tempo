@@ -39,6 +39,7 @@ export const updateAdminUserRole = (id: string, memberRole: AdminInviteRole) => 
 export const getAdminInvites = () => adminFetch<{ invites: AdminInvite[]; deliveryConfig: InviteDeliveryConfig }>("/api/admin/invites");
 export const createAdminInvite = (input: { email?: string; note?: string; memberRole?: AdminInviteRole; welcomeNote?: string; expiresAt?: string; maxUses?: number }) => adminFetch<{ invite: AdminInvite; delivery: "sent" | "failed" | "not_requested"; deliveryError: string | null }>("/api/admin/invites", { method: "POST", body: JSON.stringify(input) });
 export const revokeAdminInvite = (id: string) => adminFetch(`/api/admin/invites/${id}/revoke`, { method: "POST", body: "{}" });
+export const deleteAdminInvite = (id: string) => adminFetch(`/api/admin/invites/${id}`, { method: "DELETE" });
 export const sendAdminInvite = (id: string) => adminFetch<{ invite: AdminInvite }>(`/api/admin/invites/${id}/send`, { method: "POST", body: "{}" });
 export const getAdminReports = (status = "open") => adminFetch<{ reports: AdminReport[] }>(`/api/admin/reports?status=${encodeURIComponent(status)}`);
 export const actOnAdminReport = (id: string, action: "hide" | "dismiss" | "suspend_author") => adminFetch(`/api/admin/reports/${id}`, { method: "POST", body: JSON.stringify({ action }) });

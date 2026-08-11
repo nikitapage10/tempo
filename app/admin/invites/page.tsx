@@ -1,12 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { AlertTriangle, CheckCircle2, Copy, Mail, Plus, RotateCw, X } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Copy, Mail, Plus, RotateCw, Trash2, X } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { AdminTable, type AdminColumn } from "@/components/admin/admin-table";
 import { useAdminInvites } from "@/hooks/use-admin";
 import { useToast } from "@/components/ui/toast";
@@ -31,6 +32,7 @@ export default function AdminInvitesPage() {
   const [memberRole, setMemberRole] = React.useState<AdminInviteRole>("artist");
   const [welcomeNote, setWelcomeNote] = React.useState("");
   const [expiresAt, setExpiresAt] = React.useState("");
+  const [deleteTarget, setDeleteTarget] = React.useState<AdminInvite | null>(null);
 
   async function create() {
     try {
@@ -67,7 +69,7 @@ export default function AdminInvitesPage() {
     { key: "delivery", label: "Delivery", className: "md:col-span-2", render: (row) => <div><p className={row.last_send_error ? "text-warn" : row.last_sent_at ? "text-ok" : "text-text-lo"}>{row.last_send_error ? "Needs retry" : row.last_sent_at ? "Sent" : "Not sent"}</p>{row.last_send_error ? <p className="mt-1 line-clamp-3 text-[11px] leading-relaxed text-warn/80" title={row.last_send_error}>{row.last_send_error}</p> : null}{row.last_sent_at ? <p className="text-[11px] tabular-nums text-text-lo">{date(row.last_sent_at)} · {row.send_count}×</p> : null}</div> },
     { key: "uses", label: "Uses", className: "md:col-span-1 tabular-nums text-text-lo", render: (row) => `${row.used_count} / ${row.max_uses}` },
     { key: "expiry", label: "Expires", className: "md:col-span-2 tabular-nums text-text-lo", render: (row) => row.revoked_at ? "Revoked" : date(row.expires_at) },
-    { key: "actions", label: "Actions", className: "md:col-span-2 flex gap-1", render: (row) => <><Button size="icon" variant="ghost" aria-label="Copy invite" onClick={() => void copy(row)}><Copy /></Button>{row.email && !row.revoked_at && row.used_count < row.max_uses ? <Button size="icon" variant="ghost" aria-label={row.send_count ? "Send invitation again" : "Send invitation"} disabled={invites.send.isPending} onClick={() => void send(row)}>{row.send_count ? <RotateCw /> : <Mail />}</Button> : null}{!row.revoked_at ? <Button size="icon" variant="ghost" aria-label="Revoke invite" onClick={() => void invites.revoke.mutateAsync(row.id).then(() => toast("Invite revoked.", "ok")).catch((error) => toast(error.message))}><X /></Button> : null}</> },
+    { key: "actions", label: "Actions", className: "md:col-span-2 flex gap-1", render: (row) => <><Button size="icon" variant="ghost" aria-label="Copy invite" onClick={() => void copy(row)}><Copy /></Button>{row.email && !row.revoked_at && row.used_count < row.max_uses ? <Button size="icon" variant="ghost" aria-label={row.send_count ? "Send invitation again" : "Send invitation"} disabled={invites.send.isPending} onClick={() => void send(row)}>{row.send_count ? <RotateCw /> : <Mail />}</Button> : null}{!row.revoked_at ? <Button size="icon" variant="ghost" aria-label="Revoke invite" onClick={() => void invites.revoke.mutateAsync(row.id).then(() => toast("Invite revoked.", "ok")).catch((error) => toast(error.message))}><X /></Button> : null}<Button size="icon" variant="ghost" aria-label="Delete invite from history" onClick={() => setDeleteTarget(row)}><Trash2 /></Button></> },
   ];
 
   return <div className="space-y-5">
@@ -87,5 +89,23 @@ export default function AdminInvitesPage() {
       {email ? <div className="well rounded-input p-4"><p className="label-mono text-amber">Email preview</p><p className="mt-3 font-display text-lg text-text-hi">Bring your music into focus.</p><p className="mt-1 text-xs leading-relaxed text-text-lo">The invitation identifies them as a <span className="text-text-hi">{ROLE_OPTIONS.find((option) => option.value === memberRole)?.label.toLowerCase()}</span>, explains Origin, the tour, starter checklist, and direct access to Nikita, then includes their code and one-click account button.</p>{welcomeNote.trim() ? <div className="mt-3 border-l-2 border-ice pl-3 text-xs leading-relaxed text-text-hi">{welcomeNote}</div> : null}</div> : null}
       <div className="flex justify-end gap-2"><Button variant="secondary" onClick={() => setOpen(false)}>Cancel</Button><Button onClick={() => void create()} disabled={invites.create.isPending}>{invites.create.isPending ? "…" : email ? "Create & send" : "Create & copy"}</Button></div>
     </div></DialogContent></Dialog>
+    <ConfirmDialog
+      open={!!deleteTarget}
+      onOpenChange={(nextOpen) => { if (!nextOpen) setDeleteTarget(null); }}
+      title="Delete invite from history?"
+      description={`This permanently removes ${deleteTarget?.email ?? deleteTarget?.code ?? "this invite"} from the invite log. This can’t be undone.`}
+      confirmLabel="Delete invite"
+      busy={invites.remove.isPending}
+      onConfirm={async () => {
+        if (!deleteTarget) return;
+        try {
+          await invites.remove.mutateAsync(deleteTarget.id);
+          setDeleteTarget(null);
+          toast("Invite deleted from history.", "ok");
+        } catch (error) {
+          toast(error instanceof Error ? error.message : "Couldn’t delete invite.");
+        }
+      }}
+    />
   </div>;
 }
