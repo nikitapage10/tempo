@@ -13,8 +13,6 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import {
-  ChevronLeft,
-  ChevronRight,
   Columns3,
   LayoutGrid,
   Plus,
@@ -29,6 +27,7 @@ import {
   parseNoteDragId,
 } from "@/components/board/board-note-card";
 import { BoardOverview } from "@/components/board/board-overview";
+import { BoardStageSlot } from "@/components/board/board-stage-slot";
 import { KanbanColumn } from "@/components/board/kanban-column";
 import { StageRail } from "@/components/board/stage-rail";
 import type { StageAddAction } from "@/components/board/stage-add-menu";
@@ -718,67 +717,38 @@ export function BoardView() {
               onFocusStage={focusStage}
             />
           ) : (
-            <>
-              {stages.length > BOARD_FOCUS_COUNT ? (
-                <div className="mb-2 flex items-center justify-between gap-3 rounded-card border border-line/70 bg-bg-1/45 px-3 py-2">
-                  <button
-                    type="button"
-                    onClick={() => setFocusStart((current) => clampBoardFocusStart(stages.length, current - 1))}
-                    disabled={focusStart === 0}
-                    className="inline-flex items-center gap-1 text-xs text-text-lo hover:text-text-hi disabled:pointer-events-none disabled:opacity-30"
-                  >
-                    <ChevronLeft className="size-3.5" /> Previous
-                  </button>
-                  <p className="truncate text-center text-[11px] text-text-lo">
-                    Showing {focusStart + 1}–{Math.min(stages.length, focusStart + BOARD_FOCUS_COUNT)} of {stages.length} stages
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setFocusStart((current) => clampBoardFocusStart(stages.length, current + 1))}
-                    disabled={focusStart >= stages.length - BOARD_FOCUS_COUNT}
-                    className="inline-flex items-center gap-1 text-xs text-text-lo hover:text-text-hi disabled:pointer-events-none disabled:opacity-30"
-                  >
-                    Next <ChevronRight className="size-3.5" />
-                  </button>
-                </div>
-              ) : null}
-              <div
-                className="flex flex-col gap-2 pb-3 lg:grid lg:items-stretch lg:overflow-hidden lg:transition-[grid-template-columns] lg:duration-500 motion-reduce:transition-none"
-                style={{
-                  gridTemplateColumns: boardFocusGridTemplate(
-                    stages.length,
-                    focusStart
-                  ),
-                  transitionTimingFunction:
-                    "cubic-bezier(0.22, 1, 0.36, 1)",
-                }}
-                aria-label={`Board stages, ${Math.min(BOARD_FOCUS_COUNT, stages.length)} detailed at a time`}
-              >
-                {stages.map((stage, index) => {
-                  const inFocus = index >= focusStart && index < focusStart + BOARD_FOCUS_COUNT;
-                  const stageTracks = tracksByStage.get(stage.id) ?? [];
-                  const stageNotes = notesByStage.get(stage.id) ?? [];
-                  if (!inFocus) {
-                    return (
-                      <div
-                        key={stage.id}
-                        className="min-w-0 overflow-hidden lg:h-full lg:[&>*]:h-full"
-                      >
-                        <StageRail
-                          stage={stage}
-                          stages={stages}
-                          itemCount={stageTracks.length + stageNotes.length}
-                          isOver={overStageId === stage.id}
-                          onOpen={() => focusStage(index)}
-                        />
-                      </div>
-                    );
-                  }
-                  return (
-                    <div
-                      key={stage.id}
-                      className="min-w-0 overflow-hidden lg:h-full lg:[&>*]:h-full"
-                    >
+            <div
+              className="flex flex-col gap-2 pb-3 lg:grid lg:items-stretch lg:overflow-hidden lg:transition-[grid-template-columns] lg:will-change-[grid-template-columns] motion-reduce:transition-none"
+              style={{
+                gridTemplateColumns: boardFocusGridTemplate(
+                  stages.length,
+                  focusStart
+                ),
+                transitionDuration: "620ms",
+                transitionTimingFunction: "cubic-bezier(0.2, 0.75, 0.25, 1)",
+              }}
+              aria-label={`Board stages, ${Math.min(BOARD_FOCUS_COUNT, stages.length)} detailed at a time`}
+            >
+              {stages.map((stage, index) => {
+                const inFocus =
+                  index >= focusStart &&
+                  index < focusStart + BOARD_FOCUS_COUNT;
+                const stageTracks = tracksByStage.get(stage.id) ?? [];
+                const stageNotes = notesByStage.get(stage.id) ?? [];
+                return (
+                  <BoardStageSlot
+                    key={stage.id}
+                    expanded={inFocus}
+                    railContent={
+                      <StageRail
+                        stage={stage}
+                        stages={stages}
+                        itemCount={stageTracks.length + stageNotes.length}
+                        isOver={overStageId === stage.id}
+                        onOpen={() => focusStage(index)}
+                      />
+                    }
+                    expandedContent={
                       <KanbanColumn
                         stage={stage}
                         stages={stages}
@@ -787,7 +757,9 @@ export function BoardView() {
                         isOver={overStageId === stage.id}
                         onOpenTrack={(t) => router.push(`/track/${t.id}`)}
                         onRemoveFromBoard={(t) => void removeFromBoard(t)}
-                        onStageAdd={(action) => handleStageAdd(stage.id, action)}
+                        onStageAdd={(action) =>
+                          handleStageAdd(stage.id, action)
+                        }
                         onSaveNote={(note, patch) => {
                           void updateNote.mutateAsync({ id: note.id, patch }).catch((err) => {
                             toast(err instanceof Error ? err.message : "Couldn’t save that note.");
@@ -805,11 +777,11 @@ export function BoardView() {
                         allowCollapse={onBoardCount > 0 || tracks.length > 0}
                         fillAvailable
                       />
-                    </div>
-                  );
-                })}
-              </div>
-            </>
+                    }
+                  />
+                );
+              })}
+            </div>
           )}
           <DragOverlay>
             {activeDrag?.kind === "track" ? (
