@@ -42,11 +42,17 @@ async function resolveSignedImage(path: string): Promise<string> {
       return body.url;
     }
 
-    // A scene banner/emblem/post image uploaded by someone other than the
-    // viewer — storage ownership gates on the uploader, so this goes through
-    // a server route that re-checks scene visibility instead.
-    if (/^scenes\//.test(path)) {
-      const response = await fetch("/api/scenes/media/url", {
+    // Imagery uploaded by someone other than the viewer — storage ownership
+    // gates on the uploader, so these go through a server route that re-checks
+    // visibility instead: scene banners/emblems/post media, another artist's
+    // emblem or profile banner, and social post attachments.
+    const route = /^scenes\//.test(path)
+      ? "/api/scenes/media/url"
+      : /^(artists|profiles)\//.test(path)
+        ? "/api/social/media/url"
+        : null;
+    if (route) {
+      const response = await fetch(route, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ path }),

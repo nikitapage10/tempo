@@ -4,6 +4,12 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-11
 
+- Fixed (v0.106.1): other artists' profile photos, banners and post images now
+  actually appear when you're signed in. Before this, anyone but the person who
+  uploaded an image saw the plain monogram placeholder instead — on artist
+  profiles, in the Social feed, and anywhere an artist's mark is shown. Only
+  imagery you're allowed to see is shown: private profiles and posts you can't
+  view stay hidden.
 - Fixed (v0.106.0): selecting an artist from **New message** now opens the
   returned conversation immediately. Existing archived conversations are
   restored for the sender instead of closing the picker into an empty panel.
