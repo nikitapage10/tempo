@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SupportReportDialog } from "@/components/support/support-report-dialog";
 import { useToast } from "@/components/ui/toast";
+import { AudioInputPanel } from "@/components/settings/audio-input-panel";
 
 type IdentityProvider = "email" | "google" | "azure" | "apple" | string;
 
@@ -286,6 +287,8 @@ export function AccountPanel() {
           </div>
         </div>
       </section>
+
+      <AudioInputPanel />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="panel-quiet p-5">

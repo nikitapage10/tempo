@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/toast";
 import { useAudioInputs } from "@/hooks/use-audio-inputs";
 import { transcribeAssistantVoice } from "@/lib/api/assistant";
 import { MESSAGE_ATTACHMENT_ACCEPT, MESSAGE_ATTACHMENT_LIMIT, uploadMessageAttachments } from "@/lib/api/message-attachments";
+import { isDesktopApp } from "@/lib/desktop/bridge";
 import type { ConversationMessage, MessageAttachment } from "@/lib/types";
 import { messageDraftStorageKey } from "@/lib/messages/behavior";
 import { cn } from "@/lib/utils";
@@ -34,12 +35,17 @@ export function MessageComposer({ scope, threadId, onSend, pending, compact = fa
   const [working, setWorking] = React.useState(false);
   const [uploadProgress, setUploadProgress] = React.useState<number | null>(null);
   const [dragging, setDragging] = React.useState(false);
+  const [desktop, setDesktop] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const dictationBaseRef = React.useRef("");
   const typingStopRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const uploadAbortRef = React.useRef<AbortController | null>(null);
   const { devices, deviceId, setDeviceId, refresh } = useAudioInputs();
   const disabled = pending || working;
+
+  React.useEffect(() => {
+    setDesktop(isDesktopApp());
+  }, []);
 
   React.useEffect(() => {
     if (!draftKey) return;
@@ -124,10 +130,10 @@ export function MessageComposer({ scope, threadId, onSend, pending, compact = fa
       <VoiceNoteRecorder deviceId={deviceId} disabled={disabled || files.length >= MESSAGE_ATTACHMENT_LIMIT} onRecorded={(file, metadata) => addFiles([{ file, metadata }])} onError={(message) => toast(message)}/>
       <button type="button" aria-label="Send message" disabled={disabled || (!text.trim() && !files.length)} onClick={() => void submit()} className="rounded-input p-2 text-ice hover:text-text-hi disabled:text-text-lo disabled:opacity-40"><Send className="size-4"/></button>
     </div>
-    <div className="flex min-h-6 items-center gap-2">
-      {devices.length ? <label className="flex items-center gap-1 text-[10px] text-text-lo"><span>Mic</span><select value={deviceId ?? ""} onChange={(event) => setDeviceId(event.target.value || null)} className="max-w-44 rounded-input border border-line bg-bg-1 px-1.5 py-1 text-[10px] text-text-hi"><option value="">System default</option>{devices.map((device, index) => <option key={device.deviceId} value={device.deviceId}>{device.label || `Microphone ${index + 1}`}</option>)}</select></label> : null}
+    {desktop || working ? <div className="flex min-h-6 items-center gap-2">
+      {desktop && devices.length ? <label className="flex items-center gap-1 text-[10px] text-text-lo"><span>Mic</span><select value={deviceId ?? ""} onChange={(event) => setDeviceId(event.target.value || null)} className="max-w-44 rounded-input border border-line bg-bg-1 px-1.5 py-1 text-[10px] text-text-hi"><option value="">System default</option>{devices.map((device, index) => <option key={device.deviceId} value={device.deviceId}>{device.label || `Microphone ${index + 1}`}</option>)}</select></label> : null}
       {working ? <p className="text-[10px] text-text-lo">{files.length ? `Uploading${uploadProgress !== null ? ` ${uploadProgress}%` : ""} and sending...` : "Working..."}</p> : null}
       {working && files.length ? <button type="button" onClick={() => uploadAbortRef.current?.abort()} className="text-[10px] text-warn">Cancel upload</button> : null}
-    </div>
+    </div> : null}
   </div>;
 }
