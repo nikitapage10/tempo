@@ -14,14 +14,27 @@ async function fetchFacts(spaceId: string, ownerId: string): Promise<{
   const supabase = createClient();
   const warnings: string[] = [];
 
-  const { data: tracks, error: tracksError } = await supabase
-    .from("tracks")
-    .select("id, created_at, updated_at, next_action, next_action_due, blocked_reason, waiting_on")
-    .eq("space_id", spaceId);
+  const [tracksResult, stagesResult] = await Promise.all([
+    supabase
+      .from("tracks")
+      .select(
+        "id, title, stage_id, created_at, updated_at, next_action, next_action_due, blocked_reason, waiting_on"
+      )
+      .eq("space_id", spaceId),
+    supabase.from("stages").select("id, name").eq("space_id", spaceId),
+  ]);
+  const { data: tracks, error: tracksError } = tracksResult;
   if (tracksError || !tracks) {
     return { tracks: [], warnings: ["Could not load tracks."] };
   }
+  if (stagesResult.error) warnings.push("Could not identify released tracks.");
   if (tracks.length === 0) return { tracks: [], warnings };
+
+  const releasedStageIds = new Set(
+    (stagesResult.data ?? [])
+      .filter((stage) => stage.name.trim().toLowerCase() === "released")
+      .map((stage) => stage.id)
+  );
 
   const trackIds = tracks.map((t) => t.id);
 
@@ -73,8 +86,10 @@ async function fetchFacts(spaceId: string, ownerId: string): Promise<{
 
   const eligible: EligibleTrack[] = tracks.map((t) => ({
     id: t.id,
+    title: t.title,
     updatedAt: t.updated_at,
     createdAt: t.created_at,
+    isReleased: Boolean(t.stage_id && releasedStageIds.has(t.stage_id)),
     hasNextMove: Boolean(t.next_action || t.next_action_due || t.blocked_reason || t.waiting_on),
     nextMoveDueAt: t.next_action_due,
     isBlockedOrWaiting: Boolean(t.blocked_reason || t.waiting_on),

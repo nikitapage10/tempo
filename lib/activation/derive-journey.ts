@@ -24,8 +24,10 @@ export type JourneyState = "active" | "waiting" | "complete" | "partial";
 
 export type EligibleTrack = {
   id: string;
+  title: string;
   updatedAt: string;
   createdAt: string;
+  isReleased: boolean;
   hasNextMove: boolean;
   nextMoveDueAt: string | null;
   isBlockedOrWaiting: boolean;
@@ -56,6 +58,7 @@ export type ActivationJourney = {
   reasonCode: string;
   reason: string;
   targetTrackId: string | null;
+  targetTrackTitle: string | null;
   state: JourneyState;
   warnings: string[];
 };
@@ -86,7 +89,11 @@ function selectEligibleTrack(tracks: EligibleTrack[]): EligibleTrack | null {
 
 export function deriveActivationJourney(facts: ActivationFacts): ActivationJourney {
   const warnings = facts.warnings ?? [];
-  const { tracks } = facts;
+  const catalogTracks = facts.tracks;
+  // Released songs have already left the active workflow. They belong in the
+  // catalog, but the guide must not send an artist back to manufacture a new
+  // next move for them.
+  const tracks = catalogTracks.filter((track) => !track.isReleased);
 
   const completedSteps: CompletedOutcome[] = [];
   if (tracks.length > 0) completedSteps.push("track_exists");
@@ -96,7 +103,7 @@ export function deriveActivationJourney(facts: ActivationFacts): ActivationJourn
   if (tracks.some((t) => t.hasFeedback)) completedSteps.push("feedback_loop_completed");
 
   // No tracks at all — the very first step, no track selection needed.
-  if (tracks.length === 0) {
+  if (tracks.length === 0 && catalogTracks.length === 0) {
     return {
       definitionVersion: ACTIVATION_DEFINITION_VERSION,
       completedSteps,
@@ -104,7 +111,22 @@ export function deriveActivationJourney(facts: ActivationFacts): ActivationJourn
       reasonCode: "no_tracks",
       reason: "Bring in your first song to start the loop.",
       targetTrackId: null,
+      targetTrackTitle: null,
       state: "active",
+      warnings,
+    };
+  }
+
+  if (tracks.length === 0) {
+    return {
+      definitionVersion: ACTIVATION_DEFINITION_VERSION,
+      completedSteps: ["track_exists"],
+      recommendedStep: "loop_complete",
+      reasonCode: "released_catalog_only",
+      reason: "Your released catalog is already complete. Start a new track when you’re ready.",
+      targetTrackId: null,
+      targetTrackTitle: null,
+      state: "complete",
       warnings,
     };
   }
@@ -123,6 +145,7 @@ export function deriveActivationJourney(facts: ActivationFacts): ActivationJourn
       reasonCode: "no_eligible_track",
       reason: "Bring in your first song to start the loop.",
       targetTrackId: null,
+      targetTrackTitle: null,
       state: "partial",
       warnings,
     };
@@ -134,8 +157,9 @@ export function deriveActivationJourney(facts: ActivationFacts): ActivationJourn
       completedSteps,
       recommendedStep: "name_next_move",
       reasonCode: "no_next_move",
-      reason: "Name the next move on this track.",
+      reason: `Name the next move for “${track.title}” so you know where to pick it back up.`,
       targetTrackId: track.id,
+      targetTrackTitle: track.title,
       state: "active",
       warnings,
     };
@@ -149,6 +173,7 @@ export function deriveActivationJourney(facts: ActivationFacts): ActivationJourn
       reasonCode: "no_focus_session",
       reason: "Work one focused session on this track.",
       targetTrackId: track.id,
+      targetTrackTitle: track.title,
       state: "active",
       warnings,
     };
@@ -162,6 +187,7 @@ export function deriveActivationJourney(facts: ActivationFacts): ActivationJourn
       reasonCode: "no_bounce",
       reason: "Upload the latest bounce for this track.",
       targetTrackId: track.id,
+      targetTrackTitle: track.title,
       state: "active",
       warnings,
     };
@@ -175,6 +201,7 @@ export function deriveActivationJourney(facts: ActivationFacts): ActivationJourn
       reasonCode: "no_share",
       reason: "Put another pair of ears on it.",
       targetTrackId: track.id,
+      targetTrackTitle: track.title,
       state: "active",
       warnings,
     };
@@ -188,6 +215,7 @@ export function deriveActivationJourney(facts: ActivationFacts): ActivationJourn
       reasonCode: "waiting_for_feedback",
       reason: "Waiting for feedback on the shared bounce.",
       targetTrackId: track.id,
+      targetTrackTitle: track.title,
       state: "waiting",
       warnings,
     };
@@ -201,6 +229,7 @@ export function deriveActivationJourney(facts: ActivationFacts): ActivationJourn
       reasonCode: "unresolved_feedback",
       reason: "Close the loop on the feedback you received.",
       targetTrackId: track.id,
+      targetTrackTitle: track.title,
       state: "active",
       warnings,
     };
@@ -221,6 +250,7 @@ export function deriveActivationJourney(facts: ActivationFacts): ActivationJourn
     reasonCode: "loop_complete",
     reason: "You've completed the core TEMPO loop.",
     targetTrackId: null,
+    targetTrackTitle: null,
     state: "complete",
     warnings,
   };

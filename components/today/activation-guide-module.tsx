@@ -25,11 +25,11 @@ const STEP_COPY: Record<RecommendedStep, { primaryAction: string; href: (trackId
 };
 
 const PROGRESS_LABELS: Record<string, string> = {
-  track_exists: "brought in a song",
-  next_move_set: "named the next move",
-  focus_session_completed: "worked a focused session",
-  bounce_uploaded: "uploaded a bounce",
-  feedback_loop_completed: "closed a feedback loop",
+  track_exists: "Brought in a song",
+  next_move_set: "Named the next move",
+  focus_session_completed: "Worked a focused session",
+  bounce_uploaded: "Uploaded a bounce",
+  feedback_loop_completed: "Closed a feedback loop",
 };
 
 export function ActivationGuideModule({
@@ -66,11 +66,15 @@ export function ActivationGuideModule({
   if (isHidden || isSnoozed) return null;
   if (journey.recommendedStep === "loop_complete" && !expanded && isExistingMember) return null;
 
-  const title = journey.completedSteps.length === 0 ? "Your TEMPO loop" : "Keep the loop moving";
+  const title = journey.targetTrackTitle
+    ? `Next up for ${journey.targetTrackTitle}`
+    : journey.completedSteps.length === 0
+      ? "Your TEMPO loop"
+      : "Your TEMPO loop is complete";
   const progressText =
     journey.completedSteps.length === 0
       ? "Nothing yet — let's start."
-      : journey.completedSteps.map((s) => PROGRESS_LABELS[s]).join(", ");
+      : journey.completedSteps.map((s) => PROGRESS_LABELS[s]).join(" · ");
 
   if (isExistingMember && !expanded) {
     return (
@@ -96,6 +100,7 @@ export function ActivationGuideModule({
     >
       <div className="flex items-start justify-between gap-3">
         <div>
+          <p className="label-mono mb-1">Getting started guide</p>
           <h2
             id="activation-guide-heading"
             className="font-display text-base font-semibold tracking-tight text-text-hi"
@@ -165,7 +170,10 @@ export function ActivationGuideModule({
         </div>
       )}
 
-      <p className="mt-3 text-xs text-text-lo">{progressText}</p>
+      <p className="mt-4 border-t border-line pt-3 text-xs text-text-lo">
+        <span className="font-medium text-text-mid">Completed so far:</span>{" "}
+        {progressText}
+      </p>
     </section>
   );
 }

@@ -4,8 +4,10 @@ import { deriveActivationJourney, type EligibleTrack } from "../../lib/activatio
 function track(overrides: Partial<EligibleTrack> = {}): EligibleTrack {
   return {
     id: "t1",
+    title: "Untitled song",
     updatedAt: "2026-08-01T00:00:00Z",
     createdAt: "2026-08-01T00:00:00Z",
+    isReleased: false,
     hasNextMove: false,
     nextMoveDueAt: null,
     isBlockedOrWaiting: false,
@@ -27,9 +29,13 @@ describe("deriveActivationJourney — step-by-step progression", () => {
   });
 
   it("track with no next move -> name_next_move", () => {
-    const j = deriveActivationJourney({ tracks: [track()] });
+    const j = deriveActivationJourney({
+      tracks: [track({ title: "New chorus" })],
+    });
     expect(j.recommendedStep).toBe("name_next_move");
     expect(j.completedSteps).toEqual(["track_exists"]);
+    expect(j.targetTrackTitle).toBe("New chorus");
+    expect(j.reason).toContain("New chorus");
   });
 
   it("next move set, no focus session -> work_a_session", () => {
@@ -124,6 +130,31 @@ describe("deriveActivationJourney — track selection", () => {
     const j = deriveActivationJourney({ tracks: [normal, blocked] });
     expect(j.targetTrackId).toBe("blocked");
     expect(j.recommendedStep).toBe("close_the_loop");
+  });
+
+  it("never recommends work on a released track", () => {
+    const released = track({
+      id: "released",
+      title: "Take What You Want",
+      isReleased: true,
+      updatedAt: "2026-08-10T00:00:00Z",
+    });
+    const active = track({
+      id: "active",
+      title: "Things You Love the Most",
+      updatedAt: "2026-08-05T00:00:00Z",
+    });
+    const j = deriveActivationJourney({ tracks: [released, active] });
+    expect(j.targetTrackId).toBe("active");
+    expect(j.targetTrackTitle).toBe("Things You Love the Most");
+  });
+
+  it("does not manufacture next moves when the whole catalog is released", () => {
+    const j = deriveActivationJourney({
+      tracks: [track({ isReleased: true, title: "Take What You Want" })],
+    });
+    expect(j.recommendedStep).toBe("loop_complete");
+    expect(j.targetTrackId).toBeNull();
   });
 
   it("falls back to nearest next-action due date", () => {
