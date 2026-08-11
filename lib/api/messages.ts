@@ -33,7 +33,13 @@ export async function fetchConversations(
     .select("conversation_id, last_read_at, left_at, archived_at")
     .eq("user_id", user.id)
     .is("left_at", null);
-  participantQuery = archived ? participantQuery.not("archived_at", "is", null) : participantQuery.is("archived_at", null);
+  participantQuery = archived
+    ? participantQuery
+        .not("archived_at", "is", null)
+        // Automated Nikita welcomes use PostgreSQL's infinity timestamp as a
+        // hidden-until-reply sentinel, not as a user-visible archive state.
+        .neq("archived_at", "infinity")
+    : participantQuery.is("archived_at", null);
   const { data: parts, error } = await participantQuery;
   if (error) throw error;
   if (!parts?.length) return [];

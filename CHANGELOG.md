@@ -4,6 +4,9 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-10
 
+- Fixed (v0.98.2): Nikita's automated onboarding welcomes now stay out of her
+  artist Inbox and Archived lists until the new member replies; existing
+  unanswered welcome-only threads are hidden as part of the migration.
 - Improved (v0.98.2): the Social post composer now shows a full image preview
   before publishing, with the same widescreen crop used in the feed plus clear
   Replace and Remove controls.
