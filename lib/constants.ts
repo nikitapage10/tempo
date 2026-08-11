@@ -17,8 +17,14 @@ import type {
 /** Client-side upload cap for versions and assets. */
 export const MAX_UPLOAD_BYTES = 200 * 1024 * 1024;
 
-/** How many bounces to keep per track (newest wins; older ones are removed). */
-export const MAX_VERSIONS_PER_TRACK = 2;
+/**
+ * How many bounces stay in the cloud per track — the current version plus
+ * the one before it. Every version row is kept forever (see
+ * lib/version-prune.ts); this caps the cloud *storage object*, not the
+ * history. An excess version is only evicted once a confirmed local vault
+ * copy exists for it somewhere (migrations/081_desktop_vault_and_retention.sql).
+ */
+export const MAX_CLOUD_VERSIONS_PER_TRACK = 2;
 
 export const AUDIO_ACCEPT =
   ".mp3,.wav,.aiff,.aif,.m4a,audio/mpeg,audio/wav,audio/x-wav,audio/aiff,audio/x-aiff,audio/mp4,audio/x-m4a";

@@ -4,6 +4,33 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-10
 
+- Changed (v0.100.0): bounce history no longer has a limit. Every version
+  you upload to a track now stays in its timeline for good — nothing is
+  auto-deleted. What changed instead: cloud storage itself now keeps only
+  the current bounce and the one before it; an older one only ever leaves
+  the cloud once a copy of it is confirmed safe on a desktop computer, so
+  nothing is ever lost if you don't have TEMPO Desktop installed. Each
+  version now shows where it currently lives (on this computer, in the
+  cloud, or on another of your computers). Unpinning a version is instant
+  now — pinning is purely for highlighting a milestone in the timeline; it
+  no longer has any bearing on what's kept.
+  Under the hood: run migration 081 in the Supabase SQL editor. It adds the
+  columns and the `version_local_copies` table this depends on.
+- Added (v0.99.0): the first piece of TEMPO Desktop — a downloadable
+  Windows/Mac app that's coming, not live yet. A quiet "Download for Windows"
+  or "Download for Mac" link now sits at the top-left of every screen (next
+  to Notifications and Messages), leading to a new Download page that
+  explains what the desktop app will add: instant loading from your own
+  computer, your complete bounce history kept locally instead of just the
+  newest two, working on Board, Tracks, Projects, Tasks, and Calendar with no
+  internet connection, and syncing quietly in the background so it's already
+  caught up when you open it. The button and page are ready ahead of the
+  actual installers, which aren't published yet.
+  Under the hood: run migration 080 in the Supabase SQL editor — it adds a
+  `user_devices` table that lets the web app know when your account has the
+  desktop app installed, so the button can switch to "Open in desktop."
+- Fixed (v0.99.0): the app version shown under Settings in the rail had
+  drifted out of sync with the actual release number; the two now match again.
 - Fixed (v0.98.2): Discover still expands the people shown on the Social globe,
   but switching among Top 8, Follows, and Discover now preserves the globe's
   orientation; the extra “Recently active around TEMPO” heading was removed.

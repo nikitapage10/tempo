@@ -1,10 +1,12 @@
 "use client";
 
+import * as React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   deleteVersion,
   fetchVersions,
   fetchVersionsForTracks,
+  mirrorTrackToVault,
   pinVersion,
   setCurrentVersion,
   unpinVersion,
@@ -13,14 +15,28 @@ import {
   type PinVersionInput,
   type UploadVersionInput,
 } from "@/lib/api/versions";
+import { isDesktopApp } from "@/lib/desktop/bridge";
 import type { Version } from "@/lib/types";
 
 export function useVersions(trackId: string | null) {
-  return useQuery({
+  const query = useQuery({
     queryKey: ["versions", trackId],
     queryFn: () => fetchVersions(trackId!),
     enabled: !!trackId,
   });
+
+  // Desktop: opening a track mirrors its whole cloud-resident bounce history
+  // into this device's vault, not just whatever gets played — see
+  // planning/desktop/02 §3 and lib/api/versions.ts's mirrorTrackToVault.
+  // One attempt per track per mount; failures are silent/best-effort there.
+  const versionIdsKey = query.data?.map((v) => v.id).join(",") ?? "";
+  React.useEffect(() => {
+    if (!isDesktopApp() || !query.data?.length) return;
+    void mirrorTrackToVault(query.data);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [versionIdsKey]);
+
+  return query;
 }
 
 /** Batch versions rollup for a set of tracks (e.g. release master/artwork status). */

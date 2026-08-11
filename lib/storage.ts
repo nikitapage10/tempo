@@ -12,6 +12,13 @@
  */
 
 import { createClient } from "@/lib/supabase/client";
+import {
+  isDesktopApp,
+  vaultRemove,
+  vaultResolveUrl,
+  vaultStat,
+  vaultWrite,
+} from "@/lib/desktop/bridge";
 
 export type UploadKind = "version" | "asset";
 
@@ -116,7 +123,7 @@ export async function uploadFile(
   path: string,
   file: File | Blob,
   options: UploadOptions = {}
-): Promise<{ path: string }> {
+): Promise<{ path: string; vault: { checksum: string; size: number } | null }> {
   const supabase = createClient();
   const {
     data: { session },
@@ -124,6 +131,24 @@ export async function uploadFile(
 
   if (!session?.access_token) {
     throw new Error("You’re signed out — sign in again, then retry the upload.");
+  }
+
+  // Desktop: land the bytes in the local vault first, per
+  // planning/desktop/02-TECHNICAL-AND-DATA-DESIGN.md §3 — a network failure
+  // on the cloud upload below no longer loses the artist's bounce, since
+  // it's already on disk and the cloud step can simply be retried. Best
+  // effort: a vault write failure (disk full, folder missing) doesn't block
+  // the cloud upload, which remains the system of record either way. The
+  // caller uses the returned checksum to confirm a local copy with the
+  // server (see lib/api/versions.ts), which is what makes cloud eviction safe.
+  let vault: { checksum: string; size: number } | null = null;
+  if (isDesktopApp()) {
+    try {
+      const bytes = await file.arrayBuffer();
+      vault = await vaultWrite(path, bytes);
+    } catch (err) {
+      console.error("[storage] vault write failed, continuing with cloud upload", err);
+    }
   }
 
   const contentType =
@@ -147,7 +172,7 @@ export async function uploadFile(
     if (error) throw mapStorageError(error.message);
   }
 
-  return { path };
+  return { path, vault };
 }
 
 /**
@@ -166,6 +191,65 @@ const signedUrlInflight = new Map<string, Promise<string>>();
 
 function signedUrlCacheKey(path: string, expiresInSeconds: number): string {
   return `${expiresInSeconds}:${path}`;
+}
+
+// Desktop only: a cloud-served file gets mirrored into the local vault the
+// first time it's read, so the next read is a vault hit instead of another
+// network round trip. One attempt per path per session — a failure here
+// (offline mid-fetch, disk full) just means next session tries again; it
+// never blocks the caller, who already has their signed URL.
+const mirrorAttempted = new Set<string>();
+
+async function fetchAndWriteVault(
+  path: string,
+  signedUrl: string
+): Promise<{ checksum: string; size: number } | null> {
+  const res = await fetch(signedUrl);
+  if (!res.ok) throw new Error(`Mirror fetch failed (${res.status})`);
+  const bytes = await res.arrayBuffer();
+  return vaultWrite(path, bytes);
+}
+
+function mirrorToVaultInBackground(path: string, signedUrl: string): void {
+  if (!isDesktopApp() || mirrorAttempted.has(path)) return;
+  mirrorAttempted.add(path);
+  void fetchAndWriteVault(path, signedUrl).catch((err) => {
+    mirrorAttempted.delete(path);
+    console.warn("[storage] background vault mirror failed", path, err);
+  });
+}
+
+/**
+ * Desktop only: mirror a cloud object into the vault and wait for it,
+ * returning the checksum so the caller can confirm a local copy with the
+ * server (see lib/api/versions.ts's mirrorTrackToVault). Unlike the passive
+ * background mirror above, this is for callers that need to know the mirror
+ * actually landed — e.g. registering the retention-safety precondition.
+ * Returns null if not on desktop, or if the path has no cloud object left
+ * to fetch (already evicted, nothing to mirror from here).
+ */
+export async function ensureVaultMirror(
+  path: string
+): Promise<{ checksum: string; size: number } | null> {
+  if (!isDesktopApp()) return null;
+
+  const existing = await vaultStat(path);
+  if (existing) return { checksum: existing.checksum, size: existing.size };
+
+  const supabase = createClient();
+  const { data, error } = await supabase.storage
+    .from(BUCKET)
+    .createSignedUrl(path, DEFAULT_EXPIRY);
+  if (error || !data?.signedUrl) return null;
+
+  mirrorAttempted.add(path);
+  try {
+    return await fetchAndWriteVault(path, data.signedUrl);
+  } catch (err) {
+    mirrorAttempted.delete(path);
+    console.warn("[storage] ensureVaultMirror failed", path, err);
+    return null;
+  }
 }
 
 function readSessionSignedUrls(): Record<string, SignedUrlEntry> {
@@ -257,9 +341,18 @@ export async function getSignedUrl(
     path.startsWith("http://") ||
     path.startsWith("https://") ||
     path.startsWith("data:") ||
-    path.startsWith("blob:")
+    path.startsWith("blob:") ||
+    path.startsWith("tempo-local://")
   ) {
     return path;
+  }
+
+  // Desktop: a local hit skips the network entirely — no signing, no
+  // waiting on a connection. This is the "opens instantly" promise for
+  // anything already mirrored. See planning/desktop/02 §3.
+  if (isDesktopApp()) {
+    const local = await vaultResolveUrl(path);
+    if (local) return local;
   }
 
   const cached = peekSignedUrl(path, expiresInSeconds);
@@ -285,6 +378,7 @@ export async function getSignedUrl(
     };
     signedUrlMemory.set(key, entry);
     writeSessionSignedUrl(key, entry);
+    mirrorToVaultInBackground(path, data.signedUrl);
     return data.signedUrl;
   })();
 
@@ -309,6 +403,34 @@ export function invalidateSignedUrl(path: string): void {
 }
 
 export async function deleteFile(path: string): Promise<void> {
+  if (
+    !path ||
+    path.startsWith("/") ||
+    path.startsWith("http://") ||
+    path.startsWith("https://") ||
+    path.startsWith("data:") ||
+    path.startsWith("blob:")
+  ) {
+    return;
+  }
+  invalidateSignedUrl(path);
+  const supabase = createClient();
+  const { error } = await supabase.storage.from(BUCKET).remove([path]);
+  if (error) throw mapStorageError(error.message);
+  // Full delete (not a cloud-only eviction — see lib/version-prune.ts) takes
+  // the local vault copy with it too, so a manually deleted bounce doesn't
+  // linger on disk with no row to explain it.
+  if (isDesktopApp()) void vaultRemove(path);
+}
+
+/**
+ * Cloud-only removal for automatic retention (lib/version-prune.ts). Unlike
+ * deleteFile, this deliberately leaves any local vault copy untouched — the
+ * whole point of eviction is that the bounce survives on disk after leaving
+ * the cloud. The version row is untouched here too; the caller flips
+ * cloud_state separately once this succeeds.
+ */
+export async function evictFromCloud(path: string): Promise<void> {
   if (
     !path ||
     path.startsWith("/") ||

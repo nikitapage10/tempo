@@ -1,5 +1,12 @@
 import { createClient } from "@/lib/supabase/client";
+import { enqueue } from "@/lib/offline/outbox";
 import type { Task, TaskInsert, TaskUpdate } from "@/lib/types";
+
+function isNetworkError(err: unknown): boolean {
+  if (err instanceof TypeError) return true;
+  if (typeof navigator !== "undefined" && !navigator.onLine) return true;
+  return false;
+}
 
 export async function fetchTasks(spaceId: string | null): Promise<Task[]> {
   if (!spaceId) return [];
@@ -34,21 +41,45 @@ export async function createTask(input: TaskInsert): Promise<Task> {
   return data;
 }
 
+/**
+ * Offline write (TEMPO Desktop Package 5) — the representative, actually
+ * wired integration of lib/offline/outbox.ts. When there's no connection
+ * (checked up front, or discovered mid-request), the edit is queued instead
+ * of thrown as an error, so the optimistic update already applied by
+ * useTaskMutations' onMutate (hooks/use-tasks.ts) sticks instead of being
+ * rolled back — the whole point of "still works offline" for Tasks. See
+ * planning/desktop/02 §6 for why this is a generic table-update descriptor
+ * rather than a bespoke queue.
+ */
 export async function updateTask(id: string, patch: TaskUpdate): Promise<Task> {
+  const normalizedPatch = {
+    ...patch,
+    due_date: patch.due_date === "" ? null : patch.due_date,
+    notes: patch.notes === undefined ? undefined : patch.notes?.trim() || null,
+  };
+
+  if (typeof navigator !== "undefined" && !navigator.onLine) {
+    await enqueue({ type: "supabase_update", table: "tasks", id, patch: normalizedPatch });
+    return { id, ...normalizedPatch } as Task;
+  }
+
   const supabase = createClient();
-  const { data, error } = await supabase
-    .from("tasks")
-    .update({
-      ...patch,
-      due_date: patch.due_date === "" ? null : patch.due_date,
-      notes:
-        patch.notes === undefined ? undefined : patch.notes?.trim() || null,
-    })
-    .eq("id", id)
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
+  try {
+    const { data, error } = await supabase
+      .from("tasks")
+      .update(normalizedPatch)
+      .eq("id", id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    if (isNetworkError(err)) {
+      await enqueue({ type: "supabase_update", table: "tasks", id, patch: normalizedPatch });
+      return { id, ...normalizedPatch } as Task;
+    }
+    throw err;
+  }
 }
 
 export async function deleteTask(id: string): Promise<void> {

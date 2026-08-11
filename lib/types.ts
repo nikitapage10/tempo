@@ -538,12 +538,17 @@ export type MilestoneType =
   | "master"
   | "custom";
 
+export type VersionCloudState = "in_cloud" | "local_only";
+
 export type Version = {
   id: string;
   track_id: string;
   version_no: number;
   label: string | null;
   changelog: string | null;
+  // Storage path — also the desktop vault's lookup key. Stays set even
+  // after cloud eviction (cloud_state = "local_only"); see
+  // migrations/081_desktop_vault_and_retention.sql for why it's never nulled.
   file_url: string;
   file_size: number | null;
   duration: number | null;
@@ -553,6 +558,8 @@ export type Version = {
   milestone_label: string | null;
   pinned_at: string | null;
   created_at: string;
+  cloud_state: VersionCloudState;
+  evicted_at: string | null;
 };
 
 export type DecisionType = "approved" | "needs_changes" | "rejected";

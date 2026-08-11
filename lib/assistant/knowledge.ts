@@ -11,7 +11,7 @@ export const PRODUCT_KNOWLEDGE = `CORE OBJECTS
 - Space: a workspace, either music-focused (its own stage pipeline — Board, Tracks) or tasks-focused (no board — just Tasks and Projects, for non-music work like social media). Default: Originals, Edits & Remixes, both music-focused. Switch from the rail; manage (including focus) in Settings.
 - Stage: where a track sits in the pipeline (Idea, Writing, Production, Mixdown, Master, Release Prep, Released by default). Per-space, reorderable.
 - Track: a musical work. Fields include type, momentum, deadline, next move, blocked/waiting, BPM, key, tags, notes. Optional list group on Tracks (album/EP/playlist bucket) — independent of projects.
-- Version: a bounce/upload on a track. At most 2 unpinned kept; pinned milestones stay. version_no and is_current are DB-managed.
+- Version: a bounce/upload on a track. Every version stays in the track's history forever. Cloud storage keeps only the current version and the one before it (older ones are evicted from the cloud once a desktop copy is confirmed — never before, so nothing is lost); the desktop app keeps the complete history locally. version_no and is_current are DB-managed.
 - Project: a work container you define (not one-track-per-project). Optional type: general / single / ep / album / edit_pack. May attach many tracks and tasks, or none. Release types unlock the release workspace. Not the same as Tracks-page groups.
 - Task: actionable item. category: social/outreach/pitching/admin/production/other. status: todo/doing/done. Optional track or project link.
 - Session: focus or logged studio time on a track (goal, duration, outcome).
@@ -51,7 +51,7 @@ HOW TO DO COMMON THINGS
 1. Add a track: Board (+ or Add), Tracks, or Today's + Track — title + type; lands in first stage of active space. Music-focus spaces only. Assistant can propose create_track.
 2. Move a stage: drag on Board, or click the stage timeline / dropdown on the track page. Assistant can propose move_track_stage with track ref + stage ref.
 3. Upload a bounce: track workspace Versions — "what changed?", set current; wav/aiff convert to mp3 in browser.
-4. Pin a milestone: pin a version on the timeline (kept even when unpinned cleanup runs).
+4. Pin a milestone: pin a version on the timeline to highlight it (rough mix, final master). Every version is kept regardless of pin state now — pinning is for standing out, not survival.
 5. Blind A/B: select two versions → Blind A/B; labels shuffled until reveal; can log a decision.
 6. Start focus: Today or track Workflow → goal + optional checklist → focus screen.
 7. Guest review link: track Guest links — pick version, expiry, comment/download; copy link once; no account needed for guest.

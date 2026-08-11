@@ -6,6 +6,8 @@ import {
   ChevronDown,
   Download,
   GitCompare,
+  HardDrive,
+  MonitorSmartphone,
   Pin,
   PinOff,
   Play,
@@ -34,8 +36,7 @@ import {
 } from "@/lib/constants";
 import { formatFileSize, formatShortDate } from "@/lib/format";
 import { getSignedUrl } from "@/lib/storage";
-import { selectVersionsToPrune } from "@/lib/version-prune";
-import { MAX_VERSIONS_PER_TRACK } from "@/lib/constants";
+import { isDesktopApp, vaultHas } from "@/lib/desktop/bridge";
 import type {
   DecisionArea,
   DecisionType,
@@ -108,7 +109,6 @@ export function VersionTimeline({
   const [compareIds, setCompareIds] = React.useState<string[]>([]);
   const [abOpen, setAbOpen] = React.useState(false);
   const [pinTarget, setPinTarget] = React.useState<Version | null>(null);
-  const [unpinTarget, setUnpinTarget] = React.useState<Version | null>(null);
   const [decisionTarget, setDecisionTarget] = React.useState<Version | null>(
     null
   );
@@ -189,15 +189,14 @@ export function VersionTimeline({
     });
   }
 
-  const willPruneOnUnpin = React.useMemo(() => {
-    if (!unpinTarget) return false;
-    const simulated = versions.map((v) =>
-      v.id === unpinTarget.id ? { ...v, is_pinned: false } : v
-    );
-    return selectVersionsToPrune(simulated, MAX_VERSIONS_PER_TRACK).some(
-      (v) => v.id === unpinTarget.id
-    );
-  }, [unpinTarget, versions]);
+  async function handleUnpin(v: Version) {
+    try {
+      await unpin.mutateAsync(v.id);
+      toast(`v${v.version_no} unpinned`, "ok");
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Couldn’t unpin version.");
+    }
+  }
 
   return (
     <section className="panel p-5">
@@ -228,9 +227,10 @@ export function VersionTimeline({
         <>
         <p className="text-sm text-text-hi">Upload a bounce</p>
         <p className="mt-1 text-xs text-text-lo">
-          mp3 / wav / aiff / m4a · up to 200 MB · keeps the latest 2 unpinned
-          versions plus anything pinned. Wav and aiff are converted to mp3 in
-          your browser before upload.
+          mp3 / wav / aiff / m4a · up to 200 MB · every version stays in your
+          history; the cloud keeps just the current bounce and the one
+          before it. Wav and aiff are converted to mp3 in your browser before
+          upload.
         </p>
         <div className="mt-3 space-y-2">
           <Label htmlFor={`changelog-${trackId}`}>What changed?</Label>
@@ -339,7 +339,7 @@ export function VersionTimeline({
               }}
               onDownload={() => void handleDownload(v)}
               onPin={() => setPinTarget(v)}
-              onUnpin={() => setUnpinTarget(v)}
+              onUnpin={() => void handleUnpin(v)}
               onDecide={() => setDecisionTarget(v)}
               onDelete={() => setDeleteTarget(v)}
             />
@@ -364,50 +364,6 @@ export function VersionTimeline({
         }}
       />
 
-      <Dialog
-        open={!!unpinTarget}
-        onOpenChange={(o) => !o && setUnpinTarget(null)}
-      >
-        {unpinTarget ? (
-          <DialogContent
-            title={`Unpin v${unpinTarget.version_no}?`}
-            description={
-              willPruneOnUnpin
-                ? "It isn’t one of the two newest bounces anymore — once unpinned it becomes eligible for automatic cleanup the next time you upload."
-                : "It stays around for now either way — the two newest bounces are always kept."
-            }
-            onClose={() => setUnpinTarget(null)}
-          >
-            <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => setUnpinTarget(null)}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                onClick={async () => {
-                  try {
-                    await unpin.mutateAsync(unpinTarget.id);
-                    toast(`v${unpinTarget.version_no} unpinned`, "ok");
-                    setUnpinTarget(null);
-                  } catch (err) {
-                    toast(
-                      err instanceof Error
-                        ? err.message
-                        : "Couldn’t unpin version."
-                    );
-                  }
-                }}
-              >
-                Unpin
-              </Button>
-            </div>
-          </DialogContent>
-        ) : null}
-      </Dialog>
 
       <DecisionDialog
         trackId={trackId}
@@ -460,6 +416,63 @@ export function VersionTimeline({
       </Dialog>
     </section>
   );
+}
+
+/**
+ * Bounce location badge — planning/desktop/01-PRODUCT-AND-UX-SPEC.md
+ * "Bounce history, now unbounded". On desktop: "On this computer" once
+ * mirrored, "On another computer" once evicted from the cloud but confirmed
+ * on some other device. On the web with no desktop app, a local_only
+ * version (evicted from the cloud) can't be signed for playback, so it says
+ * plainly why instead of failing silently.
+ */
+function VaultBadge({ version }: { version: Version }) {
+  const desktop = React.useMemo(() => isDesktopApp(), []);
+  const [hasLocal, setHasLocal] = React.useState<boolean | null>(null);
+
+  React.useEffect(() => {
+    if (!desktop) return;
+    let active = true;
+    void vaultHas(version.file_url).then((v) => {
+      if (active) setHasLocal(v);
+    });
+    return () => {
+      active = false;
+    };
+  }, [desktop, version.file_url]);
+
+  if (desktop) {
+    if (hasLocal) {
+      return (
+        <span className="inline-flex items-center gap-1 rounded-chip border border-ok/30 bg-ok/10 px-1.5 py-0.5 font-mono text-[10px] text-ok">
+          <HardDrive className="size-2.5" />
+          On this computer
+        </span>
+      );
+    }
+    if (version.cloud_state === "local_only") {
+      return (
+        <span className="inline-flex items-center gap-1 rounded-chip border border-line bg-bg-2 px-1.5 py-0.5 font-mono text-[10px] text-text-lo">
+          <MonitorSmartphone className="size-2.5" />
+          On another computer
+        </span>
+      );
+    }
+    return null;
+  }
+
+  if (version.cloud_state === "local_only") {
+    return (
+      <span
+        className="inline-flex items-center gap-1 rounded-chip border border-line bg-bg-2 px-1.5 py-0.5 font-mono text-[10px] text-text-lo"
+        title="This bounce is only on a desktop computer's local vault — open TEMPO Desktop on that device to play it."
+      >
+        <MonitorSmartphone className="size-2.5" />
+        Desktop only
+      </span>
+    );
+  }
+  return null;
 }
 
 function VersionRow({
@@ -557,6 +570,7 @@ function VersionRow({
                   {milestoneLabel || "Milestone"}
                 </span>
               ) : null}
+              <VaultBadge version={v} />
             </div>
             {v.milestone_label ? (
               <p className="mt-0.5 text-xs text-ice/80">

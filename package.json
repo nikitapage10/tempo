@@ -1,6 +1,6 @@
 {
   "name": "tempo",
-  "version": "0.98.2",
+  "version": "0.100.0",
   "private": true,
   "scripts": {
     "postinstall": "node scripts/copy-ffmpeg.js",
@@ -13,7 +13,9 @@
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "desktop:dev": "npm --prefix electron run dev",
+    "desktop:build": "npm --prefix electron run build"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

@@ -41,6 +41,8 @@ import { GuidedTour } from "@/components/guided-tour";
 import { StarterChecklist } from "@/components/onboarding/starter-checklist";
 import { ContextualPageTour } from "@/components/onboarding/contextual-page-tour";
 import { DemoBanner } from "@/components/demo/demo-banner";
+import { DownloadButton } from "@/components/desktop/download-button";
+import { OfflineBanner } from "@/components/offline-banner";
 
 // Artist sits above the space-scoped screens: it rolls up every space the
 // artist owns, so it stays in the rail whatever the active space's focus is.
@@ -243,6 +245,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <main className="flex-1 overflow-x-hidden pb-20 md:pb-0">
           <div className="mx-auto w-full max-w-[1440px] px-4 md:px-8">
             <div className="sticky top-[var(--edge-strip-h)] z-40 mb-2 flex items-center justify-end gap-1.5 bg-bg-0/85 pb-4 pt-1.5 backdrop-blur-md">
+              <DownloadButton />
               <NotificationCenter />
               <MessageCenter />
               <div data-tour="global-search" className="w-full max-w-[280px]">
@@ -252,6 +255,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {/* Above the page, not inside it: whether this catalog is real is
                 context for every screen, not a fact about any one of them. */}
             <DemoBanner />
+            <OfflineBanner />
             <div className="pb-6 pt-1">{children}</div>
           </div>
         </main>

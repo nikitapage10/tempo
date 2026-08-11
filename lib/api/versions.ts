@@ -7,14 +7,25 @@ import { logActivity } from "@/lib/api/activity";
 import { notify } from "@/lib/api/notify";
 import {
   AUDIO_EXTENSIONS,
+  MAX_CLOUD_VERSIONS_PER_TRACK,
   MAX_UPLOAD_BYTES,
-  MAX_VERSIONS_PER_TRACK,
 } from "@/lib/constants";
-import { buildStoragePath, deleteFile, uploadFile } from "@/lib/storage";
-import { selectVersionsToPrune } from "@/lib/version-prune";
+import {
+  buildStoragePath,
+  deleteFile,
+  ensureVaultMirror,
+  evictFromCloud,
+  uploadFile,
+} from "@/lib/storage";
+import { isDesktopApp } from "@/lib/desktop/bridge";
+import {
+  fetchLocalCopiesForVersions,
+  recordLocalCopy,
+} from "@/lib/api/version-local-copies";
+import { selectVersionsToEvict } from "@/lib/version-prune";
 import type { MilestoneType, Version } from "@/lib/types";
 
-/** Old rows predate the milestone/pin columns — default them so callers never see undefined. */
+/** Old rows predate the milestone/pin/cloud-state columns — default them so callers never see undefined. */
 function normalizeVersion(row: Version): Version {
   return {
     ...row,
@@ -22,6 +33,8 @@ function normalizeVersion(row: Version): Version {
     milestone_type: row.milestone_type ?? null,
     milestone_label: row.milestone_label ?? null,
     pinned_at: row.pinned_at ?? null,
+    cloud_state: row.cloud_state ?? "in_cloud",
+    evicted_at: row.evicted_at ?? null,
   };
 }
 
@@ -150,8 +163,9 @@ export async function uploadVersion(
     filename: fileToUpload.name,
   });
 
+  let uploadResult: { path: string; vault: { checksum: string; size: number } | null };
   try {
-    await uploadFile(path, fileToUpload, {
+    uploadResult = await uploadFile(path, fileToUpload, {
       onProgress: input.onProgress,
       contentType: fileToUpload.type || "audio/mpeg",
     });
@@ -189,7 +203,14 @@ export async function uploadVersion(
     );
   }
 
-  await pruneOldVersions(input.trackId);
+  // Desktop: this device already has the bytes (uploadFile wrote to the
+  // vault first) — confirm it with the server so retention eviction knows a
+  // local copy exists once this version ages out of the cloud cap.
+  if (uploadResult.vault) {
+    await recordLocalCopy(data.id, uploadResult.vault.checksum);
+  }
+
+  await evictExcessCloudVersions(input.trackId);
 
   void notifyVersionUpload(input.trackId, data.id, originalLabel);
 
@@ -229,19 +250,54 @@ async function notifyVersionUpload(
 }
 
 /**
- * Keep every pinned version plus the newest MAX_VERSIONS_PER_TRACK unpinned
- * versions; delete the rest (and their storage files). Never touches the
- * current version. Delegates the keep/delete decision to
- * lib/version-prune.ts so the rule lives in one place.
+ * Cloud retention (TEMPO Desktop Package 3, planning/desktop/02 §5): keep at
+ * most MAX_CLOUD_VERSIONS_PER_TRACK cloud objects per track — the current
+ * version and the one before it — evicting only versions that already have
+ * a confirmed local copy on some device. Rows are never deleted here; every
+ * version stays in the history forever. Delegates the keep/evict decision
+ * to lib/version-prune.ts so the rule lives in one place.
  */
-async function pruneOldVersions(trackId: string): Promise<void> {
+async function evictExcessCloudVersions(trackId: string): Promise<void> {
   const versions = await fetchVersions(trackId);
-  const toDelete = selectVersionsToPrune(versions, MAX_VERSIONS_PER_TRACK);
-  for (const v of toDelete) {
+  const localCopies = await fetchLocalCopiesForVersions(versions.map((v) => v.id));
+  const toEvictIds = selectVersionsToEvict(
+    versions,
+    (versionId) => (localCopies.get(versionId)?.length ?? 0) > 0,
+    MAX_CLOUD_VERSIONS_PER_TRACK
+  );
+
+  const supabase = createClient();
+  for (const versionId of toEvictIds) {
+    const version = versions.find((v) => v.id === versionId);
+    if (!version) continue;
     try {
-      await deleteVersion(v);
+      await evictFromCloud(version.file_url);
+      await supabase
+        .from("versions")
+        .update({ cloud_state: "local_only", evicted_at: new Date().toISOString() })
+        .eq("id", versionId);
     } catch {
-      /* best-effort — list refresh will show what's left */
+      /* best-effort — it stays in_cloud past the cap until the next upload retries this */
+    }
+  }
+}
+
+/**
+ * Desktop only: proactively mirror every in-cloud version of a track into
+ * this device's vault and confirm each copy with the server. Called when a
+ * desktop artist opens a track, so its whole bounce history becomes
+ * available offline rather than only the version they happen to play.
+ * No-ops entirely on the web.
+ */
+export async function mirrorTrackToVault(versions: Version[]): Promise<void> {
+  if (!isDesktopApp()) return;
+  for (const version of versions) {
+    if (version.cloud_state !== "in_cloud") continue;
+    try {
+      const result = await ensureVaultMirror(version.file_url);
+      if (result) await recordLocalCopy(version.id, result.checksum);
+    } catch {
+      /* best-effort — playback still works normally against the cloud */
     }
   }
 }
