@@ -6,6 +6,7 @@ import { ToastProvider } from "@/components/ui/toast";
 import { isDesktopApp } from "@/lib/desktop/bridge";
 import { hydrateOfflineCache, installOfflinePersistence } from "@/lib/offline/query-persistence";
 import { flushOutbox } from "@/lib/offline/outbox";
+import { ensureDeviceRegistered } from "@/lib/desktop/device";
 
 // Reconnects don't always fire a clean 'online' event inside a long-lived
 // desktop session (sleep/wake, VPN flaps), so a slow poll backstops it —
@@ -47,11 +48,22 @@ export function Providers({ children }: { children: React.ReactNode }) {
     window.addEventListener("online", flush);
     const interval = setInterval(flush, OUTBOX_POLL_MS);
 
+    // Registers/refreshes this install with the signed-in account — this is
+    // what flips the web app's download button to "Open in desktop" (see
+    // hooks/use-devices.ts). Runs on the same cadence as the outbox flush;
+    // ensureDeviceRegistered no-ops if it 401s (not signed in yet, e.g. on
+    // the login screen) and is internally throttled once it succeeds, so
+    // calling it every tick is cheap and self-correcting once sign-in lands.
+    const register = () => void ensureDeviceRegistered();
+    register();
+    const registerInterval = setInterval(register, OUTBOX_POLL_MS);
+
     return () => {
       active = false;
       unsubscribe();
       window.removeEventListener("online", flush);
       clearInterval(interval);
+      clearInterval(registerInterval);
     };
     // queryClient is stable for the lifetime of this component (useState initializer).
     // eslint-disable-next-line react-hooks/exhaustive-deps

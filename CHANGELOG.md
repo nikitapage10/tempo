@@ -4,6 +4,10 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-10
 
+- Fixed (v0.100.6): the web app's "Download for Windows" link now correctly
+  switches to "Open in desktop" once you have TEMPO Desktop installed and
+  signed in — the desktop app wasn't actually registering itself with your
+  account before now, so the button never knew it was already there.
 - Fixed (v0.100.5): TEMPO Desktop's floating zoom control was sitting on top
   of the left-hand navigation instead of beside it — it now clears the rail.
 - Fixed (v0.100.4): TEMPO Desktop's window could never actually be resized
