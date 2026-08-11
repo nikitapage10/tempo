@@ -54,6 +54,7 @@ alter table version_local_copies enable row level security;
 -- mirrored it), not can_upload_track. That matters for the retention safety
 -- guarantee too: a viewer's mirror should count just as much as an owner's
 -- toward "a confirmed local copy exists somewhere."
+drop policy if exists "version_local_copies_select" on version_local_copies;
 create policy "version_local_copies_select" on version_local_copies
   for select using (
     exists (
@@ -63,6 +64,7 @@ create policy "version_local_copies_select" on version_local_copies
     )
   );
 
+drop policy if exists "version_local_copies_insert" on version_local_copies;
 create policy "version_local_copies_insert" on version_local_copies
   for insert with check (
     exists (
@@ -77,6 +79,7 @@ create policy "version_local_copies_insert" on version_local_copies
     )
   );
 
+drop policy if exists "version_local_copies_delete" on version_local_copies;
 create policy "version_local_copies_delete" on version_local_copies
   for delete using (
     exists (

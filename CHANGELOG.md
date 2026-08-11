@@ -7,9 +7,9 @@ Plain-English history of what changed in TEMPO, newest first.
 - Changed (v0.105.0): Calendar now sits over TEMPO's live light-field shader
   with a soft legibility scrim, so its glass panels have real layered depth
   while dates and controls remain calm and readable.
-- Fixed (v0.105.0): migration 080 can now be safely rerun when its desktop
-  device policies already exist, allowing later migrations—including the
-  messaging overhaul—to deploy instead of stopping early.
+- Fixed (v0.105.0): migrations 080 and 081 can now be safely rerun when their
+  desktop policies already exist, allowing the messaging overhaul migration
+  to deploy instead of stopping early.
 - Fixed (v0.104.0; Desktop v0.100.10): **Open in desktop** now launches the
   installed TEMPO app instead of sending you back to its download page. The
   handoff keeps you on the same screen, and TEMPO Desktop now offers the
