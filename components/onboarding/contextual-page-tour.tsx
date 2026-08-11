@@ -30,8 +30,8 @@ const TOURS: Record<string, PageTour> = {
     id: "calendar",
     steps: [
       pageStep("Hold the timing", "Your music in time.", "Deadlines, sessions, releases, and milestones meet here. The controls at the top let you change scope or add something new."),
-      { selector: 'main [aria-label="Creative timeline"], main [role="grid"], main .panel', kicker: "See the whole arc", title: "Plan visually.", copy: "Use the timeline or calendar grid to see where creative work, deadlines, and releases overlap." },
-      { selector: 'main [aria-label="Upcoming schedule"], main .panel-quiet', kicker: "What is next", title: "Keep the near future close.", copy: "The schedule view collects upcoming work so the next commitment never gets buried." },
+      { selector: 'main [aria-label="Creative timeline"], main [role="grid"], main .glass', kicker: "See the whole arc", title: "Plan visually.", copy: "Use the timeline or calendar grid to see where creative work, deadlines, and releases overlap." },
+      { selector: 'main [aria-label="Upcoming schedule"], main .glass-quiet', kicker: "What is next", title: "Keep the near future close.", copy: "The schedule view collects upcoming work so the next commitment never gets buried." },
     ],
   },
   "/board": {

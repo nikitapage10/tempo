@@ -9,6 +9,30 @@ Plain-English history of what changed in TEMPO, newest first.
   this session**. The same prompt covers both product updates and installed-app
   updates without asking the artist to understand the difference, and TEMPO
   never interrupts a session or restarts itself automatically.
+- Changed (v0.102.0): the Calendar has been redesigned to feel calmer on
+  first open. The old wall of buttons and chips is now a short toolbar plus
+  a Filters menu and a "More" menu — everything that was there before
+  (source filters, saved views, week numbers, categories, CSV/print export,
+  multi-select) is still there, just one click deep instead of all at once.
+  Clicking a day now opens a clean detail panel instead of jumping you into
+  Agenda view, and that panel is where quick-add ("Studio session Friday at
+  7pm"), the day's full list, and unscheduled items now live. Calendar
+  surfaces also picked up a frosted-glass look in place of flat panels.
+- Added (v0.102.0): a new Week view shows an actual hour-by-hour grid —
+  drag an event to a new day or time, or click an empty hour to create one
+  there. All-day items (task due dates, deadlines, releases) sit in their
+  own row above the hours instead of being squeezed onto the clock.
+- Added (v0.102.0): the Calendar now has an explicit display timezone
+  (Calendar → More → Calendar settings), so every timed item shows
+  converted to one consistent zone instead of each in whatever zone it was
+  created in. Events scheduled in a different zone show a small globe mark.
+  The event editor's timezone field is now a real picker with the UTC
+  offset shown, plus quick duration buttons (30 min / 1h / 2h / 3h).
+- Added (v0.101.0; Desktop v0.100.8): incoming messages and general
+  notifications now have separate soft chimes. TEMPO Desktop stays active in
+  the Windows tray after its window closes, keeps realtime delivery awake,
+  shows native pop-ups while unfocused, and uses the real TEMPO icon in the
+  hidden-icons panel. Clicking a pop-up restores the relevant conversation.
 - Fixed (v0.100.12): joining a Scene from Discover or accepting a Scene invite
   now uses the signed-in account's Scene identity. The Owl's Nest Join button
   no longer fails on another account with a database conflict-constraint error.

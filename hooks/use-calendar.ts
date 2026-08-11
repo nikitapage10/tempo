@@ -85,8 +85,8 @@ export function useCalendarEventMutations() {
     onSuccess: invalidate,
   });
   const reschedule = useMutation({
-    mutationFn: ({ item, date, cascadeDependencies = false }: { item: CalendarItem; date: string; cascadeDependencies?: boolean }) =>
-      rescheduleCalendarItem(item, date, cascadeDependencies),
+    mutationFn: ({ item, date, cascadeDependencies = false, time }: { item: CalendarItem; date: string; cascadeDependencies?: boolean; time?: string }) =>
+      rescheduleCalendarItem(item, date, cascadeDependencies, time),
     onSuccess: invalidate,
   });
   const schedule = useMutation({

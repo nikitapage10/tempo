@@ -7,7 +7,7 @@ import type {
   CalendarItem,
   UnscheduledCalendarItem,
 } from "@/lib/calendar/types";
-import { addDateKey } from "@/lib/calendar/date";
+import { addDateKey, zonedLocalToUtc } from "@/lib/calendar/date";
 
 function payload(input: CalendarEventInput) {
   return {
@@ -83,7 +83,13 @@ function eventInput(event: CalendarEvent): CalendarEventInput {
   return input;
 }
 
-export async function rescheduleCalendarItem(item: CalendarItem, date: string, cascadeDependencies = false) {
+export async function rescheduleCalendarItem(
+  item: CalendarItem,
+  date: string,
+  cascadeDependencies = false,
+  /** HH:MM in the event's own timezone — set when dragging on the week time grid, where the drop also carries a new time-of-day, not just a new date. */
+  time?: string
+) {
   const supabase = createClient();
   if (item.source === "custom_event" && item.event) {
     const delta = Math.round(
@@ -94,6 +100,15 @@ export async function rescheduleCalendarItem(item: CalendarItem, date: string, c
     if (input.all_day) {
       input.start_date = addDateKey(input.start_date!, delta);
       input.end_date = input.end_date ? addDateKey(input.end_date, delta) : null;
+    } else if (time) {
+      const zone = input.timezone || "UTC";
+      const durationMs =
+        input.ends_at && input.starts_at
+          ? new Date(input.ends_at).getTime() - new Date(input.starts_at).getTime()
+          : null;
+      const newStart = zonedLocalToUtc(date, time, zone);
+      input.starts_at = newStart;
+      input.ends_at = durationMs != null ? new Date(new Date(newStart).getTime() + durationMs).toISOString() : null;
     } else {
       input.starts_at = shiftIsoDate(input.starts_at, delta);
       input.ends_at = shiftIsoDate(input.ends_at, delta);

@@ -1,3 +1,4 @@
+import { eachDayOfInterval, startOfWeek } from "date-fns";
 import { addDays, localDateString } from "@/lib/format";
 
 export function parseDateKey(value: string): Date {
@@ -101,5 +102,79 @@ export function formatDayHeading(value: string): string {
     month: "short",
     day: "numeric",
   });
+}
+
+export function formatShortWeekday(value: string): string {
+  return parseDateKey(value).toLocaleDateString(undefined, { weekday: "short" });
+}
+
+/** The 7 date keys of the week containing `value`, using date-fns for the week-start math. */
+export function weekDates(value: string, weekStartsMonday: boolean): string[] {
+  const start = startOfWeek(parseDateKey(value), { weekStartsOn: weekStartsMonday ? 1 : 0 });
+  return eachDayOfInterval({ start, end: addDays(start, 6) }).map((date) => localDateString(date));
+}
+
+export function shiftWeek(value: string, delta: number, weekStartsMonday: boolean): string {
+  const [start] = weekDates(value, weekStartsMonday);
+  return addDateKey(start, delta * 7);
+}
+
+/** Minutes since local midnight (in `timezone`) for a UTC ISO instant — used to position timed items on the week grid. */
+export function minutesFromMidnight(iso: string, timezone: string): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date(iso));
+  const hour = Number(parts.find((p) => p.type === "hour")?.value ?? 0);
+  const minute = Number(parts.find((p) => p.type === "minute")?.value ?? 0);
+  return hour * 60 + minute;
+}
+
+export function durationMinutes(startsAt: string, endsAt: string | null): number {
+  if (!endsAt) return 60;
+  const minutes = Math.round((new Date(endsAt).getTime() - new Date(startsAt).getTime()) / 60000);
+  return minutes > 0 ? minutes : 60;
+}
+
+/** UTC offset for `timezone` at `iso`, formatted like "UTC+1" / "UTC-5:30". */
+export function utcOffsetLabel(timezone: string, iso = new Date().toISOString()): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    timeZoneName: "shortOffset",
+  }).formatToParts(new Date(iso));
+  const raw = parts.find((p) => p.type === "timeZoneName")?.value ?? "UTC+0";
+  return raw.replace("GMT", "UTC");
+}
+
+/** A curated list of timezones for the picker — falls back to a fixed set if Intl.supportedValuesOf is unavailable. */
+export function commonTimezones(): string[] {
+  try {
+    const supported = (Intl as unknown as { supportedValuesOf?: (key: string) => string[] }).supportedValuesOf?.("timeZone");
+    // Intl's IANA list uses "Etc/UTC", not the "UTC" alias most people expect to see and pick.
+    if (supported?.length) return supported.includes("UTC") ? supported : ["UTC", ...supported];
+  } catch {
+    /* fall through to the static list */
+  }
+  return [
+    "UTC",
+    "America/Los_Angeles",
+    "America/Denver",
+    "America/Chicago",
+    "America/New_York",
+    "America/Sao_Paulo",
+    "Europe/London",
+    "Europe/Paris",
+    "Europe/Berlin",
+    "Europe/Moscow",
+    "Africa/Johannesburg",
+    "Asia/Dubai",
+    "Asia/Kolkata",
+    "Asia/Shanghai",
+    "Asia/Tokyo",
+    "Australia/Sydney",
+    "Pacific/Auckland",
+  ];
 }
 
