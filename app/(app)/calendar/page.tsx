@@ -17,7 +17,7 @@ import { CalendarToolbar } from "@/components/calendar/calendar-toolbar";
 import { CalendarFiltersPopover } from "@/components/calendar/calendar-filters-popover";
 import { CalendarOverflowMenu } from "@/components/calendar/calendar-overflow-menu";
 import { CalendarTimeline } from "@/components/calendar/calendar-planning-panels";
-import { LfWindow } from "@/components/lf-windows";
+import { WavesBackdrop } from "@/components/waves-backdrop";
 import { useCalendarViewState } from "@/components/calendar/use-calendar-view-state";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
@@ -250,14 +250,13 @@ function CalendarContent() {
       <div className="space-y-4">
         <PageHeader title="Calendar" subtitle="Deadlines, releases, and scheduled work." />
 
-        {/* Real shader canvas behind the glass, not a static gradient — same
-            technique as the Today hero and Scenes tab bar. The soft scrim
-            keeps it ≥85% legible at rest; every .glass panel floating on top
-            adds its own blur, so panels read a layer deeper than the gaps
-            between them. */}
+        {/* A slow "Waves" flow field in deep-sea teal and sand, on its own
+            canvas rather than the app-wide Spectra one — a calmer palette and
+            a much slower drift than the lightfield, held behind an 85% scrim
+            so the dates stay the brightest thing on the page. Falls back to a
+            still gradient under reduced motion or without WebGL. */}
         <div className="relative">
-          <LfWindow className="absolute inset-0 rounded-panel" />
-          <div className="lf-window-scrim-soft pointer-events-none absolute inset-0 rounded-panel" aria-hidden />
+          <WavesBackdrop className="absolute inset-0 rounded-panel" />
           <div className="relative z-[1] space-y-4">
 
         <CalendarAiScheduler today={today} timezone={vs.displayTimezone} onSchedule={scheduleFromParsed} />

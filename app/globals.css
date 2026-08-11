@@ -150,22 +150,21 @@
   }
 
   /**
-   * Soft variant — same ≥85% legibility floor, but blurred into an ambient
-   * wash instead of a flat tint, for glass regions where the window itself
-   * is the backdrop several translucent panels float over (calendar), not a
-   * single hero image. Panels layered on top add their own blur again, so
-   * the two compound into real depth instead of one flat haze.
+   * Still Spectra wash — a frozen version of the lightfield's palette for
+   * regions that several translucent panels float over for minutes at a
+   * time (the calendar). The live canvas behind a dense grid of small text
+   * reads as distraction rather than atmosphere, so this trades the motion
+   * for the part that actually helps: colour and gradient for each .glass
+   * panel's own blur to sample, so panels read a layer deeper than the gaps
+   * between them. Tinted from --ice/--amber/--violet, so a custom artist
+   * palette carries through automatically.
    */
-  .lf-window-scrim-soft {
-    background: rgb(10 10 12 / 0.82);
-    backdrop-filter: blur(28px) saturate(1.2);
-    -webkit-backdrop-filter: blur(28px) saturate(1.2);
-  }
-
-  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    .lf-window-scrim-soft {
-      background: rgb(10 10 12 / 0.94);
-    }
+  .spectra-still {
+    background:
+      radial-gradient(120% 85% at 8% -10%, rgb(var(--ice-rgb) / 0.16), transparent 62%),
+      radial-gradient(100% 75% at 92% 8%, rgb(var(--amber-rgb) / 0.11), transparent 64%),
+      radial-gradient(110% 90% at 55% 115%, rgb(var(--violet-rgb) / 0.08), transparent 66%),
+      linear-gradient(180deg, var(--bg-2), var(--bg-0));
   }
 
   /**
