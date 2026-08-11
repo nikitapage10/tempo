@@ -42,7 +42,7 @@ export default function DownloadPage() {
   const os = React.useMemo(() => detectOS(), []);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="w-full space-y-6">
       <PageHeader
         title="TEMPO Desktop"
         subtitle="A downloadable version of TEMPO for Windows and Mac."

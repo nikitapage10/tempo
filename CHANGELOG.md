@@ -4,6 +4,9 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-10
 
+- Fixed (v0.100.0): the TEMPO Desktop download page now uses the same
+  full-width workspace gutters as Settings, Social, and Projects.
+
 - Fixed (v0.100.0): Settings now uses the same full-width page gutters as
   Social, Projects, and the rest of the workspace, aligning its title and
   content with the global Download button and search bar.
