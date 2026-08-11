@@ -497,9 +497,18 @@ export function IntroMoment({
   );
 }
 
-/** Top edge Lightfield window strip (height via --edge-strip-h). */
+/**
+ * Top edge Lightfield window strip (height via --edge-strip-h). Also doubles
+ * as part of the desktop app's window-drag handle — `-webkit-app-region` is
+ * a no-op outside Electron, so this is safe to set unconditionally rather
+ * than gating it behind isDesktopApp(). See components/app-shell.tsx's
+ * sticky toolbar row for the rest of the draggable strip.
+ */
 export function EdgeStrip() {
   return (
-    <LfWindow className="edge-strip lf-window sticky top-0 z-50 shrink-0" aria-hidden />
+    <LfWindow
+      className="edge-strip lf-window sticky top-0 z-50 shrink-0 [-webkit-app-region:drag]"
+      aria-hidden
+    />
   );
 }

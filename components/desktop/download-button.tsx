@@ -41,7 +41,7 @@ export function DownloadButton({ className }: { className?: string }) {
     <Link
       href="/download"
       className={cn(
-        "mr-auto flex h-10 items-center gap-1.5 rounded-input border border-line/60 bg-bg-1 px-3 text-xs text-text-lo/60 transition-colors duration-hover hover:border-line hover:bg-bg-2 hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
+        "flex h-10 items-center gap-1.5 rounded-input border border-line/60 bg-bg-1 px-3 text-xs text-text-lo/60 transition-colors duration-hover hover:border-line hover:bg-bg-2 hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
         className
       )}
     >

@@ -2,13 +2,27 @@
 // is off, so this is the only surface the renderer (the ordinary TEMPO web
 // app) gets into the native shell. Every call crosses into the main process
 // via ipcRenderer.invoke; nothing here touches the filesystem directly.
+//
+// Deliberately avoids `require("./package.json")` — a sandboxed preload
+// script (webPreferences.sandbox: true, the default since Electron 20 and
+// what main.js sets explicitly) can't reliably resolve a relative require
+// to a local file the way an ordinary Node module can. That failure is
+// silent — it doesn't crash the window, it just means this whole script
+// throws before contextBridge.exposeInMainWorld ever runs, so the renderer
+// never sees window.tempoDesktop and can't tell it's running inside the
+// desktop app at all. main.js instead passes the version in as a plain
+// process.argv flag, which sandboxed preload can always read.
 const { contextBridge, ipcRenderer } = require("electron");
-const { version: appVersion } = require("./package.json");
+
+function readAppVersion() {
+  const flag = process.argv.find((arg) => arg.startsWith("--tempo-app-version="));
+  return flag ? flag.slice("--tempo-app-version=".length) : "0.0.0";
+}
 
 contextBridge.exposeInMainWorld("tempoDesktop", {
   isDesktop: true,
   platform: process.platform === "darwin" ? "mac" : "windows",
-  appVersion,
+  appVersion: readAppVersion(),
 
   vault: {
     has: (storagePath) => ipcRenderer.invoke("vault:has", storagePath),
@@ -23,5 +37,12 @@ contextBridge.exposeInMainWorld("tempoDesktop", {
   sync: {
     setEnabled: (next) => ipcRenderer.invoke("sync:setEnabled", next),
     getEnabled: () => ipcRenderer.invoke("sync:getEnabled"),
+  },
+
+  zoom: {
+    in: () => ipcRenderer.invoke("zoom:in"),
+    out: () => ipcRenderer.invoke("zoom:out"),
+    reset: () => ipcRenderer.invoke("zoom:reset"),
+    get: () => ipcRenderer.invoke("zoom:get"),
   },
 });

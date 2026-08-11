@@ -4,6 +4,15 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-10
 
+- Fixed (v0.100.1): TEMPO Desktop's window finally looks and feels like a
+  real app instead of a browser window: no more File/Edit/View menu bar
+  on Windows, the minimize/maximize/close buttons are recolored to match
+  TEMPO's own dark palette instead of stock white, the empty space along the
+  top can be dragged to move the window, it opens generously large without
+  filling the whole screen, and a small zoom control (next to where the
+  download link would be on the web) sits on every screen — Ctrl+ / Ctrl-
+  / Ctrl+0 also work. Also fixes a packaging bug where the desktop app
+  couldn't start at all.
 - Fixed (v0.100.0): the TEMPO Desktop download page now uses the same
   full-width workspace gutters as Settings, Social, and Projects.
 

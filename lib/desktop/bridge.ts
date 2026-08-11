@@ -28,6 +28,12 @@ export type DesktopBridge = {
     setEnabled: (next: boolean) => Promise<void>;
     getEnabled: () => Promise<boolean>;
   };
+  zoom: {
+    in: () => Promise<number>;
+    out: () => Promise<number>;
+    reset: () => Promise<number>;
+    get: () => Promise<number>;
+  };
 };
 
 declare global {
@@ -134,4 +140,39 @@ export function desktopPlatform(): "windows" | "mac" | null {
 
 export function desktopAppVersion(): string | null {
   return bridge()?.appVersion ?? null;
+}
+
+/**
+ * Desktop-only interface zoom — there's no visible menu bar to hang the
+ * usual Ctrl+=/-/0 accelerators off (see electron/main.js), so this backs
+ * both a keyboard shortcut and a visible on-screen control
+ * (components/desktop/zoom-control.tsx). All resolve to the new zoom factor
+ * (1.0 = 100%) so the control can stay in sync; no-ops to 1.0 outside desktop.
+ */
+export async function zoomIn(): Promise<number> {
+  const b = bridge();
+  if (!b) return 1;
+  return b.zoom.in();
+}
+
+export async function zoomOut(): Promise<number> {
+  const b = bridge();
+  if (!b) return 1;
+  return b.zoom.out();
+}
+
+export async function zoomReset(): Promise<number> {
+  const b = bridge();
+  if (!b) return 1;
+  return b.zoom.reset();
+}
+
+export async function getZoomFactor(): Promise<number> {
+  const b = bridge();
+  if (!b) return 1;
+  try {
+    return await b.zoom.get();
+  } catch {
+    return 1;
+  }
 }

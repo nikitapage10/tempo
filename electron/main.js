@@ -8,16 +8,28 @@
 // secret stays on Vercel. This process only ever authenticates as the
 // signed-in artist, same as a browser tab would.
 
-const { app, BrowserWindow, Tray, Menu, nativeImage, shell, ipcMain, protocol, net, dialog } = require("electron");
+const { app, BrowserWindow, Tray, Menu, nativeImage, shell, ipcMain, protocol, net, dialog, screen } = require("electron");
 const path = require("path");
 const { pathToFileURL } = require("url");
 const { autoUpdater } = require("electron-updater");
 const { Vault } = require("./vault");
+const { version: appVersion } = require("./package.json");
 
 const APP_URL = process.env.TEMPO_DESKTOP_URL || "https://tempo-ten-sigma.vercel.app";
 const ALLOWED_ORIGINS = [new URL(APP_URL).origin];
 const SYNC_INTERVAL_MS = 5 * 60 * 1000;
 const VAULT_PROTOCOL = "tempo-local";
+
+// Matches --bg-0 / --text-lo from app/globals.css, so the native window
+// chrome (title bar, and on Windows the caption buttons) reads as part of
+// TEMPO rather than a generic browser window dropped on top of it.
+const CHROME_BG = "#0A0A0C";
+const CHROME_SYMBOL = "#8B8B96";
+const TITLE_BAR_HEIGHT = 40;
+
+const ZOOM_STEP = 0.1;
+const ZOOM_MIN = 0.5;
+const ZOOM_MAX = 2.0;
 
 // Privileged-scheme registration must happen before app.whenReady().
 protocol.registerSchemesAsPrivileged([
@@ -34,24 +46,57 @@ let syncTimer = null;
 let syncEnabled = true; // mirrors the "Keep TEMPO syncing in the background" setting
 let vault = null;
 
+// A fixed 1440x900 could easily be a large fraction of a small display or a
+// small fraction of a big one — size relative to the actual screen instead,
+// generously large but deliberately short of a full maximize (the artist
+// asked for "a little bit larger", not filling the screen).
+function initialWindowBounds() {
+  const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
+  const width = Math.round(screenWidth * 0.85);
+  const height = Math.round(screenHeight * 0.85);
+  return {
+    width,
+    height,
+    x: Math.round((screenWidth - width) / 2),
+    y: Math.round((screenHeight - height) / 2),
+  };
+}
+
 function createWindow() {
+  const isMac = process.platform === "darwin";
+
   mainWindow = new BrowserWindow({
-    width: 1440,
-    height: 900,
+    ...initialWindowBounds(),
     minWidth: 960,
     minHeight: 600,
-    backgroundColor: "#0A0A0C", // matches --bg-0, avoids a white flash on first paint
+    backgroundColor: CHROME_BG, // matches --bg-0, avoids a white flash on first paint
     show: false,
+    autoHideMenuBar: true,
+    // Keeps native min/max/close (Windows) or traffic lights (Mac) — removing
+    // the frame entirely would mean building custom replacements in the web
+    // app's own React tree, which is more than this chrome pass needs — but
+    // re-themes them to match the app instead of stock white Windows buttons.
+    ...(isMac
+      ? { titleBarStyle: "hiddenInset" }
+      : {
+          titleBarStyle: "hidden",
+          titleBarOverlay: { color: CHROME_BG, symbolColor: CHROME_SYMBOL, height: TITLE_BAR_HEIGHT },
+        }),
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      // See preload.js's own comment — a sandboxed preload can't reliably
+      // require("./package.json") by relative path, so the version crosses
+      // the boundary as a plain argv flag instead.
+      additionalArguments: [`--tempo-app-version=${appVersion}`],
     },
   });
 
   mainWindow.once("ready-to-show", () => mainWindow.show());
   mainWindow.loadURL(APP_URL);
+  registerZoomShortcuts(mainWindow);
 
   // Navigation allowlist — the renderer is a real Chromium context and
   // could otherwise be steered anywhere; keep it to the TEMPO origin.
@@ -73,6 +118,36 @@ function createWindow() {
     if (quitting || !syncEnabled) return;
     event.preventDefault();
     mainWindow.hide();
+  });
+}
+
+// No visible menu bar (autoHideMenuBar above, plus Menu.setApplicationMenu(null)
+// below on Windows), so the accelerators that would normally live on a "View"
+// menu — zoom in/out/reset — are wired up by hand, shared between the
+// keyboard shortcut here and the on-screen control's IPC calls below.
+function adjustZoom(win, delta) {
+  const current = win.webContents.getZoomFactor();
+  const next = delta === 0 ? 1.0 : Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, current + delta));
+  win.webContents.setZoomFactor(next);
+  return next;
+}
+
+function registerZoomShortcuts(win) {
+  win.webContents.on("before-input-event", (event, input) => {
+    if (input.type !== "keyDown") return;
+    const withModifier = process.platform === "darwin" ? input.meta : input.control;
+    if (!withModifier) return;
+
+    if (input.key === "=" || input.key === "+") {
+      event.preventDefault();
+      adjustZoom(win, ZOOM_STEP);
+    } else if (input.key === "-") {
+      event.preventDefault();
+      adjustZoom(win, -ZOOM_STEP);
+    } else if (input.key === "0") {
+      event.preventDefault();
+      adjustZoom(win, 0);
+    }
   });
 }
 
@@ -173,12 +248,34 @@ function registerVaultIpc() {
   });
   ipcMain.handle("sync:setEnabled", (_e, next) => setSyncEnabled(Boolean(next)));
   ipcMain.handle("sync:getEnabled", () => syncEnabled);
+
+  ipcMain.handle("zoom:in", () => adjustZoom(mainWindow, ZOOM_STEP));
+  ipcMain.handle("zoom:out", () => adjustZoom(mainWindow, -ZOOM_STEP));
+  ipcMain.handle("zoom:reset", () => adjustZoom(mainWindow, 0));
+  ipcMain.handle("zoom:get", () => mainWindow.webContents.getZoomFactor());
 }
 
 app.whenReady().then(() => {
   vault = new Vault();
   registerVaultProtocol();
   registerVaultIpc();
+
+  // Windows: no menu bar at all — File/Edit/View/Window/Help added nothing
+  // (no custom items were ever in it) and just looked like leftover browser
+  // chrome. macOS keeps a minimal app menu; removing it there also breaks
+  // standard Cmd+C/V/X clipboard shortcuts in text fields, which Electron
+  // wires through the Edit menu's roles rather than the OS.
+  if (process.platform === "darwin") {
+    Menu.setApplicationMenu(
+      Menu.buildFromTemplate([
+        { role: "appMenu" },
+        { role: "editMenu" },
+        { role: "windowMenu" },
+      ])
+    );
+  } else {
+    Menu.setApplicationMenu(null);
+  }
 
   app.setLoginItemSettings({ openAtLogin: true, openAsHidden: true });
 

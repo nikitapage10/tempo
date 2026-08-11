@@ -42,6 +42,7 @@ import { StarterChecklist } from "@/components/onboarding/starter-checklist";
 import { ContextualPageTour } from "@/components/onboarding/contextual-page-tour";
 import { DemoBanner } from "@/components/demo/demo-banner";
 import { DownloadButton } from "@/components/desktop/download-button";
+import { ZoomControl } from "@/components/desktop/zoom-control";
 import { OfflineBanner } from "@/components/offline-banner";
 
 // Artist sits above the space-scoped screens: it rolls up every space the
@@ -244,11 +245,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         <main className="flex-1 overflow-x-hidden pb-20 md:pb-0">
           <div className="mx-auto w-full max-w-[1440px] px-4 md:px-8">
-            <div className="sticky top-[var(--edge-strip-h)] z-40 mb-2 flex items-center justify-end gap-1.5 bg-bg-0/85 pb-4 pt-1.5 backdrop-blur-md">
-              <DownloadButton />
-              <NotificationCenter />
-              <MessageCenter />
-              <div data-tour="global-search" className="w-full max-w-[280px]">
+            {/* [-webkit-app-region:drag] makes this row double as the desktop
+                app's window-drag handle (a no-op outside Electron, so it's
+                safe unconditionally) — each interactive child below is
+                explicitly carved out with the matching no-drag utility so
+                clicks still reach them instead of moving the window. */}
+            <div className="sticky top-[var(--edge-strip-h)] z-40 mb-2 flex items-center justify-end gap-1.5 bg-bg-0/85 pb-4 pt-1.5 backdrop-blur-md [-webkit-app-region:drag]">
+              <div className="mr-auto flex items-center gap-1.5 [-webkit-app-region:no-drag]">
+                <ZoomControl />
+                <DownloadButton />
+              </div>
+              <div className="[-webkit-app-region:no-drag]">
+                <NotificationCenter />
+              </div>
+              <div className="[-webkit-app-region:no-drag]">
+                <MessageCenter />
+              </div>
+              <div
+                data-tour="global-search"
+                className="w-full max-w-[280px] [-webkit-app-region:no-drag]"
+              >
                 <GlobalSearch className="ml-1" />
               </div>
             </div>
