@@ -54,6 +54,7 @@ import { useStageTransitionController } from "@/hooks/use-stage-transition";
 import { useTrackMutations, useTracks } from "@/hooks/use-tracks";
 import {
   BOARD_FOCUS_COUNT,
+  boardFocusGridTemplate,
   clampBoardFocusStart,
   focusStartForStage,
 } from "@/lib/board/view";
@@ -258,7 +259,9 @@ export function BoardView() {
   }
 
   function focusStage(index: number) {
-    setFocusStart(focusStartForStage(stages.length, index));
+    setFocusStart((current) =>
+      focusStartForStage(stages.length, current, index)
+    );
     setBoardView("focus");
   }
 
@@ -740,7 +743,15 @@ export function BoardView() {
                 </div>
               ) : null}
               <div
-                className="flex flex-col gap-2 pb-3 lg:flex-row lg:items-stretch lg:overflow-hidden"
+                className="flex flex-col gap-2 pb-3 lg:grid lg:items-stretch lg:overflow-hidden lg:transition-[grid-template-columns] lg:duration-500 motion-reduce:transition-none"
+                style={{
+                  gridTemplateColumns: boardFocusGridTemplate(
+                    stages.length,
+                    focusStart
+                  ),
+                  transitionTimingFunction:
+                    "cubic-bezier(0.22, 1, 0.36, 1)",
+                }}
                 aria-label={`Board stages, ${Math.min(BOARD_FOCUS_COUNT, stages.length)} detailed at a time`}
               >
                 {stages.map((stage, index) => {
@@ -749,44 +760,52 @@ export function BoardView() {
                   const stageNotes = notesByStage.get(stage.id) ?? [];
                   if (!inFocus) {
                     return (
-                      <StageRail
+                      <div
                         key={stage.id}
-                        stage={stage}
-                        stages={stages}
-                        itemCount={stageTracks.length + stageNotes.length}
-                        isOver={overStageId === stage.id}
-                        onOpen={() => focusStage(index)}
-                      />
+                        className="min-w-0 overflow-hidden lg:h-full lg:[&>*]:h-full"
+                      >
+                        <StageRail
+                          stage={stage}
+                          stages={stages}
+                          itemCount={stageTracks.length + stageNotes.length}
+                          isOver={overStageId === stage.id}
+                          onOpen={() => focusStage(index)}
+                        />
+                      </div>
                     );
                   }
                   return (
-                    <KanbanColumn
+                    <div
                       key={stage.id}
-                      stage={stage}
-                      stages={stages}
-                      tracks={stageTracks}
-                      notes={stageNotes}
-                      isOver={overStageId === stage.id}
-                      onOpenTrack={(t) => router.push(`/track/${t.id}`)}
-                      onRemoveFromBoard={(t) => void removeFromBoard(t)}
-                      onStageAdd={(action) => handleStageAdd(stage.id, action)}
-                      onSaveNote={(note, patch) => {
-                        void updateNote.mutateAsync({ id: note.id, patch }).catch((err) => {
-                          toast(err instanceof Error ? err.message : "Couldn’t save that note.");
-                        });
-                      }}
-                      onDeleteNote={(note) => {
-                        void removeNote.mutateAsync(note.id).then(
-                          () => toast("Note deleted.", "ok"),
-                          (err) => toast(err instanceof Error ? err.message : "Couldn’t delete that note.")
-                        );
-                      }}
-                      compact={density === "compact"}
-                      roomy={roomy}
-                      dragging={!!activeDrag}
-                      allowCollapse={onBoardCount > 0 || tracks.length > 0}
-                      fillAvailable
-                    />
+                      className="min-w-0 overflow-hidden lg:h-full lg:[&>*]:h-full"
+                    >
+                      <KanbanColumn
+                        stage={stage}
+                        stages={stages}
+                        tracks={stageTracks}
+                        notes={stageNotes}
+                        isOver={overStageId === stage.id}
+                        onOpenTrack={(t) => router.push(`/track/${t.id}`)}
+                        onRemoveFromBoard={(t) => void removeFromBoard(t)}
+                        onStageAdd={(action) => handleStageAdd(stage.id, action)}
+                        onSaveNote={(note, patch) => {
+                          void updateNote.mutateAsync({ id: note.id, patch }).catch((err) => {
+                            toast(err instanceof Error ? err.message : "Couldn’t save that note.");
+                          });
+                        }}
+                        onDeleteNote={(note) => {
+                          void removeNote.mutateAsync(note.id).then(
+                            () => toast("Note deleted.", "ok"),
+                            (err) => toast(err instanceof Error ? err.message : "Couldn’t delete that note.")
+                          );
+                        }}
+                        compact={density === "compact"}
+                        roomy={roomy}
+                        dragging={!!activeDrag}
+                        allowCollapse={onBoardCount > 0 || tracks.length > 0}
+                        fillAvailable
+                      />
+                    </div>
                   );
                 })}
               </div>

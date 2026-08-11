@@ -4,6 +4,9 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-10
 
+- Improved (v0.98.2): opening a minimized Board stage now shifts the focused
+  three-stage window only as far as needed and smoothly collapses the outgoing
+  column while expanding the selected one.
 - Improved (v0.98.2): Signal 1 now prefills “Artist Name” instead of “My
   Artist” for new accounts and upgrades that legacy placeholder for unfinished
   Origin sessions without changing real artist names.
