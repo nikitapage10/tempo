@@ -1,6 +1,6 @@
 {
   "name": "tempo",
-  "version": "0.101.0",
+  "version": "0.102.0",
   "private": true,
   "scripts": {
     "postinstall": "node scripts/copy-ffmpeg.js",
@@ -31,6 +31,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cobe": "^2.0.1",
+    "date-fns": "^4.4.0",
     "exceljs": "^4.4.0",
     "framer-motion": "^12.43.0",
     "lucide-react": "^1.27.0",

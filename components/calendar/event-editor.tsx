@@ -11,7 +11,9 @@ import { useCalendarCategoryPalette } from "@/components/calendar/calendar-categ
 import { useCalendarCommentMutation, useCalendarDiscussion, useCalendarEventMutations } from "@/hooks/use-calendar";
 import {
   browserTimezone,
+  commonTimezones,
   dateInTimeZone,
+  utcOffsetLabel,
   zonedLocalToUtc,
 } from "@/lib/calendar/date";
 import {
@@ -36,6 +38,19 @@ function timeInput(iso: string, timezone: string) {
   return `${hour}:${minute}`;
 }
 
+const DURATION_PRESETS: { label: string; minutes: number }[] = [
+  { label: "30 min", minutes: 30 },
+  { label: "1 hour", minutes: 60 },
+  { label: "2 hours", minutes: 120 },
+  { label: "3 hours", minutes: 180 },
+];
+
+function addMinutesToTime(time: string, minutes: number): string {
+  const [h, m] = time.split(":").map(Number);
+  const total = (h * 60 + m + minutes + 24 * 60) % (24 * 60);
+  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+}
+
 export function CalendarEventEditor({
   open,
   event,
@@ -47,6 +62,8 @@ export function CalendarEventEditor({
   defaultKind = "other",
   defaultTitle = "",
   defaultMilestoneStage = null,
+  defaultTimezone,
+  defaultStartTime,
   onClose,
 }: {
   open: boolean;
@@ -59,6 +76,10 @@ export function CalendarEventEditor({
   defaultKind?: CalendarEventKind;
   defaultTitle?: string;
   defaultMilestoneStage?: CalendarMilestoneStage | null;
+  /** The calendar's display timezone — used as the default for new events instead of always the browser zone. */
+  defaultTimezone?: string;
+  /** Pre-fills a specific start time (e.g. clicking an hour cell in Week view) and switches the event to timed instead of all-day. */
+  defaultStartTime?: string | null;
   onClose: () => void;
 }) {
   const { toast } = useToast();
@@ -66,6 +87,7 @@ export function CalendarEventEditor({
     (category) => category.group === "event"
   );
   const mutations = useCalendarEventMutations();
+  const timezones = React.useMemo(() => commonTimezones(), []);
   const [title, setTitle] = React.useState("");
   const [kind, setKind] = React.useState<CalendarEventKind>("other");
   const [spaceId, setSpaceId] = React.useState(defaultSpaceId);
@@ -74,7 +96,7 @@ export function CalendarEventEditor({
   const [endDate, setEndDate] = React.useState("");
   const [startTime, setStartTime] = React.useState("09:00");
   const [endTime, setEndTime] = React.useState("");
-  const [timezone, setTimezone] = React.useState(browserTimezone());
+  const [timezone, setTimezone] = React.useState(defaultTimezone || browserTimezone());
   const [relation, setRelation] = React.useState("");
   const [location, setLocation] = React.useState("");
   const [description, setDescription] = React.useState("");
@@ -94,11 +116,11 @@ export function CalendarEventEditor({
 
   React.useEffect(() => {
     if (!open) return;
-    const zone = event?.timezone || browserTimezone();
+    const zone = event?.timezone || defaultTimezone || browserTimezone();
     setTitle(event?.title ?? defaultTitle);
     setKind(event?.kind ?? defaultKind);
     setSpaceId(event?.space_id ?? defaultSpaceId);
-    setAllDay(event?.all_day ?? true);
+    setAllDay(event ? event.all_day : !defaultStartTime);
     setTimezone(zone);
     setStartDate(
       event?.all_day
@@ -117,7 +139,7 @@ export function CalendarEventEditor({
     setStartTime(
       !event?.all_day && event?.starts_at
         ? timeInput(event.starts_at, zone)
-        : "09:00"
+        : defaultStartTime || "09:00"
     );
     setEndTime(
       !event?.all_day && event?.ends_at ? timeInput(event.ends_at, zone) : ""
@@ -141,7 +163,7 @@ export function CalendarEventEditor({
     setDependencyEventId(event?.dependency_event_id ?? "");
     setCompleted(!!event?.completed_at);
     setConfirmDelete(false);
-  }, [open, event, defaultDate, defaultSpaceId, defaultKind, defaultTitle, defaultMilestoneStage]);
+  }, [open, event, defaultDate, defaultSpaceId, defaultKind, defaultTitle, defaultMilestoneStage, defaultTimezone, defaultStartTime]);
 
   const options = relationOptions.filter((option) => option.spaceId === spaceId);
   const busy =
@@ -366,13 +388,36 @@ export function CalendarEventEditor({
           </div>
           {!allDay ? (
             <div>
+              <Label>Duration</Label>
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                {DURATION_PRESETS.map((preset) => (
+                  <button
+                    key={preset.minutes}
+                    type="button"
+                    onClick={() => setEndTime(addMinutesToTime(startTime, preset.minutes))}
+                    className="rounded-chip border border-line bg-bg-2 px-2 py-1 text-xs text-text-lo transition-colors duration-hover hover:border-ice/40 hover:text-ice focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          {!allDay ? (
+            <div>
               <Label htmlFor="event-timezone">Timezone</Label>
-              <Input
+              <select
                 id="event-timezone"
                 value={timezone}
                 onChange={(e) => setTimezone(e.target.value)}
-                className="mt-1"
-              />
+                className="mt-1 h-9 w-full rounded-input border border-line bg-bg-2 px-3 text-sm text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+              >
+                {(timezones.includes(timezone) ? timezones : [timezone, ...timezones]).map((zone) => (
+                  <option key={zone} value={zone}>
+                    {zone.replaceAll("_", " ")} · {utcOffsetLabel(zone)}
+                  </option>
+                ))}
+              </select>
             </div>
           ) : null}
           <div>
