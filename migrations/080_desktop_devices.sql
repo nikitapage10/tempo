@@ -20,14 +20,18 @@ alter table user_devices enable row level security;
 
 -- A device row is only ever visible to, or writable by, the account it
 -- belongs to — there is no collaborator concept for devices.
+drop policy if exists "user_devices_select_own" on user_devices;
 create policy "user_devices_select_own" on user_devices
   for select using (user_id = auth.uid());
 
+drop policy if exists "user_devices_insert_own" on user_devices;
 create policy "user_devices_insert_own" on user_devices
   for insert with check (user_id = auth.uid());
 
+drop policy if exists "user_devices_update_own" on user_devices;
 create policy "user_devices_update_own" on user_devices
   for update using (user_id = auth.uid()) with check (user_id = auth.uid());
 
+drop policy if exists "user_devices_delete_own" on user_devices;
 create policy "user_devices_delete_own" on user_devices
   for delete using (user_id = auth.uid());
