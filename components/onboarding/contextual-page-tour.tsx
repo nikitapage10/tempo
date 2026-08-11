@@ -29,8 +29,9 @@ const TOURS: Record<string, PageTour> = {
   "/calendar": {
     id: "calendar",
     steps: [
-      pageStep("Hold the timing", "Your music in time.", "Deadlines, sessions, releases, and milestones meet here. The controls at the top let you change scope or add something new."),
-      { selector: 'main [aria-label="Creative timeline"], main [role="grid"], main .glass', kicker: "See the whole arc", title: "Plan visually.", copy: "Use the timeline or calendar grid to see where creative work, deadlines, and releases overlap." },
+      pageStep("Hold the timing", "Your music in time.", "Deadlines, sessions, releases, and milestones meet here. Month, Week, Agenda, and Timeline cover it from every angle, with Filters and More tucked out of the way until you need them."),
+      { selector: 'main [aria-label="Quick schedule with AI"]', kicker: "Just say it", title: "Type it, or speak it.", copy: "“Studio session Friday at 7pm” becomes a real event — tap the microphone to dictate instead of typing. Start with “task:” to add a task instead." },
+      { selector: 'main [aria-label="Creative timeline"], main [role="grid"], main .glass', kicker: "See the whole arc", title: "Plan visually.", copy: "Use the timeline, month grid, or the new hour-by-hour Week view to see where creative work, deadlines, and releases overlap." },
       { selector: 'main [aria-label="Upcoming schedule"], main .glass-quiet', kicker: "What is next", title: "Keep the near future close.", copy: "The schedule view collects upcoming work so the next commitment never gets buried." },
     ],
   },
