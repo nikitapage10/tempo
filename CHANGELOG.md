@@ -4,6 +4,10 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-10
 
+- Fixed (v0.100.8): the Windows download link now actually works for
+  everyone — the previous link only worked when signed into GitHub with
+  access to the private source repo, which meant it silently 404'd for
+  every artist except the account that built it.
 - Added (v0.100.7): TEMPO Desktop for Windows is live — the Download page's
   "Download for Windows" button now links to a real, working installer
   instead of a disabled placeholder. It's an unsigned beta build, so

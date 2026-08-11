@@ -29,8 +29,12 @@ const HIGHLIGHTS = [
   },
 ];
 
-const WINDOWS_INSTALLER_URL =
-  "https://github.com/nikitapage10/tempo/releases/download/desktop-v0.100.6/TEMPO.Setup.0.100.6.exe";
+// Served from the app's own domain (public/downloads/), not a GitHub
+// Release — the tempo repo is private, so release-asset links 404 for
+// anyone without repo access, which is everyone except the account that
+// built it. This is a stopgap; move to real object storage/CDN before a
+// wider public launch so the repo doesn't keep growing by ~80MB per build.
+const WINDOWS_INSTALLER_URL = "/downloads/TEMPO-Setup-0.100.6.exe";
 
 const DOWNLOADS: {
   os: "windows" | "mac";

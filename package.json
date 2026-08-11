@@ -1,6 +1,6 @@
 {
   "name": "tempo",
-  "version": "0.100.7",
+  "version": "0.100.8",
   "private": true,
   "scripts": {
     "postinstall": "node scripts/copy-ffmpeg.js",
