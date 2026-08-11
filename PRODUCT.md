@@ -6,6 +6,8 @@
 
 TEMPO is a web app for managing a musician’s work from idea through release and beyond — not only production stages, but also the pitching, social posts, edit packs, and follow-ups that surround a track. It is a dark, studio-feeling workspace you open in a browser (phone or desktop), with your account and data living in the cloud so nothing depends on one machine. You can install it as an app on your phone or computer (PWA) with the same dark look.
 
+Automated release checks use a separate test workspace and run again when a change reaches the main release line, keeping verification data away from artists’ real accounts.
+
 ## Who it’s for
 
 A working artist who wants one place for tracks, projects, and tasks instead of a spreadsheet, notes app, and scattered files. You sign in with your email and manage your catalog. You can also invite collaborators onto a **single track** (mixer, vocalist, friend) with limited roles — TEMPO is not a full team workspace.

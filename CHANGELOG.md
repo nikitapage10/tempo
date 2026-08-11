@@ -4,6 +4,11 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-11
 
+- Fixed (v0.112.1): release checks now prepare their isolated test data before
+  running, catch duplicate migration numbers reliably on every computer, and
+  run again after changes reach main. The unanswered-welcome migration is now
+  numbered 084 instead of sharing 080; no database action is needed if it was
+  already run.
 - Fixed (v0.112.0): the Calendar's video background is actually visible now.
   As shipped it was effectively invisible — the clip's brightness sat in a
   small hot spot dead centre, hidden behind the calendar panels, while the

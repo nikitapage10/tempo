@@ -2,7 +2,10 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const sql = readFileSync(resolve("migrations/060_scene_personas.sql"), "utf8");
+const sql = readFileSync(resolve("migrations/060_scene_personas.sql"), "utf8").replace(
+  /\r\n/g,
+  "\n"
+);
 
 describe("migration 060 partial-run recovery", () => {
   it("installs the constraint-agnostic participant bridge before the membership backfill", () => {

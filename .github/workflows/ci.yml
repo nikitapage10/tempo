@@ -11,11 +11,11 @@ name: CI
 #   TEST_SUPABASE_URL              - the isolated test project's URL
 #   TEST_SUPABASE_ANON_KEY         - its anon/publishable key
 #   TEST_SUPABASE_SERVICE_ROLE_KEY - its service_role/secret key
-#   TEST_DEV_SESSION_EMAIL         - the seeded owner fixture email
-#                                     (test/support/seed-fixtures.mjs)
 
 on:
   pull_request:
+    branches: [main]
+  push:
     branches: [main]
   workflow_dispatch: {}
 
@@ -70,6 +70,8 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.TEST_SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY=${{ secrets.TEST_SUPABASE_SERVICE_ROLE_KEY }}
           EOF
+      - name: Seed deterministic fixtures
+        run: node test/support/seed-fixtures.mjs
       - run: npm test
 
   e2e-smoke:
