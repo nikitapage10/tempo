@@ -73,9 +73,8 @@ export function CalendarToolbar({
         : `${formatDayHeading(rangeStart)} – ${formatDayHeading(new Date(new Date(rangeEndExclusive).getTime() - 86400000).toISOString().slice(0, 10))}`;
 
   return (
-    <div className="glass relative overflow-visible px-3 py-2.5">
-      <div className="calendar-atmosphere" aria-hidden />
-      <div className="relative flex flex-wrap items-center justify-between gap-3">
+    <div className="glass px-3 py-2.5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-1">
           <Button type="button" size="icon" variant="ghost" onClick={() => onMovePeriod(-1)} aria-label={view === "month" ? "Previous month" : view === "week" ? "Previous week" : "Previous period"}>
             <ChevronLeft />

@@ -8,6 +8,7 @@ import { CalendarEventEditor } from "@/components/calendar/event-editor";
 import { CalendarCategoryManager } from "@/components/calendar/calendar-category-manager";
 import { CalendarCategoryProvider } from "@/components/calendar/calendar-category-provider";
 import { CalendarAgendaView } from "@/components/calendar/calendar-agenda-view";
+import { CalendarAiScheduler } from "@/components/calendar/calendar-ai-scheduler";
 import { CalendarMonthView } from "@/components/calendar/calendar-month-view";
 import { CalendarWeekView } from "@/components/calendar/calendar-week-view";
 import { CalendarDayPanel } from "@/components/calendar/calendar-day-panel";
@@ -22,7 +23,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { useCalendarCategories, useCalendarData, useCalendarEventMutations } from "@/hooks/use-calendar";
 import { useTaskMutations } from "@/hooks/use-tasks";
 import { addDateKey, browserTimezone, zonedLocalToUtc } from "@/lib/calendar/date";
-import { parseNaturalSchedule } from "@/lib/calendar/natural-language";
+import type { ScheduleParseResult } from "@/lib/calendar/schedule-schema";
 import type {
   CalendarEvent,
   CalendarEventInput,
@@ -156,9 +157,8 @@ function CalendarContent() {
     await calendarMutations.schedule.mutateAsync({ item, date });
   }
 
-  async function naturalCreate(value: string) {
-    const parsed = parseNaturalSchedule(value, today);
-    if (parsed.task) {
+  async function scheduleFromParsed(parsed: ScheduleParseResult) {
+    if (parsed.isTask) {
       await taskMutations.create.mutateAsync({ title: parsed.title, due_date: parsed.date, space_id: activeSpaceId });
       return;
     }
@@ -248,6 +248,8 @@ function CalendarContent() {
     <CalendarCategoryProvider categories={categoriesQuery.data?.categories ?? DEFAULT_CALENDAR_CATEGORIES}>
       <div className="space-y-4">
         <PageHeader title="Calendar" subtitle="Deadlines, releases, and scheduled work." />
+
+        <CalendarAiScheduler today={today} timezone={vs.displayTimezone} onSchedule={scheduleFromParsed} />
 
         <CalendarToolbar
           view={vs.view}
@@ -450,7 +452,6 @@ function CalendarContent() {
                 onSchedule={(item, date) => void scheduleUnscheduled(item, date)}
                 onOpenUnscheduled={(href) => vs.router.push(href)}
                 onCreate={(date) => createEvent(date)}
-                onNaturalCreate={naturalCreate}
                 open={vs.dayPanelOpen}
                 onClose={() => vs.setDayPanelOpen(false)}
               />

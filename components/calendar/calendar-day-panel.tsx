@@ -2,19 +2,20 @@
 
 import * as React from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ChevronDown, GripVertical, Plus, Sparkles, X } from "lucide-react";
+import { ChevronDown, GripVertical, Plus, X } from "lucide-react";
 import { CalendarItemSurface } from "@/components/calendar/calendar-item-surface";
 import { Button } from "@/components/ui/button";
-import { addDateKey, formatDayHeading } from "@/lib/calendar/date";
+import { formatDayHeading } from "@/lib/calendar/date";
 import { itemIntersectsDay, shortDateLabel, sortItems } from "@/lib/calendar/items";
 import type { CalendarItem, UnscheduledCalendarItem } from "@/lib/calendar/types";
 import { cn } from "@/lib/utils";
 
 /**
  * The glass inspector for a single day — replaces the old "+N more" jump
- * into Agenda view, and folds in natural-language create and the
- * unscheduled list so they're not competing for space above every view.
- * Persistent beside the grid on ≥xl, a bottom sheet below that.
+ * into Agenda view, and folds in the unscheduled list so it's not competing
+ * for space above every view. Persistent beside the grid on ≥xl, a bottom
+ * sheet below that. Natural-language / AI quick-add lives at the top of the
+ * page (CalendarAiScheduler), not duplicated here.
  */
 export function CalendarDayPanel({
   date,
@@ -30,7 +31,6 @@ export function CalendarDayPanel({
   onSchedule,
   onOpenUnscheduled,
   onCreate,
-  onNaturalCreate,
   open,
   onClose,
   className,
@@ -48,15 +48,12 @@ export function CalendarDayPanel({
   onSchedule: (item: UnscheduledCalendarItem, date: string) => void;
   onOpenUnscheduled: (href: string) => void;
   onCreate: (date: string) => void;
-  onNaturalCreate: (value: string) => Promise<void>;
   /** Controls the mobile bottom-sheet visibility. Always rendered (non-collapsible) on ≥xl. */
   open: boolean;
   onClose: () => void;
   className?: string;
 }) {
   const [unscheduledOpen, setUnscheduledOpen] = React.useState(false);
-  const [naturalValue, setNaturalValue] = React.useState("");
-  const [naturalBusy, setNaturalBusy] = React.useState(false);
   const [scheduleDates, setScheduleDates] = React.useState<Record<string, string>>({});
   const reduceMotion = useReducedMotion();
 
@@ -64,18 +61,6 @@ export function CalendarDayPanel({
     () => items.filter((item) => itemIntersectsDay(item, date)).sort(sortItems),
     [items, date]
   );
-
-  async function submitNatural(event: React.FormEvent) {
-    event.preventDefault();
-    if (!naturalValue.trim()) return;
-    setNaturalBusy(true);
-    try {
-      await onNaturalCreate(naturalValue);
-      setNaturalValue("");
-    } finally {
-      setNaturalBusy(false);
-    }
-  }
 
   const content = (
     <div className="flex h-full flex-col">
@@ -186,27 +171,11 @@ export function CalendarDayPanel({
         </div>
       </div>
 
-      <form onSubmit={submitNatural} className="flex flex-col gap-2 border-t border-line/60 p-3 sm:flex-row sm:items-center">
-        <Sparkles className="hidden size-4 shrink-0 text-violet sm:block" aria-hidden />
-        <label htmlFor="day-panel-natural" className="sr-only">
-          Quick schedule
-        </label>
-        <input
-          id="day-panel-natural"
-          value={naturalValue}
-          onChange={(event) => setNaturalValue(event.target.value)}
-          placeholder={`Try "Studio session ${shortDateLabel(addDateKey(date, 1), today)} at 7pm", or "task: mix notes"`}
-          className="h-9 min-w-0 flex-1 rounded-input border border-line bg-bg-1 px-3 text-sm text-text-hi placeholder:text-text-lo focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
-        />
-        <div className="flex gap-2">
-          <Button type="submit" size="sm" variant="secondary" disabled={naturalBusy || !naturalValue.trim()}>
-            <Sparkles className="size-3.5" /> Schedule
-          </Button>
-          <Button type="button" size="sm" onClick={() => onCreate(date)}>
-            <Plus className="size-3.5" /> New event
-          </Button>
-        </div>
-      </form>
+      <div className="border-t border-line/60 p-3">
+        <Button type="button" size="sm" className="w-full" onClick={() => onCreate(date)}>
+          <Plus className="size-3.5" /> New event on {shortDateLabel(date, today)}
+        </Button>
+      </div>
     </div>
   );
 
