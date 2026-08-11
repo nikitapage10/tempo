@@ -30,7 +30,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     && input?.deleteMessageId === undefined;
   if (isReadOnly) {
     const { error: readError } = await service.from("support_reports").update({ admin_last_read_at: now }).eq("id", params.id);
-    return readError ? adminError("Couldnâ€™t mark this support ticket as read.", 500) : adminJson({ ok: true });
+    return readError ? adminError("Couldn't mark this support ticket as read.", 500) : adminJson({ ok: true });
   }
   const { error } = await service.from("support_reports").update({ status, admin_notes: adminNotes || null, updated_at: now, resolved_at: status === "resolved" ? now : null, resolved_by: status === "resolved" ? access.user.id : null }).eq("id", params.id);
   if (error) return adminError("Couldn’t update this support ticket.", 500);
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   if (typeof input?.deleteMessageId === "string") {
     const { data: message } = await service.from("support_messages").select("id, media").eq("id", input.deleteMessageId).eq("report_id", params.id).eq("sender_user_id", access.user.id).maybeSingle();
     if (message) {
-      await service.from("support_messages").update({ deleted_at: now }).eq("id", message.id);
+      await service.from("support_messages").update({ body: "", media: [], deleted_at: now, deleted_by_user_id: access.user.id }).eq("id", message.id);
       const paths = Array.isArray(message.media) ? message.media.map((item) => typeof item === "string" ? item : item && typeof item === "object" ? (item as { path?: unknown }).path : null).filter((path): path is string => typeof path === "string" && path.startsWith(`messages/${access.user.id}/`)) : [];
       if (paths.length) await service.storage.from("audio").remove(paths);
     }

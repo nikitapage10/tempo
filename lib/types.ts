@@ -314,6 +314,8 @@ export type Conversation = {
   > | null;
   unread_count?: number;
   archived_at?: string | null;
+  muted?: boolean;
+  manually_unread_at?: string | null;
 };
 
 export type MessageAttachment = {
@@ -321,6 +323,26 @@ export type MessageAttachment = {
   name: string;
   type: string;
   size: number;
+  kind?: "file" | "voice_note";
+  duration_ms?: number;
+  /** Compact normalized peaks in the 0..1 range for voice-note rendering. */
+  waveform?: number[];
+  width?: number;
+  height?: number;
+};
+
+export type MessageReactionSummary = {
+  emoji: string;
+  count: number;
+  reacted_by_me: boolean;
+};
+
+export type MessageReplyPreview = {
+  id: string;
+  body: string;
+  deleted: boolean;
+  sender_profile_id: string | null;
+  sender_scene_persona_id?: string | null;
 };
 
 export type ConversationMessage = {
@@ -331,8 +353,17 @@ export type ConversationMessage = {
   sender_user_id: string;
   body: string;
   media: (string | MessageAttachment)[];
+  reply_to_message_id?: string | null;
+  reply_preview?: MessageReplyPreview | null;
+  reactions?: MessageReactionSummary[];
+  pinned?: boolean;
+  edited_at?: string | null;
+  deleted_by_user_id?: string | null;
   deleted_at: string | null;
   created_at: string;
+  /** Client-only optimistic state; never persisted. */
+  client_status?: "sending" | "failed";
+  client_error?: string;
 };
 
 export type Space = {

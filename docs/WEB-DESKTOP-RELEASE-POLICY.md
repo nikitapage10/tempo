@@ -70,7 +70,12 @@ as well and is recorded in `CHANGELOG.md`.
 Packaged desktop builds use `electron-updater`. They check the public
 `tempo-desktop-releases` repository on launch and every six hours while the
 app remains open. When a newer release exists, the update is downloaded in
-the background and installed when TEMPO fully quits.
+the background. Once it is ready, TEMPO shows the same desktop-only in-app
+banner used for a newly deployed web version: **Update now** applies it, while
+**After this session** dismisses the prompt for the current app session. The
+copy never asks the artist to distinguish between web and native delivery.
+TEMPO does not restart or interrupt active work automatically; a downloaded
+native update can still install on a normal full quit.
 
 The public release repository contains binaries and update metadata only, not
 TEMPO source code. A Windows release must contain at least:
@@ -100,6 +105,10 @@ and verify the downloaded file.
    `https://github.com/nikitapage10/tempo-desktop-releases/releases/latest/download/TEMPO-Setup.exe`
    and redeploy. The web Download page retains the bundled `0.100.6` installer
    as a fallback until this variable is set.
+7. In Vercel project settings, keep **Automatically expose System Environment
+   Variables** enabled. The unified desktop banner uses
+   `VERCEL_GIT_COMMIT_SHA` to notice every newly deployed build, with the
+   required TEMPO product-version bump as its fallback.
 
 The existing `0.100.6` Windows beta was built against the private source
 repository's update feed. It cannot discover the new public feed. Existing

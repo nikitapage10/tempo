@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 describe("Scene join compatibility", () => {
-  const source = readFileSync(resolve("lib/api/scenes.ts"), "utf8");
+  const source = readFileSync(resolve("lib/api/scenes.ts"), "utf8").replace(/\r\n/g, "\n");
   const start = source.indexOf("export async function joinScene(");
   const end = source.indexOf("export async function leaveScene(", start);
   const joinSource = source.slice(start, end);

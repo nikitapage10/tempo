@@ -32,4 +32,4 @@ export const ACCOUNT_EVENT_COLUMNS =
 export const SUPPORT_REPORT_COLUMNS =
   "id, user_id, email, category, subject, details, page_url, user_agent, source, status, admin_notes, created_at, updated_at, resolved_at, resolved_by, last_message_at, last_admin_reply_at, member_archived_at, admin_archived_at, member_last_read_at, admin_last_read_at";
 export const SUPPORT_MESSAGE_COLUMNS =
-  "id, report_id, sender_role, sender_user_id, body, media, deleted_at, created_at";
+  "id, report_id, sender_role, sender_user_id, body, media, reply_to_message_id, edited_at, deleted_at, deleted_by_user_id, created_at";

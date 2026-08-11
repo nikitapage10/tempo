@@ -34,6 +34,12 @@ export type DesktopBridge = {
     reset: () => Promise<number>;
     get: () => Promise<number>;
   };
+  /** Optional until every pre-banner desktop install has updated. */
+  updates?: {
+    getState: () => Promise<DesktopUpdateState>;
+    install: () => Promise<boolean>;
+    onStateChange: (callback: (state: DesktopUpdateState) => void) => () => void;
+  };
   /** Optional while older desktop shells roll forward to native alerts. */
   notifications?: {
     show: (input: {
@@ -44,6 +50,10 @@ export type DesktopBridge = {
     }) => Promise<boolean>;
     onOpen: (callback: (url: string) => void) => () => void;
   };
+};
+
+export type DesktopUpdateState = {
+  ready: boolean;
 };
 
 declare global {
@@ -150,6 +160,34 @@ export function desktopPlatform(): "windows" | "mac" | null {
 
 export function desktopAppVersion(): string | null {
   return bridge()?.appVersion ?? null;
+}
+
+export async function getDesktopUpdateState(): Promise<DesktopUpdateState> {
+  const updates = bridge()?.updates;
+  if (!updates) return { ready: false };
+  try {
+    return await updates.getState();
+  } catch {
+    return { ready: false };
+  }
+}
+
+export async function installDesktopUpdate(): Promise<boolean> {
+  const updates = bridge()?.updates;
+  if (!updates) return false;
+  try {
+    return await updates.install();
+  } catch {
+    return false;
+  }
+}
+
+export function onDesktopUpdateStateChange(
+  callback: (state: DesktopUpdateState) => void
+): () => void {
+  const updates = bridge()?.updates;
+  if (!updates) return () => {};
+  return updates.onStateChange(callback);
 }
 
 export async function showDesktopNotification(input: {

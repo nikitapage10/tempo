@@ -1,6 +1,6 @@
 {
   "name": "tempo-desktop",
-  "version": "0.100.8",
+  "version": "0.100.10",
   "private": true,
   "description": "TEMPO Desktop — Electron shell. Deliberately its own package, separate from the root TEMPO package.json, so Vercel's web deploy never installs Electron's Chromium binary. Run `npm install` inside this folder before desktop:dev / desktop:build from the repo root.",
   "repository": {
@@ -33,22 +33,33 @@
     ],
     "extraResources": [
       {
-        "from": "../public/icon-512.png",
+        "from": "../public/tempo-emblem.png",
         "to": "assets/tempo-icon.png"
       }
     ],
     "extraMetadata": {
-      "version": "0.100.8"
+      "version": "0.100.10"
     },
+    "protocols": [
+      {
+        "name": "TEMPO",
+        "schemes": [
+          "tempo"
+        ]
+      }
+    ],
     "win": {
       "target": "nsis",
-      "icon": "../public/icon-512.png",
+      "icon": "../public/tempo-emblem.png",
       "artifactName": "TEMPO-Setup.${ext}"
     },
     "mac": {
       "target": "dmg",
-      "icon": "../public/icon-512.png",
-      "category": "public.app-category.music"
+      "icon": "../public/tempo-emblem.png",
+      "category": "public.app-category.music",
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "TEMPO uses your microphone for dictation and voice notes when you choose to record."
+      }
     },
     "publish": {
       "provider": "github",

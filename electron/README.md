@@ -34,17 +34,23 @@ common case.
 
 - Window + tray/menu-bar residency; closing the window hides it rather than
   quitting. Realtime delivery remains awake while the window is hidden.
-- Distinct quiet message/notification chimes, native background alerts that
+- Distinct quiet message/notification chimes, glass background alerts that
   restore the relevant destination when clicked, and packaged TEMPO tray art.
 - Launch-at-login via `app.setLoginItemSettings`.
 - A background sync-tick stub on a 5-minute interval — the seam later
   packages (media vault, offline cache) attach real work to.
 - Auto-update checks via `electron-updater` at launch and every six hours,
   pointed at the public, binary-only `tempo-desktop-releases` repository.
-  Updates download quietly and install after a full quit.
+  Updates download quietly, then use the web app's unified update banner;
+  **Update now** installs immediately and **After this session** leaves the
+  current work uninterrupted. A downloaded update also installs after a full
+  quit.
 - A narrow `window.tempoDesktop` bridge (`isDesktop`, `platform`,
-  `appVersion`) that the web app's download button reads to hide itself when
-  running inside the shell.
+  `appVersion`) that lets the shared interface present the correct platform
+  handoff.
+- A registered `tempo://` link handler, so **Open in desktop** on the web
+  restores TEMPO Desktop on the matching screen; the reciprocal **Open web
+  app** action leaves the Electron shell through the system browser.
 
 ## Not yet implemented
 

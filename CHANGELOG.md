@@ -4,6 +4,29 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-11
 
+- Fixed (v0.104.0; Desktop v0.100.10): **Open in desktop** now launches the
+  installed TEMPO app instead of sending you back to its download page. The
+  handoff keeps you on the same screen, and TEMPO Desktop now offers the
+  matching **Open web app** action. The control has moved from the top toolbar
+  to the left rail, directly above Settings.
+- Added (v0.103.0; Desktop v0.100.9): Messages is now a focused, scrollable
+  workspace instead of a page that grows forever. Artist and Scene chats load
+  older history on demand, keep your place while you read, show new-message
+  and typing signals without exposing read receipts, preserve drafts, and let
+  you retry a send that failed.
+- Added (v0.103.0): artist and Scene conversations now support replies,
+  reactions, edits with an Edited mark, deleted-message placeholders, search,
+  shared media, and shared pins. Inbox search, mute, mark unread, archive, file
+  paste/drop, upload progress, and private support-message replies are part of
+  the same calmer workflow.
+- Added (v0.103.0; Desktop v0.100.9): the composer separates dictation from an
+  actual voice note. Voice notes include duration, a compact waveform, and
+  playback speed; desktop uses the system microphone by default, remembers an
+  optional selected input, and now requests microphone permission correctly
+  on Windows and macOS.
+- Under the hood (v0.103.0): run migration 082 before deploying. It adds the
+  protected message history, reactions, pins, search indexes, inbox state, and
+  private realtime authorization used by the new messaging workspace.
 - Changed (v0.102.0): the Calendar has been redesigned to feel calmer on
   first open. The old wall of buttons and chips is now a short toolbar plus
   a Filters menu and a "More" menu — everything that was there before
@@ -28,6 +51,11 @@ Plain-English history of what changed in TEMPO, newest first.
   the Windows tray after its window closes, keeps realtime delivery awake,
   shows native pop-ups while unfocused, and uses the real TEMPO icon in the
   hidden-icons panel. Clicking a pop-up restores the relevant conversation.
+- Added (v0.101.0; Desktop v0.100.8): TEMPO Desktop now shows one calm update
+  banner when a newer version is ready, with only **Update now** and **After
+  this session**. The same prompt covers both product updates and installed-app
+  updates without asking the artist to understand the difference, and TEMPO
+  never interrupts a session or restarts itself automatically.
 - Fixed (v0.100.12): joining a Scene from Discover or accepting a Scene invite
   now uses the signed-in account's Scene identity. The Owl's Nest Join button
   no longer fails on another account with a database conflict-constraint error.

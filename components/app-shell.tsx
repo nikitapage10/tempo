@@ -44,6 +44,7 @@ import { DemoBanner } from "@/components/demo/demo-banner";
 import { DownloadButton } from "@/components/desktop/download-button";
 import { ZoomControl } from "@/components/desktop/zoom-control";
 import { OfflineBanner } from "@/components/offline-banner";
+import { DesktopUpdateBanner } from "@/components/desktop/update-banner";
 
 // Artist sits above the space-scoped screens: it rolls up every space the
 // artist owns, so it stays in the rail whatever the active space's focus is.
@@ -220,6 +221,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           <SlitDivider />
           <div className="px-3 py-4">
+            <DownloadButton />
             <Link
               href="/settings"
               data-context-tour="settings"
@@ -264,9 +266,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 explicitly carved out with the matching no-drag utility so
                 clicks still reach them instead of moving the window. */}
             <div className="sticky top-[var(--edge-strip-h)] z-40 mb-2 flex items-center justify-end gap-1.5 bg-bg-0/85 pb-4 pt-1.5 backdrop-blur-md [-webkit-app-region:drag]">
-              <div className="mr-auto [-webkit-app-region:no-drag]">
-                <DownloadButton />
-              </div>
               <div className="[-webkit-app-region:no-drag]">
                 <NotificationCenter />
               </div>
@@ -283,6 +282,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {/* Above the page, not inside it: whether this catalog is real is
                 context for every screen, not a fact about any one of them. */}
             <DemoBanner />
+            <DesktopUpdateBanner />
             <OfflineBanner />
             <div className="pb-6 pt-1">{children}</div>
           </div>

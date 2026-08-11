@@ -8,6 +8,9 @@ export type SupportMessage = {
   body: string;
   media: MessageAttachment[];
   deleted_at: string | null;
+  deleted_by_user_id?: string | null;
+  edited_at?: string | null;
+  reply_to_message_id?: string | null;
   created_at: string;
 };
 
@@ -34,6 +37,8 @@ async function supportFetch<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const fetchSupportThreads = (archived = false) => supportFetch<{ reports: SupportThread[] }>(`/api/support/reports?archived=${archived}`);
-export const replyToSupportThread = (id: string, body: string, media: MessageAttachment[] = []) => supportFetch<{ ok: true }>(`/api/support/reports/${id}/messages`, { method: "POST", body: JSON.stringify({ body, media }) });
+export const fetchSupportMessages = (id: string, input?: { before?: string; query?: string }) => supportFetch<{ messages: SupportMessage[]; hasMore: boolean }>(`/api/support/reports/${id}/messages?${new URLSearchParams({ before: input?.before ?? "", q: input?.query ?? "" })}`);
+export const replyToSupportThread = (id: string, body: string, media: MessageAttachment[] = [], replyToMessageId?: string | null) => supportFetch<{ ok: true }>(`/api/support/reports/${id}/messages`, { method: "POST", body: JSON.stringify({ body, media, replyToMessageId }) });
+export const editSupportMessage = (id: string, messageId: string, body: string) => supportFetch<{ ok: true }>(`/api/support/reports/${id}/messages`, { method: "PATCH", body: JSON.stringify({ messageId, body }) });
 export const setSupportThreadState = (id: string, input: { archived?: boolean; read?: boolean }) => supportFetch<{ ok: true }>(`/api/support/reports/${id}/state`, { method: "POST", body: JSON.stringify(input) });
 export const deleteSupportMessage = (id: string, messageId: string) => supportFetch<{ ok: true }>(`/api/support/reports/${id}/messages`, { method: "DELETE", body: JSON.stringify({ messageId }) });

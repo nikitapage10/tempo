@@ -71,10 +71,10 @@ export function buildPostMediaPath(params: {
   return `profiles/${profileId}/posts/${postId}/${sanitizeFilename(filename)}`;
 }
 
-/** Private direct/support message attachments. Access is signed by a guarded API. */
+/** Private direct/support/Scene message attachments. Access is signed by a guarded API. */
 export function buildMessageMediaPath(params: {
   userId: string;
-  scope: "direct" | "support";
+  scope: "direct" | "support" | "scene";
   threadId: string;
   attachmentId: string;
   filename: string;
@@ -117,6 +117,7 @@ export function sanitizeFilename(name: string): string {
 export type UploadOptions = {
   onProgress?: (percent: number) => void;
   contentType?: string;
+  signal?: AbortSignal;
 };
 
 export async function uploadFile(
@@ -161,7 +162,8 @@ export async function uploadFile(
       file,
       session.access_token,
       contentType,
-      options.onProgress
+      options.onProgress,
+      options.signal
     );
   } else {
     const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
@@ -452,7 +454,8 @@ function uploadWithProgress(
   file: File | Blob,
   accessToken: string,
   contentType: string,
-  onProgress: (percent: number) => void
+  onProgress: (percent: number) => void,
+  signal?: AbortSignal
 ): Promise<void> {
   const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -469,6 +472,11 @@ function uploadWithProgress(
 
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
+    if (signal?.aborted) {
+      reject(new Error("Upload cancelled."));
+      return;
+    }
+    signal?.addEventListener("abort", () => xhr.abort(), { once: true });
     xhr.open("POST", url);
     xhr.setRequestHeader("Authorization", `Bearer ${accessToken}`);
     xhr.setRequestHeader("apikey", anon);

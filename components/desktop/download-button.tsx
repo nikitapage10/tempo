@@ -1,52 +1,79 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
-import { Download, MonitorSmartphone } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { Download, ExternalLink, MonitorSmartphone } from "lucide-react";
 import { useActiveDesktopDevice } from "@/hooks/use-devices";
 import { detectOS, isDesktopApp } from "@/lib/platform";
+import { getSiteUrl } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
+const DESKTOP_LINK_MIN_VERSION = [0, 100, 10] as const;
+
+function supportsDesktopLink(version: string): boolean {
+  const parts = version.split(".").map((part) => Number.parseInt(part, 10));
+  return DESKTOP_LINK_MIN_VERSION.every((minimum, index) => {
+    const current = Number.isFinite(parts[index]) ? parts[index] : 0;
+    const earlierPartsMatch = DESKTOP_LINK_MIN_VERSION
+      .slice(0, index)
+      .every((part, earlierIndex) => (parts[earlierIndex] ?? 0) === part);
+    return !earlierPartsMatch || current >= minimum;
+  });
+}
+
 /**
- * Top-left counterpart to the top-right search bar (components/app-shell.tsx).
- * Three states, per planning/desktop/01-PRODUCT-AND-UX-SPEC.md:
- *  - running inside the desktop app itself: renders nothing
- *  - a recent desktop device is registered on this account: "Open in desktop"
- *  - otherwise: "Download for Windows/Mac", linking to /download
- * "Open in desktop" can't actually launch a native app from a web page
- * without a registered protocol handler (a later package), so for now it
- * takes the artist to /download, which explains that plainly.
+ * Platform handoff shown immediately above Settings in the rail:
+ *  - desktop app: "Open web app" in the system browser
+ *  - web with a recent registered desktop device: launch TEMPO Desktop
+ *  - web without one: offer the appropriate desktop download
  */
 export function DownloadButton({ className }: { className?: string }) {
   const [mounted, setMounted] = React.useState(false);
   const os = React.useMemo(() => detectOS(), []);
   const activeDevice = useActiveDesktopDevice();
+  const pathname = usePathname();
 
   React.useEffect(() => setMounted(true), []);
 
   // Avoid a hydration-mismatch flash: platform/device state is client-only.
-  if (!mounted || isDesktopApp()) return null;
+  if (!mounted) return null;
 
-  const label = activeDevice
-    ? "Open in desktop"
-    : os === "mac"
-      ? "Download for Mac"
-      : os === "windows"
-        ? "Download for Windows"
-        : "Download for desktop";
+  const desktop = isDesktopApp();
+  // A recent pre-0.100.10 install has no tempo:// handler. Keep offering its
+  // installer/update instead of rendering an action the browser cannot open.
+  const canOpenDesktop = Boolean(
+    activeDevice && supportsDesktopLink(activeDevice.app_version)
+  );
 
-  const Icon = activeDevice ? MonitorSmartphone : Download;
+  const label = desktop
+    ? "Open web app"
+    : canOpenDesktop
+      ? "Open in desktop"
+      : os === "mac"
+        ? "Download for Mac"
+        : os === "windows"
+          ? "Download for Windows"
+          : "Download for desktop";
+
+  const Icon = desktop ? ExternalLink : canOpenDesktop ? MonitorSmartphone : Download;
+  const href = desktop
+    ? `${getSiteUrl()}${pathname}`
+    : canOpenDesktop
+      ? `tempo://open?path=${encodeURIComponent(pathname)}`
+      : "/download";
 
   return (
-    <Link
-      href="/download"
+    <a
+      href={href}
+      target={desktop ? "_blank" : undefined}
+      rel={desktop ? "noreferrer" : undefined}
       className={cn(
-        "flex h-10 items-center gap-1.5 rounded-input border border-line/60 bg-bg-1 px-3 text-xs text-text-lo/60 transition-colors duration-hover hover:border-line hover:bg-bg-2 hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
+        "flex items-center gap-2.5 rounded-input px-3 py-2 text-sm text-text-lo transition-colors duration-hover hover:bg-bg-2/60 hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
         className
       )}
     >
-      <Icon className="size-3.5" strokeWidth={1.75} />
+      <Icon className="size-4" strokeWidth={1.75} />
       {label}
-    </Link>
+    </a>
   );
 }

@@ -8,11 +8,12 @@
 // secret stays on Vercel. This process only ever authenticates as the
 // signed-in artist, same as a browser tab would.
 
-const { app, BrowserWindow, Tray, Menu, Notification: NativeNotification, nativeImage, shell, ipcMain, protocol, net, dialog, screen } = require("electron");
+const { app, BrowserWindow, Tray, Menu, nativeImage, shell, ipcMain, protocol, net, dialog, screen, session, systemPreferences } = require("electron");
 const path = require("path");
 const { pathToFileURL } = require("url");
 const { autoUpdater } = require("electron-updater");
 const { Vault } = require("./vault");
+const { isMediaRequestAllowed } = require("./media-permissions");
 const { version: appVersion } = require("./package.json");
 
 const APP_URL = process.env.TEMPO_DESKTOP_URL || "https://tempo-ten-sigma.vercel.app";
@@ -20,6 +21,7 @@ const ALLOWED_ORIGINS = [new URL(APP_URL).origin];
 const SYNC_INTERVAL_MS = 5 * 60 * 1000;
 const UPDATE_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const VAULT_PROTOCOL = "tempo-local";
+const APP_PROTOCOL = "tempo";
 const APP_USER_MODEL_ID = "com.tempo.desktop";
 
 // Matches --bg-0 / --text-lo from app/globals.css, so the native window
@@ -47,9 +49,12 @@ let quitting = false;
 let syncTimer = null;
 let updateTimer = null;
 let updateCheckInFlight = false;
+let desktopUpdateReady = false;
 let syncEnabled = true; // mirrors the "Keep TEMPO syncing in the background" setting
 let vault = null;
-const activeNotifications = new Set();
+let pendingAppLink = null;
+let notificationWindow = null;
+let notificationTimer = null;
 
 // Give Windows notifications and taskbar entries a stable TEMPO identity.
 if (process.platform === "win32") app.setAppUserModelId(APP_USER_MODEL_ID);
@@ -60,10 +65,59 @@ app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 if (!hasSingleInstanceLock) app.quit();
 
+// Register tempo:// links with the operating system. The explicit executable
+// and entrypoint are needed while running Electron directly in development;
+// packaged builds register the app executable itself.
+if (hasSingleInstanceLock) {
+  if (process.defaultApp && process.argv[1]) {
+    app.setAsDefaultProtocolClient(APP_PROTOCOL, process.execPath, [path.resolve(process.argv[1])]);
+  } else {
+    app.setAsDefaultProtocolClient(APP_PROTOCOL);
+  }
+}
+
+function appLinkFromArgs(args) {
+  return args.find((arg) => typeof arg === "string" && arg.toLowerCase().startsWith(`${APP_PROTOCOL}://`)) || null;
+}
+
+function appLinkDestination(rawUrl) {
+  if (!rawUrl) return null;
+  try {
+    const link = new URL(rawUrl);
+    if (link.protocol !== `${APP_PROTOCOL}:` || link.hostname !== "open") return null;
+    const requestedPath = link.searchParams.get("path") || "/";
+    if (!requestedPath.startsWith("/") || requestedPath.startsWith("//")) return null;
+    const destination = new URL(requestedPath, APP_URL);
+    return ALLOWED_ORIGINS.includes(destination.origin) ? destination.href : null;
+  } catch {
+    return null;
+  }
+}
+
+function receiveAppLink(rawUrl) {
+  const destination = appLinkDestination(rawUrl);
+  if (!destination) return false;
+  if (!app.isReady() || !mainWindow) {
+    pendingAppLink = rawUrl;
+    return true;
+  }
+  mainWindow.loadURL(destination);
+  showMainWindow();
+  return true;
+}
+
+pendingAppLink = appLinkFromArgs(process.argv);
+
+// macOS delivers custom-protocol launches through open-url rather than argv.
+app.on("open-url", (event, url) => {
+  event.preventDefault();
+  receiveAppLink(url);
+});
+
 function appIconPath() {
   return app.isPackaged
     ? path.join(process.resourcesPath, "assets", "tempo-icon.png")
-    : path.join(__dirname, "..", "public", "icon-512.png");
+    : path.join(__dirname, "..", "public", "tempo-emblem.png");
 }
 
 // A fixed 1440x900 could easily be a large fraction of a small display or a
@@ -123,7 +177,9 @@ function createWindow() {
   });
 
   mainWindow.once("ready-to-show", () => mainWindow.show());
-  mainWindow.loadURL(APP_URL);
+  const initialUrl = appLinkDestination(pendingAppLink) || APP_URL;
+  pendingAppLink = null;
+  mainWindow.loadURL(initialUrl);
   registerZoomShortcuts(mainWindow);
 
   // Navigation allowlist — the renderer is a real Chromium context and
@@ -149,6 +205,38 @@ function createWindow() {
 
   mainWindow.on("closed", () => {
     mainWindow = null;
+  });
+}
+
+function mediaRequestAllowed(webContents, permission, details = {}) {
+  const requestingUrl = details.requestingUrl || details.securityOrigin || webContents?.getURL?.() || "";
+  return isMediaRequestAllowed({
+    allowedOrigins: ALLOWED_ORIGINS,
+    requestUrl: requestingUrl,
+    permission,
+    mediaTypes: details.mediaTypes,
+    mediaType: details.mediaType,
+  });
+}
+
+function registerMediaPermissions() {
+  session.defaultSession.setPermissionCheckHandler((webContents, permission, _origin, details) =>
+    mediaRequestAllowed(webContents, permission, details)
+  );
+  session.defaultSession.setPermissionRequestHandler(async (webContents, permission, callback, details) => {
+    if (!mediaRequestAllowed(webContents, permission, details)) {
+      callback(false);
+      return;
+    }
+    if (process.platform === "darwin") {
+      try {
+        callback(await systemPreferences.askForMediaAccess("microphone"));
+      } catch {
+        callback(false);
+      }
+      return;
+    }
+    callback(true);
   });
 }
 
@@ -194,7 +282,17 @@ function registerZoomShortcuts(win) {
 
 function trayIcon() {
   const image = nativeImage.createFromPath(appIconPath());
-  if (!image.isEmpty()) return image.resize({ width: 32, height: 32, quality: "best" });
+  if (!image.isEmpty()) {
+    const { width, height } = image.getSize();
+    const side = Math.max(1, Math.floor(Math.min(width, height) * 0.72));
+    const cropped = image.crop({
+      x: Math.floor((width - side) / 2),
+      y: Math.floor((height - side) / 2),
+      width: side,
+      height: side,
+    });
+    return cropped.resize({ width: 32, height: 32, quality: "best" });
+  }
 
   // Visible last resort if an unpackaged development tree is incomplete.
   return nativeImage.createFromDataURL(
@@ -247,30 +345,87 @@ function allowedDeepLink(url) {
   }
 }
 
-function showNativeNotification(input) {
-  if (!NativeNotification.isSupported() || mainWindow?.isFocused()) return false;
+function notificationMarkup({ kind, title, body }) {
+  const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  })[char]);
+  const label = kind === "message" ? "NEW MESSAGE" : "TEMPO NOTIFICATION";
+  return `<!doctype html>
+<html><head><meta charset="utf-8"><style>
+*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;background:transparent;font-family:Inter,"Segoe UI",sans-serif;color:#f7f7fa}
+a{display:block;width:100%;height:100%;padding:8px;text-decoration:none;color:inherit}
+.toast{position:relative;width:100%;height:100%;overflow:hidden;border:1px solid rgba(255,255,255,.17);border-radius:20px;background:linear-gradient(135deg,rgba(22,24,32,.91),rgba(10,11,17,.82));box-shadow:0 18px 50px rgba(0,0,0,.46),inset 0 1px 0 rgba(255,255,255,.1);backdrop-filter:blur(28px) saturate(145%);-webkit-backdrop-filter:blur(28px) saturate(145%)}
+.glow{position:absolute;inset:-45% 48% 30% -20%;background:radial-gradient(circle,rgba(70,193,255,.25),transparent 68%);pointer-events:none}
+.content{position:relative;display:grid;grid-template-columns:48px 1fr;gap:13px;align-items:center;height:100%;padding:15px 18px}
+.mark{display:flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:15px;background:rgba(255,255,255,.07);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.bars{display:flex;align-items:center;gap:3px;height:28px}.bars i{display:block;width:4px;border-radius:99px;background:linear-gradient(#5ed7ff 0 45%,#fff 57%,#ffb338);box-shadow:0 0 8px rgba(85,201,255,.45)}.bars i:nth-child(1),.bars i:nth-child(5){height:12px}.bars i:nth-child(2),.bars i:nth-child(4){height:21px}.bars i:nth-child(3){height:28px}
+.label{margin-bottom:4px;color:#8fcbf3;font-size:10px;font-weight:700;letter-spacing:.14em}.title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:650;line-height:1.25}.body{display:-webkit-box;overflow:hidden;margin-top:4px;color:rgba(235,237,244,.68);font-size:12px;line-height:1.35;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+</style></head><body><a href="tempo-notification://open"><div class="toast"><div class="glow"></div><div class="content"><div class="mark"><div class="bars"><i></i><i></i><i></i><i></i><i></i></div></div><div><div class="label">${label}</div><div class="title">${escapeHtml(title)}</div>${body ? `<div class="body">${escapeHtml(body)}</div>` : ""}</div></div></div></a></body></html>`;
+}
 
+function closeNotificationWindow() {
+  if (notificationTimer) clearTimeout(notificationTimer);
+  notificationTimer = null;
+  if (notificationWindow && !notificationWindow.isDestroyed()) notificationWindow.destroy();
+  notificationWindow = null;
+}
+
+function showGlassNotification(input) {
+  if (mainWindow?.isFocused()) return false;
   const kind = input?.kind === "message" ? "message" : "notification";
   const title = String(input?.title || (kind === "message" ? "New message" : "New notification"))
     .trim()
     .slice(0, 120);
   const body = typeof input?.body === "string" ? input.body.trim().slice(0, 280) : "";
   const destination = allowedDeepLink(input?.url);
-  const notification = new NativeNotification({
-    title,
-    body,
-    icon: appIconPath(),
-    silent: true, // the renderer supplies TEMPO's distinct soft chimes
+  const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+  const width = 380;
+  const height = 112;
+  const margin = 18;
+
+  closeNotificationWindow();
+  notificationWindow = new BrowserWindow({
+    width,
+    height,
+    x: display.workArea.x + display.workArea.width - width - margin,
+    y: display.workArea.y + display.workArea.height - height - margin,
+    frame: false,
+    transparent: true,
+    resizable: false,
+    movable: false,
+    minimizable: false,
+    maximizable: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    show: false,
+    hasShadow: false,
+    backgroundColor: "#00000000",
+    ...(process.platform === "win32" ? { backgroundMaterial: "acrylic" } : {}),
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+    },
   });
 
-  activeNotifications.add(notification);
-  notification.once("close", () => activeNotifications.delete(notification));
-  notification.once("click", () => {
-    activeNotifications.delete(notification);
+  const popup = notificationWindow;
+  popup.webContents.on("will-navigate", (event, url) => {
+    if (url !== "tempo-notification://open") return;
+    event.preventDefault();
+    closeNotificationWindow();
     showMainWindow();
     if (destination) mainWindow?.webContents.send("notifications:open", destination);
   });
-  notification.show();
+  popup.once("ready-to-show", () => popup.showInactive());
+  popup.once("closed", () => {
+    if (notificationWindow === popup) notificationWindow = null;
+  });
+  popup.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(notificationMarkup({ kind, title, body }))}`);
+  notificationTimer = setTimeout(closeNotificationWindow, 7000);
   return true;
 }
 
@@ -298,7 +453,8 @@ async function checkForDesktopUpdate() {
   if (!app.isPackaged || updateCheckInFlight) return;
   updateCheckInFlight = true;
   try {
-    await autoUpdater.checkForUpdatesAndNotify();
+    // Download silently. TEMPO's in-app banner is the only update prompt.
+    await autoUpdater.checkForUpdates();
   } catch (err) {
     console.warn("[tempo-desktop] auto-update check skipped:", err.message);
   } finally {
@@ -348,7 +504,37 @@ function registerVaultIpc() {
   ipcMain.handle("zoom:out", () => adjustZoom(mainWindow, -ZOOM_STEP));
   ipcMain.handle("zoom:reset", () => adjustZoom(mainWindow, 0));
   ipcMain.handle("zoom:get", () => mainWindow.webContents.getZoomFactor());
-  ipcMain.handle("notifications:show", (_e, input) => showNativeNotification(input));
+  ipcMain.handle("notifications:show", (_e, input) => showGlassNotification(input));
+}
+
+function desktopUpdateState() {
+  return { ready: desktopUpdateReady };
+}
+
+function broadcastDesktopUpdateState() {
+  for (const win of BrowserWindow.getAllWindows()) {
+    win.webContents.send("updates:state", desktopUpdateState());
+  }
+}
+
+function registerUpdateIpc() {
+  autoUpdater.on("update-downloaded", () => {
+    desktopUpdateReady = true;
+    broadcastDesktopUpdateState();
+  });
+
+  ipcMain.handle("updates:getState", () => desktopUpdateState());
+  ipcMain.handle("updates:install", () => {
+    if (!desktopUpdateReady) return false;
+
+    // Let the IPC response cross the bridge before Electron closes and hands
+    // control to the downloaded installer.
+    setImmediate(() => {
+      quitting = true;
+      autoUpdater.quitAndInstall(false, true);
+    });
+    return true;
+  });
 }
 
 app.whenReady().then(() => {
@@ -356,6 +542,8 @@ app.whenReady().then(() => {
   vault = new Vault();
   registerVaultProtocol();
   registerVaultIpc();
+  registerUpdateIpc();
+  registerMediaPermissions();
 
   // Windows: no menu bar at all — File/Edit/View/Window/Help added nothing
   // (no custom items were ever in it) and just looked like leftover browser
@@ -394,12 +582,14 @@ app.whenReady().then(() => {
   });
 });
 
-app.on("second-instance", () => {
-  if (app.isReady()) showMainWindow();
+app.on("second-instance", (_event, argv) => {
+  const appLink = appLinkFromArgs(argv);
+  if (!receiveAppLink(appLink) && app.isReady()) showMainWindow();
 });
 
 app.on("before-quit", () => {
   quitting = true;
+  closeNotificationWindow();
   if (syncTimer) clearInterval(syncTimer);
   if (updateTimer) clearInterval(updateTimer);
 });

@@ -16,14 +16,14 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401, headers });
   const input = await request.json().catch(() => null);
-  const scope = input?.scope === "support" ? "support" : input?.scope === "direct" ? "direct" : null;
+  const scope = input?.scope === "support" ? "support" : input?.scope === "direct" ? "direct" : input?.scope === "scene" ? "scene" : null;
   const threadId = typeof input?.threadId === "string" ? input.threadId : "";
   const path = typeof input?.path === "string" ? input.path : "";
   if (!scope || !threadId || !path.startsWith("messages/")) return NextResponse.json({ error: "Invalid attachment request." }, { status: 400, headers });
 
   const service = createAdminClient();
   let allowed = false;
-  if (scope === "direct") {
+  if (scope === "direct" || scope === "scene") {
     const { data: participant } = await service.from("conversation_participants").select("conversation_id").eq("conversation_id", threadId).eq("user_id", user.id).is("left_at", null).maybeSingle();
     if (participant) {
       const { data: rows } = await service.from("messages").select("media, sender_user_id").eq("conversation_id", threadId).is("deleted_at", null);

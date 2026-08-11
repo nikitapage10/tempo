@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
   const reports = data ?? [];
   const ids = reports.map((report) => report.id);
   const { data: messageRows, error: messageError } = ids.length
-    ? await service.from("support_messages").select(SUPPORT_MESSAGE_COLUMNS).in("report_id", ids).is("deleted_at", null).order("created_at", { ascending: true })
+    ? await service.from("support_messages").select(SUPPORT_MESSAGE_COLUMNS).in("report_id", ids).order("created_at", { ascending: true })
     : { data: [], error: null };
   if (messageError) return adminError("Couldn’t load support conversations. Run migration 036.", 500);
   return adminJson({ reports: reports.map((report) => ({ ...report, messages: (messageRows ?? []).filter((message) => message.report_id === report.id) })) });

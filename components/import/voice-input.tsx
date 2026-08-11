@@ -2,6 +2,8 @@
 
 import * as React from "react";
 import { Mic, Square } from "lucide-react";
+import { audioConstraints } from "@/hooks/use-audio-inputs";
+import { isDesktopApp } from "@/lib/desktop/bridge";
 import { cn } from "@/lib/utils";
 
 /**
@@ -45,6 +47,7 @@ type VoiceInputProps = {
   /** Fallback path: browsers without Web Speech still record and upload. */
   onRecorded: (file: File) => void;
   disabled?: boolean;
+  deviceId?: string | null;
 };
 
 function formatElapsed(seconds: number): string {
@@ -61,7 +64,7 @@ function formatElapsed(seconds: number): string {
  * matters most here, since names are exactly what gets misheard. Browsers
  * without the API fall back to recording a note and transcribing it server-side.
  */
-export function VoiceInput({ onTranscript, onStart, onRecorded, disabled }: VoiceInputProps) {
+export function VoiceInput({ onTranscript, onStart, onRecorded, disabled, deviceId = null }: VoiceInputProps) {
   const [listening, setListening] = React.useState(false);
   const [elapsed, setElapsed] = React.useState(0);
   const [error, setError] = React.useState<string | null>(null);
@@ -77,7 +80,7 @@ export function VoiceInput({ onTranscript, onStart, onRecorded, disabled }: Voic
 
   // Detected on mount, not at module scope — this only runs in the browser.
   React.useEffect(() => {
-    setSupportsLive(getRecognitionCtor() !== null);
+    setSupportsLive(!isDesktopApp() && getRecognitionCtor() !== null);
   }, []);
 
   const stopTimer = React.useCallback(() => {
@@ -169,7 +172,7 @@ export function VoiceInput({ onTranscript, onStart, onRecorded, disabled }: Voic
       return false;
     }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints(deviceId) });
       const recorder = new MediaRecorder(stream);
       chunksRef.current = [];
 
