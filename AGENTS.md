@@ -63,6 +63,25 @@ checked-out branch changed under them mid-task.
    original shared working directory exactly as you found it — don't discard
    another agent's uncommitted changes there.
 
+## One local preview across every agent and worktree
+
+Read `LOCAL-DEVELOPMENT.md` before opening TEMPO locally. The only human-review
+URL is `http://localhost:3000`.
+
+- Run `npm run dev` to start or reuse it. Never run `next dev` directly and
+  never choose or accept a fallback port.
+- When starting it, use the tool's approved network-capable execution mode.
+  A sandboxed server cannot authenticate with or load live data from Supabase.
+- Run `npm run dev:status` before telling the user a local preview is ready;
+  report the branch it is actually serving.
+- Run `npm run dev:switch` only when the user asks to review your worktree.
+  Starting a task does not authorize replacing the branch currently on screen.
+- Worktrees inherit the primary checkout's `.env.local` through the preview
+  coordinator. Never copy or expose that file.
+- `DEV_PREVIEW_EMAIL` enables the loopback-only session path so local agent
+  browsers do not need the user's password. It belongs only in `.env.local`,
+  never in source control or Vercel.
+
 ## Where the rest of the rules live
 
 - `.cursorrules` — stack, design system, database/storage safety, the

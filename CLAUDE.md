@@ -61,3 +61,13 @@ agent's concurrent, unrelated work.
   Electron shell loads the production web app, so shared features ship through
   Vercel. Native and cross-boundary changes follow the separate desktop
   version, compatibility, and public-update-channel rules in that document.
+
+## Local preview — one URL, one visible branch
+
+Read `LOCAL-DEVELOPMENT.md`. Use only `http://localhost:3000` for human review.
+`npm run dev` starts or reuses it; `npm run dev:status` identifies the branch
+currently on screen. Never invoke `next dev` directly or choose an alternate
+port. Only run `npm run dev:switch` when the user asks to preview your current
+worktree—do not displace another agent's visible branch on task start. Start
+the server through approved network-capable execution so Supabase auth and live
+data work; a restricted sandbox server is not a ready preview.

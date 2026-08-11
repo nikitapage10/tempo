@@ -191,3 +191,27 @@ every time, no exceptions:
    that still carries someone else's unfinished, unreviewed commits.
 
 See `AGENTS.md` for the same protocol in tool-agnostic form.
+
+## One local preview — REQUIRED
+
+All people, agents, tools, and Git worktrees share one human-review preview:
+`http://localhost:3000`. Read `LOCAL-DEVELOPMENT.md` before starting or opening
+the app locally.
+
+- Use `npm run dev` to start or reuse the canonical preview. Never invoke
+  `next dev` directly, choose another human-preview port, or accept automatic
+  port fallback.
+- Start the server with the tool's approved network-capable execution mode.
+  A sandboxed server cannot authenticate with or load live Supabase data.
+- Use `npm run dev:status` before reporting a local URL; say which branch and
+  worktree it is actually serving.
+- Use `npm run dev:switch` only when the user asks to review the current
+  worktree. Do not replace another agent's visible preview just because a task
+  started.
+- Use `npm run dev:stop` only to stop the coordinated TEMPO preview.
+- Test runners may use isolated temporary ports while their suite runs. Those
+  ports are not human preview URLs and must not be presented as such.
+- Worktrees automatically inherit the primary checkout's gitignored
+  `.env.local`; never copy, print, or commit that file.
+- For credential-free local review, configure `DEV_PREVIEW_EMAIL` only in the
+  primary `.env.local` and open localhost. Never put it in Vercel.

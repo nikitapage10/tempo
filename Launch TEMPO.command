@@ -1,6 +1,5 @@
 #!/bin/zsh
-# Double-click this file in Finder to launch a local TEMPO instance.
-# A Terminal window will stay open while the app runs — close it (or Ctrl+C) to stop.
+# Double-click this file in Finder to start or open TEMPO's shared local preview.
 
 set -euo pipefail
 
@@ -56,47 +55,28 @@ if [[ -z "$NODE_BIN" || -z "$NPM_BIN" ]]; then
   exit 1
 fi
 
-if [[ ! -f .env.local ]]; then
-  echo "Missing .env.local — copy .env.local.example and fill in your Supabase keys."
-  pause
-  exit 1
-fi
-
 if [[ ! -d node_modules ]]; then
   echo "Installing dependencies (first run only)…"
   "$NPM_BIN" install
   echo ""
 fi
 
-PORT=3000
-URL="http://localhost:${PORT}"
+URL="http://localhost:3000"
 
-if curl -sf -o /dev/null --max-time 1 "$URL" 2>/dev/null; then
-  echo "TEMPO is already running at $URL — opening browser."
-  open "$URL"
-  pause
-  exit 0
-fi
-
-echo "Starting TEMPO at $URL"
-echo "Leave this window open. Press Ctrl+C to stop."
+echo "Starting or reusing TEMPO at $URL"
 echo ""
 
-(
-  for _ in {1..90}; do
-    if curl -sf -o /dev/null --max-time 1 "$URL" 2>/dev/null; then
-      open "$URL"
-      exit 0
-    fi
-    sleep 0.5
-  done
-) &
-
-"$NPM_BIN" run dev -- --port "$PORT"
+"$NPM_BIN" run dev
 status=$?
 if [[ $status -ne 0 ]]; then
   echo ""
-  echo "Dev server exited with code $status."
+  echo "The shared preview could not start."
   pause
+  exit $status
 fi
-exit $status
+
+open "$URL"
+echo "TEMPO is open. The shared preview keeps running in the background."
+echo "To stop it later, run: npm run dev:stop"
+pause
+exit 0

@@ -44,7 +44,7 @@ Follow these steps in order. No coding knowledge needed for setup — Cursor doe
 3. Open `PROMPTS.md` from this kit. Copy **Prompt 1** and paste it into the chat. Send it.
 4. Cursor will create files and run commands — approve them when it asks.
 5. When it says it's done, it will tell you to create a file called `.env.local`. Paste your two Supabase values from Step 3.5 into it (the prompt tells Cursor to show you exactly the format).
-6. In Cursor's terminal (Terminal → New Terminal), type `npm run dev` and press enter. Open http://localhost:3000 in your browser. You should see the app shell. 🎉
+6. In Cursor's terminal (Terminal → New Terminal), type `npm run dev` and press enter. Open http://localhost:3000 in your browser. This is TEMPO's one shared local preview; every tool and branch reuses it. You should see the app shell. 🎉
 
 ### Step 6. Put the code on GitHub
 Paste **Prompt G** from `PROMPTS.md` into Cursor chat. It will create the GitHub repo and push the code for you (it may ask you to sign into GitHub once — follow the prompts).
@@ -63,7 +63,7 @@ Paste **Prompt G** from `PROMPTS.md` into Cursor chat. It will create the GitHub
 This is your life now, and it's simple:
 
 1. **Paste the next prompt** from `PROMPTS.md` into Cursor chat (they're in order: 2, 3, 4, 5, 6).
-2. **Test it** — with `npm run dev` running, click around at localhost:3000 using the checklist at the end of each prompt.
+2. **Test it** — run `npm run dev:status` to see which branch is live. When you want the current branch on screen, run `npm run dev:switch`, then click around at localhost:3000 using the checklist at the end of each prompt. Never open a fallback port.
 3. **Something broken?** Tell Cursor exactly what you saw: "When I drag a card to Mixdown, it snaps back." Screenshots help — paste them right into the chat.
 4. **Happy? Ship it.** Paste this into Cursor chat:
    > Commit all changes with a short descriptive message and push to main.

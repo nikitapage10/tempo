@@ -7,6 +7,13 @@ export async function updateSession(request: NextRequest) {
     request,
   });
 
+  // The local preview coordinator must be able to identify a healthy server
+  // even when Supabase is unavailable. The handler independently enforces
+  // development mode and a loopback host before returning any status.
+  if (request.nextUrl.pathname === "/api/dev/status") {
+    return supabaseResponse;
+  }
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -124,10 +131,8 @@ export async function updateSession(request: NextRequest) {
   const isServerAuthorizedRoute =
     path.startsWith("/api/cron/") || path.startsWith("/api/webhooks/");
 
-  // Local test sign-in. Reachable without a session for the obvious reason —
-  // creating one is its entire job. Gated here on NODE_ENV so the path is not
-  // even exempt in a deployed build, and gated again on NODE_ENV, a loopback
-  // host and DEV_TEST_EMAIL inside the handler. See app/api/dev/session.
+  // Local preview sign-in is gated again in its handler by NODE_ENV, a
+  // loopback host, and an explicitly configured local identity.
   const isDevSessionRoute =
     process.env.NODE_ENV === "development" && path === "/api/dev/session";
 
@@ -146,7 +151,28 @@ export async function updateSession(request: NextRequest) {
     !isDevSessionRoute
   ) {
     const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = "/login";
+    const isLoopback = ["localhost", "127.0.0.1", "[::1]", "::1"].includes(
+      request.nextUrl.hostname
+    );
+    const hasLocalPreviewIdentity = Boolean(
+      process.env.DEV_PREVIEW_EMAIL || process.env.DEV_TEST_EMAIL
+    );
+    const isPageRequest =
+      request.method === "GET" &&
+      (request.headers.get("accept") ?? "").includes("text/html");
+
+    if (
+      process.env.NODE_ENV === "development" &&
+      isLoopback &&
+      hasLocalPreviewIdentity &&
+      isPageRequest
+    ) {
+      const next = `${path}${request.nextUrl.search}`;
+      redirectUrl.pathname = "/api/dev/session";
+      redirectUrl.search = `?next=${encodeURIComponent(next)}`;
+    } else {
+      redirectUrl.pathname = "/login";
+    }
     return NextResponse.redirect(redirectUrl);
   }
 
