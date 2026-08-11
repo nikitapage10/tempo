@@ -136,6 +136,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <IntroMoment />
       <EdgeStrip />
 
+      {/* Desktop-app window-drag handle, full viewport width — EdgeStrip and
+          the toolbar row (below) are only draggable within their own
+          layout bounds (EdgeStrip is thin; the toolbar sits inside a
+          centered max-w-[1440px] column), which left the gutters on a wide
+          window, and the whole left rail, with no way to drag the window
+          at all. This sits behind both (lower z-index) so every real
+          clickable element still wins the hit test; only the genuinely
+          empty space around them becomes draggable. No-op outside Electron. */}
+      <div
+        aria-hidden
+        className="pointer-events-auto fixed inset-x-0 top-0 z-20 h-10 [-webkit-app-region:drag]"
+      />
+
       <div className="flex flex-1">
         {/* Left 2px gutter stays transparent so active-nav windows can punch through */}
         <aside
@@ -240,6 +253,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Link href="/beta" className="mt-3 block rounded-input px-3 py-1 font-mono text-[11px] text-text-lo/70 transition-colors hover:bg-bg-2 hover:text-ice">
               v{APP_VERSION}
             </Link>
+            <div className="mt-2">
+              <ZoomControl />
+            </div>
           </div>
         </aside>
 
@@ -251,8 +267,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 explicitly carved out with the matching no-drag utility so
                 clicks still reach them instead of moving the window. */}
             <div className="sticky top-[var(--edge-strip-h)] z-40 mb-2 flex items-center justify-end gap-1.5 bg-bg-0/85 pb-4 pt-1.5 backdrop-blur-md [-webkit-app-region:drag]">
-              <div className="mr-auto flex items-center gap-1.5 [-webkit-app-region:no-drag]">
-                <ZoomControl />
+              <div className="mr-auto [-webkit-app-region:no-drag]">
                 <DownloadButton />
               </div>
               <div className="[-webkit-app-region:no-drag]">

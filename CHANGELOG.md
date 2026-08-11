@@ -4,6 +4,10 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-10
 
+- Fixed (v0.100.2): TEMPO Desktop's window can now actually be dragged from
+  anywhere along the empty space at the top — not just a narrow band in the
+  middle of a wide window. The zoom control also moved out of the top bar
+  down to the rail's bottom corner, next to the version number.
 - Fixed (v0.100.1): TEMPO Desktop's window finally looks and feels like a
   real app instead of a browser window: no more File/Edit/View menu bar
   on Windows, the minimize/maximize/close buttons are recolored to match

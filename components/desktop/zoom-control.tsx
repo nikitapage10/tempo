@@ -6,10 +6,10 @@ import { getZoomFactor, isDesktopApp, zoomIn, zoomOut, zoomReset } from "@/lib/d
 import { cn } from "@/lib/utils";
 
 /**
- * Desktop-only interface zoom, visible on every screen next to the download
- * button (components/app-shell.tsx) — there's no visible menu bar to carry
- * this as a "View" menu item (see electron/main.js), and the artist asked
- * for it to be reachable without memorizing Ctrl+=/-, which still work too.
+ * Desktop-only interface zoom — sits in the rail's bottom utility cluster
+ * next to the version link (components/app-shell.tsx), since there's no
+ * visible menu bar to carry this as a "View" menu item (see
+ * electron/main.js). Ctrl+=/-/0 still work as shortcuts alongside it.
  */
 export function ZoomControl() {
   const [mounted, setMounted] = React.useState(false);
@@ -26,14 +26,14 @@ export function ZoomControl() {
   const percent = Math.round(factor * 100);
 
   return (
-    <div className="flex h-10 items-center gap-0.5 rounded-input border border-line/60 bg-bg-1 px-1 text-text-lo/60">
+    <div className="flex h-8 items-center gap-0.5 rounded-input border border-line/60 bg-bg-1 px-1 text-text-lo/60">
       <button
         type="button"
         onClick={() => void zoomOut().then(setFactor)}
         aria-label="Zoom out"
-        className="flex size-7 items-center justify-center rounded-input transition-colors hover:bg-bg-2 hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+        className="flex size-6 items-center justify-center rounded-input transition-colors hover:bg-bg-2 hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
       >
-        <Minus className="size-3.5" strokeWidth={1.75} />
+        <Minus className="size-3" strokeWidth={1.75} />
       </button>
       <button
         type="button"
@@ -41,7 +41,7 @@ export function ZoomControl() {
         aria-label="Reset zoom to 100%"
         title="Reset zoom"
         className={cn(
-          "min-w-[3.25rem] rounded-input px-1 text-center font-mono text-[11px] transition-colors hover:bg-bg-2 hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+          "min-w-[2.75rem] rounded-input px-1 text-center font-mono text-[10px] transition-colors hover:bg-bg-2 hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
         )}
       >
         {percent}%
@@ -50,9 +50,9 @@ export function ZoomControl() {
         type="button"
         onClick={() => void zoomIn().then(setFactor)}
         aria-label="Zoom in"
-        className="flex size-7 items-center justify-center rounded-input transition-colors hover:bg-bg-2 hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+        className="flex size-6 items-center justify-center rounded-input transition-colors hover:bg-bg-2 hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
       >
-        <Plus className="size-3.5" strokeWidth={1.75} />
+        <Plus className="size-3" strokeWidth={1.75} />
       </button>
     </div>
   );
