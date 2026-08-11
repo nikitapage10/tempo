@@ -29,13 +29,27 @@ const HIGHLIGHTS = [
   },
 ];
 
+const WINDOWS_INSTALLER_URL =
+  "https://github.com/nikitapage10/tempo/releases/download/desktop-v0.100.6/TEMPO.Setup.0.100.6.exe";
+
 const DOWNLOADS: {
   os: "windows" | "mac";
   label: string;
   fileHint: string;
+  href: string | null;
 }[] = [
-  { os: "windows", label: "Download for Windows", fileHint: "TEMPO-Setup.exe" },
-  { os: "mac", label: "Download for Mac", fileHint: "TEMPO.dmg" },
+  {
+    os: "windows",
+    label: "Download for Windows",
+    fileHint: "TEMPO Setup 0.100.6.exe · 78 MB",
+    href: WINDOWS_INSTALLER_URL,
+  },
+  {
+    os: "mac",
+    label: "Download for Mac",
+    fileHint: "Not built yet — needs a Mac",
+    href: null,
+  },
 ];
 
 export default function DownloadPage() {
@@ -58,28 +72,49 @@ export default function DownloadPage() {
         </p>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          {DOWNLOADS.map(({ os: downloadOs, label, fileHint }) => (
-            <Button
-              key={downloadOs}
-              variant={os === downloadOs ? "default" : "secondary"}
-              size="lg"
-              className="h-auto flex-col items-start gap-0.5 py-3 text-left"
-              disabled
-              title="Beta installers aren’t published yet — this program is still in the specification stage."
-            >
-              <span className="flex items-center gap-2 text-sm font-medium">
-                <Download className="size-4" strokeWidth={1.75} />
-                {label}
-              </span>
-              <span className="font-mono text-[11px] font-normal text-text-lo/80">
-                {fileHint}
-              </span>
-            </Button>
-          ))}
+          {DOWNLOADS.map(({ os: downloadOs, label, fileHint, href }) =>
+            href ? (
+              <Button
+                key={downloadOs}
+                asChild
+                variant={os === downloadOs ? "default" : "secondary"}
+                size="lg"
+                className="h-auto flex-col items-start gap-0.5 py-3 text-left"
+              >
+                <a href={href} download>
+                  <span className="flex items-center gap-2 text-sm font-medium">
+                    <Download className="size-4" strokeWidth={1.75} />
+                    {label}
+                  </span>
+                  <span className="font-mono text-[11px] font-normal text-text-lo/80">
+                    {fileHint}
+                  </span>
+                </a>
+              </Button>
+            ) : (
+              <Button
+                key={downloadOs}
+                variant="secondary"
+                size="lg"
+                className="h-auto flex-col items-start gap-0.5 py-3 text-left"
+                disabled
+                title="A Mac build has to be built on a Mac — it isn’t available yet."
+              >
+                <span className="flex items-center gap-2 text-sm font-medium">
+                  <Download className="size-4" strokeWidth={1.75} />
+                  {label}
+                </span>
+                <span className="font-mono text-[11px] font-normal text-text-lo/80">
+                  {fileHint}
+                </span>
+              </Button>
+            )
+          )}
         </div>
         <p className="text-xs text-text-lo/70">
-          Downloads aren’t live yet — this page ships ahead of the installers
-          so the button and its states are in place once they are.
+          Windows is a real, unsigned beta build — see the install notice
+          below before you run it. The Mac build needs to be built on a Mac
+          and isn’t up yet.
         </p>
       </section>
 
@@ -107,7 +142,7 @@ export default function DownloadPage() {
           Beta install notice
         </h2>
         <p className="text-sm leading-relaxed text-text-lo">
-          These builds aren’t code-signed yet, so your OS will warn you before
+          This build isn’t code-signed yet, so Windows will warn you before
           the first run — this is expected, not a sign anything’s wrong.
         </p>
         <ul className="space-y-1.5 text-sm text-text-lo">
@@ -116,11 +151,6 @@ export default function DownloadPage() {
             <span className="text-text-hi">More info</span>, then{" "}
             <span className="text-text-hi">Run anyway</span> on the SmartScreen
             prompt.
-          </li>
-          <li>
-            <span className="text-text-hi">Mac:</span> right-click the app,
-            choose <span className="text-text-hi">Open</span>, then confirm on
-            the Gatekeeper prompt.
           </li>
         </ul>
       </section>

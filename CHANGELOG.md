@@ -4,6 +4,11 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-10
 
+- Added (v0.100.7): TEMPO Desktop for Windows is live — the Download page's
+  "Download for Windows" button now links to a real, working installer
+  instead of a disabled placeholder. It's an unsigned beta build, so
+  Windows will show a SmartScreen warning first; the page explains how to
+  get past it. A Mac build still isn't up (it has to be built on a Mac).
 - Fixed (v0.100.6): the web app's "Download for Windows" link now correctly
   switches to "Open in desktop" once you have TEMPO Desktop installed and
   signed in — the desktop app wasn't actually registering itself with your
