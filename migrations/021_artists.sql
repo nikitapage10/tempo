@@ -50,7 +50,7 @@ begin
     insert into artists (user_id, name, sort)
     values (
       u.user_id,
-      coalesce(nullif(left(trim(first_space_name), 60), ''), 'My Artist'),
+      coalesce(nullif(left(trim(first_space_name), 60), ''), 'Artist Name'),
       0
     )
     returning id into new_artist_id;

@@ -103,7 +103,7 @@ export function OriginNameStep({
               onNameChange(e.target.value);
               if (error) setError(null);
             }}
-            placeholder="Artist name"
+            placeholder="Artist Name"
             autoComplete="off"
             maxLength={60}
             aria-invalid={Boolean(error)}

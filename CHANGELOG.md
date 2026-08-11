@@ -4,6 +4,9 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-10
 
+- Improved (v0.98.2): Signal 1 now prefills “Artist Name” instead of “My
+  Artist” for new accounts and upgrades that legacy placeholder for unfinished
+  Origin sessions without changing real artist names.
 - Fixed (v0.98.2): the Social globe now keeps its WebGL edge outside the
   visible circular crop, preventing the intermittent black rim that appeared
   as the Earth rotated or was zoomed.

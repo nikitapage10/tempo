@@ -92,7 +92,7 @@ never saw the uncommitted work), implement them exactly as specced here first.
   the file's existing convention.
 - `lib/types.ts` — adds `Artist`, `ArtistUpdate`, `ArtistPaletteId` types;
   `Space` gets `artist_id: string`.
-- `lib/constants.ts` — adds `DEFAULT_ARTIST_NAME = "My Artist"` and
+- `lib/constants.ts` — adds `DEFAULT_ARTIST_NAME = "Artist Name"` and
   `ACTIVE_ARTIST_KEY = "tempo.activeArtistId"`.
 - `lib/artist-theme.ts` (new file) — `ARTIST_PALETTES`: 6 curated presets
   (`spectra` default + 5 named pairs), each just an `{ice, amber}` hex pair.

@@ -21,6 +21,7 @@ import type {
   OriginStep,
 } from "@/lib/origin/types";
 import { prefersReducedMotion, networkProfile } from "@/lib/origin/readiness";
+import { normalizeDefaultArtistName } from "@/lib/constants";
 
 /**
  * Wires the ORIGIN state machine to the artist record and to draft persistence.
@@ -185,7 +186,10 @@ export function useOriginState(revisit = false, replay = false): OriginControlle
       });
       // Seed the name from the artist record when there is no draft yet.
       if (!resume?.artistNameDraft && activeArtist?.name) {
-        dispatch({ type: "set_name", name: activeArtist.name });
+        dispatch({
+          type: "set_name",
+          name: normalizeDefaultArtistName(activeArtist.name),
+        });
       }
       settled = true;
       setHydrated(true);

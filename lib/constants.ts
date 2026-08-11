@@ -57,7 +57,12 @@ export const TASK_STATUSES: { value: TaskStatus; label: string }[] = [
   { value: "done", label: "Done" },
 ];
 
-export const DEFAULT_ARTIST_NAME = "My Artist";
+export const DEFAULT_ARTIST_NAME = "Artist Name";
+export const LEGACY_DEFAULT_ARTIST_NAME = "My Artist";
+
+export function normalizeDefaultArtistName(name: string): string {
+  return name === LEGACY_DEFAULT_ARTIST_NAME ? DEFAULT_ARTIST_NAME : name;
+}
 
 export const ACTIVE_ARTIST_KEY = "tempo.activeArtistId";
 
