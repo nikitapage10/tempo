@@ -6,10 +6,13 @@ import { getZoomFactor, isDesktopApp, zoomIn, zoomOut, zoomReset } from "@/lib/d
 import { cn } from "@/lib/utils";
 
 /**
- * Desktop-only interface zoom — sits in the rail's bottom utility cluster
- * next to the version link (components/app-shell.tsx), since there's no
- * visible menu bar to carry this as a "View" menu item (see
- * electron/main.js). Ctrl+=/-/0 still work as shortcuts alongside it.
+ * Desktop-only interface zoom — floats bottom-left, mirroring the floating
+ * assistant launcher's bottom-right position/offsets
+ * (components/assistant/assistant-launcher.tsx: `fixed bottom-20 right-4
+ * z-[90] ... md:bottom-5 md:right-5`) so the two read as a matched pair of
+ * persistent utility controls. There's no visible menu bar to carry this as
+ * a "View" menu item instead (see electron/main.js); Ctrl+=/-/0 still work
+ * as shortcuts alongside it.
  */
 export function ZoomControl() {
   const [mounted, setMounted] = React.useState(false);
@@ -26,23 +29,25 @@ export function ZoomControl() {
   const percent = Math.round(factor * 100);
 
   return (
-    <div className="flex h-8 items-center gap-0.5 rounded-input border border-line/60 bg-bg-1 px-1 text-text-lo/60">
+    <div
+      className={cn(
+        "fixed bottom-20 left-4 z-[90] flex h-9 items-center gap-0.5 rounded-full border border-line bg-bg-2 px-1 text-text-lo shadow-e3 [-webkit-app-region:no-drag] md:bottom-5 md:left-5"
+      )}
+    >
       <button
         type="button"
         onClick={() => void zoomOut().then(setFactor)}
         aria-label="Zoom out"
-        className="flex size-6 items-center justify-center rounded-input transition-colors hover:bg-bg-2 hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+        className="flex size-7 items-center justify-center rounded-full transition-colors hover:bg-bg-3 hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
       >
-        <Minus className="size-3" strokeWidth={1.75} />
+        <Minus className="size-3.5" strokeWidth={1.75} />
       </button>
       <button
         type="button"
         onClick={() => void zoomReset().then(setFactor)}
         aria-label="Reset zoom to 100%"
         title="Reset zoom"
-        className={cn(
-          "min-w-[2.75rem] rounded-input px-1 text-center font-mono text-[10px] transition-colors hover:bg-bg-2 hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
-        )}
+        className="min-w-[2.75rem] rounded-full px-1 text-center font-mono text-[10px] transition-colors hover:bg-bg-3 hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
       >
         {percent}%
       </button>
@@ -50,9 +55,9 @@ export function ZoomControl() {
         type="button"
         onClick={() => void zoomIn().then(setFactor)}
         aria-label="Zoom in"
-        className="flex size-6 items-center justify-center rounded-input transition-colors hover:bg-bg-2 hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+        className="flex size-7 items-center justify-center rounded-full transition-colors hover:bg-bg-3 hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
       >
-        <Plus className="size-3" strokeWidth={1.75} />
+        <Plus className="size-3.5" strokeWidth={1.75} />
       </button>
     </div>
   );

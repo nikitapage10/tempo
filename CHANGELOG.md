@@ -4,6 +4,14 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-10
 
+- Fixed (v0.100.4): TEMPO Desktop's window could never actually be resized
+  small enough to see the navigation switch to the phone-style layout — the
+  minimum window size is much smaller now, so shrinking the window responds
+  the way it does on the web.
+- Changed (v0.100.3): TEMPO Desktop's zoom control moved out of the rail
+  into a floating button in the bottom-left corner — mirroring the floating
+  assistant button on the bottom-right — so it's reachable from anywhere,
+  not tucked into a menu.
 - Fixed (v0.100.2): TEMPO Desktop's window can now actually be dragged from
   anywhere along the empty space at the top — not just a narrow band in the
   middle of a wide window. The zoom control also moved out of the top bar

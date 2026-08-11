@@ -67,8 +67,13 @@ function createWindow() {
 
   mainWindow = new BrowserWindow({
     ...initialWindowBounds(),
-    minWidth: 960,
-    minHeight: 600,
+    // Low enough to pass through the web app's own responsive breakpoint
+    // (the rail collapses to a phone-style bottom tab bar under Tailwind's
+    // md: ~768px) — a 960 floor meant the window could never actually get
+    // narrow enough to reach it, so shrinking the window never visibly did
+    // anything to the sidebar. 420 matches the app's real phone-width floor.
+    minWidth: 420,
+    minHeight: 480,
     backgroundColor: CHROME_BG, // matches --bg-0, avoids a white flash on first paint
     show: false,
     autoHideMenuBar: true,

@@ -253,9 +253,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Link href="/beta" className="mt-3 block rounded-input px-3 py-1 font-mono text-[11px] text-text-lo/70 transition-colors hover:bg-bg-2 hover:text-ice">
               v{APP_VERSION}
             </Link>
-            <div className="mt-2">
-              <ZoomControl />
-            </div>
           </div>
         </aside>
 
@@ -379,6 +376,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </Dialog>
 
       <AssistantRoot />
+      <ZoomControl />
       <GuidedTour />
       <StarterChecklist />
       <ContextualPageTour />
