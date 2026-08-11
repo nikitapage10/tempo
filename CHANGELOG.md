@@ -4,6 +4,9 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-10
 
+- Fixed (v0.98.2): the Social globe now keeps its WebGL edge outside the
+  visible circular crop, preventing the intermittent black rim that appeared
+  as the Earth rotated or was zoomed.
 - Fixed (v0.98.2): PRESIDENT demo workspaces can no longer emit follow or any
   other social notification. Demo follow edges are discarded instead of being
   transferred to a real profile, and stale PRESIDENT notices without a live

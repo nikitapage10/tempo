@@ -780,21 +780,6 @@
     }
   }
 
-  /* Social globe — slides an oversized ice/white/amber gradient behind a
-   * `mix-blend-mode: color` layer, so the continent dots seem to sweep
-   * through color rather than the whole globe shifting hue at once. */
-  @keyframes globe-color-sweep {
-    0%,
-    100% {
-      background-position: 0% 30%;
-    }
-    50% {
-      background-position: 100% 70%;
-    }
-  }
-  .globe-color-sweep {
-    animation: globe-color-sweep 26s ease-in-out infinite;
-  }
   /* Atmosphere — a slow breathe so the halo isn't dead static. */
   /* Transform only — the element's inline `opacity` drives the ready-state
    * fade-in, and an animated opacity here would override it. */
@@ -811,7 +796,6 @@
     animation: globe-atmosphere 14s ease-in-out infinite;
   }
   @media (prefers-reduced-motion: reduce) {
-    .globe-color-sweep,
     .globe-atmosphere {
       animation: none !important;
     }

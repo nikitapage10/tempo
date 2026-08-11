@@ -25,4 +25,12 @@ describe("Social discovery", () => {
     expect(social).toContain("Followed and new-to-you artists");
     expect(social).toContain("Recently interacted with");
   });
+
+  it("keeps the WebGL limb outside the fixed globe crop", () => {
+    const globe = read("components/social/connection-globe.tsx");
+    expect(globe).toContain('width: "127%"');
+    expect(globe).toContain('height: "127%"');
+    expect(globe).toContain('mixBlendMode: "screen"');
+    expect(globe).toContain("dark antialiased limb");
+  });
 });

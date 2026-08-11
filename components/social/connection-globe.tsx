@@ -184,8 +184,7 @@ export function ConnectionGlobe({
     () => hexToUnitRgb(accentAmber, [1, 0.71, 0.42]),
     [accentAmber]
   );
-  // 0-255 triples for the CSS color-sweep below (see the "color" blend-mode
-  // layer near the markup — that's what actually colors the continent dots).
+  // 0-255 triples for the fixed atmosphere around the globe.
   const iceCss = markerRgb.map((c) => Math.round(c * 255)).join(" ");
   const amberCss = glowRgb.map((c) => Math.round(c * 255)).join(" ");
   const culled = allMarkers.length > markers.length;
@@ -429,7 +428,7 @@ export function ConnectionGlobe({
             !reduced && "globe-atmosphere"
           )}
           style={{
-            boxShadow: `0 0 48px 6px rgb(${iceCss} / 0.14), 0 0 100px 20px rgb(${iceCss} / 0.06)`,
+            boxShadow: `0 0 48px 6px rgb(${iceCss} / 0.14), 0 0 100px 20px rgb(${amberCss} / 0.045)`,
             opacity: ready ? 1 : 0,
             transition: "opacity 700ms",
           }}
@@ -442,19 +441,16 @@ export function ConnectionGlobe({
         <div
           className="absolute inset-[10%] overflow-hidden rounded-full"
           style={{
+            background:
+              "linear-gradient(160deg, rgb(30 33 46) 0%, rgb(22 24 34) 45%, rgb(14 15 21) 100%)",
             opacity: ready ? 1 : 0,
             transition: "opacity 700ms",
           }}
         >
-          {/* `contrast` crushes the sphere body to true black. cobe lights the
-              whole globe from one `baseColor`, so the "water" between dots
-              comes back a dark gray rather than black — and `color` blend
-              below happily tints any non-black pixel, which is what was
-              washing the oceans blue/amber. Boosting contrast pivots around
-              mid-gray: the dark base clamps to 0 (immune to the color layer,
-              since `color` preserves luminance) while the dots stay at full
-              white and remain colorable. `saturate(0)` drops cobe's own tint
-              first so the ramp below is the only source of hue.
+          {/* `contrast` crushes the sphere body to true black while `screen`
+              makes that black transparent against the fixed CSS ocean. Only
+              the bright land dots remain, so animation can never change the
+              ocean luminance or the apparent silhouette.
               Canvas is scaled up so cobe's 0.8-radius sphere fills this
               clipped disc edge-to-edge. */}
           <canvas
@@ -463,40 +459,27 @@ export function ConnectionGlobe({
             height={size * 2}
             className="absolute"
             style={{
-              /* Sphere is 80% of the square canvas; scale so it fills the
-                 clipped disc (which is already that 80%). */
-              top: "-12.5%",
-              left: "-12.5%",
-              width: "125%",
-              height: "125%",
+              /* Sphere is 80% of the square canvas. Overscan it slightly past
+                 the fixed CSS crop so cobe's dark antialiased limb can never
+                 rotate into view as a temporary black outline. */
+              top: "-13.5%",
+              left: "-13.5%",
+              width: "127%",
+              height: "127%",
               contain: "layout paint size",
-              filter: "saturate(0) contrast(2.4) brightness(1.1)",
+              filter: "contrast(2.4) brightness(1.1)",
+              mixBlendMode: "screen",
             }}
             aria-hidden
           />
 
-          {/* Color wash for continent dots — `color` blend keeps luminance
-              so black water stays black. */}
-          <div
-            className={cn(
-              "pointer-events-none absolute inset-0 rounded-full",
-              !reduced && "globe-color-sweep"
-            )}
-            style={{
-              background: `linear-gradient(115deg, rgb(${iceCss}) 0%, #ffffff 40%, rgb(${amberCss}) 75%, rgb(${iceCss}) 100%)`,
-              backgroundSize: "300% 300%",
-              mixBlendMode: "color",
-            }}
-            aria-hidden
-          />
-
-          {/* Ocean fill — lifts crushed-black water to a Spectra surface. */}
+          {/* Stable inner edge. The WebGL canvas can otherwise expose a dark
+              antialias pixel at different longitudes.
+              Divide by zoom so this cap stays visually one pixel wide. */}
           <div
             className="pointer-events-none absolute inset-0 rounded-full"
             style={{
-              background:
-                "linear-gradient(160deg, rgb(30 33 46) 0%, rgb(22 24 34) 45%, rgb(14 15 21) 100%)",
-              mixBlendMode: "lighten",
+              boxShadow: `inset 0 0 0 ${1.25 / zoom}px rgb(27 30 42)`,
             }}
             aria-hidden
           />
