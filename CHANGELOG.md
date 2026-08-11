@@ -4,6 +4,9 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-11
 
+- Fixed (v0.106.0): selecting an artist from **New message** now opens the
+  returned conversation immediately. Existing archived conversations are
+  restored for the sender instead of closing the picker into an empty panel.
 - Changed (v0.105.0): Calendar now sits over TEMPO's live light-field shader
   with a soft legibility scrim, so its glass panels have real layered depth
   while dates and controls remain calm and readable.
