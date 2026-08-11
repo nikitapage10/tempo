@@ -17,7 +17,7 @@ import { CalendarToolbar } from "@/components/calendar/calendar-toolbar";
 import { CalendarFiltersPopover } from "@/components/calendar/calendar-filters-popover";
 import { CalendarOverflowMenu } from "@/components/calendar/calendar-overflow-menu";
 import { CalendarTimeline } from "@/components/calendar/calendar-planning-panels";
-import { WavesBackdrop } from "@/components/waves-backdrop";
+import { AtcBackdrop } from "@/components/atc-backdrop";
 import { useCalendarViewState } from "@/components/calendar/use-calendar-view-state";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
@@ -247,17 +247,19 @@ function CalendarContent() {
 
   return (
     <CalendarCategoryProvider categories={categoriesQuery.data?.categories ?? DEFAULT_CALENDAR_CATEGORIES}>
-      <div className="space-y-4">
-        <PageHeader title="Calendar" subtitle="Deadlines, releases, and scheduled work." />
+      {/* The ATC field, on its own canvas rather than the app-wide Spectra
+          one, held behind an 85% scrim so the dates stay the brightest thing
+          on the page. Fixed rather than absolute so it backs the whole
+          content area and stays put as the page scrolls, and inset to clear
+          the chrome it must not cover: the left rail (w-[220px] in
+          components/app-shell.tsx) and the top and bottom edge strips, all of
+          which are in normal flow and would otherwise lose to a positioned
+          element. Falls back to a still gradient without WebGL2 or under
+          reduced motion. */}
+      <AtcBackdrop className="fixed inset-x-0 bottom-0 top-[var(--edge-strip-h)] z-0 md:bottom-[6px] md:left-[220px]" />
 
-        {/* A slow "Waves" flow field in deep-sea teal and sand, on its own
-            canvas rather than the app-wide Spectra one — a calmer palette and
-            a much slower drift than the lightfield, held behind an 85% scrim
-            so the dates stay the brightest thing on the page. Falls back to a
-            still gradient under reduced motion or without WebGL. */}
-        <div className="relative">
-          <WavesBackdrop className="absolute inset-0 rounded-panel" />
-          <div className="relative z-[1] space-y-4">
+      <div className="relative z-[1] space-y-4">
+        <PageHeader title="Calendar" subtitle="Deadlines, releases, and scheduled work." />
 
         <CalendarAiScheduler today={today} timezone={vs.displayTimezone} onSchedule={scheduleFromParsed} />
 
@@ -468,8 +470,6 @@ function CalendarContent() {
             ) : null}
           </div>
         )}
-          </div>
-        </div>
       </div>
 
       <CalendarEventEditor

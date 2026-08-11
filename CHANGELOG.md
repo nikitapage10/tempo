@@ -4,6 +4,12 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-11
 
+- Changed (v0.108.0): the Calendar's background is a different animated field
+  again, and it now fills the whole page behind the calendar rather than just
+  the box the calendar sits in — everything except the left menu and the thin
+  colour strips at the top and bottom. It stays put as you scroll, pauses
+  whenever the window isn't in front, and falls back to a still gradient if
+  your system is set to reduce motion or your machine can't run it.
 - Changed (v0.107.0): the Calendar has a new background — a slow "Waves" flow
   in deep sea-blue, teal, seafoam and sand. The app's usual light-field was
   too busy behind a grid of dates, so the Calendar now has its own calmer,

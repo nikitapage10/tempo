@@ -1,43 +1,48 @@
 "use client";
 
 /**
- * Waves backdrop — a self-contained WebGL1 canvas that fills its parent.
+ * ATC backdrop — a self-contained WebGL2 canvas that fills the app's content
+ * area (everything but the sidebar), fixed so it stays put while the page
+ * scrolls.
  *
  * Deliberately separate from components/lightfield.tsx: that one owns the
  * single app-wide Spectra context that pages open windows onto. This is a
- * local surface with its own palette, mounted only by the page that asks for
- * it, and it takes its own (second) WebGL context for as long as that page is
- * open. Unmounting disposes the context explicitly rather than waiting for the
- * GC, so navigating around the app can't accumulate contexts and trip the
- * browser's per-tab limit.
+ * local surface mounted only by the page that asks for it, and it takes its
+ * own (second) WebGL context for as long as that page is open. Unmounting
+ * disposes the context explicitly rather than waiting for the GC, so
+ * navigating around the app can't accumulate contexts and trip the browser's
+ * per-tab limit.
  *
  * Falls back to the still `.spectra-still` gradient — no context taken at all
- * — under reduced motion, the lightfield kill switch, or when WebGL or the
- * program fail to come up.
+ * — without WebGL2, under reduced motion, under the lightfield kill switch,
+ * or if the program fails to build.
  */
 
 import * as React from "react";
-import {
-  WAVES_FRAGMENT_SHADER,
-  WAVES_RECIPE,
-  WAVES_VERTEX_SHADER,
-} from "@/lib/waves-shader-glsl";
+import { ATC_FRAGMENT_SHADER, ATC_VERTEX_SHADER } from "@/lib/atc-shader-glsl";
 import { isLightfieldKillSwitch, prefersReducedMotion } from "@/lib/lightfield";
 import { cn } from "@/lib/utils";
 
 /** Retina is enough; past 2 the fill cost doubles for no visible gain. */
 const DPR_CAP = 2;
 
-/** Dev-only — a silent fallback is right in production, but not while editing
- *  the shader, where a one-character typo would just look like "no WebGL". */
+/**
+ * …and a DPR cap alone is not enough here. The march runs 50 iterations per
+ * pixel, so on a large retina display a viewport-filling canvas is millions
+ * of pixels × 50, every frame, forever. Renders at most this many pixels and
+ * lets the browser scale the result up — invisible on a soft out-of-focus
+ * background, and the difference between "ambient" and "laptop fan".
+ */
+const MAX_INTERNAL_PIXELS = 1600 * 900;
+
 function warn(message: string) {
   if (process.env.NODE_ENV !== "production") {
-    console.warn(`[waves-backdrop] ${message}`);
+    console.warn(`[atc-backdrop] ${message}`);
   }
 }
 
 function compile(
-  gl: WebGLRenderingContext,
+  gl: WebGL2RenderingContext,
   type: number,
   source: string
 ): WebGLShader | null {
@@ -46,18 +51,16 @@ function compile(
   gl.shaderSource(shader, source);
   gl.compileShader(shader);
   if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    warn(
-      `shader compile failed (lost=${gl.isContextLost()}, len=${source.length}): ${gl.getShaderInfoLog(shader)}`
-    );
+    warn(`shader compile failed: ${gl.getShaderInfoLog(shader)}`);
     gl.deleteShader(shader);
     return null;
   }
   return shader;
 }
 
-export function WavesBackdrop({ className }: { className?: string }) {
+export function AtcBackdrop({ className }: { className?: string }) {
   const containerRef = React.useRef<HTMLDivElement>(null);
-  // Swaps the whole thing for the still gradient: no WebGL, reduced motion,
+  // Swaps the whole thing for the still gradient: no WebGL2, reduced motion,
   // the kill switch, or a context lost mid-session.
   const [failed, setFailed] = React.useState(false);
 
@@ -88,24 +91,23 @@ export function WavesBackdrop({ className }: { className?: string }) {
     canvas.style.transition = "opacity 500ms ease";
     container.replaceChildren(canvas);
 
-    const gl =
-      (canvas.getContext("webgl", {
-        alpha: false,
-        antialias: false,
-        depth: false,
-        stencil: false,
-        powerPreference: "low-power",
-      }) as WebGLRenderingContext | null) ??
-      (canvas.getContext("experimental-webgl") as WebGLRenderingContext | null);
+    const gl = canvas.getContext("webgl2", {
+      premultipliedAlpha: false,
+      alpha: false,
+      antialias: false,
+      depth: false,
+      stencil: false,
+      powerPreference: "low-power",
+    });
 
     if (!gl) {
-      warn("no WebGL context available");
+      warn("WebGL2 not available");
       setFailed(true);
       return;
     }
 
-    const vs = compile(gl, gl.VERTEX_SHADER, WAVES_VERTEX_SHADER);
-    const fs = compile(gl, gl.FRAGMENT_SHADER, WAVES_FRAGMENT_SHADER);
+    const vs = compile(gl, gl.VERTEX_SHADER, ATC_VERTEX_SHADER);
+    const fs = compile(gl, gl.FRAGMENT_SHADER, ATC_FRAGMENT_SHADER);
     const program = vs && fs ? gl.createProgram() : null;
     if (!vs || !fs || !program) {
       setFailed(true);
@@ -125,54 +127,41 @@ export function WavesBackdrop({ className }: { className?: string }) {
     }
     gl.useProgram(program);
 
-    // One fullscreen triangle, not a quad: no diagonal seam, one fewer vertex,
-    // and the clipped corners cost nothing.
     const buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     gl.bufferData(
       gl.ARRAY_BUFFER,
-      new Float32Array([-1, -1, 3, -1, -1, 3]),
+      new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]),
       gl.STATIC_DRAW
     );
-    const posLoc = gl.getAttribLocation(program, "a_position");
-    gl.enableVertexAttribArray(posLoc);
-    gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
 
-    const loc = (name: string) => gl.getUniformLocation(program, name);
-    const uColors = loc("u_colors[0]");
-    const uScene = loc("u_scene");
-    const uShape = loc("u_shape");
-    const uSurface = loc("u_surface");
-    const uFinish = loc("u_finish");
-    const uTransform = loc("u_transform");
-    const uSpace = loc("u_space");
-    const uCursor = loc("u_cursor");
-
-    // Eight slots, four in use; u_colorCount tells the shader where to stop.
-    const colors = new Float32Array(8 * 3);
-    WAVES_RECIPE.colors.forEach((c, i) => colors.set(c, i * 3));
-    gl.uniform3fv(uColors, colors);
-    gl.uniform4fv(uShape, WAVES_RECIPE.shape as unknown as number[]);
-    gl.uniform4fv(uSurface, WAVES_RECIPE.surface as unknown as number[]);
-    gl.uniform4fv(uFinish, WAVES_RECIPE.finish as unknown as number[]);
-    gl.uniform4fv(uTransform, WAVES_RECIPE.transform as unknown as number[]);
-    // Cursor interaction is off, so the pointer slots stay at the origin.
-    gl.uniform4f(uSpace, WAVES_RECIPE.offset[0], WAVES_RECIPE.offset[1], 0, 0);
-    gl.uniform4fv(uCursor, WAVES_RECIPE.cursor as unknown as number[]);
+    const uRes = gl.getUniformLocation(program, "u_res");
+    const uTime = gl.getUniformLocation(program, "u_time");
 
     let width = 0;
     let height = 0;
 
     const resize = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, DPR_CAP);
-      const w = Math.max(1, Math.round(canvas.clientWidth * dpr));
-      const h = Math.max(1, Math.round(canvas.clientHeight * dpr));
+      const cssW = canvas.clientWidth || window.innerWidth;
+      const cssH = canvas.clientHeight || window.innerHeight;
+      const dpr = Math.max(1, Math.min(DPR_CAP, window.devicePixelRatio || 1));
+      // Shrink both axes by the same factor so the aspect ratio — which the
+      // shader reads through u_res — is never distorted.
+      const scale = Math.min(
+        1,
+        Math.sqrt(MAX_INTERNAL_PIXELS / Math.max(1, cssW * dpr * cssH * dpr))
+      );
+      const w = Math.max(1, Math.floor(cssW * dpr * scale));
+      const h = Math.max(1, Math.floor(cssH * dpr * scale));
       if (w === width && h === height) return;
       width = w;
       height = h;
       canvas.width = w;
       canvas.height = h;
       gl.viewport(0, 0, w, h);
+      gl.uniform2f(uRes, w, h);
     };
 
     // Elapsed time accumulates only while visible, so a tab left open for an
@@ -183,14 +172,9 @@ export function WavesBackdrop({ className }: { className?: string }) {
 
     const render = () => {
       resize();
-      gl.uniform4f(
-        uScene,
-        width,
-        height,
-        elapsed * WAVES_RECIPE.timeScale,
-        WAVES_RECIPE.colors.length
-      );
-      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      gl.uniform1f(uTime, elapsed);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
       // Fade in only once there is a real frame to fade in to.
       canvas.style.opacity = "1";
     };
@@ -214,6 +198,7 @@ export function WavesBackdrop({ className }: { className?: string }) {
     };
 
     const onVisibility = () => (document.hidden ? stop() : start());
+    const onResize = () => render();
     // A lost context (GPU reset, driver sleep) would otherwise leave a frozen
     // last frame on screen; fall back to the still gradient instead.
     const onLost = (e: Event) => {
@@ -223,6 +208,7 @@ export function WavesBackdrop({ className }: { className?: string }) {
     };
 
     document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("resize", onResize, { passive: true });
     canvas.addEventListener("webglcontextlost", onLost);
     // Paint frame zero now rather than waiting on the first animation frame,
     // so a backgrounded tab (where rAF never fires) still shows the field
@@ -233,6 +219,7 @@ export function WavesBackdrop({ className }: { className?: string }) {
     return () => {
       stop();
       document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("resize", onResize);
       canvas.removeEventListener("webglcontextlost", onLost);
       gl.deleteBuffer(buffer);
       gl.deleteProgram(program);
@@ -258,11 +245,9 @@ export function WavesBackdrop({ className }: { className?: string }) {
           before the first frame, and any gap if the context is later lost. */}
       <div className="spectra-still absolute inset-0" />
       <div ref={containerRef} className="absolute inset-0" />
-      {/* Body copy never sits on a raw shader. The palette runs up to a light
-          sand at the top of its ramp, so the panels' own blur is not enough on
-          its own — this holds the whole surface at the ≥85%-dark legibility
-          floor the design system asks for, and the .glass panels blur the
-          colour and motion that survives it. */}
+      {/* Body copy never sits on a raw shader. This holds the whole surface at
+          the ≥85%-dark legibility floor the design system asks for, and the
+          .glass panels blur the colour and motion that survives it. */}
       <div className="absolute inset-0 bg-bg-0/85" />
     </div>
   );
