@@ -37,8 +37,9 @@ common case.
 - Launch-at-login via `app.setLoginItemSettings`.
 - A background sync-tick stub on a 5-minute interval — the seam later
   packages (media vault, offline cache) attach real work to.
-- Auto-update check via `electron-updater`, pointed at GitHub Releases
-  (harmless no-op until a release is actually published there).
+- Auto-update checks via `electron-updater` at launch and every six hours,
+  pointed at the public, binary-only `tempo-desktop-releases` repository.
+  Updates download quietly and install after a full quit.
 - A narrow `window.tempoDesktop` bridge (`isDesktop`, `platform`,
   `appVersion`) that the web app's download button reads to hide itself when
   running inside the shell.
@@ -49,3 +50,16 @@ Everything in packages 2–5 of `planning/desktop/03-IMPLEMENTATION-TEST-ROLLOUT
 the local media vault, the version-history badges, offline read, offline
 write. `main.js` and `preload.js` are deliberately small so those land as
 additions to this seam, not a rewrite of it.
+
+## Publishing an update
+
+Do not publish from a developer machine. Follow
+`docs/WEB-DESKTOP-RELEASE-POLICY.md`, bump both desktop version fields, run
+`npm run check:desktop-release` from the repo root, and smoke-test the packaged
+installer. After the change is merged to `main`, manually run the
+**Desktop Release** GitHub Actions workflow. It publishes the installer,
+blockmap, and `latest.yml` to the public update repository.
+
+The workflow needs the source repository Actions secret
+`DESKTOP_RELEASE_TOKEN`, scoped only to write releases in
+`nikitapage10/tempo-desktop-releases`.

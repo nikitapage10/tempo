@@ -1,6 +1,6 @@
 {
   "name": "tempo-desktop",
-  "version": "0.100.6",
+  "version": "0.100.7",
   "private": true,
   "description": "TEMPO Desktop — Electron shell. Deliberately its own package, separate from the root TEMPO package.json, so Vercel's web deploy never installs Electron's Chromium binary. Run `npm install` inside this folder before desktop:dev / desktop:build from the repo root.",
   "repository": {
@@ -32,11 +32,12 @@
       "package.json"
     ],
     "extraMetadata": {
-      "version": "0.100.6"
+      "version": "0.100.7"
     },
     "win": {
       "target": "nsis",
-      "icon": "../public/icon-512.png"
+      "icon": "../public/icon-512.png",
+      "artifactName": "TEMPO-Setup.${ext}"
     },
     "mac": {
       "target": "dmg",
@@ -44,7 +45,10 @@
       "category": "public.app-category.music"
     },
     "publish": {
-      "provider": "github"
+      "provider": "github",
+      "owner": "nikitapage10",
+      "repo": "tempo-desktop-releases",
+      "releaseType": "release"
     }
   }
 }

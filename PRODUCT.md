@@ -57,9 +57,10 @@ reply view for that conversation. A **New message** action in both the
 mini-inbox and the Messages page finds any artist on the network by name or
 handle and opens a conversation with them, so a first message no longer has to
 start from someone's profile page; artists with DMs closed are declined with a
-plain explanation. Incoming direct and support replies update
-the mini-inbox, full thread, unread badges, and notification center in realtime,
-with a timed reconnect fallback. The same composer and archive behavior applies
+plain explanation. Incoming direct replies update the mini-inbox, full thread,
+and Messages unread badge in realtime without creating a duplicate bell
+notification. Support replies also update the notification center. A timed
+reconnect fallback covers both. The same composer and archive behavior applies
 to member/admin support replies.
 
 **Admin and support experience.** The Admin overview is an operating dashboard:
@@ -174,8 +175,11 @@ does not yet manage a Scene.
 
 Scenes still support open, approval-required, and invite-only doors;
 ownership and moderator roles; requests, invitations, removal, bans, and
-auditable moderation. Database migrations 049 through 067 are required for
-the complete network experience.
+auditable moderation. Joining is attached to the signed-in account's Scene
+identity (optionally linked to its active artist profile), so the same Scene
+cannot acquire conflicting memberships when someone switches artists or uses
+another account. Database migrations 049 through 067 are required for the
+complete network experience.
 
 **Stats.** Today, Board, Tracks and Tasks all show one space at a time; **Stats** (formerly "Artist", renamed and moved to its own tab when the Artist tab became the public profile page above) shows the whole artist's numbers at once, across every space they own. Reach it from the rail or the artist dropdown. It opens on that artist's banner and logo with a headline row — tracks, bounces, in progress, released, focus time — and then a set of sections: **the year in bounces** (twelve months of bounces uploaded against tracks started, so a year of work reads at a glance); **pipeline** (where tracks sit in each space's stages, one bar per space, with spaces that have nothing staged collected into a single quiet line); **spaces** (every space of that artist side by side with its own counts and when it was last touched — tap one to switch to it); **your sound** (the shape of your tempos, the keys you write in most, your genres and track types); **work rhythm** (when you actually work, by day and hour, with your busiest day, busiest hour and how many weeks in a row you've kept going); **longest in progress** (the oldest unfinished tracks and how long each has sat in its current stage); **releases** (countdowns to what's coming and a strip of what's already out); and **feedback received** (how much has come from guests versus your own notes, how much is still open, and the decisions logged). Every number comes from what's actually in your TEMPO — nothing is estimated or guessed.
 

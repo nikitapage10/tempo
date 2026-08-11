@@ -23,7 +23,6 @@ const BREADTHS: NotificationBreadth[] = [
   "all",
   "catalog",
   "social",
-  "messages",
   "calendar",
   "support",
 ];
@@ -70,8 +69,8 @@ export function NotificationsPanel() {
                 : "You’re caught up"}
             </p>
             <p className="mt-1 text-xs text-text-lo">
-              Catalog, social, messages, calendar, and support — the full
-              history lives here. The bell keeps the latest close at hand.
+              Catalog, social, calendar, and support — the full history lives
+              here. Messages keep their own unread badge in the inbox.
             </p>
           </div>
         </div>
@@ -131,7 +130,7 @@ export function NotificationsPanel() {
         ) : filtered.length === 0 ? (
           <p className="px-5 py-12 text-center text-sm text-text-lo">
             {notifications.length === 0
-              ? "Nothing yet. Invite replies, new versions, messages, and comment activity show up here."
+              ? "Nothing yet. Invite replies, new versions, and comment activity show up here."
               : "Nothing in this filter."}
           </p>
         ) : (

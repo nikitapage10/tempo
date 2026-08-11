@@ -379,15 +379,33 @@ export async function uploadSceneEmblem(scene: Scene, file: File): Promise<Scene
 }
 
 /**
- * The whole membership state machine — status, door policy, invites, bans —
- * is decided server-side by join_scene(). Returns the resulting status so the
- * UI can show "You're in" vs "Waiting on approval" without a refetch.
+ * Scene membership became account/persona-based in migration 060. The legacy
+ * join_scene RPC still targets the removed (scene_id, profile_id) conflict key
+ * and fails on current databases. Ensure this account's persona first, then
+ * let join_scene_v2 apply the door policy, invites, and bans server-side.
  */
 export async function joinScene(sceneId: string, profileId: string): Promise<SceneMemberStatus> {
   const supabase = createClient();
-  const { data, error } = await supabase.rpc("join_scene", {
+  const { data: profile, error: profileError } = await supabase
+    .from("artist_profiles")
+    .select("display_name")
+    .eq("id", profileId)
+    .maybeSingle();
+  if (profileError) throw profileError;
+
+  const { data: personaId, error: personaError } = await supabase.rpc(
+    "ensure_scene_persona",
+    {
+      p_scene_id: sceneId,
+      p_display_name: profile?.display_name?.trim() || "Member",
+      p_artist_profile_id: profileId,
+    }
+  );
+  if (personaError) throw personaError;
+
+  const { data, error } = await supabase.rpc("join_scene_v2", {
     p_scene_id: sceneId,
-    p_profile_id: profileId,
+    p_persona_id: personaId as string,
   });
   if (error) throw error;
   return data as SceneMemberStatus;
