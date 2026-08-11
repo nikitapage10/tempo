@@ -59,71 +59,16 @@ begin
 end;
 $$;
 
--- Remove notifications already emitted by demo actors before repairing their
--- inviter connections. The replacement real-profile insert below creates the
--- correct "<real artist> followed you" notification.
+-- Remove notifications already emitted by demo actors.
 delete from notifications n
 using artist_profiles p, artists a
 where n.actor_profile_id = p.id
   and p.artist_id = a.id
   and a.demo_kind is not null;
 
--- Move outgoing demo follows to the owner's first real artist. Never carry a
--- connection across to another demo profile.
-with profile_map as (
-  select
-    demo_profile.id as demo_profile_id,
-    (
-      select real_profile.id
-      from artist_profiles real_profile
-      join artists real_artist on real_artist.id = real_profile.artist_id
-      where real_profile.owner_user_id = demo_profile.owner_user_id
-        and real_artist.demo_kind is null
-      order by real_artist.sort asc, real_profile.created_at asc
-      limit 1
-    ) as real_profile_id
-  from artist_profiles demo_profile
-  join artists demo_artist on demo_artist.id = demo_profile.artist_id
-  where demo_artist.demo_kind is not null
-)
-insert into profile_follows (follower_profile_id, followee_profile_id, created_at)
-select m.real_profile_id, f.followee_profile_id, f.created_at
-from profile_follows f
-join profile_map m on m.demo_profile_id = f.follower_profile_id
-join artist_profiles target_profile on target_profile.id = f.followee_profile_id
-join artists target_artist on target_artist.id = target_profile.artist_id
-where m.real_profile_id is not null
-  and target_artist.demo_kind is null
-  and m.real_profile_id <> f.followee_profile_id
-on conflict do nothing;
-
--- Preserve the reciprocal inviter connection under the member's real artist.
-with profile_map as (
-  select
-    demo_profile.id as demo_profile_id,
-    (
-      select real_profile.id
-      from artist_profiles real_profile
-      join artists real_artist on real_artist.id = real_profile.artist_id
-      where real_profile.owner_user_id = demo_profile.owner_user_id
-        and real_artist.demo_kind is null
-      order by real_artist.sort asc, real_profile.created_at asc
-      limit 1
-    ) as real_profile_id
-  from artist_profiles demo_profile
-  join artists demo_artist on demo_artist.id = demo_profile.artist_id
-  where demo_artist.demo_kind is not null
-)
-insert into profile_follows (follower_profile_id, followee_profile_id, created_at)
-select f.follower_profile_id, m.real_profile_id, f.created_at
-from profile_follows f
-join profile_map m on m.demo_profile_id = f.followee_profile_id
-join artist_profiles source_profile on source_profile.id = f.follower_profile_id
-join artists source_artist on source_artist.id = source_profile.artist_id
-where m.real_profile_id is not null
-  and source_artist.demo_kind is null
-  and f.follower_profile_id <> m.real_profile_id
-on conflict do nothing;
+-- Never transfer a demo's graph to the owner's real artist. The legitimate
+-- inviter connection is created later by provision_member_onboarding using
+-- the member's real profile, which is also when its notification belongs.
 
 -- No demo profile should remain in the live graph after the repair.
 delete from profile_follows f

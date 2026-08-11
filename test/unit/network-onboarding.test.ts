@@ -40,4 +40,16 @@ describe("network onboarding boundaries", () => {
     expect(migration).toContain("'autotuneauntie'");
     expect(migration).toContain("'velvetstatic'");
   });
+
+  it("never transfers demo follows or emits notifications from demo actors", () => {
+    const followIsolation = read("migrations/076_demo_social_isolation.sql");
+    expect(followIsolation).not.toContain("insert into profile_follows (follower_profile_id, followee_profile_id, created_at)");
+    expect(followIsolation).toContain("Never transfer a demo's graph");
+
+    const notificationIsolation = read("migrations/078_demo_notification_isolation.sql");
+    expect(notificationIsolation).toContain("trg_reject_demo_actor_notification");
+    expect(notificationIsolation).toContain("artist.demo_kind is not null");
+    expect(notificationIsolation).toContain("notification.title = 'PRESIDENT followed you'");
+    expect(notificationIsolation).toContain("not exists (");
+  });
 });

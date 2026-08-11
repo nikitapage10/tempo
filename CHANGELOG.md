@@ -4,6 +4,10 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-10
 
+- Fixed (v0.98.2): PRESIDENT demo workspaces can no longer emit follow or any
+  other social notification. Demo follow edges are discarded instead of being
+  transferred to a real profile, and stale PRESIDENT notices without a live
+  matching follow are removed while legitimate real-account follows remain.
 - Improved (v0.98.2): Discover now has its own broader globe and artist list,
   ranked by recent visible activity and profile updates. It can surface both
   followed and new-to-you artists, while Top 8 and Follows keep their existing
