@@ -4,6 +4,10 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-10
 
+- Fixed (v0.100.0): Settings now uses the same full-width page gutters as
+  Social, Projects, and the rest of the workspace, aligning its title and
+  content with the global Download button and search bar.
+
 - Changed (v0.100.0): bounce history no longer has a limit. Every version
   you upload to a track now stays in its timeline for good — nothing is
   auto-deleted. What changed instead: cloud storage itself now keeps only

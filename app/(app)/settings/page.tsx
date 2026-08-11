@@ -100,7 +100,7 @@ function ActionTile({
 export default function SettingsPage() {
   return (
     <React.Suspense
-      fallback={<div className="panel mx-auto h-64 max-w-5xl animate-pulse" />}
+      fallback={<div className="panel h-64 w-full animate-pulse" />}
     >
       <SettingsPageInner />
     </React.Suspense>
@@ -133,7 +133,7 @@ function SettingsPageInner() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="w-full">
       <PageHeader
         title="Settings"
         subtitle="Artists, spaces, notifications, catalog backups, and your account — stage editing still lives on the board."
