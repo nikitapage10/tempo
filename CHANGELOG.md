@@ -9,6 +9,17 @@ Plain-English history of what changed in TEMPO, newest first.
   handoff keeps you on the same screen, and TEMPO Desktop now offers the
   matching **Open web app** action. The control has moved from the top toolbar
   to the left rail, directly above Settings.
+- Fixed (v0.104.0): a rendering glitch above the Calendar's toolbar — a
+  soft gradient wash meant to sit behind the glass toolbar was bleeding
+  outside its own box, showing as a grainy streak under the page title.
+  It's been removed; the toolbar now reads clean.
+- Changed (v0.104.0): the Calendar's quick-add ("Studio session Friday at
+  7pm") has moved from the bottom of the day panel to right below the page
+  title, so it's the first thing you see. It's also smarter now — it asks
+  TEMPO's assistant to read the sentence properly (so "next Tuesday," typos,
+  and more natural phrasing all work), and falls back instantly to the
+  simple parser if that's ever unavailable. You can also tap the microphone
+  and just say it instead of typing.
 - Added (v0.103.0; Desktop v0.100.9): Messages is now a focused, scrollable
   workspace instead of a page that grows forever. Artist and Scene chats load
   older history on demand, keep your place while you read, show new-message
