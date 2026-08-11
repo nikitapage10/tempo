@@ -4,6 +4,12 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-11
 
+- Changed (v0.111.0): the Calendar's background is now a short blurred video
+  loop instead of a generated animation — a soft cool wash that drifts behind
+  the page. It is darkest down the left and along the bottom so the heading
+  and the dates stay perfectly readable, and it holds still on a single frame
+  if your system is set to reduce motion. The clip is 87KB, so it costs
+  essentially nothing to load.
 - Changed (v0.110.0): message controls now float beside each bubble instead of
   pushing received messages away from the left edge. Sent messages have more
   room before the new slim Spectra-coloured scrollbar, and the web app's
