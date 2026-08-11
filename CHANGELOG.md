@@ -4,6 +4,12 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-11
 
+- Changed (v0.109.0): the Calendar's background is now slow concentric rings
+  with soft rainbow edges, drifting outward about one ring every half minute.
+  It was rebuilt to move smoothly at that speed: the previous versions either
+  jumped on a repeating cycle or shimmered as their hairline-thin rings
+  crawled between pixels, both of which read as stutter once the motion was
+  slowed down. It also costs less to draw than what it replaced.
 - Changed (v0.108.0): the Calendar's background is a different animated field
   again, and it now fills the whole page behind the calendar rather than just
   the box the calendar sits in — everything except the left menu and the thin
