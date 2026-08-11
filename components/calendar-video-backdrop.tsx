@@ -49,8 +49,10 @@ export function CalendarVideoBackdrop({ className }: { className?: string }) {
     document.addEventListener("visibilitychange", onVisibility);
     // Autoplay can still be refused (some power-saving modes ignore muted
     // autoplay). The poster stays underneath, so a refusal degrades to the
-    // still frame rather than to nothing.
-    void video.play().catch(() => undefined);
+    // still frame rather than to nothing. Only start if the tab is actually
+    // in front — mounting behind another tab should decode nothing until the
+    // visibility handler above says otherwise.
+    if (!document.hidden) void video.play().catch(() => undefined);
 
     return () => document.removeEventListener("visibilitychange", onVisibility);
   }, [motionOk]);
@@ -84,15 +86,20 @@ export function CalendarVideoBackdrop({ className }: { className?: string }) {
         />
       ) : null}
 
-      {/* Body copy never sits on raw imagery. At the design system's flat
-          ≥85% floor this footage is invisible, so the scrim is graded
-          instead: heaviest down the left and across the bottom, where the
-          page header and the month grid's own text sit, and lightest top
-          right, where nothing but panel chrome overlaps it. Every value is at
-          or above 85% wherever text actually lands. */}
-      <div className="absolute inset-0 bg-bg-0/70" />
-      <div className="absolute inset-0 bg-gradient-to-r from-bg-0 via-bg-0/60 to-transparent" />
-      <div className="absolute inset-0 bg-gradient-to-t from-bg-0 via-bg-0/50 to-transparent" />
+      {/* Body copy never sits on raw imagery — the design system's flat ≥85%
+          floor, unmodified.
+
+          An earlier pass graded this scrim instead, to claw back visibility
+          the footage did not have. That was backwards: the source is a bright
+          core on a near-black surround, so its energy sat dead centre under
+          the month grid while the *exposed* regions held pixels of 2–20, and
+          the grading then darkened those regions hardest. Measured, the
+          backdrop moved composited pixels by 0–1 out of 255 against a --bg-0
+          of 10 — invisible. The fix belonged in the asset: a wide blur
+          spreads the core into an even field and a level lift raises the
+          surround to ~83, which survives a full 85% scrim at ~21 and reads as
+          a genuine wash without bending the rule. */}
+      <div className="absolute inset-0 bg-bg-0/85" />
     </div>
   );
 }

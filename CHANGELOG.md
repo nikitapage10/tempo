@@ -4,6 +4,13 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-11
 
+- Fixed (v0.112.0): the Calendar's video background is actually visible now.
+  As shipped it was effectively invisible — the clip's brightness sat in a
+  small hot spot dead centre, hidden behind the calendar panels, while the
+  parts of the page you could actually see held nothing but its near-black
+  edges. The clip has been reworked into an even, lifted wash that reads
+  across the whole page instead, and the darkening layer over it is back to
+  the standard strength, so the dates are no less readable than before.
 - Changed (v0.111.0): the Calendar's background is now a short blurred video
   loop instead of a generated animation — a soft cool wash that drifts behind
   the page. It is darkest down the left and along the bottom so the heading
