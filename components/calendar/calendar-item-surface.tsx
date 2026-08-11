@@ -72,6 +72,24 @@ function timeLabel(item: CalendarItem) {
   return timeInTimeZone(item.startsAt, item.timezone || "UTC");
 }
 
+function categorySurfaceStyle(
+  color: string | undefined,
+  compact: boolean
+): React.CSSProperties | undefined {
+  if (!color) return undefined;
+  const borderColor = `color-mix(in srgb, ${color} 32%, var(--line))`;
+  if (compact) {
+    return {
+      borderColor,
+      backgroundImage: `linear-gradient(180deg, color-mix(in srgb, ${color} 11%, #17171e), color-mix(in srgb, ${color} 8%, rgb(var(--bg-1-rgb))))`,
+    };
+  }
+  return {
+    borderColor,
+    backgroundColor: `color-mix(in srgb, ${color} 8%, rgb(var(--bg-1-rgb)))`,
+  };
+}
+
 export function CalendarItemSurface({
   item,
   compact = false,
@@ -107,6 +125,7 @@ export function CalendarItemSurface({
         : category?.color;
   const Icon = base.Icon;
   const time = timeLabel(item);
+  const surfaceStyle = categorySurfaceStyle(color, compact);
   const accessible = [
     item.title,
     label,
@@ -130,6 +149,7 @@ export function CalendarItemSurface({
             else onActivate(item);
           }}
           aria-label={accessible}
+          style={surfaceStyle}
           className={cn(
             "relative flex h-7 w-full min-w-0 items-center gap-1 rounded-[6px] border border-line bg-gradient-to-b from-[#17171e] to-bg-1 px-1.5 text-left shadow-e1 transition-shadow duration-hover hover:shadow-e2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
             item.state === "completed" && "opacity-60",
@@ -167,6 +187,7 @@ export function CalendarItemSurface({
       <div
         draggable={!!onDragStart}
         onDragStart={(event) => onDragStart?.(item, event)}
+        style={surfaceStyle}
         className={cn(
           "relative flex w-full items-start gap-3 rounded-card border border-line bg-bg-1 px-3 py-3 text-left shadow-e1 transition-shadow duration-hover hover:shadow-e2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
           item.state === "completed" && "opacity-60",

@@ -4,6 +4,9 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-10
 
+- Improved (v0.98.2): Calendar items now carry a faint background wash from
+  their selected category color in addition to the stronger colored edge,
+  icon, and label treatment across month, agenda, and timeline views.
 - Improved (v0.98.2): opening a minimized Board stage now shifts the focused
   three-stage window only as far as needed and smoothly collapses the outgoing
   column while expanding the selected one.
