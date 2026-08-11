@@ -16,14 +16,22 @@ describe("Social discovery", () => {
     expect(peopleApi).not.toContain("fetchRecentlyActiveProfiles(opts");
   });
 
-  it("changes only Discover to the activity globe and keeps the standard globe elsewhere", () => {
+  it("adds activity pins in Discover without resetting the globe", () => {
     const social = read("app/(app)/social/social-view.tsx");
+    const globe = read("components/social/connection-globe.tsx");
     expect(social).toContain(
       'tab === "discover" ? discoverGlobePeople : globePeople'
     );
     expect(social).toContain('max={tab === "discover" ? 120 : 80}');
+    expect(social).not.toContain("Recently active around TEMPO");
     expect(social).toContain("Followed and new-to-you artists");
     expect(social).toContain("Recently interacted with");
+    expect(globe).toContain("const phiRef = React.useRef(0)");
+    expect(globe).toContain("let phi = phiRef.current");
+    expect(globe).toContain("phiRef.current = phi");
+    expect(globe).toContain("globeRef.current?.update");
+    expect(globe).toContain("[size, markerRgb]");
+    expect(globe).not.toContain("[size, allMarkers, markerRgb");
   });
 
   it("keeps the WebGL limb outside the fixed globe crop", () => {

@@ -387,19 +387,6 @@ export default function SocialView() {
           {/* Persistent regardless of which tab is active — not tab content. */}
           {canBrowseSocial ? (
             <>
-              {tab === "discover" ? (
-                <div className="flex flex-wrap items-end justify-between gap-2">
-                  <div>
-                    <p className="label-mono">Recently active around TEMPO</p>
-                    <p className="mt-1 text-xs text-text-lo">
-                      Zoom in to uncover more artists, including people outside your follows.
-                    </p>
-                  </div>
-                  <span className="text-xs text-text-lo">
-                    {activeProfiles.length} {activeProfiles.length === 1 ? "artist" : "artists"}
-                  </span>
-                </div>
-              ) : null}
               {displayedGlobePeople.length === 0 ? (
                 <p className="text-xs text-text-lo">
                   Nobody has set a location yet — add yours on the Artist page and

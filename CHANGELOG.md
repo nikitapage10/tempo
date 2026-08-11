@@ -4,6 +4,10 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-10
 
+- Fixed (v0.98.2): Discover still expands the people shown on the Social globe,
+  but switching among Top 8, Follows, and Discover now preserves the globe's
+  orientation; the extra “Recently active around TEMPO” heading was removed.
+
 - Improved (v0.98.2): Board focus mode now navigates exclusively through the
   minimized stage rails, removes the redundant stage-count/Previous/Next bar,
   and uses a longer fade-and-resize handoff to eliminate abrupt card reflow.

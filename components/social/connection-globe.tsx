@@ -162,6 +162,7 @@ export function ConnectionGlobe({
   const router = useRouter();
   const rootRef = React.useRef<HTMLDivElement>(null);
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const globeRef = React.useRef<ReturnType<typeof createGlobe> | null>(null);
   const pinRefs = React.useRef(new Map<string, HTMLDivElement | null>());
 
   const [size, setSize] = React.useState(0);
@@ -197,8 +198,13 @@ export function ConnectionGlobe({
   reducedRef.current = reduced;
   const markersRef = React.useRef(markers);
   markersRef.current = markers;
+  const allMarkersRef = React.useRef(allMarkers);
+  allMarkersRef.current = allMarkers;
   const zoomRef = React.useRef(zoom);
   zoomRef.current = zoom;
+  // Preserve the live rotation if cobe must be recreated for a resize or
+  // palette change. People changes update the existing instance below.
+  const phiRef = React.useRef(0);
 
   // Drag-to-spin state (persists between drags, like a real globe).
   const dragPhiOffset = React.useRef(0);
@@ -284,7 +290,7 @@ export function ConnectionGlobe({
     const canvas = canvasRef.current;
     if (!canvas || !size) return;
 
-    let phi = 0;
+    let phi = phiRef.current;
     let frame = 0;
     let stopped = false;
 
@@ -316,8 +322,12 @@ export function ConnectionGlobe({
       markerElevation: 0,
       // Tiny WebGL dots for everyone with a location — DOM avatars are
       // density-culled separately so crowded regions stay readable.
-      markers: allMarkers.map((m) => ({ location: m.coords, size: 0.014 })),
+      markers: allMarkersRef.current.map((m) => ({
+        location: m.coords,
+        size: 0.014,
+      })),
     });
+    globeRef.current = globe;
 
     const center = size / 2;
     const radius = 0.4 * size; // 0.8 sphere radius, NDC -> px on a square canvas
@@ -333,7 +343,10 @@ export function ConnectionGlobe({
         : hovered
           ? BASE_SPEED * 0.12
           : BASE_SPEED;
-      if (!draggingRef.current) phi += autoSpeed;
+      if (!draggingRef.current) {
+        phi += autoSpeed;
+        phiRef.current = phi;
+      }
 
       const effPhi = phi + dragPhiOffset.current + dragLive.current.phi;
       const effTheta = Math.max(
@@ -377,9 +390,19 @@ export function ConnectionGlobe({
       clearTimeout(t0);
       cancelAnimationFrame(frame);
       globe.destroy();
+      if (globeRef.current === globe) globeRef.current = null;
       setReady(false);
     };
-  }, [size, allMarkers, markerRgb, glowRgb]);
+  }, [size, markerRgb]);
+
+  // Updating the people only changes cobe's marker list. Keeping the same
+  // instance means selecting Discover adds pins without moving or fading the
+  // globe itself.
+  React.useEffect(() => {
+    globeRef.current?.update({
+      markers: allMarkers.map((m) => ({ location: m.coords, size: 0.014 })),
+    });
+  }, [allMarkers]);
 
   function open(m: GlobeMarker) {
     if (m.handle) router.push(`/artist/${m.handle}`);
