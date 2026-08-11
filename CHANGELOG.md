@@ -4,6 +4,8 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-10
 
+- Fixed (v0.100.5): TEMPO Desktop's floating zoom control was sitting on top
+  of the left-hand navigation instead of beside it — it now clears the rail.
 - Fixed (v0.100.4): TEMPO Desktop's window could never actually be resized
   small enough to see the navigation switch to the phone-style layout — the
   minimum window size is much smaller now, so shrinking the window responds

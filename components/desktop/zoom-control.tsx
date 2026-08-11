@@ -13,6 +13,13 @@ import { cn } from "@/lib/utils";
  * persistent utility controls. There's no visible menu bar to carry this as
  * a "View" menu item instead (see electron/main.js); Ctrl+=/-/0 still work
  * as shortcuts alongside it.
+ *
+ * The left edge of the *window* is the 220px rail (components/app-shell.tsx),
+ * not open page background, so anchoring to left-4/left-5 the way the
+ * assistant anchors to right-4/right-5 sat the control on top of the nav.
+ * md:left-[236px] clears the rail (220px + a 16px gutter) once it's showing;
+ * below that breakpoint the rail is hidden in favor of the bottom tab bar,
+ * so plain left-4 is correct there.
  */
 export function ZoomControl() {
   const [mounted, setMounted] = React.useState(false);
@@ -31,7 +38,7 @@ export function ZoomControl() {
   return (
     <div
       className={cn(
-        "fixed bottom-20 left-4 z-[90] flex h-9 items-center gap-0.5 rounded-full border border-line bg-bg-2 px-1 text-text-lo shadow-e3 [-webkit-app-region:no-drag] md:bottom-5 md:left-5"
+        "fixed bottom-20 left-4 z-[90] flex h-9 items-center gap-0.5 rounded-full border border-line bg-bg-2 px-1 text-text-lo shadow-e3 [-webkit-app-region:no-drag] md:bottom-5 md:left-[236px]"
       )}
     >
       <button
