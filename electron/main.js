@@ -46,6 +46,7 @@ let quitting = false;
 let syncTimer = null;
 let updateTimer = null;
 let updateCheckInFlight = false;
+let desktopUpdateReady = false;
 let syncEnabled = true; // mirrors the "Keep TEMPO syncing in the background" setting
 let vault = null;
 
@@ -227,12 +228,43 @@ async function checkForDesktopUpdate() {
   if (!app.isPackaged || updateCheckInFlight) return;
   updateCheckInFlight = true;
   try {
-    await autoUpdater.checkForUpdatesAndNotify();
+    // Download silently. TEMPO's in-app banner is the only update prompt.
+    await autoUpdater.checkForUpdates();
   } catch (err) {
     console.warn("[tempo-desktop] auto-update check skipped:", err.message);
   } finally {
     updateCheckInFlight = false;
   }
+}
+
+function desktopUpdateState() {
+  return { ready: desktopUpdateReady };
+}
+
+function broadcastDesktopUpdateState() {
+  for (const win of BrowserWindow.getAllWindows()) {
+    win.webContents.send("updates:state", desktopUpdateState());
+  }
+}
+
+function registerUpdateIpc() {
+  autoUpdater.on("update-downloaded", () => {
+    desktopUpdateReady = true;
+    broadcastDesktopUpdateState();
+  });
+
+  ipcMain.handle("updates:getState", () => desktopUpdateState());
+  ipcMain.handle("updates:install", () => {
+    if (!desktopUpdateReady) return false;
+
+    // Let the IPC response cross the bridge before Electron closes and hands
+    // control to the downloaded installer.
+    setImmediate(() => {
+      quitting = true;
+      autoUpdater.quitAndInstall(false, true);
+    });
+    return true;
+  });
 }
 
 function registerVaultProtocol() {
@@ -283,6 +315,7 @@ app.whenReady().then(() => {
   vault = new Vault();
   registerVaultProtocol();
   registerVaultIpc();
+  registerUpdateIpc();
 
   // Windows: no menu bar at all — File/Edit/View/Window/Help added nothing
   // (no custom items were ever in it) and just looked like leftover browser

@@ -63,6 +63,12 @@ notification. Support replies also update the notification center. A timed
 reconnect fallback covers both. The same composer and archive behavior applies
 to member/admin support replies.
 
+**Desktop updates.** TEMPO Desktop stays current without asking artists to
+understand how an update is delivered. When something newer is ready, one calm
+banner offers **Update now** or **After this session**. It never forces a
+restart or interrupts active work, and the banner stays out of distraction-free
+focus sessions.
+
 **Admin and support experience.** The Admin overview is an operating dashboard:
 it calls out support and moderation work needing attention, shows 30-day member
 activation and growth, and links directly into the relevant queues. Usage

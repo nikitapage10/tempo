@@ -39,7 +39,10 @@ common case.
   packages (media vault, offline cache) attach real work to.
 - Auto-update checks via `electron-updater` at launch and every six hours,
   pointed at the public, binary-only `tempo-desktop-releases` repository.
-  Updates download quietly and install after a full quit.
+  Updates download quietly, then use the web app's unified update banner;
+  **Update now** installs immediately and **After this session** leaves the
+  current work uninterrupted. A downloaded update also installs after a full
+  quit.
 - A narrow `window.tempoDesktop` bridge (`isDesktop`, `platform`,
   `appVersion`) that the web app's download button reads to hide itself when
   running inside the shell.
