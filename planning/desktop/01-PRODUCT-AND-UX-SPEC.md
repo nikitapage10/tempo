@@ -28,10 +28,9 @@ Everything else about TEMPO — settings, permissions, sign-in, collaborators,
 Social, Messages, the assistant — behaves exactly as it does today and
 requires a connection, exactly as it does today.
 
-## The download button
+## The platform handoff
 
-A new control sits at the **top-left** of the same toolbar row that already
-holds the search bar at top-right, on every screen inside the app. It reads:
+A quiet control sits in the left rail directly above Settings. It reads:
 
 - **Download for Windows** or **Download for Mac** — detected from your
   browser, shown when you're using TEMPO in a browser and don't have the
@@ -39,7 +38,8 @@ holds the search bar at top-right, on every screen inside the app. It reads:
 - **Open in desktop** — shown once TEMPO knows the desktop app is installed
   and signed into this account (see below for how it knows), which opens the
   desktop app directly instead of offering another download.
-- Nothing at all — when you're already using TEMPO *inside* the desktop app.
+- **Open web app** — when you're already using TEMPO *inside* the desktop
+  app, opening the same screen in the system browser.
 
 One honest limitation: a website cannot see what's installed on your
 computer. "Open in desktop" isn't guessed from your browser — it appears

@@ -221,6 +221,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           <SlitDivider />
           <div className="px-3 py-4">
+            <DownloadButton />
             <Link
               href="/settings"
               data-context-tour="settings"
@@ -265,9 +266,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 explicitly carved out with the matching no-drag utility so
                 clicks still reach them instead of moving the window. */}
             <div className="sticky top-[var(--edge-strip-h)] z-40 mb-2 flex items-center justify-end gap-1.5 bg-bg-0/85 pb-4 pt-1.5 backdrop-blur-md [-webkit-app-region:drag]">
-              <div className="mr-auto [-webkit-app-region:no-drag]">
-                <DownloadButton />
-              </div>
               <div className="[-webkit-app-region:no-drag]">
                 <NotificationCenter />
               </div>

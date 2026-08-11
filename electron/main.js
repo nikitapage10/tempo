@@ -20,6 +20,7 @@ const ALLOWED_ORIGINS = [new URL(APP_URL).origin];
 const SYNC_INTERVAL_MS = 5 * 60 * 1000;
 const UPDATE_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const VAULT_PROTOCOL = "tempo-local";
+const APP_PROTOCOL = "tempo";
 const APP_USER_MODEL_ID = "com.tempo.desktop";
 
 // Matches --bg-0 / --text-lo from app/globals.css, so the native window
@@ -50,6 +51,7 @@ let updateCheckInFlight = false;
 let desktopUpdateReady = false;
 let syncEnabled = true; // mirrors the "Keep TEMPO syncing in the background" setting
 let vault = null;
+let pendingAppLink = null;
 const activeNotifications = new Set();
 
 // Give Windows notifications and taskbar entries a stable TEMPO identity.
@@ -60,6 +62,55 @@ app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
 
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 if (!hasSingleInstanceLock) app.quit();
+
+// Register tempo:// links with the operating system. The explicit executable
+// and entrypoint are needed while running Electron directly in development;
+// packaged builds register the app executable itself.
+if (hasSingleInstanceLock) {
+  if (process.defaultApp && process.argv[1]) {
+    app.setAsDefaultProtocolClient(APP_PROTOCOL, process.execPath, [path.resolve(process.argv[1])]);
+  } else {
+    app.setAsDefaultProtocolClient(APP_PROTOCOL);
+  }
+}
+
+function appLinkFromArgs(args) {
+  return args.find((arg) => typeof arg === "string" && arg.toLowerCase().startsWith(`${APP_PROTOCOL}://`)) || null;
+}
+
+function appLinkDestination(rawUrl) {
+  if (!rawUrl) return null;
+  try {
+    const link = new URL(rawUrl);
+    if (link.protocol !== `${APP_PROTOCOL}:` || link.hostname !== "open") return null;
+    const requestedPath = link.searchParams.get("path") || "/";
+    if (!requestedPath.startsWith("/") || requestedPath.startsWith("//")) return null;
+    const destination = new URL(requestedPath, APP_URL);
+    return ALLOWED_ORIGINS.includes(destination.origin) ? destination.href : null;
+  } catch {
+    return null;
+  }
+}
+
+function receiveAppLink(rawUrl) {
+  const destination = appLinkDestination(rawUrl);
+  if (!destination) return false;
+  if (!app.isReady() || !mainWindow) {
+    pendingAppLink = rawUrl;
+    return true;
+  }
+  mainWindow.loadURL(destination);
+  showMainWindow();
+  return true;
+}
+
+pendingAppLink = appLinkFromArgs(process.argv);
+
+// macOS delivers custom-protocol launches through open-url rather than argv.
+app.on("open-url", (event, url) => {
+  event.preventDefault();
+  receiveAppLink(url);
+});
 
 function appIconPath() {
   return app.isPackaged
@@ -124,7 +175,9 @@ function createWindow() {
   });
 
   mainWindow.once("ready-to-show", () => mainWindow.show());
-  mainWindow.loadURL(APP_URL);
+  const initialUrl = appLinkDestination(pendingAppLink) || APP_URL;
+  pendingAppLink = null;
+  mainWindow.loadURL(initialUrl);
   registerZoomShortcuts(mainWindow);
 
   // Navigation allowlist — the renderer is a real Chromium context and
@@ -427,8 +480,9 @@ app.whenReady().then(() => {
   });
 });
 
-app.on("second-instance", () => {
-  if (app.isReady()) showMainWindow();
+app.on("second-instance", (_event, argv) => {
+  const appLink = appLinkFromArgs(argv);
+  if (!receiveAppLink(appLink) && app.isReady()) showMainWindow();
 });
 
 app.on("before-quit", () => {

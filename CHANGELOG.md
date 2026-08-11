@@ -4,6 +4,11 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-11
 
+- Fixed (v0.103.0; Desktop v0.100.9): **Open in desktop** now launches the
+  installed TEMPO app instead of sending you back to its download page. The
+  handoff keeps you on the same screen, and TEMPO Desktop now offers the
+  matching **Open web app** action. The control has moved from the top toolbar
+  to the left rail, directly above Settings.
 - Added (v0.101.0; Desktop v0.100.8): TEMPO Desktop now shows one calm update
   banner when a newer version is ready, with only **Update now** and **After
   this session**. The same prompt covers both product updates and installed-app

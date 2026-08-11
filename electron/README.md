@@ -46,8 +46,11 @@ common case.
   current work uninterrupted. A downloaded update also installs after a full
   quit.
 - A narrow `window.tempoDesktop` bridge (`isDesktop`, `platform`,
-  `appVersion`) that the web app's download button reads to hide itself when
-  running inside the shell.
+  `appVersion`) that lets the shared interface present the correct platform
+  handoff.
+- A registered `tempo://` link handler, so **Open in desktop** on the web
+  restores TEMPO Desktop on the matching screen; the reciprocal **Open web
+  app** action leaves the Electron shell through the system browser.
 
 ## Not yet implemented
 
