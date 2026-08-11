@@ -148,6 +148,55 @@ export async function softDeletePost(postId: string): Promise<void> {
   }
 }
 
+export async function editSocialPost(postId: string, body: string): Promise<void> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Signed out");
+
+  const trimmed = body.trim();
+  const { data, error } = await supabase
+    .from("posts")
+    .update({ body: trimmed })
+    .eq("id", postId)
+    .eq("author_user_id", user.id)
+    .is("scene_id", null)
+    .is("deleted_at", null)
+    .select("id")
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) {
+    throw new Error("Couldn’t edit this post. It may no longer exist or belong to this account.");
+  }
+
+  // Keep @mentions aligned with the edited copy. The existing ownership
+  // policies allow an artist to manage mentions only on their own post.
+  const { error: deleteMentionsError } = await supabase
+    .from("post_mentions")
+    .delete()
+    .eq("post_id", postId);
+  if (deleteMentionsError) throw deleteMentionsError;
+
+  const handles = extractHandles(trimmed);
+  if (!handles.length) return;
+  const { data: mentioned, error: mentionedError } = await supabase
+    .from("artist_profiles")
+    .select("id, handle")
+    .in("handle", handles);
+  if (mentionedError) throw mentionedError;
+  if (!mentioned?.length) return;
+  const { error: insertMentionsError } = await supabase
+    .from("post_mentions")
+    .insert(
+      mentioned.map((profile) => ({
+        post_id: postId,
+        mentioned_profile_id: profile.id,
+      }))
+    );
+  if (insertMentionsError) throw insertMentionsError;
+}
+
 export async function likePost(postId: string, profileId: string): Promise<void> {
   const supabase = createClient();
   const {

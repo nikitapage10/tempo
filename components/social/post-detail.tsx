@@ -22,7 +22,7 @@ export function PostDetailDialog({
 }) {
   const { data: post } = usePost(open ? postId : null, myProfileId);
   const { data: comments = [] } = usePostComments(open ? postId : null);
-  const { like, unlike, comment, remove } = useFeedMutations(myProfileId);
+  const { like, unlike, comment, edit, remove } = useFeedMutations(myProfileId);
   const [body, setBody] = React.useState("");
 
   return (
@@ -40,6 +40,8 @@ export function PostDetailDialog({
               onUnlike={() => unlike.mutate(post.id)}
               onOpen={() => {}}
               myProfileId={myProfileId}
+              savingEdit={edit.isPending}
+              onEdit={(body) => edit.mutateAsync({ postId: post.id, body })}
               deleting={remove.isPending}
               onDelete={async () => {
                 await remove.mutateAsync(post.id);

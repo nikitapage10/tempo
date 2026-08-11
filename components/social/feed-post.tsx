@@ -2,10 +2,12 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Heart, MessageCircle, Trash2 } from "lucide-react";
+import { Heart, MessageCircle, Pencil, Trash2 } from "lucide-react";
 import { ArtistMark } from "@/components/artists/artist-mark";
 import { SignedImage } from "@/components/ui/signed-image";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
 import type { Post } from "@/lib/types";
 import { formatShortDate } from "@/lib/format";
@@ -35,6 +37,8 @@ export function FeedPostCard({
   onOpen,
   dense,
   myProfileId,
+  onEdit,
+  savingEdit = false,
   onDelete,
   deleting = false,
 }: {
@@ -44,6 +48,8 @@ export function FeedPostCard({
   onOpen: () => void;
   dense?: boolean;
   myProfileId?: string | null;
+  onEdit?: (body: string) => void | Promise<void>;
+  savingEdit?: boolean;
   onDelete?: () => void | Promise<void>;
   deleting?: boolean;
 }) {
@@ -51,8 +57,20 @@ export function FeedPostCard({
   const snap = post.attachment_snapshot;
   const { toast } = useToast();
   const [confirmDelete, setConfirmDelete] = React.useState(false);
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [editBody, setEditBody] = React.useState(post.body ?? "");
+  const canEdit = !!onEdit && !!myProfileId && myProfileId === post.author_profile_id;
   const canDelete =
     !!onDelete && !!myProfileId && myProfileId === post.author_profile_id;
+  const originalBody = (post.body ?? "").trim();
+  const nextBody = editBody.trim();
+  const canSaveEdit =
+    nextBody !== originalBody &&
+    (!!nextBody || !!post.media?.length || !!post.attachment_snapshot);
+
+  React.useEffect(() => {
+    if (!isEditing) setEditBody(post.body ?? "");
+  }, [isEditing, post.body]);
 
   return (
     <article className={cn("panel-quiet p-4", dense && "p-3")}>
@@ -87,7 +105,48 @@ export function FeedPostCard({
               {formatShortDate(post.created_at)}
             </span>
           </div>
-          {post.body ? (
+          {isEditing ? (
+            <form
+              className="mt-2 space-y-2"
+              onSubmit={async (event) => {
+                event.preventDefault();
+                if (!canSaveEdit) return;
+                try {
+                  await onEdit?.(nextBody);
+                  setIsEditing(false);
+                } catch (error) {
+                  toast(error instanceof Error ? error.message : "Couldn’t edit that post.");
+                }
+              }}
+            >
+              <Textarea
+                value={editBody}
+                onChange={(event) => setEditBody(event.target.value)}
+                maxLength={5000}
+                rows={3}
+                autoFocus
+                className="min-h-[5rem] resize-y"
+                aria-label="Edit post"
+              />
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  disabled={savingEdit}
+                  onClick={() => {
+                    setEditBody(post.body ?? "");
+                    setIsEditing(false);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" size="sm" disabled={!canSaveEdit || savingEdit}>
+                  {savingEdit ? "Saving…" : "Save changes"}
+                </Button>
+              </div>
+            </form>
+          ) : post.body ? (
             <button
               type="button"
               onClick={onOpen}
@@ -153,17 +212,33 @@ export function FeedPostCard({
             {myProfileId && myProfileId !== post.author_profile_id ? <ModerationReportDialog reporterProfileId={myProfileId} targetType="post" targetId={post.id} compact /> : null}
           </div>
         </div>
-        {canDelete ? (
-          <button
-            type="button"
-            onClick={() => setConfirmDelete(true)}
-            disabled={deleting}
-            title="Delete post"
-            aria-label="Delete your post"
-            className="shrink-0 rounded-input p-1.5 text-text-lo transition-colors hover:bg-bg-2 hover:text-warn focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice disabled:opacity-50"
-          >
-            <Trash2 className="size-3.5" />
-          </button>
+        {canEdit || canDelete ? (
+          <div className="flex shrink-0 items-center gap-0.5">
+            {canEdit ? (
+              <button
+                type="button"
+                onClick={() => setIsEditing(true)}
+                disabled={savingEdit || isEditing}
+                title="Edit post"
+                aria-label="Edit your post"
+                className="rounded-input p-1.5 text-text-lo transition-colors hover:bg-bg-2 hover:text-ice focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice disabled:opacity-50"
+              >
+                <Pencil className="size-3.5" />
+              </button>
+            ) : null}
+            {canDelete ? (
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(true)}
+                disabled={deleting}
+                title="Delete post"
+                aria-label="Delete your post"
+                className="rounded-input p-1.5 text-text-lo transition-colors hover:bg-bg-2 hover:text-warn focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice disabled:opacity-50"
+              >
+                <Trash2 className="size-3.5" />
+              </button>
+            ) : null}
+          </div>
         ) : null}
       </header>
       <ConfirmDialog

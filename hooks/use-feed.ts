@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createPost,
   createPostComment,
+  editSocialPost,
   fetchHomeTimeline,
   fetchPost,
   fetchPostComments,
@@ -78,6 +79,41 @@ export function useFeedMutations(myProfileId: string | null) {
     onSettled: () => qc.invalidateQueries({ queryKey: ["home-timeline"] }),
   });
 
+  const edit = useMutation({
+    mutationFn: (input: { postId: string; body: string }) =>
+      editSocialPost(input.postId, input.body),
+    onMutate: async ({ postId, body }) => {
+      await Promise.all([
+        qc.cancelQueries({ queryKey: ["home-timeline"] }),
+        qc.cancelQueries({ queryKey: ["post", postId] }),
+      ]);
+      const timelines = qc.getQueriesData<Post[]>({
+        queryKey: ["home-timeline"],
+      });
+      const detail = qc.getQueryData<Post | null>(["post", postId]);
+      const nextBody = body.trim();
+      qc.setQueriesData<Post[]>({ queryKey: ["home-timeline"] }, (posts) =>
+        posts?.map((post) =>
+          post.id === postId ? { ...post, body: nextBody } : post
+        )
+      );
+      qc.setQueryData<Post | null>(["post", postId], (post) =>
+        post ? { ...post, body: nextBody } : post
+      );
+      return { timelines, detail };
+    },
+    onError: (_error, { postId }, context) => {
+      for (const [key, posts] of context?.timelines ?? []) {
+        qc.setQueryData(key, posts);
+      }
+      qc.setQueryData(["post", postId], context?.detail);
+    },
+    onSettled: (_data, _error, { postId }) => {
+      qc.invalidateQueries({ queryKey: ["home-timeline"] });
+      qc.invalidateQueries({ queryKey: ["post", postId] });
+    },
+  });
+
   const like = useMutation({
     mutationFn: (postId: string) => likePost(postId, myProfileId!),
     onMutate: async (postId) => {
@@ -143,5 +179,5 @@ export function useFeedMutations(myProfileId: string | null) {
     },
   });
 
-  return { create, remove, like, unlike, comment };
+  return { create, edit, remove, like, unlike, comment };
 }
