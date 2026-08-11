@@ -40,6 +40,16 @@ export type DesktopBridge = {
     install: () => Promise<boolean>;
     onStateChange: (callback: (state: DesktopUpdateState) => void) => () => void;
   };
+  /** Optional while older desktop shells roll forward to native alerts. */
+  notifications?: {
+    show: (input: {
+      kind: "message" | "notification";
+      title: string;
+      body?: string | null;
+      url?: string | null;
+    }) => Promise<boolean>;
+    onOpen: (callback: (url: string) => void) => () => void;
+  };
 };
 
 export type DesktopUpdateState = {
@@ -172,12 +182,33 @@ export async function installDesktopUpdate(): Promise<boolean> {
   }
 }
 
+export async function showDesktopNotification(input: {
+  kind: "message" | "notification";
+  title: string;
+  body?: string | null;
+  url?: string | null;
+}): Promise<boolean> {
+  const notifications = bridge()?.notifications;
+  if (!notifications) return false;
+  try {
+    return await notifications.show(input);
+  } catch {
+    return false;
+  }
+}
+
 export function onDesktopUpdateStateChange(
   callback: (state: DesktopUpdateState) => void
 ): () => void {
   const updates = bridge()?.updates;
   if (!updates) return () => {};
   return updates.onStateChange(callback);
+}
+
+export function onDesktopNotificationOpen(callback: (url: string) => void): () => void {
+  const notifications = bridge()?.notifications;
+  if (!notifications) return () => {};
+  return notifications.onOpen(callback);
 }
 
 /**

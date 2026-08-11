@@ -8,7 +8,7 @@
 // secret stays on Vercel. This process only ever authenticates as the
 // signed-in artist, same as a browser tab would.
 
-const { app, BrowserWindow, Tray, Menu, nativeImage, shell, ipcMain, protocol, net, dialog, screen } = require("electron");
+const { app, BrowserWindow, Tray, Menu, Notification: NativeNotification, nativeImage, shell, ipcMain, protocol, net, dialog, screen } = require("electron");
 const path = require("path");
 const { pathToFileURL } = require("url");
 const { autoUpdater } = require("electron-updater");
@@ -20,6 +20,7 @@ const ALLOWED_ORIGINS = [new URL(APP_URL).origin];
 const SYNC_INTERVAL_MS = 5 * 60 * 1000;
 const UPDATE_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const VAULT_PROTOCOL = "tempo-local";
+const APP_USER_MODEL_ID = "com.tempo.desktop";
 
 // Matches --bg-0 / --text-lo from app/globals.css, so the native window
 // chrome (title bar, and on Windows the caption buttons) reads as part of
@@ -49,6 +50,22 @@ let updateCheckInFlight = false;
 let desktopUpdateReady = false;
 let syncEnabled = true; // mirrors the "Keep TEMPO syncing in the background" setting
 let vault = null;
+const activeNotifications = new Set();
+
+// Give Windows notifications and taskbar entries a stable TEMPO identity.
+if (process.platform === "win32") app.setAppUserModelId(APP_USER_MODEL_ID);
+// The desktop shell is explicitly allowed to make its two quiet alert tones
+// while hidden; ordinary web browsers still keep their normal gesture policy.
+app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
+
+const hasSingleInstanceLock = app.requestSingleInstanceLock();
+if (!hasSingleInstanceLock) app.quit();
+
+function appIconPath() {
+  return app.isPackaged
+    ? path.join(process.resourcesPath, "assets", "tempo-icon.png")
+    : path.join(__dirname, "..", "public", "icon-512.png");
+}
 
 // A fixed 1440x900 could easily be a large fraction of a small display or a
 // small fraction of a big one — size relative to the actual screen instead,
@@ -79,6 +96,7 @@ function createWindow() {
     minWidth: 420,
     minHeight: 480,
     backgroundColor: CHROME_BG, // matches --bg-0, avoids a white flash on first paint
+    icon: appIconPath(),
     show: false,
     autoHideMenuBar: true,
     // Keeps native min/max/close (Windows) or traffic lights (Mac) — removing
@@ -96,6 +114,8 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      // Keep Supabase realtime delivery active while the window lives in the tray.
+      backgroundThrottling: false,
       // See preload.js's own comment — a sandboxed preload can't reliably
       // require("./package.json") by relative path, so the version crosses
       // the boundary as a plain argv flag instead.
@@ -121,13 +141,26 @@ function createWindow() {
     return { action: "deny" };
   });
 
-  // Closing the window steps back to the tray instead of quitting, as long
-  // as background sync is enabled — see planning/desktop/01 "Background sync".
+  // Closing the window always steps back to the tray instead of quitting.
   mainWindow.on("close", (event) => {
-    if (quitting || !syncEnabled) return;
+    if (quitting) return;
     event.preventDefault();
     mainWindow.hide();
   });
+
+  mainWindow.on("closed", () => {
+    mainWindow = null;
+  });
+}
+
+function showMainWindow() {
+  if (!mainWindow) {
+    createWindow();
+    return;
+  }
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show();
+  mainWindow.focus();
 }
 
 // No visible menu bar (autoHideMenuBar above, plus Menu.setApplicationMenu(null)
@@ -161,10 +194,12 @@ function registerZoomShortcuts(win) {
 }
 
 function trayIcon() {
-  // Placeholder monochrome dot until real tray art ships; nativeImage.createEmpty()
-  // would render blank on some platforms, so this is a minimal visible fallback.
+  const image = nativeImage.createFromPath(appIconPath());
+  if (!image.isEmpty()) return image.resize({ width: 32, height: 32, quality: "best" });
+
+  // Visible last resort if an unpackaged development tree is incomplete.
   return nativeImage.createFromDataURL(
-    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAI0lEQVR4AWNgGAWjgP6AEQjw038MjIhAA5r+YyIB/xj+jwIA8kEO/8YfYtQAAAAASUVORK5CYII="
+    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAJElEQVR4Ae3BAQ0AAADCoPdPbQ43oAAAAAAAAAAAAAAAAAAAAIC3AEEgAAHuoUelAAAAAElFTkSuQmCC"
   );
 }
 
@@ -174,8 +209,7 @@ function createTray() {
   refreshTrayMenu("synced");
 
   tray.on("click", () => {
-    if (!mainWindow) return;
-    mainWindow.isVisible() ? mainWindow.focus() : mainWindow.show();
+    showMainWindow();
   });
 }
 
@@ -186,7 +220,7 @@ function refreshTrayMenu(state) {
     Menu.buildFromTemplate([
       { label: `TEMPO — ${label}`, enabled: false },
       { type: "separator" },
-      { label: "Open TEMPO", click: () => mainWindow?.show() },
+      { label: "Open TEMPO", click: showMainWindow },
       {
         label: "Keep syncing in the background",
         type: "checkbox",
@@ -202,6 +236,43 @@ function refreshTrayMenu(state) {
 function setSyncEnabled(next) {
   syncEnabled = next;
   refreshTrayMenu(syncEnabled ? "synced" : "offline");
+}
+
+function allowedDeepLink(url) {
+  if (typeof url !== "string" || !url.trim()) return null;
+  try {
+    const resolved = new URL(url, APP_URL);
+    return ALLOWED_ORIGINS.includes(resolved.origin) ? resolved.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+function showNativeNotification(input) {
+  if (!NativeNotification.isSupported() || mainWindow?.isFocused()) return false;
+
+  const kind = input?.kind === "message" ? "message" : "notification";
+  const title = String(input?.title || (kind === "message" ? "New message" : "New notification"))
+    .trim()
+    .slice(0, 120);
+  const body = typeof input?.body === "string" ? input.body.trim().slice(0, 280) : "";
+  const destination = allowedDeepLink(input?.url);
+  const notification = new NativeNotification({
+    title,
+    body,
+    icon: appIconPath(),
+    silent: true, // the renderer supplies TEMPO's distinct soft chimes
+  });
+
+  activeNotifications.add(notification);
+  notification.once("close", () => activeNotifications.delete(notification));
+  notification.once("click", () => {
+    activeNotifications.delete(notification);
+    showMainWindow();
+    if (destination) mainWindow?.webContents.send("notifications:open", destination);
+  });
+  notification.show();
+  return true;
 }
 
 // A check-in tick: keeps the tray state honest and is the seam the
@@ -309,9 +380,11 @@ function registerVaultIpc() {
   ipcMain.handle("zoom:out", () => adjustZoom(mainWindow, -ZOOM_STEP));
   ipcMain.handle("zoom:reset", () => adjustZoom(mainWindow, 0));
   ipcMain.handle("zoom:get", () => mainWindow.webContents.getZoomFactor());
+  ipcMain.handle("notifications:show", (_e, input) => showNativeNotification(input));
 }
 
 app.whenReady().then(() => {
+  if (!hasSingleInstanceLock) return;
   vault = new Vault();
   registerVaultProtocol();
   registerVaultIpc();
@@ -350,9 +423,12 @@ app.whenReady().then(() => {
   updateTimer = setInterval(checkForDesktopUpdate, UPDATE_INTERVAL_MS);
 
   app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
-    else mainWindow?.show();
+    showMainWindow();
   });
+});
+
+app.on("second-instance", () => {
+  if (app.isReady()) showMainWindow();
 });
 
 app.on("before-quit", () => {
@@ -362,7 +438,6 @@ app.on("before-quit", () => {
 });
 
 app.on("window-all-closed", () => {
-  // Never quit on window close while sync is on (macOS default + explicit
-  // desktop-sync behavior) — only "Quit TEMPO" from the tray exits fully.
-  if (process.platform !== "darwin" && !syncEnabled) app.quit();
+  // Closing the visible window hides it rather than reaching this event. If
+  // a renderer is destroyed unexpectedly, leave the tray process resident.
 });

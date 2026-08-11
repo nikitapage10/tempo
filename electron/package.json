@@ -31,6 +31,12 @@
       "vault.js",
       "package.json"
     ],
+    "extraResources": [
+      {
+        "from": "../public/icon-512.png",
+        "to": "assets/tempo-icon.png"
+      }
+    ],
     "extraMetadata": {
       "version": "0.100.8"
     },
