@@ -11,7 +11,7 @@ import {
   softDeletePost,
   unlikePost,
 } from "@/lib/api/feed";
-import type { PostVisibility } from "@/lib/types";
+import type { Post, PostVisibility } from "@/lib/types";
 
 export function useHomeTimeline(myProfileId: string | null) {
   return useQuery({
@@ -57,7 +57,25 @@ export function useFeedMutations(myProfileId: string | null) {
 
   const remove = useMutation({
     mutationFn: (postId: string) => softDeletePost(postId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["home-timeline"] }),
+    onMutate: async (postId) => {
+      await qc.cancelQueries({ queryKey: ["home-timeline"] });
+      const timelines = qc.getQueriesData<Post[]>({
+        queryKey: ["home-timeline"],
+      });
+      qc.setQueriesData<Post[]>({ queryKey: ["home-timeline"] }, (posts) =>
+        posts?.filter((post) => post.id !== postId)
+      );
+      return { timelines };
+    },
+    onError: (_error, _postId, context) => {
+      for (const [key, posts] of context?.timelines ?? []) {
+        qc.setQueryData(key, posts);
+      }
+    },
+    onSuccess: (_data, postId) => {
+      qc.removeQueries({ queryKey: ["post", postId], exact: true });
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["home-timeline"] }),
   });
 
   const like = useMutation({

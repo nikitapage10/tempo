@@ -2,9 +2,11 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Heart, MessageCircle } from "lucide-react";
+import { Heart, MessageCircle, Trash2 } from "lucide-react";
 import { ArtistMark } from "@/components/artists/artist-mark";
 import { SignedImage } from "@/components/ui/signed-image";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { useToast } from "@/components/ui/toast";
 import type { Post } from "@/lib/types";
 import { formatShortDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -33,6 +35,8 @@ export function FeedPostCard({
   onOpen,
   dense,
   myProfileId,
+  onDelete,
+  deleting = false,
 }: {
   post: Post;
   onLike: () => void;
@@ -40,9 +44,15 @@ export function FeedPostCard({
   onOpen: () => void;
   dense?: boolean;
   myProfileId?: string | null;
+  onDelete?: () => void | Promise<void>;
+  deleting?: boolean;
 }) {
   const author = post.author;
   const snap = post.attachment_snapshot;
+  const { toast } = useToast();
+  const [confirmDelete, setConfirmDelete] = React.useState(false);
+  const canDelete =
+    !!onDelete && !!myProfileId && myProfileId === post.author_profile_id;
 
   return (
     <article className={cn("panel-quiet p-4", dense && "p-3")}>
@@ -143,7 +153,39 @@ export function FeedPostCard({
             {myProfileId && myProfileId !== post.author_profile_id ? <ModerationReportDialog reporterProfileId={myProfileId} targetType="post" targetId={post.id} compact /> : null}
           </div>
         </div>
+        {canDelete ? (
+          <button
+            type="button"
+            onClick={() => setConfirmDelete(true)}
+            disabled={deleting}
+            title="Delete post"
+            aria-label="Delete your post"
+            className="shrink-0 rounded-input p-1.5 text-text-lo transition-colors hover:bg-bg-2 hover:text-warn focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice disabled:opacity-50"
+          >
+            <Trash2 className="size-3.5" />
+          </button>
+        ) : null}
       </header>
+      <ConfirmDialog
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        title="Delete this post?"
+        description="This removes the post from the Social feed for everyone. This can’t be undone."
+        confirmLabel="Delete post"
+        busy={deleting}
+        onConfirm={async () => {
+          try {
+            await onDelete?.();
+            setConfirmDelete(false);
+          } catch (error) {
+            toast(
+              error instanceof Error
+                ? error.message
+                : "Couldn’t delete that post."
+            );
+          }
+        }}
+      />
     </article>
   );
 }

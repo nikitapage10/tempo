@@ -4,6 +4,9 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-10
 
+- Fixed (v0.98.2): artists can now delete their own Social posts from either
+  the feed or post detail after confirmation; removal is immediate, rolls back
+  on failure, and no longer treats a rejected zero-row update as success.
 - Improved (v0.98.2): Calendar items now carry a faint background wash from
   their selected category color in addition to the stronger colored edge,
   icon, and label treatment across month, agenda, and timeline views.

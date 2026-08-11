@@ -80,7 +80,7 @@ export default function SocialView() {
     socialDataProfileId
   );
   const canBrowseSocial = onNetwork;
-  const { like, unlike } = useFeedMutations(myProfileId);
+  const { like, unlike, remove } = useFeedMutations(myProfileId);
 
   React.useEffect(() => {
     const p = searchParams.get("post");
@@ -690,6 +690,11 @@ export default function SocialView() {
                         onUnlike={() => unlike.mutate(post.id)}
                         onOpen={() => setPostId(post.id)}
                         myProfileId={myProfileId}
+                        deleting={remove.isPending && remove.variables === post.id}
+                        onDelete={async () => {
+                          await remove.mutateAsync(post.id);
+                          toast("Post deleted.", "ok");
+                        }}
                       />
                     ))
                   )}

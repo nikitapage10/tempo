@@ -140,11 +140,12 @@ export async function createPost(input: {
 
 export async function softDeletePost(postId: string): Promise<void> {
   const supabase = createClient();
-  const { error } = await supabase
-    .from("posts")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", postId);
+  const { data, error } = await supabase
+    .rpc("delete_own_social_post", { p_post_id: postId });
   if (error) throw error;
+  if (!data) {
+    throw new Error("Couldn’t remove this post. It may no longer exist or belong to this account.");
+  }
 }
 
 export async function likePost(postId: string, profileId: string): Promise<void> {
