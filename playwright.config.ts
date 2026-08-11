@@ -44,6 +44,9 @@ export default defineConfig({
       // has an artist, space, track, and legal acceptance recorded, so
       // signing in lands straight on Today rather than the Origin gate.
       DEV_TEST_EMAIL: "owner.fixture@tempo.test",
+      // Matches the deliberately non-production token used by the pulse
+      // delivery smoke test. This exists only inside Playwright's dev server.
+      CRON_SECRET: "test-cron-secret-do-not-use-in-prod",
     },
   },
 });
