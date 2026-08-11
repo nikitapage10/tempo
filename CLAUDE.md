@@ -36,6 +36,18 @@ Tooling-only pushes with no app-facing change opt out by putting
 `[skip-release-check]` in the commit message — every commit in the push needs
 the marker, not just one.
 
+## Working alongside other agents — REQUIRED when pushing
+
+This repo has multiple people and multiple agents (Claude Code, Cursor,
+Codex, others) working in it at once, sometimes in the same checked-out
+working directory. Before you commit anything, confirm the branch is still
+what you think it is (`git branch --show-current`) — another agent can
+switch it mid-session. Read `AGENTS.md` before your first push in a session:
+it covers isolating your work in a `git worktree`, staging narrowly instead
+of `git add -A`, and rebasing onto fresh `origin/main` at push time (not
+mid-task) so version bumps and CHANGELOG entries don't collide with another
+agent's concurrent, unrelated work.
+
 ## Other things that bite
 
 - **Never** drop, truncate, or reset tables. The Supabase database holds real

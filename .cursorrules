@@ -157,3 +157,37 @@ The production app is live at https://tempo-ten-sigma.vercel.app (sign-in at
 /login). Every push to main auto-deploys there via Vercel. Use this URL for
 absolute links (auth redirects, PWA manifest start_url) and when telling the
 user where to verify changes. Never hardcode localhost in anything that ships.
+
+## Concurrent multi-agent work — REQUIRED
+Multiple people and multiple agents (Claude Code, Cursor, Codex, others) work
+in this repo at the same time, often in the same checked-out working
+directory. That means the branch you started on, and the files in it, can
+change under you mid-task from someone else's uncommitted work. Follow this
+every time, no exceptions:
+
+1. **Isolate your own work in a `git worktree` on its own branch off `main`**,
+   not directly in a shared working directory on a shared branch. Never
+   assume the currently-checked-out branch is still what it was when you
+   started — check `git branch --show-current` before committing.
+2. **Never `git add -A` or blanket-stage in a shared working directory.**
+   Stage only the files your own change actually touched. Before staging,
+   run `git status` and account for every modified/untracked file that
+   *isn't* yours — leave those alone, staged or not.
+3. **Rebase onto fresh `origin/main` at push time, not before.** Don't plan a
+   version number or CHANGELOG position mid-task. When you're actually ready
+   to push: `git fetch origin`, then bring your commit onto a fresh copy of
+   `origin/main` (a scratch worktree checked out at `origin/main`, cherry-pick
+   or rebase your commit onto it). Recompute the version bump and the
+   CHANGELOG entry's position against what `main` *actually* is at that
+   moment — not against whatever `main` looked like when you started.
+4. **CHANGELOG.md conflicts are expected and easy**: keep both sides' bullets
+   under the shared `## YYYY-MM-DD` heading, newest addition on top. Never
+   drop another agent's entry to resolve a conflict.
+5. **Run typecheck + tests in that fresh worktree before pushing** — `npm
+   install` there first if it's a new worktree, since `node_modules` isn't
+   shared. A clean push should never be validated only against a stale local
+   state.
+6. Push only what you rebased/cherry-picked — never push a whole stale branch
+   that still carries someone else's unfinished, unreviewed commits.
+
+See `AGENTS.md` for the same protocol in tool-agnostic form.
