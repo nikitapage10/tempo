@@ -18,6 +18,7 @@ const { version: appVersion } = require("./package.json");
 const APP_URL = process.env.TEMPO_DESKTOP_URL || "https://tempo-ten-sigma.vercel.app";
 const ALLOWED_ORIGINS = [new URL(APP_URL).origin];
 const SYNC_INTERVAL_MS = 5 * 60 * 1000;
+const UPDATE_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const VAULT_PROTOCOL = "tempo-local";
 
 // Matches --bg-0 / --text-lo from app/globals.css, so the native window
@@ -43,6 +44,8 @@ let mainWindow = null;
 let tray = null;
 let quitting = false;
 let syncTimer = null;
+let updateTimer = null;
+let updateCheckInFlight = false;
 let syncEnabled = true; // mirrors the "Keep TEMPO syncing in the background" setting
 let vault = null;
 
@@ -216,6 +219,22 @@ async function syncTick() {
   }
 }
 
+// Desktop can remain resident in the tray for days, so checking only at
+// process startup leaves long-running installs behind. The updater downloads
+// quietly and installs on a full quit; this guard prevents overlapping checks
+// if a slow network call is still active when the interval fires again.
+async function checkForDesktopUpdate() {
+  if (!app.isPackaged || updateCheckInFlight) return;
+  updateCheckInFlight = true;
+  try {
+    await autoUpdater.checkForUpdatesAndNotify();
+  } catch (err) {
+    console.warn("[tempo-desktop] auto-update check skipped:", err.message);
+  } finally {
+    updateCheckInFlight = false;
+  }
+}
+
 function registerVaultProtocol() {
   protocol.handle(VAULT_PROTOCOL, (request) => {
     // tempo-local://tracks/{id}/versions/{id}/file.mp3 — host segment of a
@@ -290,10 +309,12 @@ app.whenReady().then(() => {
   syncTimer = setInterval(syncTick, SYNC_INTERVAL_MS);
   void syncTick();
 
-  autoUpdater.checkForUpdatesAndNotify().catch((err) => {
-    // Fails harmlessly pre-release (no publish target configured yet).
-    console.warn("[tempo-desktop] auto-update check skipped:", err.message);
-  });
+  // electron-updater's default is to download in the background and install
+  // on quit. State it explicitly because that is TEMPO's release contract.
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+  void checkForDesktopUpdate();
+  updateTimer = setInterval(checkForDesktopUpdate, UPDATE_INTERVAL_MS);
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -304,6 +325,7 @@ app.whenReady().then(() => {
 app.on("before-quit", () => {
   quitting = true;
   if (syncTimer) clearInterval(syncTimer);
+  if (updateTimer) clearInterval(updateTimer);
 });
 
 app.on("window-all-closed", () => {

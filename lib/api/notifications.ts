@@ -1,4 +1,8 @@
 import { createClient } from "@/lib/supabase/client";
+import {
+  DIRECT_MESSAGE_SIGNAL_TYPE,
+  isDirectMessageSignal,
+} from "@/lib/notifications/visibility";
 import type { AppNotification } from "@/lib/types";
 
 export async function fetchNotifications(limit = 50): Promise<AppNotification[]> {
@@ -6,10 +10,13 @@ export async function fetchNotifications(limit = 50): Promise<AppNotification[]>
   const { data, error } = await supabase
     .from("notifications")
     .select("*")
+    .neq("type", DIRECT_MESSAGE_SIGNAL_TYPE)
     .order("created_at", { ascending: false })
     .limit(limit);
   if (error) throw error;
-  return data ?? [];
+  // Keep a client-side guard too, so cached or mocked responses cannot put a
+  // direct-message signal back into the bell UI.
+  return (data ?? []).filter((item) => !isDirectMessageSignal(item.type));
 }
 
 export async function countUnreadNotifications(): Promise<number> {
@@ -17,6 +24,7 @@ export async function countUnreadNotifications(): Promise<number> {
   const { count, error } = await supabase
     .from("notifications")
     .select("*", { count: "exact", head: true })
+    .neq("type", DIRECT_MESSAGE_SIGNAL_TYPE)
     .is("read_at", null);
   if (error) throw error;
   return count ?? 0;
@@ -66,6 +74,7 @@ export async function markAllRead(): Promise<void> {
   const { error } = await supabase
     .from("notifications")
     .update({ read_at: new Date().toISOString() })
+    .neq("type", DIRECT_MESSAGE_SIGNAL_TYPE)
     .is("read_at", null);
   if (error) throw error;
 }

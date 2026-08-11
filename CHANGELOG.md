@@ -2,6 +2,28 @@
 
 Plain-English history of what changed in TEMPO, newest first.
 
+## 2026-08-11
+
+- Fixed (v0.100.12): joining a Scene from Discover or accepting a Scene invite
+  now uses the signed-in account's Scene identity. The Owl's Nest Join button
+  no longer fails on another account with a database conflict-constraint error.
+- Fixed (v0.100.11): a new direct message now alerts you only above Messages.
+  It no longer creates a duplicate item, unread count, or pop-up from the
+  Notifications bell; catalog, social, calendar, and support notifications are
+  unchanged.
+- Changed (v0.100.10): web and downloadable TEMPO now have a written release
+  contract: ordinary web updates automatically reach the desktop app, native
+  desktop changes use their own release, and features that need both must keep
+  working on older desktop installs while the update rolls out.
+- Under the hood (Desktop v0.100.7): added a guarded Windows release workflow,
+  a public binary-only update channel, automatic update checks at launch and
+  every six hours, and a CI check that blocks mismatched desktop versions or an
+  accidental return to the private source repository as the customer feed.
+  The Download page can switch to the channel's stable latest-installer link
+  through one Vercel setting while keeping the current beta as its fallback.
+  The public `nikitapage10/tempo-desktop-releases` repository and scoped
+  `DESKTOP_RELEASE_TOKEN` Actions secret must be created before the first run.
+
 ## 2026-08-10
 
 - Fixed (v0.100.9): the Windows installer download now works even for

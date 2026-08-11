@@ -95,6 +95,23 @@ Fixed (do not change without asking):
 - Mobile-responsive per spec §6 (rail collapses to bottom tab bar).
 - Plain, studio-casual UI copy per spec §5 ("Upload a bounce", "Log a session").
 
+## Web + desktop parity — REQUIRED
+Read `docs/WEB-DESKTOP-RELEASE-POLICY.md` before changing desktop-sensitive
+behavior or anything under `electron/`.
+
+- The Electron renderer loads the production Next.js app. Keep product UI and
+  business logic in the shared web app; never duplicate it under `electron/`.
+- Classify each change as shared-web, desktop-native, or cross-boundary.
+- Test desktop-sensitive web changes in both a browser and the Electron shell.
+- Web code must capability-detect native bridge features and keep a safe
+  fallback for older desktop installs.
+- Cross-boundary changes ship native-first, then web. Never require a web
+  deploy and desktop update to land simultaneously.
+- Changes under `electron/` require a desktop version bump, a CHANGELOG entry,
+  `npm run check:desktop-release`, and a published desktop release after merge.
+- Never publish customer updates from the private source repository. Use the
+  public binary-only release channel defined in the policy document.
+
 ## App version — REQUIRED after every change
 The release version shown under Settings in the left rail lives in
 `lib/version.ts` as `APP_VERSION`, and must match `version` in `package.json`.

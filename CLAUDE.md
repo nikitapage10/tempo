@@ -45,3 +45,7 @@ the marker, not just one.
   them.
 - Production is https://tempo-ten-sigma.vercel.app, auto-deployed from `main`.
   Never hardcode localhost in anything that ships.
+- Read `docs/WEB-DESKTOP-RELEASE-POLICY.md` for desktop-sensitive work. The
+  Electron shell loads the production web app, so shared features ship through
+  Vercel. Native and cross-boundary changes follow the separate desktop
+  version, compatibility, and public-update-channel rules in that document.

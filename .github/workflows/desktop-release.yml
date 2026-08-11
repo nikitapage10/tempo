@@ -1,0 +1,48 @@
+name: Desktop Release
+
+# Manual by design: web-only changes already reach the Electron renderer through
+# Vercel and must not create an unnecessary 80 MB installer. Run this only when
+# electron/ changed and the packaged build has been smoke-tested.
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-release
+  cancel-in-progress: false
+
+jobs:
+  windows-release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: electron/package-lock.json
+
+      - name: Validate release contract
+        run: node scripts/check-desktop-release.mjs
+
+      - name: Install desktop dependencies
+        run: npm ci --prefix electron
+
+      - name: Build and publish Windows update
+        run: npm --prefix electron run build -- --publish always
+        env:
+          GH_TOKEN: ${{ secrets.DESKTOP_RELEASE_TOKEN }}
+
+      - name: Keep a workflow copy of the release files
+        uses: actions/upload-artifact@v4
+        with:
+          name: tempo-desktop-windows-${{ github.run_number }}
+          path: |
+            dist-desktop/TEMPO-Setup.exe
+            dist-desktop/TEMPO-Setup.exe.blockmap
+            dist-desktop/latest.yml
+          if-no-files-found: error
+          retention-days: 14

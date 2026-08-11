@@ -29,12 +29,13 @@ const HIGHLIGHTS = [
   },
 ];
 
-// Served from the app's own domain (public/downloads/), not a GitHub
-// Release — the tempo repo is private, so release-asset links 404 for
-// anyone without repo access, which is everyone except the account that
-// built it. This is a stopgap; move to real object storage/CDN before a
-// wider public launch so the repo doesn't keep growing by ~80MB per build.
-const WINDOWS_INSTALLER_URL = "/downloads/TEMPO-Setup-0.100.6.exe";
+// Until the public binary-only release channel has its first verified release,
+// keep serving the bundled beta from the app's own domain. Once Vercel's
+// NEXT_PUBLIC_DESKTOP_WINDOWS_URL points at the public channel's stable
+// latest-download URL, future desktop releases require no web code change.
+const WINDOWS_INSTALLER_URL =
+  process.env.NEXT_PUBLIC_DESKTOP_WINDOWS_URL ||
+  "/downloads/TEMPO-Setup-0.100.6.exe";
 
 const DOWNLOADS: {
   os: "windows" | "mac";
@@ -45,7 +46,7 @@ const DOWNLOADS: {
   {
     os: "windows",
     label: "Download for Windows",
-    fileHint: "TEMPO Setup 0.100.6.exe · 78 MB",
+    fileHint: "Windows installer · about 80 MB",
     href: WINDOWS_INSTALLER_URL,
   },
   {

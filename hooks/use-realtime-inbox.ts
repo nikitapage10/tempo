@@ -4,10 +4,11 @@ import * as React from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/toast";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { isDirectMessageSignal } from "@/lib/notifications/visibility";
 import { createClient } from "@/lib/supabase/client";
 
 type RealtimeNotification = { type?: string; title?: string; link_url?: string | null };
-const memberMessageTypes = new Set(["dm_message", "support_reply"]);
+const memberMessageTypes = new Set(["support_reply"]);
 const adminMessageTypes = new Set(["support_member_reply", "support_new"]);
 
 export function useRealtimeInbox(admin = false) {
@@ -25,6 +26,17 @@ export function useRealtimeInbox(admin = false) {
       .channel(`tempo-inbox-${userId}-${crypto.randomUUID()}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` }, (payload) => {
         const notification = payload.new as RealtimeNotification;
+        if (isDirectMessageSignal(notification.type)) {
+          // A DM belongs exclusively to Messages. Use this internal row to
+          // refresh its thread and unread badge, but do not touch the bell or
+          // raise a second toast notification.
+          void queryClient.invalidateQueries({ queryKey: ["messages"] });
+          void queryClient.invalidateQueries({ queryKey: ["conversations"] });
+          void queryClient.invalidateQueries({ queryKey: ["dm-unread"] });
+          void queryClient.invalidateQueries({ queryKey: ["pulse-items"] });
+          return;
+        }
+
         void queryClient.invalidateQueries({ queryKey: ["notifications"] });
         void queryClient.invalidateQueries({ queryKey: ["notifications-unread-count"] });
         if (memberMessageTypes.has(notification.type ?? "")) {

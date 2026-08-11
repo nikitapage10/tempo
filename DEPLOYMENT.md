@@ -12,6 +12,18 @@ GitHub → Vercel (app) + Supabase (database, auth, file storage).
 - Absolute links that ship (auth redirects, PWA `start_url`, etc.) must use
   the production URL — never hardcode localhost.
 
+## Web and desktop ship as one product
+
+TEMPO Desktop loads the production web app, so an ordinary Vercel deployment
+also updates the experience inside the desktop window. Native shell changes
+(window, tray, updater, vault, preload bridge, installer) use the separate
+`Desktop Release` workflow and public update feed.
+
+Before merging or releasing desktop-sensitive work, follow
+**`docs/WEB-DESKTOP-RELEASE-POLICY.md`**. It defines change classification,
+old-install compatibility, native-first rollouts, version ownership, the
+one-time public release-repository setup, validation, and rollback.
+
 ## Environments & secrets
 Three environment variables, set in BOTH places:
 
