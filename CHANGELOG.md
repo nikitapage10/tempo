@@ -4,6 +4,7 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-11
 
+- Fixed (v0.125.1): Download page glass reads more clearly over Spectra, and the Windows / Mac buttons no longer overlap.
 - Changed (v0.125.0): Download (Windows and Mac) always follows the newest public installer as soon as Desktop Release publishes it - no waiting on a separate web bump. The page shows that live version next to the buttons.
 - Changed (v0.124.0): the public Download page and invite email match TEMPO's glass look more closely. Invites now lead with **Download TEMPO**, with **Use the web app** as the quieter option, and still include the copy-paste links if a button fails. Download buttons also point at the fixed Windows installer (v0.100.13) without a browser quirk that could leave you on the broken build.
 - Fixed (v0.123.0 / Desktop v0.100.13): the Windows app opens again - the last installer left out a small helper file the app needs to start. Download and the install wizard now just say TEMPO (not TEMPO Desktop).
