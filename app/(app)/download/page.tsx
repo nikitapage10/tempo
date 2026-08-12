@@ -50,7 +50,7 @@ const DOWNLOADS: {
   {
     os: "windows",
     label: "Download for Windows",
-    fileHint: "Windows installer · about 80 MB",
+    fileHint: "Windows wizard installer · about 80 MB",
     href: WINDOWS_INSTALLER_URL,
   },
   {
@@ -142,8 +142,9 @@ export default function DownloadPage() {
           </div>
         )}
         <p className="text-xs text-text-lo/70">
-          Both builds are unsigned betas — see the install notice below before
-          you open them. Mac is a universal app (Apple Silicon and Intel).
+          Windows uses a short install wizard (welcome, folder, shortcuts). Both
+          builds are unsigned betas — see the install notice below before you
+          open them. Mac is a universal app (Apple Silicon and Intel).
         </p>
       </section>
 
@@ -176,10 +177,11 @@ export default function DownloadPage() {
         </p>
         <ul className="space-y-1.5 text-sm text-text-lo">
           <li>
-            <span className="text-text-hi">Windows:</span> click{" "}
-            <span className="text-text-hi">More info</span>, then{" "}
-            <span className="text-text-hi">Run anyway</span> on the SmartScreen
-            prompt.
+            <span className="text-text-hi">Windows:</span> run the setup wizard,
+            pick a folder if you like, then click{" "}
+            <span className="text-text-hi">More info</span> →{" "}
+            <span className="text-text-hi">Run anyway</span> if SmartScreen
+            warns (unsigned beta).
           </li>
           <li>
             <span className="text-text-hi">Mac:</span> if macOS says the app

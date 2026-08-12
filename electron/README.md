@@ -65,8 +65,9 @@ Do not publish from a developer machine. Follow
 `docs/WEB-DESKTOP-RELEASE-POLICY.md`, bump both desktop version fields, run
 `npm run check:desktop-release` from the repo root, and smoke-test the packaged
 installer. After the change is merged to `main`, manually run the
-**Desktop Release** GitHub Actions workflow. It publishes the Windows
-installer and an **unsigned** universal Mac DMG (plus updater metadata) to
+**Desktop Release** GitHub Actions workflow. It publishes the assisted Windows
+wizard installer (welcome, choose folder, shortcuts — Spectra-branded side
+panel) and an **unsigned** universal Mac DMG (plus updater metadata) to
 the public update repository. Mac Gatekeeper will warn on first open —
 right-click → Open is the expected path until Apple signing is added.
 

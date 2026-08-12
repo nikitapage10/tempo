@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
@@ -124,6 +124,16 @@ describe("web and desktop platform handoff", () => {
       "tempo-desktop-releases/releases/latest/download/TEMPO-Setup.exe"
     );
     expect(button).toContain("DESKTOP_WINDOWS_INSTALLER_URL");
+  });
+
+  it("ships an assisted Spectra-branded Windows install wizard", () => {
+    const desktop = read("electron/package.json");
+    expect(desktop).toContain('"oneClick": false');
+    expect(desktop).toContain('"allowToChangeInstallationDirectory": true');
+    expect(desktop).toContain("installerSidebar.bmp");
+    expect(existsSync(resolve("electron/build/installerSidebar.bmp"))).toBe(true);
+    expect(existsSync(resolve("electron/build/installer.nsh"))).toBe(true);
+    expect(read("electron/build/installer.nsh")).toContain("customWelcomePage");
   });
 
   it("exposes a stable unsigned Mac DMG on the public release channel", () => {

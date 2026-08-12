@@ -23,7 +23,7 @@ export function showWebGlassAlert(input: WebGlassAlertInput) {
   listeners.forEach((listener) => listener(input));
 }
 
-function useHex(value: string | null | undefined, fallback: string) {
+function hexOrFallback(value: string | null | undefined, fallback: string) {
   return typeof value === "string" && /^#[0-9A-Fa-f]{6}$/.test(value)
     ? value
     : fallback;
@@ -57,8 +57,8 @@ export function WebGlassAlertHost() {
   if (!alert) return null;
 
   const active = alert;
-  const ice = useHex(active.ice, "#7FB4FF");
-  const amber = useHex(active.amber, "#FFB56B");
+  const ice = hexOrFallback(active.ice, "#7FB4FF");
+  const amber = hexOrFallback(active.amber, "#FFB56B");
   const label = active.kind === "message" ? "NEW MESSAGE" : "TEMPO NOTIFICATION";
 
   function open() {

@@ -80,7 +80,7 @@ native update can still install on a normal full quit.
 The public release repository contains binaries and update metadata only, not
 TEMPO source code. A Windows release must contain at least:
 
-- `TEMPO-Setup.exe`
+- `TEMPO-Setup.exe` (assisted wizard: welcome, install folder, shortcuts)
 - `TEMPO-Setup.exe.blockmap`
 - `latest.yml`
 

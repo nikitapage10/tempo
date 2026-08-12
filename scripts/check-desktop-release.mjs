@@ -43,6 +43,20 @@ if (desktopPackage.build?.win?.artifactName !== "TEMPO-Setup.${ext}") {
   errors.push("the Windows installer must keep the stable TEMPO-Setup.${ext} asset name");
 }
 
+const nsis = desktopPackage.build?.nsis;
+if (nsis?.oneClick !== false) {
+  errors.push("Windows installer must use the assisted wizard (nsis.oneClick: false)");
+}
+if (nsis?.allowToChangeInstallationDirectory !== true) {
+  errors.push("Windows installer must let artists choose the install folder");
+}
+const buildResources = path.join(root, "electron", "build");
+for (const asset of ["installerSidebar.bmp", "installerHeader.bmp", "installer.nsh"]) {
+  if (!fs.existsSync(path.join(buildResources, asset))) {
+    errors.push(`missing electron/build/${asset} for the branded Windows wizard`);
+  }
+}
+
 const mac = desktopPackage.build?.mac;
 if (mac?.artifactName !== "TEMPO-Mac.${ext}") {
   errors.push("the Mac DMG must keep the stable TEMPO-Mac.${ext} asset name");

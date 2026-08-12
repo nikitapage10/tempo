@@ -1,6 +1,6 @@
 {
   "name": "tempo-desktop",
-  "version": "0.100.11",
+  "version": "0.100.12",
   "private": true,
   "description": "TEMPO Desktop — Electron shell. Deliberately its own package, separate from the root TEMPO package.json, so Vercel's web deploy never installs Electron's Chromium binary. Run `npm install` inside this folder before desktop:dev / desktop:build from the repo root.",
   "repository": {
@@ -23,7 +23,8 @@
     "appId": "com.tempo.desktop",
     "productName": "TEMPO",
     "directories": {
-      "output": "../dist-desktop"
+      "output": "../dist-desktop",
+      "buildResources": "build"
     },
     "files": [
       "main.js",
@@ -50,7 +51,7 @@
       }
     ],
     "extraMetadata": {
-      "version": "0.100.11"
+      "version": "0.100.12"
     },
     "protocols": [
       {
@@ -64,6 +65,26 @@
       "target": "nsis",
       "icon": "../public/tempo-icon.ico",
       "artifactName": "TEMPO-Setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "../public/tempo-icon.ico",
+      "uninstallerIcon": "../public/tempo-icon.ico",
+      "installerHeaderIcon": "../public/tempo-icon.ico",
+      "installerHeader": "installerHeader.bmp",
+      "installerSidebar": "installerSidebar.bmp",
+      "uninstallerSidebar": "uninstallerSidebar.bmp",
+      "include": "installer.nsh",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "TEMPO",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false,
+      "menuCategory": false,
+      "warningsAsErrors": false
     },
     "mac": {
       "target": [

@@ -4,6 +4,12 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-11
 
+- Fixed (v0.121.0): production build succeeds again � a glass message toast
+  helper was named like a React Hook and tripped the Vercel typecheck.
+- Changed (v0.121.0 / Desktop v0.100.12): the Windows desktop download now opens
+  a proper install wizard — welcome screen, choose the folder, optional
+  shortcuts, then Finish — with TEMPO’s dark Spectra look on the side panel.
+  Run **Desktop Release** to publish the new installer.
 - Fixed (v0.120.1): the browser now shows the same glass **new message**
   popup as desktop (bottom-right, above Get help). The mistaken “TEMPO update
   is available” card on the web was removed — updates stay a desktop-only
