@@ -133,7 +133,7 @@ Every package: `npm run build` must pass. Fix new errors before merge. Documenta
 
 ## 6. Production verification sequence (after deploy)
 
-1. Open https://tempo-ten-sigma.vercel.app/login
+1. Open https://mytempo.dev/login
 2. Sign in
 3. Confirm Settings version matches CHANGELOG bump
 4. Smoke: Today → Board drag → open track → play current bounce

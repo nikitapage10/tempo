@@ -3,7 +3,7 @@
 ## The pipeline
 GitHub → Vercel (app) + Supabase (database, auth, file storage).
 
-- **Production URL:** https://tempo-ten-sigma.vercel.app (sign-in at `/login`).
+- **Production URL:** https://mytempo.dev (sign-in at `/login`).
 - Every push to `main` auto-deploys to production (~1–2 min).
 - Every push to any other branch gets its own preview URL — use branches for
   risky changes; merge to main only when the preview looks right.
@@ -48,7 +48,7 @@ Three environment variables, set in BOTH places:
 The Google and Microsoft buttons are already in the UI. To make them work,
 register each provider with the vendor and enable it in Supabase — full steps
 in **`OAUTH-SETUP.md`**. Also allow
-`https://tempo-ten-sigma.vercel.app/auth/callback` (and localhost for dev)
+`https://mytempo.dev/auth/callback` (and localhost for dev)
 under Supabase → Authentication → URL Configuration. Password-reset emails use
 that same callback with `next=/reset-password`.
 
@@ -86,5 +86,5 @@ inside `lib/storage.ts` (e.g. Cloudflare R2) — nothing else changes.
 ## Routine
 1. Change in Cursor → test at localhost:3000 (`npm run dev`).
 2. "Commit and push to main" in Cursor chat.
-3. Vercel deploys automatically. Check https://tempo-ten-sigma.vercel.app.
+3. Vercel deploys automatically. Check https://mytempo.dev.
 4. Broke something? Promote the previous deployment, then fix calmly.

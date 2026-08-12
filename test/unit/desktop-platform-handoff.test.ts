@@ -73,7 +73,7 @@ describe("web and desktop platform handoff", () => {
         app_version: "0.100.11",
         last_seen_at: new Date().toISOString(),
       },
-      webAppUrl: "https://tempo-ten-sigma.vercel.app",
+      webAppUrl: "https://mytempo.dev",
       windowsInstallerUrl: "/downloads/TEMPO-Setup.exe",
     });
     expect(open.kind).toBe("open-desktop");
@@ -87,7 +87,7 @@ describe("web and desktop platform handoff", () => {
         app_version: "0.100.6",
         last_seen_at: new Date().toISOString(),
       },
-      webAppUrl: "https://tempo-ten-sigma.vercel.app",
+      webAppUrl: "https://mytempo.dev",
       windowsInstallerUrl: "/downloads/TEMPO-Setup.exe",
     });
     // Stale DB version still opens desktop; Update stays a secondary path.

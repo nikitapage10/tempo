@@ -8,14 +8,14 @@ const { isAllowedDesktopNavigation, appLinkDestination } = require(
   resolve("electron/oauth-navigation.js")
 );
 
-const ORIGINS = ["https://tempo-ten-sigma.vercel.app"];
-const APP_URL = "https://tempo-ten-sigma.vercel.app";
+const ORIGINS = ["https://mytempo.dev"];
+const APP_URL = "https://mytempo.dev";
 
 describe("desktop OAuth navigation allowlist", () => {
   it("keeps only the TEMPO origin inside the app (providers use the system browser)", () => {
     expect(
       isAllowedDesktopNavigation(
-        "https://tempo-ten-sigma.vercel.app/auth/callback?code=x",
+        "https://mytempo.dev/auth/callback?code=x",
         ORIGINS
       )
     ).toBe(true);
@@ -52,11 +52,11 @@ describe("desktop OAuth navigation allowlist", () => {
       ORIGINS
     );
     expect(href).toBe(
-      "https://tempo-ten-sigma.vercel.app/auth/callback?code=abc123&next=%2Fimport"
+      "https://mytempo.dev/auth/callback?code=abc123&next=%2Fimport"
     );
     expect(
       appLinkDestination("tempo://open?path=/tracks", APP_URL, ORIGINS)
-    ).toBe("https://tempo-ten-sigma.vercel.app/tracks");
+    ).toBe("https://mytempo.dev/tracks");
     expect(
       appLinkDestination("tempo://auth/callback", APP_URL, ORIGINS)
     ).toBeNull();

@@ -55,7 +55,7 @@ agent's concurrent, unrelated work.
   user to run manually — tell them when one needs running.
 - Secrets live only in `.env.local` and Vercel env vars. Never commit or print
   them.
-- Production is https://tempo-ten-sigma.vercel.app, auto-deployed from `main`.
+- Production is https://mytempo.dev, auto-deployed from `main`.
   Never hardcode localhost in anything that ships.
 - Read `docs/WEB-DESKTOP-RELEASE-POLICY.md` for desktop-sensitive work. The
   Electron shell loads the production web app, so shared features ship through

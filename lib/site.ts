@@ -1,5 +1,5 @@
 /** Canonical production origin — never ship localhost in auth/PWA redirects. */
-export const PRODUCTION_SITE_URL = "https://tempo-ten-sigma.vercel.app";
+export const PRODUCTION_SITE_URL = "https://mytempo.dev";
 
 /**
  * Base URL for absolute links (auth callbacks, etc.).

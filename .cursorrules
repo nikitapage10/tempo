@@ -79,7 +79,7 @@ Fixed (do not change without asking):
   is private; never make it public.
 
 ## Production URL
-- Live app: https://tempo-ten-sigma.vercel.app (sign-in at /login).
+- Live app: https://mytempo.dev (sign-in at /login).
 - Auto-deployed from `main` via Vercel.
 - Use this URL for absolute links that ship (auth redirects, PWA manifest
   `start_url`, etc.). Never hardcode localhost in anything that ships.
@@ -153,7 +153,7 @@ paths, component names, or library names unless the user must interact with
 them.
 
 ## Live deployment
-The production app is live at https://tempo-ten-sigma.vercel.app (sign-in at
+The production app is live at https://mytempo.dev (sign-in at
 /login). Every push to main auto-deploys there via Vercel. Use this URL for
 absolute links (auth redirects, PWA manifest start_url) and when telling the
 user where to verify changes. Never hardcode localhost in anything that ships.

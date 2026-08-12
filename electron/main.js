@@ -20,8 +20,12 @@ const {
 } = require("./oauth-navigation");
 const { version: appVersion } = require("./package.json");
 
-const APP_URL = process.env.TEMPO_DESKTOP_URL || "https://tempo-ten-sigma.vercel.app";
-const ALLOWED_ORIGINS = [new URL(APP_URL).origin];
+const APP_URL = process.env.TEMPO_DESKTOP_URL || "https://mytempo.dev";
+// Keep the Vercel alias allowed during the custom-domain cutover so older
+// callbacks / deep links still resolve while installs update.
+const ALLOWED_ORIGINS = Array.from(
+  new Set([new URL(APP_URL).origin, "https://tempo-ten-sigma.vercel.app"])
+);
 const SYNC_INTERVAL_MS = 5 * 60 * 1000;
 const UPDATE_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const VAULT_PROTOCOL = "tempo-local";

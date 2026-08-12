@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "TEMPO",
     short_name: "TEMPO",
     description: "Music project management for working artists",
-    start_url: "https://tempo-ten-sigma.vercel.app/",
+    start_url: "https://mytempo.dev/",
     display: "standalone",
     background_color: "#0A0A0C",
     theme_color: "#0A0A0C",
