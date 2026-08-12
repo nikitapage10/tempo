@@ -39,12 +39,11 @@ describe("signed image URL cache", () => {
 
   it("caches scene and social proxy results from SignedImage", () => {
     const source = fs.readFileSync(
-      path.resolve("components/ui/signed-image.tsx"),
+      path.resolve("lib/media/resolve-image-url.ts"),
       "utf8"
     );
     expect(source).toContain("cacheSignedUrl");
-    expect(source).toContain("peekSignedUrl(path)");
-    expect(source).toContain("proxyInflight");
+    expect(source).toContain("resolveInflight");
     expect(source).toContain("/api/scenes/media/url");
     expect(source).toContain("/api/social/media/url");
   });

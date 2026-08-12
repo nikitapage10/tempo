@@ -36,6 +36,7 @@ import { SlitDivider } from "@/components/ui/slit";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { SupportReportDialog } from "@/components/support/support-report-dialog";
 import { useRealtimeInbox } from "@/hooks/use-realtime-inbox";
+import { useDesktopMediaWarm } from "@/hooks/use-desktop-media-warm";
 import { GlobalPlayerBar } from "@/components/player/global-player-bar";
 import { GuidedTour } from "@/components/guided-tour";
 import { StarterChecklist } from "@/components/onboarding/starter-checklist";
@@ -112,6 +113,7 @@ const FOCUS_ROUTE = /^\/track\/[^/]+\/focus(\/|$)/;
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   useRealtimeInbox();
+  useDesktopMediaWarm();
   const pathname = usePathname();
   const router = useRouter();
   const { activeSpace } = useActiveSpace();

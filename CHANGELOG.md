@@ -4,6 +4,7 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-12
 
+- Added (v0.128.0): on TEMPO Desktop, track covers, album/EP covers, scene banners/emblems, and artist logos quietly save into the local vault after you sign in — so the next time you open those screens they load from this computer instead of re-downloading every picture. (Web is unchanged.)
 - Fixed (v0.127.1): the quiet Tempo Theme bed on sign-in actually plays again — the soundtrack file was being blocked for people who weren’t signed in yet, so the page stayed silent. Click or type once on login / create-account to start it.
 
 ## 2026-08-11

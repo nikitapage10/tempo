@@ -15,6 +15,7 @@ import { createClient } from "@/lib/supabase/client";
 import { losslessVaultSiblings } from "@/lib/audio-convert";
 import {
   isDesktopApp,
+  vaultHas,
   vaultRemove,
   vaultResolveUrl,
   vaultStat,
@@ -224,6 +225,25 @@ function mirrorToVaultInBackground(path: string, signedUrl: string): void {
     mirrorAttempted.delete(path);
     console.warn("[storage] background vault mirror failed", path, err);
   });
+}
+
+/** Desktop: wait for a signed URL's bytes to land in the vault (warmer / prefetch). */
+export async function mirrorSignedUrlToVault(
+  path: string,
+  signedUrl: string
+): Promise<boolean> {
+  if (!isDesktopApp() || !path || !signedUrl) return false;
+  if (await vaultHas(path)) return true;
+  if (signedUrl.startsWith("tempo-local://")) return true;
+  mirrorAttempted.add(path);
+  try {
+    await fetchAndWriteVault(path, signedUrl);
+    return true;
+  } catch (err) {
+    mirrorAttempted.delete(path);
+    console.warn("[storage] vault mirror failed", path, err);
+    return false;
+  }
 }
 
 /**
