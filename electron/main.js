@@ -234,6 +234,8 @@ function guardRendererNavigation(webContents) {
   webContents.__tempoNavGuarded = true;
 
   webContents.on("will-navigate", (event, url) => {
+    // Glass toast uses a data: document + tempo-notification:// click target.
+    if (url.startsWith("data:") || url.startsWith("tempo-notification:")) return;
     if (isAllowedDesktopNavigation(url, ALLOWED_ORIGINS)) return;
     event.preventDefault();
     shell.openExternal(url);
@@ -441,6 +443,7 @@ function showGlassNotification(input) {
   const work = display.workArea;
 
   closeNotificationWindow();
+  const isMac = process.platform === "darwin";
   notificationWindow = new BrowserWindow({
     width,
     height,
@@ -460,6 +463,8 @@ function showGlassNotification(input) {
     hasShadow: true,
     thickFrame: false,
     backgroundColor: "#00000000",
+    // macOS: NSPanel so the toast can float over fullscreen apps / Spaces.
+    ...(isMac ? { type: "panel" } : {}),
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -469,9 +474,11 @@ function showGlassNotification(input) {
   });
 
   const popup = notificationWindow;
-  // screen-saver level beats most always-on-top peers on Windows 11.
+  // screen-saver level beats most always-on-top peers on Windows 11 and Mac.
   popup.setAlwaysOnTop(true, "screen-saver");
-  if (process.platform === "win32") {
+  if (isMac) {
+    popup.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  } else if (process.platform === "win32") {
     popup.setVisibleOnAllWorkspaces(true);
   }
 

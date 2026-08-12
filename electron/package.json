@@ -1,6 +1,6 @@
 {
   "name": "tempo-desktop",
-  "version": "0.100.17",
+  "version": "0.100.18",
   "private": true,
   "description": "TEMPO — Electron shell. Deliberately its own package, separate from the root TEMPO package.json, so Vercel's web deploy never installs Electron's Chromium binary. Run `npm install` inside this folder before desktop:dev / desktop:build from the repo root.",
   "repository": {
@@ -54,7 +54,7 @@
       }
     ],
     "extraMetadata": {
-      "version": "0.100.17"
+      "version": "0.100.18"
     },
     "protocols": [
       {

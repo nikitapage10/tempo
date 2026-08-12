@@ -182,7 +182,7 @@ export function CalendarDayPanel({
   return (
     <>
       {/* Persistent inspector on wide screens */}
-      <aside className={cn("glass hidden max-h-[calc(100vh-160px)] w-[320px] shrink-0 xl:flex", className)} aria-label={`${formatDayHeading(date)} detail`}>
+      <aside className={cn("glass hidden h-full min-h-0 w-[320px] shrink-0 flex-col overflow-hidden xl:flex", className)} aria-label={`${formatDayHeading(date)} detail`}>
         {content}
       </aside>
 

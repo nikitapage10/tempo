@@ -4,6 +4,8 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-12
 
+- Fixed (v0.129.1 / Desktop v0.100.18): on Mac, the new-message glass toast still shows when another app (or TEMPO) is in fullscreen. Re-download after Desktop Release publishes.
+- Fixed (v0.129.1): Calendar month view keeps the whole month on screen — day cells shrink to fit the window instead of pushing the last weeks off the bottom (especially in the Mac app).
 - Added (v0.129.0): on Tracks, Select is no longer delete-only — tick a few tracks and Group them (move into an existing album/EP bucket, ungroup, or make a new group from the selection), move them to a Stage, add them to a Project (or pull them off one), or still Delete with the same confirmation. Select all / Clear are right there in the bar.
 - Fixed (v0.128.2 / Desktop v0.100.17): the Mac app opens again — the last DMG left out a small helper file the shell needs to start. Re-download after Desktop Release publishes.
 - Fixed (v0.128.1 / Desktop v0.100.16): Blind A/B on TEMPO Desktop keeps your scrub position when you hit play — seeking a bounce no longer jumps back to the start. Update the desktop app after Desktop Release publishes.

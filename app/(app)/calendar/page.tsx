@@ -246,7 +246,7 @@ function CalendarContent() {
 
   return (
     <CalendarCategoryProvider categories={categoriesQuery.data?.categories ?? DEFAULT_CALENDAR_CATEGORIES}>
-      <div className="relative z-[1] space-y-4">
+      <div className="relative z-[1] flex h-[calc(100dvh-11rem)] flex-col gap-4 md:h-[calc(100dvh-7.25rem)]">
         <PageHeader title="Calendar" subtitle="Deadlines, releases, and scheduled work." />
 
         <CalendarAiScheduler today={today} timezone={vs.displayTimezone} onSchedule={scheduleFromParsed} />
@@ -344,8 +344,8 @@ function CalendarContent() {
             </Button>
           </div>
         ) : (
-          <div className="flex items-start gap-4">
-            <div className="min-w-0 flex-1">
+          <div className="flex min-h-0 flex-1 items-stretch gap-4">
+            <div className="min-h-0 min-w-0 flex-1">
               {vs.view === "timeline" ? (
                 <CalendarTimeline
                   items={filteredItems}

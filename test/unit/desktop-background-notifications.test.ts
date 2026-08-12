@@ -24,6 +24,8 @@ describe("desktop background notifications", () => {
     expect(main).toContain("showGlassNotification");
     expect(main).toContain("shouldShowDesktopAlert");
     expect(main).toContain('setAlwaysOnTop(true, "screen-saver")');
+    expect(main).toContain('type: "panel"');
+    expect(main).toContain("visibleOnFullScreen: true");
     expect(main).toContain("popup.show()");
     expect(main).not.toContain('backgroundMaterial: "acrylic"');
     expect(main).toContain('ipcMain.handle("notifications:show"');

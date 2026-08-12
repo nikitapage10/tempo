@@ -141,7 +141,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex min-h-screen flex-col" data-lf-chrome>
+    <div className="flex min-h-screen flex-col md:h-screen md:max-h-screen md:overflow-hidden" data-lf-chrome>
       <ArtistFavicon />
       <IntroMoment />
 
@@ -154,7 +154,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         className="pointer-events-auto fixed inset-x-0 top-0 z-10 h-12 [-webkit-app-region:drag]"
       />
 
-      <div className="flex flex-1">
+      <div className="flex min-h-0 flex-1">
         {/* Left 2px gutter stays transparent so active-nav windows can punch through */}
         <aside
           className="sticky top-0 z-30 hidden h-screen w-[220px] shrink-0 flex-col border-r border-line md:flex"
@@ -264,7 +264,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         {/* z-30 keeps this stacking context above the desktop drag strip so
             search and notification hit targets stay clickable. */}
-        <main className="relative z-30 isolate flex-1 overflow-x-hidden pb-20 md:pb-0">
+        <main className="relative z-30 isolate min-h-0 flex-1 overflow-x-hidden overflow-y-auto pb-20 md:pb-0">
           <AppVideoBackdrop className="fixed inset-x-0 bottom-0 top-0 z-0 md:bottom-[6px] md:left-[220px]" />
           <div className="relative z-[1] mx-auto w-full max-w-[1440px] px-4 md:px-8">
             {/* [-webkit-app-region:drag] makes this row double as the desktop

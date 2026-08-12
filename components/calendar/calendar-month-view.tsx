@@ -61,8 +61,8 @@ export function CalendarMonthView({
   }, [dates, items]);
 
   return (
-    <section className="glass overflow-hidden" aria-label={formatMonthTitle(selectedDate)}>
-      <div className="grid grid-cols-7 border-b border-line/70 bg-bg-2/20">
+    <section className="glass flex h-full min-h-[22rem] flex-col overflow-hidden" aria-label={formatMonthTitle(selectedDate)}>
+      <div className="grid shrink-0 grid-cols-7 border-b border-line/70 bg-bg-2/20">
         {Array.from({ length: 7 }, (_, index) => {
           const labels = weekStartsMonday ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
           const label = labels[index];
@@ -73,7 +73,7 @@ export function CalendarMonthView({
           );
         })}
       </div>
-      <div className="grid grid-cols-7" role="grid">
+      <div className="grid min-h-0 flex-1 grid-cols-7 grid-rows-6" role="grid">
         {dates.map((date, index) => {
           const dateItems = byDate.get(date) ?? [];
           const day = parseDateKey(date);
@@ -98,7 +98,7 @@ export function CalendarMonthView({
                 if (pending) onSchedule(pending, date);
               }}
               className={cn(
-                "group relative min-h-[94px] min-w-0 border-line/70 p-1 sm:min-h-[124px] sm:p-1.5 lg:min-h-[142px]",
+                "group relative min-h-0 min-w-0 overflow-hidden border-line/70 p-1 sm:p-1.5",
                 index % 7 !== 6 && "border-r",
                 index < 35 && "border-b",
                 selected && "bg-bg-2/45",
@@ -133,7 +133,7 @@ export function CalendarMonthView({
                   <Plus className="size-3" />
                 </button>
               </div>
-              <div className="space-y-1">
+              <div className="min-h-0 space-y-1 overflow-y-auto">
                 {visible.map((item) => (
                   <CalendarItemSurface
                     key={`${date}:${item.id}`}
