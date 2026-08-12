@@ -103,6 +103,11 @@ behavior or anything under `electron/`.
   business logic in the shared web app; never duplicate it under `electron/`.
 - Classify each change as shared-web, desktop-native, or cross-boundary.
 - Test desktop-sensitive web changes in both a browser and the Electron shell.
+- **Mac ↔ Windows desktop parity is required.** Shared `electron/` behavior
+  (URLs, OAuth, vault, updater, bridge) must ship for both platforms in the
+  same desktop version. Never land a Windows-only or Mac-only customer fix
+  without the matching platform path, and verify Desktop Release published
+  both `TEMPO-Setup.exe` and `TEMPO-Mac.dmg` for that version.
 - Web code must capability-detect native bridge features and keep a safe
   fallback for older desktop installs.
 - Cross-boundary changes ship native-first, then web. Never require a web

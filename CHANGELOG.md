@@ -4,6 +4,7 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-12
 
+- Changed (v0.135.1): desktop work stays Mac and Windows together — same shell version, same capabilities; releases must publish both installers before we call them done.
 - Added (v0.135.0): Admin has a clear **Back to TEMPO** path back to your normal studio (Today).
 - Changed (v0.135.0 / Desktop v0.100.21): the live address is **https://mytempo.dev** — auth redirects, invites, PWA, and TEMPO Desktop now use that domain (the old Vercel address still works as a spare allowlist entry on desktop while installs update). Set `NEXT_PUBLIC_SITE_URL=https://mytempo.dev` in Vercel if it isn’t already. Re-download after Desktop Release publishes.
 - Changed (v0.134.2): the profile menu’s desktop link matches where you are — **Open web app** inside TEMPO Desktop, **Open TEMPO** in the browser when desktop is already installed, otherwise **Download TEMPO**. Platform admins also get an **Admin portal** item there.

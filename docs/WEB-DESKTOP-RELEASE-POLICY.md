@@ -178,6 +178,32 @@ The Desktop Release workflow builds Windows first, then Mac, so both assets
 land on the same public release (`TEMPO-Setup.exe`, `latest.yml`,
 `TEMPO-Mac.dmg`, `latest-mac.yml`).
 
+## Mac ↔ Windows shell parity — REQUIRED
+
+TEMPO Desktop is one product on two OS installers. Keep them aligned:
+
+1. **One shared shell.** Put native behavior in shared `electron/` modules
+   (`main.js`, preload, vault, OAuth navigation, updater). Prefer
+   `process.platform` branches inside shared code over separate Mac/Windows
+   feature forks.
+2. **Same version, same capabilities.** A desktop version bump that changes
+   customer behavior (production URL, auth bridge, vault, updates, window
+   chrome) must be available on **both** Windows and Mac for that version.
+   Do not publish a “Windows-only” or “Mac-only” customer fix as the latest
+   channel tip.
+3. **Release gate.** After Desktop Release finishes, confirm the public
+   `vX.Y.Z` tag includes Windows (`TEMPO-Setup.exe`, `latest.yml`) **and**
+   Mac (`TEMPO-Mac.dmg`, `latest-mac.yml`). If Mac failed, fix and republish
+   a higher version — never leave `latest` pointing at a one-platform cut.
+4. **Test both when native.** For desktop-native or cross-boundary work,
+   smoke the flow on Windows and Mac (or the matching CI artifacts) before
+   calling the release done. Platform-specific UI affordances (traffic
+   lights, tray quirks) are fine; missing features on one OS are not.
+5. **Web stays shared.** Product UI still ships once via Vercel and loads in
+   both shells — Mac/Windows parity for studio features is automatic unless
+   you branch on `platform` in the web app. Avoid web `platform === "mac"` /
+   `"windows"` gates unless the OS truly requires different behavior.
+
 ## Rollback
 
 - **Web regression:** promote the previous Vercel deployment, then fix forward.

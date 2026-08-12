@@ -61,3 +61,4 @@ agent's concurrent, unrelated work.
   Electron shell loads the production web app, so shared features ship through
   Vercel. Native and cross-boundary changes follow the separate desktop
   version, compatibility, and public-update-channel rules in that document.
+  Mac and Windows desktop must stay feature-parity for the same shell version.
