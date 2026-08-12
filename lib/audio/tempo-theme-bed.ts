@@ -4,7 +4,7 @@
  */
 
 export const TEMPO_THEME_SRC = "/onboarding/origin/tempo-theme.mp3";
-export const TEMPO_THEME_VOLUME = 0.16;
+export const TEMPO_THEME_VOLUME = 0.22;
 export const TEMPO_THEME_FADE_IN_MS = 1400;
 export const TEMPO_THEME_FADE_OUT_MS = 900;
 

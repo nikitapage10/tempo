@@ -2,6 +2,10 @@
 
 Plain-English history of what changed in TEMPO, newest first.
 
+## 2026-08-12
+
+- Fixed (v0.127.1): the quiet Tempo Theme bed on sign-in actually plays again — the soundtrack file was being blocked for people who weren’t signed in yet, so the page stayed silent. Click or type once on login / create-account to start it.
+
 ## 2026-08-11
 
 - Fixed (v0.127.0 / Desktop v0.100.15): Google and Microsoft sign-in complete inside TEMPO Desktop again (they were bouncing out to a browser tab, so the desktop app never got the session). The stuck Redirecting… lock on the login buttons is cleared if you cancel or come back. Re-download / update the desktop app after Desktop Release publishes.
