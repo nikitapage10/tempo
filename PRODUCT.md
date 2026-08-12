@@ -51,7 +51,7 @@ holds until the dashboard is ready beneath it.
 
 **Messaging inbox.** Notifications, Messages, your profile menu, and Search sit together in the
 global top-right toolbar. The profile button shows your artist photo and opens Artist profile, Stats,
-Settings, Download TEMPO, and Sign out. Search understands tempo queries like `bpm 140` or
+Settings, a desktop handoff (Open web app on desktop; Open TEMPO or Download TEMPO on the web), Admin portal when you have program-admin access, and Sign out. Search understands tempo queries like `bpm 140` or
 `140 through 150` so you get tracks in that speed range, not every note that
 mentions BPM. The Messages icon carries an unread badge and opens a
 mini-inbox for recent artist and TEMPO Support conversations, including quick

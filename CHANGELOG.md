@@ -4,6 +4,9 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-12
 
+- Changed (v0.134.2): the profile menu’s desktop link matches where you are — **Open web app** inside TEMPO Desktop, **Open TEMPO** in the browser when desktop is already installed, otherwise **Download TEMPO**. Platform admins also get an **Admin portal** item there.
+- Fixed (v0.134.2): artist banner photos on Today, Artist, and Stats read clearly again — they were washed almost black by a too-heavy glass overlay.
+- Fixed (v0.134.2): Calendar month days no longer grow tiny scrollbars inside the cell — titles clip cleanly, and extra items stay behind **+N more**.
 - Fixed (v0.134.1): the toolbar profile button is your artist photo (the same emblem as on Artist), filling the circle — not a blank icon chip.
 - Added (v0.134.0): a profile button next to Messages — open your artist profile, Stats, Settings, or Download TEMPO, or sign out, without digging through the rail.
 - Fixed (v0.133.1): desktop zoom no longer leaves a black strip beside the left rail, and menu text only grows with zoom when the wide labeled rail has room (the narrow icon rail stays put).

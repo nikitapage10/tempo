@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -17,13 +17,26 @@ describe("toolbar profile menu", () => {
     expect(profile).toBeLessThan(search);
   });
 
-  it("offers artist, settings, download, and sign out", () => {
+  it("offers artist, settings, platform handoff, and sign out", () => {
     expect(menu).toContain('href="/artist"');
     expect(menu).toContain('href="/stats"');
     expect(menu).toContain('href="/settings"');
-    expect(menu).toContain('href="/download"');
+    expect(menu).toContain("resolveDesktopHandoff");
+    expect(menu).toContain("Open web app");
+    expect(menu).toContain("Open TEMPO");
+    expect(menu).toContain("Download TEMPO");
+    expect(menu).toContain("usePlatformAdmin");
+    expect(menu).toContain('href="/admin"');
+    expect(menu).toContain("Admin portal");
     expect(menu).toContain("signOut");
     expect(menu).toContain("Sign out");
+  });
+
+  it("gates Admin portal on the lightweight access probe", () => {
+    expect(existsSync(resolve("app/api/admin/access/route.ts"))).toBe(true);
+    expect(read("app/api/admin/access/route.ts")).toContain("requireAdmin");
+    expect(read("hooks/use-admin.ts")).toContain("checkPlatformAdminAccess");
+    expect(menu).toContain("platformAdmin.data");
   });
 
   it("shows the artist emblem as the trigger and menu header photo", () => {

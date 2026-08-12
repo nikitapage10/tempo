@@ -131,7 +131,6 @@ export default function ArtistStatsPage() {
       <div className="glass-hero prism-edge relative overflow-hidden">
         <div className="absolute inset-0">
           <LfWindow field className="absolute inset-0" aria-hidden />
-          <div className="scrim-reveal absolute inset-0" aria-hidden />
           {activeArtist ? (
             <ArtistBanner
               artist={activeArtist}
@@ -139,6 +138,7 @@ export default function ArtistStatsPage() {
               className="absolute inset-0"
             />
           ) : null}
+          <div className="scrim-reveal absolute inset-0" aria-hidden />
         </div>
         {activeArtist?.logo_url ? (
           <div className="pointer-events-none absolute inset-y-0 right-0 z-[1] flex w-[min(46%,22rem)] items-end justify-end p-2 sm:p-3">

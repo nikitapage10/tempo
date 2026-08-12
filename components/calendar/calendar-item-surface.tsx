@@ -153,7 +153,14 @@ export function CalendarItemSurface({
 
   if (compact) {
     return (
-      <SpotlightCard tone={tone} accent={color} radius={7} borderWidth={1} size={110}>
+      <SpotlightCard
+        tone={tone}
+        accent={color}
+        radius={7}
+        borderWidth={1}
+        size={110}
+        className="min-w-0 max-w-full overflow-hidden"
+      >
         <button
           type="button"
           draggable={!!onDragStart}

@@ -5,8 +5,9 @@ import type { Artist } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 /**
- * An artist's banner, as a translucent tint over glass — never a sealed plate.
- * The photo stays light so the video wash and Spectra lines remain visible.
+ * An artist's banner over glass. The photo should read as the hero image;
+ * Spectra still peeks through via fadeRight and a light veil — not by crushing
+ * the picture to ~20% opacity.
  */
 export function ArtistBanner({
   artist,
@@ -32,13 +33,13 @@ export function ArtistBanner({
   if (!hasBanner) return children ? <>{children}</> : null;
 
   const fadeMask = fadeRight
-    ? "linear-gradient(100deg, #000 0%, #000 34%, rgb(0 0 0 / 0.4) 52%, transparent 74%)"
+    ? "linear-gradient(100deg, #000 0%, #000 42%, rgb(0 0 0 / 0.55) 58%, transparent 82%)"
     : undefined;
 
   const colorWash =
     artist.banner_color && artist.banner_color_end
-      ? `linear-gradient(125deg, color-mix(in oklab, ${artist.banner_color} 40%, transparent) 0%, color-mix(in oklab, ${artist.banner_color_end} 28%, transparent) 42%, transparent 100%)`
-      : `linear-gradient(180deg, color-mix(in oklab, ${artist.banner_color} 36%, transparent) 0%, transparent 100%)`;
+      ? `linear-gradient(125deg, color-mix(in oklab, ${artist.banner_color} 55%, transparent) 0%, color-mix(in oklab, ${artist.banner_color_end} 38%, transparent) 42%, transparent 100%)`
+      : `linear-gradient(180deg, color-mix(in oklab, ${artist.banner_color} 48%, transparent) 0%, transparent 100%)`;
 
   return (
     <div
@@ -54,15 +55,15 @@ export function ArtistBanner({
           <SignedImage
             path={artist.banner_url}
             alt=""
-            className="absolute inset-0 size-full object-cover opacity-[0.22]"
+            className="absolute inset-0 size-full object-cover opacity-[0.72]"
           />
-          {/* Soft veil only — no extra blur (that turned Spectra into smoke). */}
+          {/* Soft left-biased veil for type — keep the photo visible. */}
           <div
             aria-hidden
             className="absolute inset-0"
             style={{
               background:
-                "linear-gradient(180deg, rgb(10 10 12 / 0.12) 0%, rgb(10 10 12 / 0.18) 50%, rgb(10 10 12 / 0.28) 100%)",
+                "linear-gradient(100deg, rgb(10 10 12 / 0.28) 0%, rgb(10 10 12 / 0.12) 40%, transparent 70%)",
             }}
           />
         </>

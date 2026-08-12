@@ -69,14 +69,21 @@ export default function ArtistProfileByHandlePage() {
       <div className="glass-hero prism-edge relative overflow-hidden">
         <div className="absolute inset-0">
           <LfWindow field className="absolute inset-0" aria-hidden />
-          <div className="scrim-reveal absolute inset-0" aria-hidden />
           {profile.banner_url || profile.banner_color ? (
-            <div className="absolute inset-0">
+            <div
+              className="absolute inset-0"
+              style={{
+                maskImage:
+                  "linear-gradient(100deg, #000 0%, #000 42%, rgb(0 0 0 / 0.55) 58%, transparent 82%)",
+                WebkitMaskImage:
+                  "linear-gradient(100deg, #000 0%, #000 42%, rgb(0 0 0 / 0.55) 58%, transparent 82%)",
+              }}
+            >
               {profile.banner_url ? (
                 <SignedImage
                   path={profile.banner_url}
                   alt=""
-                  className="absolute inset-0 size-full object-cover opacity-[0.22]"
+                  className="absolute inset-0 size-full object-cover opacity-[0.72]"
                 />
               ) : (
                 <div
@@ -84,8 +91,8 @@ export default function ArtistProfileByHandlePage() {
                   className="absolute inset-0"
                   style={{
                     background: profile.banner_color_end
-                      ? `linear-gradient(125deg, ${profile.banner_color} 0%, ${profile.banner_color_end} 42%, transparent 100%)`
-                      : `linear-gradient(180deg, ${profile.banner_color} 0%, transparent 100%)`,
+                      ? `linear-gradient(125deg, color-mix(in oklab, ${profile.banner_color} 55%, transparent) 0%, color-mix(in oklab, ${profile.banner_color_end} 38%, transparent) 42%, transparent 100%)`
+                      : `linear-gradient(180deg, color-mix(in oklab, ${profile.banner_color} 48%, transparent) 0%, transparent 100%)`,
                   }}
                 />
               )}
@@ -94,11 +101,12 @@ export default function ArtistProfileByHandlePage() {
                 className="absolute inset-0"
                 style={{
                   background:
-                    "linear-gradient(180deg, rgb(10 10 12 / 0.12) 0%, rgb(10 10 12 / 0.2) 55%, rgb(10 10 12 / 0.3) 100%)",
+                    "linear-gradient(100deg, rgb(10 10 12 / 0.28) 0%, rgb(10 10 12 / 0.12) 40%, transparent 70%)",
                 }}
               />
             </div>
           ) : null}
+          <div className="scrim-reveal absolute inset-0" aria-hidden />
         </div>
 
         {profile.emblem_url ? (

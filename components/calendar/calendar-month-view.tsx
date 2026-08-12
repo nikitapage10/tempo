@@ -133,7 +133,7 @@ export function CalendarMonthView({
                   <Plus className="size-3" />
                 </button>
               </div>
-              <div className="min-h-0 space-y-1 overflow-y-auto">
+              <div className="min-h-0 min-w-0 space-y-1 overflow-hidden">
                 {visible.map((item) => (
                   <CalendarItemSurface
                     key={`${date}:${item.id}`}

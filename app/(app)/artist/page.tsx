@@ -200,10 +200,10 @@ export default function ArtistProfilePage() {
       <div className="glass-hero prism-edge relative overflow-hidden">
         <div className="absolute inset-0">
           <LfWindow field className="absolute inset-0" aria-hidden />
-          <div className="scrim-reveal absolute inset-0" aria-hidden />
           {activeArtist ? (
             <ArtistBanner artist={activeArtist} fadeRight className="absolute inset-0" />
           ) : null}
+          <div className="scrim-reveal absolute inset-0" aria-hidden />
         </div>
 
         {activeArtist?.emblem_url ? (

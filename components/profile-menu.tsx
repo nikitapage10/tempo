@@ -2,34 +2,59 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   BarChart3,
   Disc3,
   Download,
+  ExternalLink,
   LogOut,
+  MonitorSmartphone,
   Settings,
+  Shield,
 } from "lucide-react";
 import { useActiveArtist } from "@/components/active-artist-provider";
 import { ArtistMark } from "@/components/artists/artist-mark";
 import { useArtistProfile } from "@/hooks/use-artist-profile";
+import { usePlatformAdmin } from "@/hooks/use-admin";
+import { useActiveDesktopDevice } from "@/hooks/use-devices";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import {
+  DESKTOP_WINDOWS_INSTALLER_URL,
+  resolveDesktopHandoff,
+  type DesktopHandoffKind,
+} from "@/lib/desktop/handoff";
+import { detectOS, isDesktopApp } from "@/lib/platform";
+import { getSiteUrl } from "@/lib/site";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
+function profileHandoffLabel(kind: DesktopHandoffKind): string {
+  if (kind === "open-web") return "Open web app";
+  if (kind === "open-desktop" || kind === "update-desktop") return "Open TEMPO";
+  return "Download TEMPO";
+}
+
 /**
- * Toolbar account menu — sits beside Messages for Artist, Settings, Download,
- * and Sign out without hunting through the rail. The trigger is your artist
- * profile photo (emblem), same source as the Artist page hero.
+ * Toolbar account menu — sits beside Messages for Artist, Settings, desktop
+ * handoff (web ↔ app), and Sign out without hunting through the rail. The
+ * trigger is your artist profile photo (emblem), same source as the Artist page.
  */
 export function ProfileMenu() {
   const [open, setOpen] = React.useState(false);
   const [signingOut, setSigningOut] = React.useState(false);
+  const [mounted, setMounted] = React.useState(false);
   const ref = React.useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const pathname = usePathname();
   const user = useCurrentUser();
   const { activeArtist } = useActiveArtist();
   const { profile } = useArtistProfile(activeArtist?.id ?? null);
+  const activeDevice = useActiveDesktopDevice();
+  const platformAdmin = usePlatformAdmin();
+  // Keep detectOS warm for hydration parity with resolveDesktopHandoff.
+  React.useMemo(() => detectOS(), []);
+  React.useEffect(() => setMounted(true), []);
 
   const displayName =
     profile?.display_name?.trim() ||
@@ -65,6 +90,23 @@ export function ProfileMenu() {
 
   const itemClass =
     "flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-text-lo transition-colors duration-hover hover:bg-bg-2/60 hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ice";
+
+  const handoff = mounted
+    ? resolveDesktopHandoff({
+        isDesktop: isDesktopApp(),
+        pathname,
+        activeDevice,
+        webAppUrl: getSiteUrl(),
+        windowsInstallerUrl: DESKTOP_WINDOWS_INSTALLER_URL,
+      })
+    : null;
+  const handoffLabel = handoff ? profileHandoffLabel(handoff.kind) : "Download TEMPO";
+  const HandoffIcon =
+    handoff?.kind === "open-web"
+      ? ExternalLink
+      : handoff?.kind === "open-desktop" || handoff?.kind === "update-desktop"
+        ? MonitorSmartphone
+        : Download;
 
   return (
     <div className="relative" ref={ref}>
@@ -150,15 +192,40 @@ export function ProfileMenu() {
               <Settings className="size-4 shrink-0" strokeWidth={1.75} />
               Settings
             </Link>
-            <Link
-              href="/download"
-              role="menuitem"
-              onClick={() => setOpen(false)}
-              className={itemClass}
-            >
-              <Download className="size-4 shrink-0" strokeWidth={1.75} />
-              Download TEMPO
-            </Link>
+            {platformAdmin.data ? (
+              <Link
+                href="/admin"
+                role="menuitem"
+                onClick={() => setOpen(false)}
+                className={itemClass}
+              >
+                <Shield className="size-4 shrink-0" strokeWidth={1.75} />
+                Admin portal
+              </Link>
+            ) : null}
+            {handoff ? (
+              <a
+                href={handoff.href}
+                role="menuitem"
+                target={handoff.kind === "open-web" ? "_blank" : undefined}
+                rel={handoff.kind === "open-web" ? "noreferrer" : undefined}
+                onClick={() => setOpen(false)}
+                className={itemClass}
+              >
+                <HandoffIcon className="size-4 shrink-0" strokeWidth={1.75} />
+                {handoffLabel}
+              </a>
+            ) : (
+              <Link
+                href="/download"
+                role="menuitem"
+                onClick={() => setOpen(false)}
+                className={itemClass}
+              >
+                <Download className="size-4 shrink-0" strokeWidth={1.75} />
+                Download TEMPO
+              </Link>
+            )}
           </div>
 
           <div className="border-t border-line py-1">
