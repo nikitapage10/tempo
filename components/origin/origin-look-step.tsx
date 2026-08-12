@@ -209,6 +209,24 @@ export function OriginLookStep({
               hasValue={!!artist.logo_url}
               disabled={imageBusy}
               onPick={() => logoInputRef.current?.click()}
+              preview={
+                artist.logo_url ? (
+                  <div className="flex h-11 w-[4.5rem] shrink-0 items-center justify-center overflow-hidden rounded-input border border-line/60 bg-bg-0/35 px-1.5">
+                    <SignedImage
+                      path={artist.logo_url}
+                      alt=""
+                      className="max-h-8 max-w-full object-contain"
+                    />
+                  </div>
+                ) : (
+                  <div
+                    className="flex h-11 w-[4.5rem] shrink-0 items-center justify-center rounded-input border border-dashed border-line/50 bg-bg-0/20"
+                    aria-hidden
+                  >
+                    <ImagePlus className="size-3.5 text-text-lo/50" />
+                  </div>
+                )
+              }
               onFile={(files) =>
                 void withImage(
                   files,
@@ -243,6 +261,17 @@ export function OriginLookStep({
               hasValue={!!artist.emblem_url}
               disabled={imageBusy}
               onPick={() => emblemInputRef.current?.click()}
+              preview={
+                <ArtistMark
+                  emblemUrl={artist.emblem_url}
+                  paletteId={artist.palette_id}
+                  iceColor={artist.ice_color}
+                  amberColor={artist.amber_color}
+                  name={artist.name}
+                  size={44}
+                  className="size-11 shrink-0 shadow-e1 ring-1 ring-line/70"
+                />
+              }
               onFile={(files) =>
                 void withImage(
                   files,
@@ -396,8 +425,8 @@ export function OriginLookStep({
 function LookPreview({ artist }: { artist: Artist }) {
   return (
     <div className="overflow-hidden rounded-[12px] border border-line/70 bg-bg-2/25">
-      {/* Wide banner strip — tall enough that logos aren't clipped on desktop. */}
-      <div className="relative aspect-[2.4/1] min-h-[10.5rem] w-full sm:min-h-[12.5rem]">
+      {/* Tall enough that wide logos stay fully inside the strip on desktop. */}
+      <div className="relative aspect-[2/1] min-h-[12rem] w-full overflow-hidden sm:min-h-[14rem] md:min-h-[15.5rem]">
         {artist.banner_url || artist.banner_color ? (
           <ArtistBanner artist={artist} className="absolute inset-0 size-full" />
         ) : (
@@ -410,17 +439,17 @@ function LookPreview({ artist }: { artist: Artist }) {
           />
         )}
         {artist.logo_url ? (
-          <div className="pointer-events-none absolute inset-y-4 right-4 z-[1] flex w-[min(55%,16rem)] items-center justify-end sm:inset-y-5 sm:right-5">
+          <div className="pointer-events-none absolute bottom-5 right-4 top-5 z-[1] flex w-[min(52%,15rem)] items-center justify-end sm:bottom-6 sm:right-5 sm:top-6">
             <SignedImage
               path={artist.logo_url}
               alt=""
-              className="max-h-full max-w-full object-contain object-right drop-shadow-[0_10px_28px_rgb(0_0_0/0.5)]"
+              className="h-auto max-h-full w-auto max-w-full object-contain object-right drop-shadow-[0_10px_28px_rgb(0_0_0/0.5)]"
             />
           </div>
         ) : null}
       </div>
 
-      {/* Profile lives under the banner so it isn't cropped by the strip height. */}
+      {/* Profile sits under the banner so the strip never crops the photo. */}
       <div className="relative flex items-end gap-3 px-3 pb-3 pt-0">
         <div className="-mt-8 shrink-0 sm:-mt-9">
           <ArtistMark
@@ -455,6 +484,7 @@ function LookUploadRow({
   onPick,
   onFile,
   onClear,
+  preview,
 }: {
   label: string;
   hint: string;
@@ -466,57 +496,61 @@ function LookUploadRow({
   onPick: () => void;
   onFile: (files: FileList | null) => void;
   onClear: () => void;
+  preview?: React.ReactNode;
 }) {
   return (
-    <div className="flex min-w-0 flex-col gap-1.5 rounded-[10px] border border-line/50 bg-bg-0/20 px-3 py-2.5">
-      <div className="min-w-0">
-        <span className="font-mono text-[11px] uppercase tracking-wider text-text-lo">
-          {label}
-        </span>
-        <span className="ml-1.5 text-xs text-text-lo/80">({hint})</span>
-      </div>
-      <div className="flex flex-wrap items-center gap-1.5">
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => {
-            onFile(e.target.files);
-            e.target.value = "";
-          }}
-        />
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          disabled={disabled}
-          onClick={onPick}
-        >
-          {busy ? (
-            <Loader2 className="size-3.5 animate-spin" />
-          ) : (
-            <ImagePlus className="size-3.5" />
-          )}
-          {busy ? "Uploading…" : hasValue ? "Replace" : "Upload"}
-        </Button>
-        {hasValue ? (
+    <div className="flex min-w-0 items-center gap-3 rounded-[10px] border border-line/50 bg-bg-0/20 px-3 py-2.5">
+      {preview ? <div className="shrink-0">{preview}</div> : null}
+      <div className="min-w-0 flex-1">
+        <div className="min-w-0">
+          <span className="font-mono text-[11px] uppercase tracking-wider text-text-lo">
+            {label}
+          </span>
+          <span className="ml-1.5 text-xs text-text-lo/80">({hint})</span>
+        </div>
+        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              onFile(e.target.files);
+              e.target.value = "";
+            }}
+          />
           <Button
             type="button"
             variant="ghost"
             size="sm"
-            className="text-text-lo hover:text-warn"
             disabled={disabled}
-            onClick={onClear}
+            onClick={onPick}
           >
-            {clearing ? (
+            {busy ? (
               <Loader2 className="size-3.5 animate-spin" />
             ) : (
-              <X className="size-3.5" />
+              <ImagePlus className="size-3.5" />
             )}
-            {clearing ? "Removing…" : "Remove"}
+            {busy ? "Uploading…" : hasValue ? "Replace" : "Upload"}
           </Button>
-        ) : null}
+          {hasValue ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="text-text-lo hover:text-warn"
+              disabled={disabled}
+              onClick={onClear}
+            >
+              {clearing ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <X className="size-3.5" />
+              )}
+              {clearing ? "Removing…" : "Remove"}
+            </Button>
+          ) : null}
+        </div>
       </div>
     </div>
   );

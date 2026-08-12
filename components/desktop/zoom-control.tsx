@@ -9,10 +9,14 @@ import { railLayoutWidthPx } from "@/lib/desktop/content-zoom";
 import { cn } from "@/lib/utils";
 
 /**
- * Desktop-only interface zoom — floats near the rail edge. Scales the main
- * workspace (and labeled-rail type when there's width). Ctrl/Cmd +/- / 0 match.
+ * Desktop-only interface zoom. In the studio it sits past the rail; on
+ * full-bleed surfaces (Origin) it pins to the bottom-left corner.
  */
-export function ZoomControl() {
+export function ZoomControl({
+  placement = "rail",
+}: {
+  placement?: "rail" | "corner";
+}) {
   const { factor, zoomIn, zoomOut, zoomReset } = useContentZoom();
   const labeledRail = useLabeledRail();
   const railWidth = railLayoutWidthPx(factor, labeledRail);
@@ -20,19 +24,24 @@ export function ZoomControl() {
   if (!isDesktopApp()) return null;
 
   const percent = Math.round(factor * 100);
+  const corner = placement === "corner";
   // 16px gutter past the live rail width (compact or zoom-grown labeled).
   const leftPx = railWidth + 16;
 
   return (
     <div
       className={cn(
-        "fixed bottom-20 left-4 z-[90] flex h-9 items-center gap-0.5 rounded-full border border-line bg-bg-2 px-1 text-text-lo shadow-e3 [-webkit-app-region:no-drag]",
-        "md:bottom-5 md:left-[var(--tempo-zoom-left)]"
+        "fixed z-[90] flex h-9 items-center gap-0.5 rounded-full border border-line bg-bg-2 px-1 text-text-lo shadow-e3 [-webkit-app-region:no-drag]",
+        corner
+          ? "bottom-5 left-4"
+          : "bottom-20 left-4 md:bottom-5 md:left-[var(--tempo-zoom-left)]"
       )}
       style={
-        {
-          ["--tempo-zoom-left"]: `${leftPx}px`,
-        } as CSSProperties
+        corner
+          ? undefined
+          : ({
+              ["--tempo-zoom-left"]: `${leftPx}px`,
+            } as CSSProperties)
       }
     >
       <button

@@ -57,5 +57,13 @@ describe("desktop content zoom wiring", () => {
     expect(shell).toContain("absolute inset-0");
     expect(zoom).toContain("railLayoutWidthPx");
     expect(zoom).toContain("--tempo-zoom-left");
+    expect(zoom).toContain('placement?: "rail" | "corner"');
+  });
+
+  it("offers bottom-left zoom during Origin onboarding", () => {
+    const origin = read("components/origin/origin-experience.tsx");
+    expect(origin).toContain("useContentZoom");
+    expect(origin).toContain('placement="corner"');
+    expect(origin).toContain("ZoomControl");
   });
 });

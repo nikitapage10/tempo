@@ -20,6 +20,7 @@ import {
   OriginProcessingStep,
 } from "@/components/origin/origin-processing-step";
 import { OriginStoryScroll } from "@/components/origin/origin-story-scroll";
+import { ZoomControl } from "@/components/desktop/zoom-control";
 import { MorphingText } from "@/components/ui/morphing-text";
 import {
   cancelFirstOpenPending,
@@ -29,11 +30,12 @@ import {
 } from "@/components/origin/first-open-reveal";
 import { PHASE_GATES, useOriginMedia } from "@/hooks/use-origin-media";
 import { useOriginState } from "@/hooks/use-origin-state";
+import { useContentZoom } from "@/hooks/use-content-zoom";
 import { clipForPhase } from "@/lib/origin/reducer";
 import { originAsset, type OriginMediaKey } from "@/lib/origin/media";
 import { applyOriginToProfile } from "@/lib/origin/profile-mapping";
 import { armGuidedTour } from "@/lib/guided-tour";
-
+import { isDesktopApp } from "@/lib/desktop/bridge";
 /**
  * ORIGIN, assembled.
  *
@@ -105,6 +107,9 @@ export function OriginExperience({
   } = useOriginState(revisit, replay);
 
   const media = useOriginMedia(state.phase);
+  const { factor: contentZoom } = useContentZoom();
+  /** Import review scrolls its own panel — CSS zoom on an ancestor breaks that. */
+  const [importUiActive, setImportUiActive] = React.useState(false);
   /** Set by the opening tap — the gesture browsers require for audible video. */
   const [soundOn, setSoundOn] = React.useState(false);
   const soundtrackRef = React.useRef<HTMLAudioElement | null>(null);
@@ -500,6 +505,16 @@ export function OriginExperience({
       onActiveElement={handleActiveElement}
     >
       <audio ref={soundtrackRef} src={SOUNDTRACK_SRC} preload="auto" loop aria-hidden="true" />
+      {/* Desktop zoom control — bottom-left; scales the copy/panels, not the film. */}
+      {isDesktopApp() ? <ZoomControl placement="corner" /> : null}
+      <div
+        className="absolute inset-0"
+        style={
+          contentZoom !== 1 && !importUiActive
+            ? { zoom: contentZoom }
+            : undefined
+        }
+      >
       {/* The story owns the whole scroll range, so it sits outside the centred
           overlay the other steps share. */}
       {storyPhase ? (
@@ -517,6 +532,7 @@ export function OriginExperience({
             onImportComplete={() => setImportChoice("imported")}
             importChoice={importChoice}
             importPending={importPending}
+            onImportActiveChange={setImportUiActive}
           />
         </div>
       ) : (
@@ -647,6 +663,7 @@ export function OriginExperience({
 
         </OriginOverlay>
       )}
+      </div>
     </OriginMediaStage>
   );
 }

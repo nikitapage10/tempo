@@ -146,6 +146,8 @@ function ChapterSection({
   wide = false,
   alignClass,
   onBack,
+  /** Import owns a tall interactive form — scroll the chapter body, don't clip it. */
+  scrollBody = false,
 }: {
   index: number;
   staticMode: boolean;
@@ -154,6 +156,7 @@ function ChapterSection({
   wide?: boolean;
   alignClass?: string;
   onBack?: () => void;
+  scrollBody?: boolean;
 }) {
   if (index === 0) {
     return (
@@ -201,7 +204,7 @@ function ChapterSection({
   return (
     <section
       aria-labelledby={`origin-chapter-${index}`}
-      className={cn(staticMode && "py-12")}
+      className={cn(staticMode && "py-12", scrollBody && "flex h-full min-h-0 flex-col")}
     >
       {/* Middle-left, opposite the earlier steps: the scroll footage opens out
           from the right, so the copy sits on the quieter side of the frame. */}
@@ -210,9 +213,12 @@ function ChapterSection({
           "origin-story-chapter relative flex w-full flex-col overflow-hidden rounded-[26px] border bg-[linear-gradient(125deg,rgb(9_10_13/0.9),rgb(21_25_32/0.76),rgb(10_10_13/0.86))] shadow-3 backdrop-blur-xl",
           // Short chapters stay viewport-bound; The Story grows with its tiles
           // and pans via the outer scrub transform instead of an inner scroll.
-          index === STORY_CHAPTER
-            ? null
-            : "max-h-[min(86dvh,52rem)]",
+          // Import (scrollBody) fills the stage and scrolls its own body.
+          scrollBody
+            ? "min-h-0 flex-1"
+            : index === STORY_CHAPTER
+              ? null
+              : "max-h-[min(86dvh,52rem)]",
           index % 2 === 0 ? "border-amber/25" : "border-ice/30",
           "transition-[max-width,transform] duration-700 motion-reduce:transition-none",
           wide ? "max-w-5xl" : "max-w-3xl",
@@ -235,7 +241,12 @@ function ChapterSection({
             index % 2 === 0 ? "via-amber/70" : "via-ice/70"
           )}
         />
-        <div className="relative grid min-h-0 grid-cols-[2.5rem_1fr] gap-5 px-6 py-7 sm:grid-cols-[3rem_1fr] sm:gap-7 sm:px-8 sm:py-8">
+        <div
+          className={cn(
+            "relative grid min-h-0 grid-cols-[2.5rem_1fr] gap-5 px-6 py-7 sm:grid-cols-[3rem_1fr] sm:gap-7 sm:px-8 sm:py-8",
+            scrollBody && "h-full min-h-0 flex-1"
+          )}
+        >
           <div className="flex flex-col items-center gap-3 pt-0.5 text-[10px] uppercase tracking-[0.2em] text-text-lo/70">
             <span className={cn("font-mono", index % 2 === 0 ? "text-amber" : "text-ice")}>
               {String(index + 1).padStart(2, "0")}
@@ -243,15 +254,31 @@ function ChapterSection({
             <span className="h-10 w-px bg-[linear-gradient(to_bottom,var(--line),transparent)]" />
             <span className="[writing-mode:vertical-rl]">{CHAPTER_KICKERS[index]}</span>
           </div>
-          <div className="min-h-0 min-w-0">
+          <div
+            className={cn(
+              "min-h-0 min-w-0",
+              scrollBody && "flex min-h-0 flex-col overflow-hidden"
+            )}
+          >
             {onBack ? <ChapterBackButton onClick={onBack} /> : null}
             <h2
               id={`origin-chapter-${index}`}
-              className="text-xs uppercase tracking-[0.24em] text-text-hi/90"
+              className="shrink-0 text-xs uppercase tracking-[0.24em] text-text-hi/90"
             >
               {title ?? CHAPTER_TITLES[index]}
             </h2>
-            <div className="mt-5 min-h-0">{children}</div>
+            <div
+              className={cn(
+                "mt-5 min-h-0",
+                // Single scroll surface for Shape the Workspace / import —
+                // nested max-h boxes under a centered sticky stage clipped the
+                // Continue actions off-screen with no way to reach them.
+                scrollBody &&
+                  "origin-import-scroll flex-1 overflow-y-auto overscroll-contain pr-1"
+              )}
+            >
+              {children}
+            </div>
           </div>
         </div>
       </div>
@@ -272,6 +299,7 @@ export function OriginStoryScroll({
   onImportComplete,
   importChoice,
   importPending,
+  onImportActiveChange,
 }: {
   interpretation: ArtistOriginInterpretation;
   onInterpretationChange: (interpretation: ArtistOriginInterpretation) => void;
@@ -286,12 +314,19 @@ export function OriginStoryScroll({
   /** Which way the artist went on the import chapter, once they've chosen. */
   importChoice: "imported" | "empty" | null;
   importPending: boolean;
+  /** Desktop CSS zoom breaks nested scroll — pause it while import owns the stage. */
+  onImportActiveChange?: (active: boolean) => void;
 }) {
   const scrollerRef = React.useRef<HTMLDivElement>(null);
   const sectionRefs = React.useRef<Array<HTMLDivElement | null>>([]);
   const [importStarted, setImportStarted] = React.useState(false);
   const [importStep, setImportStep] = React.useState<ImportStep>("intake");
   const [editingChapter, setEditingChapter] = React.useState<number | null>(null);
+
+  React.useEffect(() => {
+    onImportActiveChange?.(importStarted);
+    return () => onImportActiveChange?.(false);
+  }, [importStarted, onImportActiveChange]);
 
   const importTitle: Record<ImportStep, string> = {
     intake: "Bring your music in",
@@ -328,11 +363,19 @@ export function OriginStoryScroll({
       if (importStarted) {
         const own = i === 4;
         el.style.opacity = own ? "1" : "0";
-        el.style.transform = "translate3d(0, -50%, 0) scale(1)";
+        // Top-align the import panel so tall review content can scroll inside
+        // the stage instead of being centered and clipped by overflow:hidden.
+        el.style.transform = "translate3d(0, 0, 0) scale(1)";
+        el.style.top = own ? "0" : "";
+        el.style.bottom = own ? "0" : "";
+        el.style.height = own ? "100%" : "";
         el.style.pointerEvents = own ? "auto" : "none";
         el.style.zIndex = own ? "40" : "0";
         return;
       }
+      el.style.top = "";
+      el.style.bottom = "";
+      el.style.height = "";
       const start = stops[i];
       const end = i + 1 < stops.length ? stops[i + 1] : 1;
       const span = Math.max(0.0001, end - start);
@@ -722,20 +765,18 @@ export function OriginStoryScroll({
     // Settings afterwards.
     <div key="import" className="flex flex-col gap-4">
       {importStarted ? (
-        <div className="no-scrollbar max-h-[72dvh] overflow-y-auto overscroll-contain pr-1">
-          <ImportExperience
-            embedded
-            onStepChange={setImportStep}
-            onComplete={() => {
-              onImportComplete();
-              setImportStarted(false);
-            }}
-            onDiscard={() => {
-              onSkipImport();
-              setImportStarted(false);
-            }}
-          />
-        </div>
+        <ImportExperience
+          embedded
+          onStepChange={setImportStep}
+          onComplete={() => {
+            onImportComplete();
+            setImportStarted(false);
+          }}
+          onDiscard={() => {
+            onSkipImport();
+            setImportStarted(false);
+          }}
+        />
       ) : (
         <>
           <p className="text-sm leading-relaxed text-text-lo">
@@ -829,6 +870,7 @@ export function OriginStoryScroll({
             title={i === 4 && importStarted ? importTitle[importStep] : undefined}
             wide={i === 3 || (i === 4 && importStarted)}
             alignClass={i === 4 && importStarted ? importAlign : undefined}
+            // Static mode uses the page scroller — nested h-full scrollBody isn't needed.
             onBack={() => backForChapter(i)}
           >
             {content}
@@ -852,7 +894,16 @@ export function OriginStoryScroll({
     >
       {/* The scroll range. The sticky child stays in view across all of it. */}
       <div style={{ height: `${sections.length * VH_PER_CHAPTER + 100}vh` }} className="w-full">
-        <div className="sticky top-0 flex h-[100dvh] items-center overflow-hidden px-5 py-6 sm:py-8">
+        <div
+          className={cn(
+            "sticky top-0 flex h-[100dvh] px-5",
+            // Import fills the stage top-to-bottom; centering + overflow-hidden
+            // was clipping Shape the Workspace before Continue could be reached.
+            importStarted
+              ? "items-stretch overflow-hidden py-4 sm:py-5"
+              : "items-center overflow-hidden py-6 sm:py-8"
+          )}
+        >
           {sections.map((content, i) => (
             <div
               key={i}
@@ -862,8 +913,12 @@ export function OriginStoryScroll({
               // Transforms are written by `paint` on every scroll frame. The
               // first chapter starts at zero and is faded up by the mount
               // effect below, so the story opens rather than appearing.
-              // `top-1/2` + paint's translateY(-50%) keeps panels middle-left.
-              className="absolute inset-x-5 top-1/2 will-change-[transform,opacity]"
+              // `top-1/2` + paint's translateY(-50%) keeps panels middle-left
+              // (import mode overrides top/height in paint for a scroll body).
+              className={cn(
+                "absolute inset-x-5 will-change-[transform,opacity]",
+                importStarted && i === 4 ? "top-0 bottom-0" : "top-1/2"
+              )}
               style={{ opacity: 0, transition: "opacity 520ms ease-out" }}
             >
               <ChapterSection
@@ -872,6 +927,7 @@ export function OriginStoryScroll({
                 title={i === 4 && importStarted ? importTitle[importStep] : undefined}
                 wide={i === 3 || (i === 4 && importStarted)}
                 alignClass={i === 4 && importStarted ? importAlign : undefined}
+                scrollBody={i === 4 && importStarted}
                 onBack={() => backForChapter(i)}
               >
                 {content}

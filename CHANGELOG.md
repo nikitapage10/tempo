@@ -4,6 +4,12 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-12
 
+- Fixed (v0.135.2 / Desktop v0.100.22): Google and Microsoft sign-in on TEMPO Desktop hand back into the app again — the sign-in code is finished inside the desktop window (where it was started), Windows keeps the `tempo://` return link, and long Google URLs aren’t blocked from opening your browser. Re-download after Desktop Release publishes. Confirm Supabase allow-lists `https://mytempo.dev/auth/desktop-bridge`.
+- Fixed (v0.135.2): sign-in Tempo Theme plays every visit again on TEMPO Desktop (logout / reopen — it isn’t once-a-day; that’s only the boot film after you’re in), starts as soon as the track is ready in the shell, and on the web warms sooner so you’re not waiting ~6–7s while it fights the intro preload.
+- Fixed (v0.135.2): Origin’s Look preview keeps the banner logo fully visible (especially on desktop), and the Logo / Profile rows show a live thumbnail on the left.
+- Fixed (v0.135.2): Shape the Workspace during Origin import scrolls all the way down again — you can reach **Review what gets built** / continue instead of getting stuck mid-list.
+- Added (v0.135.2): on TEMPO Desktop, Origin shows the same bottom-left zoom control as the studio, so onboarding type can be enlarged without leaving the film.
+- Changed (v0.135.2): Bring your music in stops after the basics instead of endless follow-ups — once TEMPO has enough to draft a workspace, it tells you to hit **That’s everything** or keep adding detail only if you want.
 - Changed (v0.135.1): desktop work stays Mac and Windows together — same shell version, same capabilities; releases must publish both installers before we call them done.
 - Added (v0.135.0): Admin has a clear **Back to TEMPO** path back to your normal studio (Today).
 - Changed (v0.135.0 / Desktop v0.100.21): the live address is **https://mytempo.dev** — auth redirects, invites, PWA, and TEMPO Desktop now use that domain (the old Vercel address still works as a spare allowlist entry on desktop while installs update). Set `NEXT_PUBLIC_SITE_URL=https://mytempo.dev` in Vercel if it isn’t already. Re-download after Desktop Release publishes.

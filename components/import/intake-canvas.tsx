@@ -33,9 +33,17 @@ type TempoTurn = {
   id: string;
   observation: string;
   questions: Followup[];
+  /** Soft exit cue once basics are in — not another AI question. */
+  doneCue?: boolean;
 };
 /** One entry in the transcript, in the order it happened. */
 type Turn = ArtistTurn | TempoTurn;
+
+/** Hard cap so the chat can't keep digging after the basics are covered. */
+const MAX_FOLLOWUP_QUESTIONS = 2;
+
+const BASICS_DONE_CUE =
+  "Basics are in. Click That’s everything whenever you’re ready to build the workspace — or keep adding detail if you want it tuned further.";
 
 type IntakeCanvasProps = {
   importId: string;
@@ -67,21 +75,10 @@ function kindForFile(file: File): Exclude<ImportSourceKind, "text"> {
 }
 
 /**
- * What TEMPO says back after something is added. Deliberately short and
- * factual — it is acknowledging receipt, not performing a personality, and it
- * must never imply anything has been read or created yet.
+ * What TEMPO says back after something is added once basics are already in.
  */
-function acknowledge(sources: ImportSource[]): string {
-  const n = sources.length;
-  if (n === 0) return "";
-  const files = sources.filter((s) => s.kind !== "text").length;
-  const notes = n - files;
-
-  const parts: string[] = [];
-  if (notes) parts.push(`${notes} note${notes === 1 ? "" : "s"}`);
-  if (files) parts.push(`${files} file${files === 1 ? "" : "s"}`);
-
-  return `Got ${parts.join(" and ")}. Add more if you have it, or tell me that's everything.`;
+function acknowledgeExtra(): string {
+  return "Got it — keep going if you want, or hit That’s everything when you’re ready.";
 }
 
 export function IntakeCanvas({
@@ -102,6 +99,9 @@ export function IntakeCanvas({
   const [turns, setTurns] = React.useState<Turn[]>([]);
   const [thinking, setThinking] = React.useState(false);
   const [enough, setEnough] = React.useState(false);
+  /** Once we have a usable baseline, stop auto-asking more AI questions. */
+  const [basicsReady, setBasicsReady] = React.useState(false);
+  const questionRoundsRef = React.useRef(0);
   const [catalogPreview, setCatalogPreview] = React.useState<CatalogPreview | null>(
     null,
   );
@@ -137,8 +137,9 @@ export function IntakeCanvas({
   }, [sources]);
 
   /**
-   * Ask what's still missing. Runs after each thing the artist adds, so the
-   * screen behaves like a conversation rather than a form they fill in blind.
+   * Ask what's still missing — but only while the intake is still thin.
+   * Once basics are covered (or we've already asked a couple of times), we
+   * stop the question loop and point at That's everything instead.
    */
   const requestFollowups = React.useCallback(
     async (readFilesFirst = false) => {
@@ -151,24 +152,78 @@ export function IntakeCanvas({
           await extractAll(importId);
           onSourcesChanged();
         }
+
+        // Basics already covered — acknowledge quietly; don't start another Q.
+        if (basicsReady || questionRoundsRef.current >= MAX_FOLLOWUP_QUESTIONS) {
+          setTurns((prev) => {
+            const alreadyCued = prev.some((t) => t.kind === "tempo" && t.doneCue);
+            return [
+              ...prev,
+              {
+                kind: "tempo",
+                id: `ack-${Date.now()}`,
+                observation: alreadyCued ? acknowledgeExtra() : BASICS_DONE_CUE,
+                questions: [],
+                doneCue: true,
+              },
+            ];
+          });
+          setEnough(true);
+          setBasicsReady(true);
+          return;
+        }
+
         const result = await askFollowups(importId);
-        setEnough(result.enoughToProceed);
-        if (result.observation || result.questions.length > 0) {
-          setTurns((prev) => [
-            ...prev,
-            {
-              kind: "tempo",
-              id: `t${Date.now()}`,
-              observation: result.observation,
-              questions: result.questions,
-            },
-          ]);
+        // Once the model says basics are enough, don't tack on another dig.
+        const allowQuestion =
+          !result.enoughToProceed &&
+          questionRoundsRef.current < MAX_FOLLOWUP_QUESTIONS;
+        const cappedQuestions = allowQuestion ? result.questions : [];
+        if (cappedQuestions.length > 0) {
+          questionRoundsRef.current += 1;
+        }
+
+        const reachedBasics =
+          result.enoughToProceed ||
+          questionRoundsRef.current >= MAX_FOLLOWUP_QUESTIONS ||
+          (!allowQuestion && result.questions.length === 0);
+
+        if (reachedBasics) {
+          setBasicsReady(true);
+          setEnough(true);
+        } else {
+          setEnough(result.enoughToProceed);
+        }
+
+        const showCue = reachedBasics;
+        if (result.observation || cappedQuestions.length > 0 || showCue) {
+          setTurns((prev) => {
+            const next: Turn[] = [
+              ...prev,
+              {
+                kind: "tempo",
+                id: `t${Date.now()}`,
+                observation: result.observation,
+                questions: cappedQuestions,
+              },
+            ];
+            if (showCue && !prev.some((t) => t.kind === "tempo" && t.doneCue)) {
+              next.push({
+                kind: "tempo",
+                id: `cue-${Date.now()}`,
+                observation: BASICS_DONE_CUE,
+                questions: [],
+                doneCue: true,
+              });
+            }
+            return next;
+          });
         }
       } finally {
         setThinking(false);
       }
     },
-    [importId, onSourcesChanged],
+    [basicsReady, importId, onSourcesChanged],
   );
 
   async function handleFiles(files: File[]) {
@@ -411,7 +466,14 @@ export function IntakeCanvas({
 
                       {isLatest && turn.questions.length > 0 ? (
                         <p className="text-xs text-text-lo">
-                          Answer what you can, or skip ahead when you&rsquo;re ready.
+                          Answer if you want — or hit{" "}
+                          <span className="text-text-hi">That’s everything</span>{" "}
+                          below whenever you’re ready to move on.
+                        </p>
+                      ) : null}
+                      {turn.doneCue ? (
+                        <p className="text-xs text-text-lo">
+                          More detail is optional from here.
                         </p>
                       ) : null}
                     </div>
@@ -507,9 +569,10 @@ export function IntakeCanvas({
               </div>
 
               <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-                <p className="text-xs leading-relaxed text-text-lo">
-                  What you add here is sent to an AI service to be read. Remove anything
-                  you&rsquo;d rather not send.
+                <p className="max-w-md text-xs leading-relaxed text-text-lo">
+                  {enough
+                    ? "Ready when you are — That’s everything builds the workspace. Keep chatting only if you want it tuned further."
+                    : "What you add here is sent to an AI service to be read. Remove anything you’d rather not send."}
                 </p>
                 <Button
                   type="button"
@@ -519,7 +582,7 @@ export function IntakeCanvas({
                   disabled={disabled || sources.length === 0}
                   onClick={onReady}
                 >
-                  That&rsquo;s everything
+                  That’s everything
                 </Button>
               </div>
             </div>

@@ -101,8 +101,9 @@ export function OAuthButtons({ next = "/" }: OAuthButtonsProps) {
       }
       const opened = await openExternal(url);
       if (!opened) {
-        setPending(null);
-        toast("Couldn’t open your browser — try email sign-in, or update TEMPO Desktop.");
+        // Older length limits / IPC failures — fall through to will-navigate,
+        // which opens the system browser without the IPC cap.
+        window.location.assign(url);
         return;
       }
       toast("Finish signing in in your browser — you’ll return to TEMPO.", "info");

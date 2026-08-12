@@ -24,6 +24,35 @@ function isAllowedDesktopNavigation(urlString, allowedOrigins) {
 }
 
 /**
+ * Normalize Windows / macOS quirks for tempo:// deep links.
+ * @param {URL} link
+ */
+function isAuthCallbackLink(link) {
+  const host = (link.hostname || "").toLowerCase();
+  const path = (link.pathname || "").replace(/\/+$/, "") || "";
+  const pathNorm = path.replace(/^\/+/, "/");
+
+  // tempo://auth/callback?code=…
+  if (host === "auth" && (pathNorm === "/callback" || pathNorm === "" || pathNorm === "/")) {
+    return true;
+  }
+  // tempo:///auth/callback?code=… (empty host, path carries auth/callback)
+  if (
+    !host &&
+    (pathNorm === "/auth/callback" ||
+      pathNorm === "//auth/callback" ||
+      pathNorm === "/callback")
+  ) {
+    return true;
+  }
+  // tempo://callback?code=…
+  if (host === "callback" && (pathNorm === "" || pathNorm === "/")) {
+    return true;
+  }
+  return false;
+}
+
+/**
  * Resolve a tempo:// deep link to an https URL loaded inside the main window.
  * Supports:
  *   tempo://open?path=/tracks
@@ -40,9 +69,7 @@ function appLinkDestination(rawUrl, appUrl, allowedOrigins) {
     const link = new URL(rawUrl);
     if (link.protocol !== "tempo:") return null;
 
-    if (link.hostname === "auth") {
-      const path = link.pathname.replace(/\/+$/, "") || "/";
-      if (path !== "/callback" && path !== "callback") return null;
+    if (isAuthCallbackLink(link)) {
       const code = link.searchParams.get("code");
       if (!code) return null;
       const nextRaw = link.searchParams.get("next") || "/";
@@ -74,4 +101,4 @@ function appLinkDestination(rawUrl, appUrl, allowedOrigins) {
   }
 }
 
-module.exports = { isAllowedDesktopNavigation, appLinkDestination };
+module.exports = { isAllowedDesktopNavigation, appLinkDestination, isAuthCallbackLink };

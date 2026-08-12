@@ -72,10 +72,18 @@ export async function GET(request: Request) {
   <main>
     <h1>Opening TEMPO</h1>
     <p>Sign-in finished in the browser. Return to the app to continue — if it doesn’t open, use the button below.</p>
-    <a href="${safeHref}">Open TEMPO</a>
+    <a id="open" href="${safeHref}">Open TEMPO</a>
   </main>
   <script>
-    try { window.location.replace(${JSON.stringify(deepLink)}); } catch (e) {}
+    (function () {
+      var href = ${JSON.stringify(deepLink)};
+      function go() {
+        try { window.location.href = href; } catch (e) {}
+      }
+      go();
+      setTimeout(go, 350);
+      setTimeout(go, 1200);
+    })();
   </script>
 </body>
 </html>`;

@@ -62,6 +62,19 @@ describe("desktop OAuth navigation allowlist", () => {
     ).toBeNull();
   });
 
+  it("accepts Windows-style tempo:// path shapes for the auth handoff", () => {
+    expect(
+      appLinkDestination(
+        "tempo:///auth/callback?code=win1&next=%2F",
+        APP_URL,
+        ORIGINS
+      )
+    ).toBe("https://mytempo.dev/auth/callback?code=win1&next=%2F");
+    expect(
+      appLinkDestination("tempo://callback?code=win2&next=%2F", APP_URL, ORIGINS)
+    ).toBe("https://mytempo.dev/auth/callback?code=win2&next=%2F");
+  });
+
   it("wires system-browser OAuth into the shell and login buttons", () => {
     const main = readFileSync(resolve("electron/main.js"), "utf8");
     const pkg = readFileSync(resolve("electron/package.json"), "utf8");
@@ -73,13 +86,22 @@ describe("desktop OAuth navigation allowlist", () => {
       resolve("app/auth/desktop-bridge/route.ts"),
       "utf8"
     );
+    const callbackPage = readFileSync(
+      resolve("app/auth/callback/page.tsx"),
+      "utf8"
+    );
     expect(main).toContain("shell:openExternal");
     expect(main).toContain("resolveAppLinkDestination");
+    expect(main).toContain("16_384");
+    expect(main).toContain('app.on("second-instance"');
     expect(pkg).toContain("oauth-navigation.js");
     expect(oauth).toContain("skipBrowserRedirect");
     expect(oauth).toContain("canOpenExternal");
     expect(oauth).toContain("/auth/desktop-bridge");
+    expect(oauth).toContain("window.location.assign");
     expect(bridge).toContain("tempo://auth/callback");
     expect(bridge).not.toContain("exchangeCodeForSession");
+    expect(callbackPage).toContain("exchangeCodeForSession");
+    expect(callbackPage).toContain("createClient");
   });
 });

@@ -75,8 +75,17 @@ const hasSingleInstanceLock = app.requestSingleInstanceLock();
 if (!hasSingleInstanceLock) {
   // Quit alone is async on Windows — a second Start-menu launch can still
   // spin up a tray icon / window before the process dies. Exit hard.
+  // Do NOT exit before the first instance can receive second-instance for
+  // tempo:// OAuth handoff: yield one tick so the event can deliver.
   app.quit();
-  process.exit(0);
+  setTimeout(() => process.exit(0), 250);
+} else {
+  // Register immediately (before ready) so Windows tempo:// launches from the
+  // system browser aren't dropped while the shell is already running.
+  app.on("second-instance", (_event, argv) => {
+    const appLink = appLinkFromArgs(argv);
+    if (!receiveAppLink(appLink) && app.isReady()) showMainWindow();
+  });
 }
 
 // Register tempo:// links with the operating system. The explicit executable
@@ -221,8 +230,9 @@ function createWindow() {
 }
 
 /**
- * Keep TEMPO + OAuth provider navigations inside Electron so the session
- * cookies are written in this app. Everything else still opens externally.
+ * Keep TEMPO navigations inside Electron. Google / Microsoft OAuth must open
+ * in the system browser (see oauth-buttons + shell:openExternal); anything
+ * else still opens externally.
  */
 function guardRendererNavigation(webContents) {
   if (!webContents || webContents.__tempoNavGuarded) return;
@@ -587,7 +597,8 @@ function registerVaultIpc() {
   ipcMain.handle("sync:getEnabled", () => syncEnabled);
 
   ipcMain.handle("shell:openExternal", async (_e, urlString) => {
-    if (typeof urlString !== "string" || urlString.length > 2048) return false;
+    // OAuth authorize URLs (esp. Google) can exceed 2KB with state + PKCE.
+    if (typeof urlString !== "string" || urlString.length > 16_384) return false;
     let url;
     try {
       url = new URL(urlString);
@@ -699,11 +710,6 @@ app.whenReady().then(() => {
   app.on("activate", () => {
     showMainWindow();
   });
-});
-
-app.on("second-instance", (_event, argv) => {
-  const appLink = appLinkFromArgs(argv);
-  if (!receiveAppLink(appLink) && app.isReady()) showMainWindow();
 });
 
 app.on("before-quit", () => {
