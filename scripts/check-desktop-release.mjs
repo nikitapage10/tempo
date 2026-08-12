@@ -55,7 +55,14 @@ if (desktopPackage.build?.win?.target !== "nsis") {
 // Every local require() from main.js must ship inside the asar — omitting one
 // crashes launch with "Cannot find module" (media-permissions on v0.100.12).
 const packagedFiles = new Set(desktopPackage.build?.files ?? []);
-for (const required of ["main.js", "media-permissions.js", "preload.js", "vault.js"]) {
+for (const required of [
+  "main.js",
+  "media-permissions.js",
+  "oauth-navigation.js",
+  "preload.js",
+  "vault.js",
+  "vault-media-response.js",
+]) {
   if (!packagedFiles.has(required)) {
     errors.push(`electron build.files must include ${required}`);
   }
