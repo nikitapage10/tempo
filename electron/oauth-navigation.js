@@ -1,7 +1,10 @@
 /**
  * Which navigations stay inside TEMPO Desktop vs open in the system browser.
- * OAuth (Google / Microsoft) must complete inside Electron so the session
- * cookies land in the app — not in an external browser tab.
+ *
+ * Google / Microsoft sign-in must NOT run inside Electron's embedded Chromium —
+ * providers flag it as an insecure app. OAuth opens in the system browser and
+ * returns via tempo://auth/callback (see oauth-buttons + auth/desktop-bridge).
+ * Only the TEMPO web origin stays in-app.
  */
 
 /**
@@ -17,42 +20,58 @@ function isAllowedDesktopNavigation(urlString, allowedOrigins) {
     return false;
   }
 
-  if (allowedOrigins.includes(url.origin)) return true;
-
-  const host = url.hostname.toLowerCase();
-
-  // Supabase Auth hosts the provider handoff before returning to TEMPO.
-  if (host === "supabase.co" || host.endsWith(".supabase.co")) return true;
-
-  // Google Identity
-  if (
-    host === "accounts.google.com" ||
-    host === "account.google.com" ||
-    host.endsWith(".google.com") ||
-    host.endsWith(".googleusercontent.com") ||
-    host.endsWith(".gstatic.com")
-  ) {
-    return true;
-  }
-
-  // Microsoft / Entra ID
-  if (
-    host.endsWith(".microsoftonline.com") ||
-    host.endsWith(".microsoftonline-p.com") ||
-    host.endsWith(".microsoft.com") ||
-    host.endsWith(".live.com") ||
-    host.endsWith(".msn.com") ||
-    host.endsWith(".msauth.net") ||
-    host.endsWith(".msftauth.net") ||
-    host.endsWith(".microsoftauth.net") ||
-    host.endsWith(".windows.net") ||
-    host.endsWith(".office.com") ||
-    host === "aka.ms"
-  ) {
-    return true;
-  }
-
-  return false;
+  return allowedOrigins.includes(url.origin);
 }
 
-module.exports = { isAllowedDesktopNavigation };
+/**
+ * Resolve a tempo:// deep link to an https URL loaded inside the main window.
+ * Supports:
+ *   tempo://open?path=/tracks
+ *   tempo://auth/callback?code=…&next=/
+ *
+ * @param {string | null | undefined} rawUrl
+ * @param {string} appUrl production TEMPO origin (no trailing path)
+ * @param {string[]} allowedOrigins
+ * @returns {string | null}
+ */
+function appLinkDestination(rawUrl, appUrl, allowedOrigins) {
+  if (!rawUrl) return null;
+  try {
+    const link = new URL(rawUrl);
+    if (link.protocol !== "tempo:") return null;
+
+    if (link.hostname === "auth") {
+      const path = link.pathname.replace(/\/+$/, "") || "/";
+      if (path !== "/callback" && path !== "callback") return null;
+      const code = link.searchParams.get("code");
+      if (!code) return null;
+      const nextRaw = link.searchParams.get("next") || "/";
+      const next =
+        nextRaw.startsWith("/") && !nextRaw.startsWith("//") ? nextRaw : "/";
+      const destination = new URL("/auth/callback", appUrl);
+      destination.searchParams.set("code", code);
+      destination.searchParams.set("next", next);
+      for (const key of ["state", "error", "error_description"]) {
+        const value = link.searchParams.get(key);
+        if (value) destination.searchParams.set(key, value);
+      }
+      return allowedOrigins.includes(destination.origin)
+        ? destination.href
+        : null;
+    }
+
+    if (link.hostname !== "open") return null;
+    const requestedPath = link.searchParams.get("path") || "/";
+    if (!requestedPath.startsWith("/") || requestedPath.startsWith("//")) {
+      return null;
+    }
+    const destination = new URL(requestedPath, appUrl);
+    return allowedOrigins.includes(destination.origin)
+      ? destination.href
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+module.exports = { isAllowedDesktopNavigation, appLinkDestination };

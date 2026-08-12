@@ -11,10 +11,15 @@ kept only as a reference if you add it later.
 Production site: `https://tempo-ten-sigma.vercel.app`  
 Auth callback TEMPO uses: `https://tempo-ten-sigma.vercel.app/auth/callback`
 
-**TEMPO Desktop:** Google / Microsoft sign-in must finish inside the Electron
-window (not a system browser tab) so the session cookies land in the app.
-The desktop shell allowlists Supabase + Google + Microsoft hosts for that
-reason. No extra redirect URI is required beyond the production callback above.
+**TEMPO Desktop:** Google / Microsoft sign-in opens in your **system browser**
+(so providers don’t flag Electron as an insecure embedded app). After you
+finish, the browser hits `/auth/desktop-bridge`, which hands the one-time
+code back to the app via `tempo://auth/callback`. The code is exchanged
+**inside** Electron so session cookies land in TEMPO, not Chrome/Edge.
+
+Add this redirect URL in Supabase as well as `/auth/callback`:
+- `https://tempo-ten-sigma.vercel.app/auth/desktop-bridge`
+- `https://tempo-ten-sigma.vercel.app/auth/desktop-bridge?**` (if wildcards work)
 
 Do this once per provider. Localhost testing needs the same redirect URLs with
 `http://localhost:3000` instead of the production host.
@@ -29,7 +34,10 @@ Do this once per provider. Localhost testing needs the same redirect URLs with
    - `https://tempo-ten-sigma.vercel.app/auth/callback`
    - `https://tempo-ten-sigma.vercel.app/auth/callback?**` (if your project
      allows wildcards; otherwise add exact URLs you use with `?next=…`)
-   - For local: `http://localhost:3000/auth/callback`
+   - `https://tempo-ten-sigma.vercel.app/auth/desktop-bridge`
+   - `https://tempo-ten-sigma.vercel.app/auth/desktop-bridge?**`
+   - For local: `http://localhost:3000/auth/callback` and
+     `http://localhost:3000/auth/desktop-bridge`
 4. Save.
 
 Password-reset emails also land on `/auth/callback?next=/reset-password`, so
@@ -133,7 +141,8 @@ is harder than Google — prefer production/preview HTTPS URLs when debugging.
 
 ## 4. Quick verify checklist
 
-- [ ] Supabase redirect allow-list includes TEMPO `/auth/callback`
+- [ ] Supabase redirect allow-list includes TEMPO `/auth/callback` and
+      `/auth/desktop-bridge` (desktop system-browser return)
 - [ ] Provider enabled in Supabase with correct secrets
 - [ ] Vendor console redirect URI is **Supabase** `/auth/v1/callback`, not
       `tempo-ten-sigma.vercel.app/auth/callback`

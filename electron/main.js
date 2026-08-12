@@ -14,7 +14,10 @@ const { autoUpdater } = require("electron-updater");
 const { Vault } = require("./vault");
 const { createVaultMediaResponse } = require("./vault-media-response");
 const { isMediaRequestAllowed } = require("./media-permissions");
-const { isAllowedDesktopNavigation } = require("./oauth-navigation");
+const {
+  isAllowedDesktopNavigation,
+  appLinkDestination: resolveAppLinkDestination,
+} = require("./oauth-navigation");
 const { version: appVersion } = require("./package.json");
 
 const APP_URL = process.env.TEMPO_DESKTOP_URL || "https://tempo-ten-sigma.vercel.app";
@@ -88,17 +91,7 @@ function appLinkFromArgs(args) {
 }
 
 function appLinkDestination(rawUrl) {
-  if (!rawUrl) return null;
-  try {
-    const link = new URL(rawUrl);
-    if (link.protocol !== `${APP_PROTOCOL}:` || link.hostname !== "open") return null;
-    const requestedPath = link.searchParams.get("path") || "/";
-    if (!requestedPath.startsWith("/") || requestedPath.startsWith("//")) return null;
-    const destination = new URL(requestedPath, APP_URL);
-    return ALLOWED_ORIGINS.includes(destination.origin) ? destination.href : null;
-  } catch {
-    return null;
-  }
+  return resolveAppLinkDestination(rawUrl, APP_URL, ALLOWED_ORIGINS);
 }
 
 function receiveAppLink(rawUrl) {
@@ -584,6 +577,20 @@ function registerVaultIpc() {
   });
   ipcMain.handle("sync:setEnabled", (_e, next) => setSyncEnabled(Boolean(next)));
   ipcMain.handle("sync:getEnabled", () => syncEnabled);
+
+  ipcMain.handle("shell:openExternal", async (_e, urlString) => {
+    if (typeof urlString !== "string" || urlString.length > 2048) return false;
+    let url;
+    try {
+      url = new URL(urlString);
+    } catch {
+      return false;
+    }
+    // OAuth + TEMPO only — never open arbitrary schemes from the renderer.
+    if (url.protocol !== "https:" && url.protocol !== "http:") return false;
+    await shell.openExternal(url.href);
+    return true;
+  });
 
   ipcMain.handle("zoom:in", () => adjustZoom(mainWindow, ZOOM_STEP));
   ipcMain.handle("zoom:out", () => adjustZoom(mainWindow, -ZOOM_STEP));

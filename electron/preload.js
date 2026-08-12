@@ -39,6 +39,8 @@ contextBridge.exposeInMainWorld("tempoDesktop", {
     getEnabled: () => ipcRenderer.invoke("sync:getEnabled"),
   },
 
+  openExternal: (url) => ipcRenderer.invoke("shell:openExternal", url),
+
   zoom: {
     in: () => ipcRenderer.invoke("zoom:in"),
     out: () => ipcRenderer.invoke("zoom:out"),

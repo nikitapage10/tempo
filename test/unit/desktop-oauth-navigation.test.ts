@@ -4,14 +4,15 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const require = createRequire(import.meta.url);
-const { isAllowedDesktopNavigation } = require(
+const { isAllowedDesktopNavigation, appLinkDestination } = require(
   resolve("electron/oauth-navigation.js")
 );
 
 const ORIGINS = ["https://tempo-ten-sigma.vercel.app"];
+const APP_URL = "https://tempo-ten-sigma.vercel.app";
 
 describe("desktop OAuth navigation allowlist", () => {
-  it("keeps TEMPO, Supabase, Google, and Microsoft inside the app", () => {
+  it("keeps only the TEMPO origin inside the app (providers use the system browser)", () => {
     expect(
       isAllowedDesktopNavigation(
         "https://tempo-ten-sigma.vercel.app/auth/callback?code=x",
@@ -23,46 +24,62 @@ describe("desktop OAuth navigation allowlist", () => {
         "https://abcdefgh.supabase.co/auth/v1/authorize?provider=google",
         ORIGINS
       )
-    ).toBe(true);
+    ).toBe(false);
     expect(
       isAllowedDesktopNavigation(
         "https://accounts.google.com/o/oauth2/v2/auth",
         ORIGINS
       )
-    ).toBe(true);
+    ).toBe(false);
     expect(
       isAllowedDesktopNavigation(
         "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
         ORIGINS
       )
-    ).toBe(true);
-    expect(
-      isAllowedDesktopNavigation("https://login.live.com/oauth20_authorize.srf", ORIGINS)
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it("still opens unrelated sites in the system browser", () => {
     expect(
       isAllowedDesktopNavigation("https://example.com/phishing", ORIGINS)
     ).toBe(false);
-    expect(
-      isAllowedDesktopNavigation("https://evil.notgoogle.com/x", ORIGINS)
-    ).toBe(false);
   });
 
-  it("wires the allowlist into the Electron shell and packages the helper", () => {
+  it("resolves tempo://auth/callback into the in-app code exchange URL", () => {
+    const href = appLinkDestination(
+      "tempo://auth/callback?code=abc123&next=%2Fimport",
+      APP_URL,
+      ORIGINS
+    );
+    expect(href).toBe(
+      "https://tempo-ten-sigma.vercel.app/auth/callback?code=abc123&next=%2Fimport"
+    );
+    expect(
+      appLinkDestination("tempo://open?path=/tracks", APP_URL, ORIGINS)
+    ).toBe("https://tempo-ten-sigma.vercel.app/tracks");
+    expect(
+      appLinkDestination("tempo://auth/callback", APP_URL, ORIGINS)
+    ).toBeNull();
+  });
+
+  it("wires system-browser OAuth into the shell and login buttons", () => {
     const main = readFileSync(resolve("electron/main.js"), "utf8");
     const pkg = readFileSync(resolve("electron/package.json"), "utf8");
     const oauth = readFileSync(
       resolve("components/auth/oauth-buttons.tsx"),
       "utf8"
     );
-    expect(main).toContain("isAllowedDesktopNavigation");
-    expect(main).toContain("guardRendererNavigation");
-    expect(main).toContain("web-contents-created");
+    const bridge = readFileSync(
+      resolve("app/auth/desktop-bridge/route.ts"),
+      "utf8"
+    );
+    expect(main).toContain("shell:openExternal");
+    expect(main).toContain("resolveAppLinkDestination");
     expect(pkg).toContain("oauth-navigation.js");
-    expect(pkg).toContain('"0.100.15"');
-    expect(oauth).toContain("setPending(null)");
-    expect(oauth).toContain("12_000");
+    expect(oauth).toContain("skipBrowserRedirect");
+    expect(oauth).toContain("canOpenExternal");
+    expect(oauth).toContain("/auth/desktop-bridge");
+    expect(bridge).toContain("tempo://auth/callback");
+    expect(bridge).not.toContain("exchangeCodeForSession");
   });
 });

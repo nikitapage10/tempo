@@ -28,6 +28,8 @@ export type DesktopBridge = {
     setEnabled: (next: boolean) => Promise<void>;
     getEnabled: () => Promise<boolean>;
   };
+  /** Optional until every pre–system-browser-OAuth install has updated. */
+  openExternal?: (url: string) => Promise<boolean>;
   zoom: {
     in: () => Promise<number>;
     out: () => Promise<number>;
@@ -284,5 +286,23 @@ export async function getZoomFactor(): Promise<number> {
     return await b.zoom.get();
   } catch {
     return 1;
+  }
+}
+
+/**
+ * Open an https URL in the system browser (desktop OAuth). Capability-detect
+ * so older shells fall back to in-app navigation.
+ */
+export function canOpenExternal(): boolean {
+  return typeof bridge()?.openExternal === "function";
+}
+
+export async function openExternal(url: string): Promise<boolean> {
+  const b = bridge();
+  if (!b?.openExternal) return false;
+  try {
+    return await b.openExternal(url);
+  } catch {
+    return false;
   }
 }
