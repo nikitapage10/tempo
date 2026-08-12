@@ -90,13 +90,17 @@ macOS permission-recovery guidance when access is denied.
 
 **Desktop updates.** TEMPO Desktop stays current without asking artists to
 understand how an update is delivered. Once you’re on the public desktop
-channel, newer builds download quietly in the background; when something is
-ready, one calm banner offers **Update now** or **After this session**. It
-never forces a restart or interrupts active work, and the banner stays out of
-distraction-free focus sessions. You do not need to keep downloading a fresh
-installer by hand for ordinary updates. Download and Update links on the web
-still serve a working Windows installer from TEMPO itself until that public
-channel is published.
+channel, newer builds download quietly in the background on first open and
+while the app stays running; when something is ready, one calm banner offers
+**Update now** or **After this session**. It never forces a restart or
+interrupts active work, and the banner stays out of distraction-free focus
+sessions. You do not need to keep downloading a fresh installer by hand for
+ordinary updates. When the native desktop shell itself changes, TEMPO
+publishes a new Windows and Mac build to the public download channel
+(automatically on those changes, with a daily catch-up). Download and Update
+links on the web prefer that newest public installer, and fall back to a
+working Windows installer from TEMPO itself if the channel is empty. The
+Download page is reachable from an invite without signing in first.
 
 **Admin and support experience.** The Admin overview is an operating dashboard:
 it calls out support and moderation work needing attention, shows 30-day member
@@ -282,7 +286,7 @@ Populated Board stages keep a readable desktop width and form a horizontally scr
 
 The PRESIDENT demo uses the Blood Of Your Empire artwork as its shared banner, carries a three-paragraph About section, and keeps a moving Social globe with a wider rock and metal circle plus fictional funny and serious conversations. Scenes opens its read-only **It’s Not Just a Phase** emo and old-metal room instead of presenting the demo artist as off the network.
 
-**TEMPO Desktop.** A downloadable Windows and Mac beta uses the same TEMPO workspace in a native app. The Windows setup is a short wizard — welcome, choose a folder, optional shortcuts — dressed in TEMPO’s dark look. Mac ships as an unsigned universal build from GitHub Actions — Gatekeeper warns on first open; right-click the app and choose Open. Its local vault mirrors complete bounce history to the computer before older versions leave the cloud, and the timeline shows whether each version is on this computer, in the cloud, or on another computer. Board, Tracks, Projects, Tasks, and Calendar retain cached reads while offline, with supported changes queued until the connection returns, while background sync keeps the catalog ready between sessions. After an invite signup, a welcome screen lets the artist continue in the browser or download Windows desktop before Origin. The web rail and Download page offer the installer until a recent desktop device is known, then **Open in desktop** launches the app directly; the desktop rail offers the reciprocal **Open web app** link. The tray and Start icon use the TEMPO emblem, and a second launch focuses the existing window instead of opening another copy. With the window closed to the tray or sitting in the background, a new message raises a larger bottom-right glass toast tinted with your artist Cool/Warm colours, a short preview, and a soft chime.
+**TEMPO Desktop.** A downloadable Windows and Mac beta uses the same TEMPO workspace in a native app. The Windows setup is a short wizard — welcome, choose a folder, optional shortcuts — dressed in TEMPO’s dark look. Mac ships as an unsigned universal build from GitHub Actions — Gatekeeper warns on first open; right-click the app and choose Open. Its local vault mirrors complete bounce history to the computer before older versions leave the cloud, and the timeline shows whether each version is on this computer, in the cloud, or on another computer. Board, Tracks, Projects, Tasks, and Calendar retain cached reads while offline, with supported changes queued until the connection returns, while background sync keeps the catalog ready between sessions. After an invite signup, a welcome screen lets the artist continue in the browser or download desktop before Origin; the shared Download page works without signing in, so invite email links land there cleanly. The web rail and Download page offer the installer until a recent desktop device is known, then **Open in desktop** launches the app directly; the desktop rail offers the reciprocal **Open web app** link. The tray and Start icon use the TEMPO emblem, and a second launch focuses the existing window instead of opening another copy. With the window closed to the tray or sitting in the background, a new message raises a larger bottom-right glass toast tinted with your artist Cool/Warm colours, a short preview, and a soft chime.
 
 ## How it’s hosted
 

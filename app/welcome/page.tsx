@@ -10,12 +10,12 @@ import { Button } from "@/components/ui/button";
 import { isDesktopApp } from "@/lib/desktop/bridge";
 import {
   DESKTOP_WINDOWS_INSTALLER_URL,
-  DESKTOP_MAC_INSTALLER_URL,
+  DESKTOP_MAC_DOWNLOAD_URL,
 } from "@/lib/desktop/handoff";
 import { detectOS } from "@/lib/platform";
 
 const WINDOWS_INSTALLER_URL = DESKTOP_WINDOWS_INSTALLER_URL;
-const MAC_INSTALLER_URL = DESKTOP_MAC_INSTALLER_URL;
+const MAC_INSTALLER_URL = DESKTOP_MAC_DOWNLOAD_URL;
 
 /**
  * Post-invite chooser — after creating an account from an invite, pick how to

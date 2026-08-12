@@ -29,7 +29,7 @@ describe("web and desktop platform handoff", () => {
   });
 
   it("uses the shared handoff on the Download page", () => {
-    const downloadPage = read("app/(app)/download/page.tsx");
+    const downloadPage = read("app/download/page.tsx");
     expect(downloadPage).toContain("resolveDesktopHandoff");
     expect(downloadPage).toContain("open-desktop");
     expect(downloadPage).toContain("update-desktop");
@@ -116,7 +116,8 @@ describe("web and desktop platform handoff", () => {
     expect(picked?.id).toBe("new");
   });
 
-  it("defaults the Windows installer to the bundled public download", () => {
+  it("defaults Windows download to the stable API that prefers the public channel", () => {
+    expect(read("lib/desktop/handoff.ts")).toContain("/api/desktop/windows");
     expect(read("lib/desktop/handoff.ts")).toContain(
       "/downloads/TEMPO-Setup-0.100.6.exe"
     );
@@ -124,6 +125,8 @@ describe("web and desktop platform handoff", () => {
       "tempo-desktop-releases/releases/latest/download/TEMPO-Setup.exe"
     );
     expect(button).toContain("DESKTOP_WINDOWS_INSTALLER_URL");
+    expect(existsSync(resolve("app/api/desktop/windows/route.ts"))).toBe(true);
+    expect(existsSync(resolve("app/api/desktop/mac/route.ts"))).toBe(true);
   });
 
   it("ships an assisted Spectra-branded Windows install wizard", () => {
@@ -140,11 +143,21 @@ describe("web and desktop platform handoff", () => {
     expect(read("lib/desktop/handoff.ts")).toContain(
       "tempo-desktop-releases/releases/latest/download/TEMPO-Mac.dmg"
     );
+    expect(read("lib/desktop/handoff.ts")).toContain("/api/desktop/mac");
     expect(read("electron/package.json")).toContain('"identity": null');
     expect(read("electron/package.json")).toContain("TEMPO-Mac.${ext}");
     expect(read(".github/workflows/desktop-release.yml")).toContain("macos-latest");
     expect(read(".github/workflows/desktop-release.yml")).toContain(
       "CSC_IDENTITY_AUTO_DISCOVERY"
     );
+  });
+
+  it("publishes desktop builds on electron main pushes and a daily catch-up", () => {
+    const workflow = read(".github/workflows/desktop-release.yml");
+    expect(workflow).toContain("schedule:");
+    expect(workflow).toContain('cron: "0 14 * * *"');
+    expect(workflow).toContain("push:");
+    expect(workflow).toContain("electron/**");
+    expect(workflow).toContain("should-publish");
   });
 });

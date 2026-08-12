@@ -12,8 +12,7 @@ export const DESKTOP_LINK_MIN_VERSION = [0, 100, 10] as const;
 
 /**
  * Intended public-channel installer once Desktop Release has published
- * TEMPO-Setup.exe + latest.yml to tempo-desktop-releases. Set
- * NEXT_PUBLIC_DESKTOP_WINDOWS_URL to this after the first successful publish.
+ * TEMPO-Setup.exe + latest.yml to tempo-desktop-releases.
  */
 export const DESKTOP_PUBLIC_CHANNEL_INSTALLER_URL =
   "https://github.com/nikitapage10/tempo-desktop-releases/releases/latest/download/TEMPO-Setup.exe";
@@ -26,15 +25,23 @@ export const DESKTOP_MAC_INSTALLER_URL =
   process.env.NEXT_PUBLIC_DESKTOP_MAC_URL ||
   "https://github.com/nikitapage10/tempo-desktop-releases/releases/latest/download/TEMPO-Mac.dmg";
 
+/** Bundled Windows beta kept in the web app as a last-resort fallback. */
+export const DESKTOP_WINDOWS_BUNDLED_FALLBACK_URL = "/downloads/TEMPO-Setup-0.100.6.exe";
+
 /**
- * Windows installer the web app actually serves today. The public GitHub
- * channel is empty until Desktop Release runs, so the default stays on the
- * bundled beta under /downloads (avoids a GitHub 404 for every artist).
- * Override with NEXT_PUBLIC_DESKTOP_WINDOWS_URL when the channel is live.
+ * Stable Windows download entry used by the Download page, welcome chooser,
+ * and invite email. Resolves to the public channel when live, otherwise the
+ * bundled beta — see app/api/desktop/windows/route.ts.
+ * Override with NEXT_PUBLIC_DESKTOP_WINDOWS_URL to pin a specific asset.
  */
 export const DESKTOP_WINDOWS_INSTALLER_URL =
-  process.env.NEXT_PUBLIC_DESKTOP_WINDOWS_URL ||
-  "/downloads/TEMPO-Setup-0.100.6.exe";
+  process.env.NEXT_PUBLIC_DESKTOP_WINDOWS_URL || "/api/desktop/windows";
+
+/**
+ * Stable Mac download entry — same pattern as Windows.
+ */
+export const DESKTOP_MAC_DOWNLOAD_URL =
+  process.env.NEXT_PUBLIC_DESKTOP_MAC_URL || "/api/desktop/mac";
 
 function versionParts(version: string): number[] {
   return version

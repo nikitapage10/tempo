@@ -1,10 +1,21 @@
 name: Desktop Release
 
-# Manual by design: web-only changes already reach the Electron renderer through
-# Vercel and must not create an unnecessary 80 MB installer. Run this only when
-# electron/ changed and the packaged build has been smoke-tested.
+# Publishes TEMPO Desktop binaries to the public tempo-desktop-releases channel.
+# Web-only pushes do NOT run this — the Electron shell already loads the live
+# web app, so ordinary product updates reach desktop without a new installer.
+# Native shell changes on main, a daily catch-up, or a manual run do.
 on:
   workflow_dispatch: {}
+  schedule:
+    # Daily catch-up so the public download never sits on a forgotten build.
+    # Skips when this desktop version is already published (see should-publish).
+    - cron: "0 14 * * *"
+  push:
+    branches: [main]
+    paths:
+      - "electron/**"
+      - "scripts/check-desktop-release.mjs"
+      - ".github/workflows/desktop-release.yml"
 
 permissions:
   contents: read
@@ -14,7 +25,40 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  should-publish:
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.guard.outputs.run }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Decide whether to build
+        id: guard
+        env:
+          GH_TOKEN: ${{ secrets.DESKTOP_RELEASE_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" != "schedule" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "Publishing (event: ${{ github.event_name }})."
+            exit 0
+          fi
+          VERSION="$(node -p "require('./electron/package.json').version")"
+          CODE="$(curl -s -o /dev/null -w '%{http_code}' \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/nikitapage10/tempo-desktop-releases/releases/tags/v${VERSION}")"
+          if [ "$CODE" = "200" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "v${VERSION} already on the public channel — skipping scheduled rebuild."
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "v${VERSION} not published yet (HTTP ${CODE}) — building."
+          fi
+
   windows-release:
+    needs: should-publish
+    if: needs.should-publish.outputs.run == 'true'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -51,7 +95,8 @@ jobs:
   # without racing the publisher. Unsigned on purpose — Gatekeeper will warn;
   # artists open it via right-click → Open (same class of unsigned Mac beta).
   mac-release:
-    needs: windows-release
+    needs: [should-publish, windows-release]
+    if: needs.should-publish.outputs.run == 'true'
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
