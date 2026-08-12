@@ -27,7 +27,7 @@ export function BoardOverview({ stages, tracksByStage, notesByStage, onFocusStag
         const hue = stageHueAt(stageProgressFromSort(stage.sort, stages), hues);
         const hiddenCount = Math.max(0, tracks.length - TRACK_PREVIEW_CAP);
         return (
-          <section key={stage.id} className="relative min-w-0 overflow-hidden rounded-card border border-line bg-gradient-to-b from-[#141419] to-[#0e0e12] shadow-e1">
+          <section key={stage.id} className="prism-edge relative min-w-0 overflow-hidden rounded-card border border-line bg-gradient-to-b from-[#141419] to-[#0e0e12] shadow-e1">
             <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-24" style={{ background: `linear-gradient(180deg, ${hue}16, transparent)` }} />
             <button type="button" onClick={() => onFocusStage(index)} className="relative block w-full border-b border-line/70 px-2 py-2 text-left hover:bg-white/[0.025] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ice" aria-label={`Open ${stage.name} in detailed view`}>
               <span className="block truncate font-display text-xs font-semibold text-text-hi sm:text-xs">{stage.name}</span>

@@ -109,7 +109,7 @@ export default function TodayPage() {
   );
   const visibleAttention = attentionExpanded
     ? prioritized
-    : prioritized.slice(0, 5);
+    : prioritized.slice(0, 4);
   const waiting = prioritized.filter((x) =>
     deriveAttentionSignals(x).some((s) => s.id === "waiting" || s.id === "blocked")
   );
@@ -155,7 +155,7 @@ export default function TodayPage() {
 
       {/* Today hero — glass shell holds the card; an inner field window lets
           Spectra wash the background without fringing a hole under the border. */}
-      <div data-tour="today" className="glass-hero relative overflow-hidden">
+      <div data-tour="today" className="glass-hero prism-edge relative overflow-hidden">
         <div className="absolute inset-0">
           <LfWindow field className="absolute inset-0" aria-hidden />
           <div className="scrim-reveal absolute inset-0" aria-hidden />
@@ -371,7 +371,7 @@ export default function TodayPage() {
                 })}
               </ul>
             )}
-            {prioritized.length > 5 ? (
+            {prioritized.length > 4 ? (
               <button
                 type="button"
                 onClick={() => setAttentionExpanded((value) => !value)}
@@ -380,11 +380,11 @@ export default function TodayPage() {
               >
                 {attentionExpanded ? (
                   <>
-                    <ChevronUp className="size-3.5" /> Show five
+                    <ChevronUp className="size-3.5" /> Show four
                   </>
                 ) : (
                   <>
-                    <ChevronDown className="size-3.5" /> Show {prioritized.length - 5} more
+                    <ChevronDown className="size-3.5" /> Show {prioritized.length - 4} more
                   </>
                 )}
               </button>

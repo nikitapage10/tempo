@@ -93,7 +93,7 @@ export function CalendarAgendaView({
               }}
             >
               <div className="mb-2 flex items-center gap-3">
-                <h2 className={cn("label-mono", date === today ? "text-ice" : "text-text-lo")}>{shortDateLabel(date, today)}</h2>
+                <h2 className={cn("font-data text-xs font-semibold uppercase tracking-[0.12em]", date === today ? "text-ice" : "text-text-lo")}>{shortDateLabel(date, today)}</h2>
                 <div className="h-px flex-1 bg-line" />
               </div>
               <div className="space-y-2">

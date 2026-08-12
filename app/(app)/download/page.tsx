@@ -1,10 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { Download, HardDrive, RadioTower, Wifi, WifiOff } from "lucide-react";
+import { Download, HardDrive, MonitorSmartphone, RadioTower, Wifi, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
-import { detectOS } from "@/lib/platform";
+import { useActiveDesktopDevice } from "@/hooks/use-devices";
+import { resolveDesktopHandoff } from "@/lib/desktop/handoff";
+import { detectOS, isDesktopApp } from "@/lib/platform";
+import { getSiteUrl } from "@/lib/site";
 
 const HIGHLIGHTS = [
   {
@@ -59,6 +62,23 @@ const DOWNLOADS: {
 
 export default function DownloadPage() {
   const os = React.useMemo(() => detectOS(), []);
+  const [mounted, setMounted] = React.useState(false);
+  const activeDevice = useActiveDesktopDevice();
+
+  React.useEffect(() => setMounted(true), []);
+
+  const handoff = mounted
+    ? resolveDesktopHandoff({
+        isDesktop: isDesktopApp(),
+        pathname: "/download",
+        activeDevice,
+        webAppUrl: getSiteUrl(),
+        windowsInstallerUrl: WINDOWS_INSTALLER_URL,
+      })
+    : null;
+
+  const showOpenDesktop = handoff?.kind === "open-desktop";
+  const showUpdateDesktop = handoff?.kind === "update-desktop";
 
   return (
     <div className="w-full space-y-6">
@@ -76,17 +96,57 @@ export default function DownloadPage() {
           uploaded.
         </p>
 
-        <div className="grid gap-3 sm:grid-cols-2">
-          {DOWNLOADS.map(({ os: downloadOs, label, fileHint, href }) =>
-            href ? (
-              <Button
-                key={downloadOs}
-                asChild
-                variant={os === downloadOs ? "default" : "secondary"}
-                size="lg"
-                className="h-auto flex-col items-start gap-0.5 py-3 text-left"
-              >
-                <a href={href} download>
+        {showOpenDesktop || showUpdateDesktop ? (
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+            <Button asChild variant="default" size="lg" className="h-auto py-3">
+              <a href={handoff.href}>
+                <span className="flex items-center gap-2 text-sm font-medium">
+                  <MonitorSmartphone className="size-4" strokeWidth={1.75} />
+                  {handoff.label}
+                </span>
+              </a>
+            </Button>
+            {handoff.secondaryHref ? (
+              <Button asChild variant="secondary" size="lg" className="h-auto py-3">
+                <a href={handoff.secondaryHref} download={showUpdateDesktop || undefined}>
+                  <span className="flex items-center gap-2 text-sm font-medium">
+                    <Download className="size-4" strokeWidth={1.75} />
+                    {handoff.secondaryLabel ?? "Get the installer"}
+                  </span>
+                </a>
+              </Button>
+            ) : null}
+          </div>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {DOWNLOADS.map(({ os: downloadOs, label, fileHint, href }) =>
+              href ? (
+                <Button
+                  key={downloadOs}
+                  asChild
+                  variant={os === downloadOs ? "default" : "secondary"}
+                  size="lg"
+                  className="h-auto flex-col items-start gap-0.5 py-3 text-left"
+                >
+                  <a href={href} download>
+                    <span className="flex items-center gap-2 text-sm font-medium">
+                      <Download className="size-4" strokeWidth={1.75} />
+                      {label}
+                    </span>
+                    <span className="font-mono text-xs font-normal text-text-lo/80">
+                      {fileHint}
+                    </span>
+                  </a>
+                </Button>
+              ) : (
+                <Button
+                  key={downloadOs}
+                  variant="secondary"
+                  size="lg"
+                  className="h-auto flex-col items-start gap-0.5 py-3 text-left"
+                  disabled
+                  title="A Mac build has to be built on a Mac — it isn’t available yet."
+                >
                   <span className="flex items-center gap-2 text-sm font-medium">
                     <Download className="size-4" strokeWidth={1.75} />
                     {label}
@@ -94,28 +154,11 @@ export default function DownloadPage() {
                   <span className="font-mono text-xs font-normal text-text-lo/80">
                     {fileHint}
                   </span>
-                </a>
-              </Button>
-            ) : (
-              <Button
-                key={downloadOs}
-                variant="secondary"
-                size="lg"
-                className="h-auto flex-col items-start gap-0.5 py-3 text-left"
-                disabled
-                title="A Mac build has to be built on a Mac — it isn’t available yet."
-              >
-                <span className="flex items-center gap-2 text-sm font-medium">
-                  <Download className="size-4" strokeWidth={1.75} />
-                  {label}
-                </span>
-                <span className="font-mono text-xs font-normal text-text-lo/80">
-                  {fileHint}
-                </span>
-              </Button>
-            )
-          )}
-        </div>
+                </Button>
+              )
+            )}
+          </div>
+        )}
         <p className="text-xs text-text-lo/70">
           Windows is a real, unsigned beta build — see the install notice
           below before you run it. The Mac build needs to be built on a Mac

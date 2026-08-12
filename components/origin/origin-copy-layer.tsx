@@ -159,9 +159,9 @@ export function OriginScrim({
         // alpha that the blurred film reads through, with just enough fill
         // that body copy stays legible over its brightest frames.
         tone === "panel"
-          ? "rounded-panel border border-line/60 bg-bg-0/40 p-6 shadow-3 backdrop-blur-xl"
+          ? "rounded-panel border border-line/60 bg-bg-0/40 p-6 shadow-e2 backdrop-blur-xl"
           : tone === "story"
-            ? "rounded-panel border border-line/80 bg-[linear-gradient(135deg,rgb(10_10_12/0.45),rgb(18_18_22/0.32))] p-6 shadow-3 backdrop-blur-xl"
+            ? "rounded-panel border border-line/80 bg-[linear-gradient(135deg,rgb(10_10_12/0.45),rgb(18_18_22/0.32))] p-6 shadow-e2 backdrop-blur-xl"
             : // Veil carries no fill at all — it sits directly over the film
               // with nothing behind the words but the awaken step's own vignette.
               "rounded-panel p-6",

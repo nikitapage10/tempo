@@ -2,17 +2,19 @@
 
 import * as React from "react";
 import { transcribeAssistantVoice } from "@/lib/api/assistant";
+import { isDesktopApp } from "@/lib/desktop/bridge";
 
 /**
  * Lightweight dictation for Origin.
  *
- * Web Speech writes into the field as the artist talks. Browsers without it use
- * MediaRecorder and transcribe once the artist stops. Both paths use the same
- * interaction: tap the microphone to begin, tap it again to stop, or pause for
- * a few seconds and let Origin stop automatically.
+ * Web Speech writes into the field as the artist talks. Desktop (and browsers
+ * without Web Speech) use MediaRecorder. Electron's SpeechRecognition usually
+ * dies with a `network` error, so desktop prefers recording — but it still
+ * flushes short spoken phrases while listening and transcribes them in the
+ * background, so text appears live instead of only after Stop.
  *
- * Raw audio is never retained. The fallback blob exists only long enough to be
- * transcribed, and is dropped immediately afterwards.
+ * Raw audio is never retained. Segment blobs exist only long enough to be
+ * transcribed, and are dropped immediately afterwards.
  */
 
 type SpeechResultLike = { isFinal: boolean; 0: { transcript: string } };
@@ -45,6 +47,10 @@ const SILENCE_MS = 3_500;
 const INITIAL_SILENCE_MS = 8_000;
 const MAX_DICTATION_MS = 10 * 60 * 1_000;
 const SPEECH_LEVEL = 0.025;
+/** After a pause in speech, flush the current recording segment for live text. */
+const SEGMENT_FLUSH_MS = 1_100;
+/** Force a flush during continuous talk so phrases don't wait for a long pause. */
+const MAX_SEGMENT_MS = 4_500;
 
 export type SpeechMode = "live" | "record" | "unavailable";
 
@@ -81,16 +87,30 @@ export function useOriginSpeech(opts: {
   const micDeniedRef = React.useRef(false);
   const finishRef = React.useRef<() => Promise<void>>(async () => undefined);
   const silenceTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const segmentFlushTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const segmentMaxTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const maxTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const analyserFrameRef = React.useRef<number | null>(null);
   const audioContextRef = React.useRef<AudioContext | null>(null);
   const audioSourceRef = React.useRef<MediaStreamAudioSourceNode | null>(null);
+  const hadSpeechInSegmentRef = React.useRef(false);
+  const flushingSegmentRef = React.useRef(false);
+  const listeningRef = React.useRef(false);
+  const segmentSeqRef = React.useRef(0);
+  const applySeqRef = React.useRef(0);
+  const pendingTextRef = React.useRef(new Map<number, string>());
+  const inFlightRef = React.useRef(0);
 
   const optsRef = React.useRef(opts);
   optsRef.current = opts;
 
   React.useEffect(() => {
-    if (getRecognitionCtor()) setMode("live");
+    // Electron exposes webkitSpeechRecognition, but Google's cloud STT usually
+    // fails with `network` there — same trap Import's VoiceInput already avoids.
+    // Prefer MediaRecorder → /api/assistant/transcribe on desktop, with live
+    // phrase flushes so the field fills while listening.
+    const allowLive = !isDesktopApp() && getRecognitionCtor();
+    if (allowLive) setMode("live");
     else if (typeof MediaRecorder !== "undefined") setMode("record");
     else setMode("unavailable");
   }, []);
@@ -98,14 +118,63 @@ export function useOriginSpeech(opts: {
   const clearStopTimers = React.useCallback(() => {
     if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
     if (maxTimerRef.current) clearTimeout(maxTimerRef.current);
+    if (segmentFlushTimerRef.current) clearTimeout(segmentFlushTimerRef.current);
+    if (segmentMaxTimerRef.current) clearTimeout(segmentMaxTimerRef.current);
     silenceTimerRef.current = null;
     maxTimerRef.current = null;
+    segmentFlushTimerRef.current = null;
+    segmentMaxTimerRef.current = null;
   }, []);
 
   const finishAfter = React.useCallback((delay: number) => {
     if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
     silenceTimerRef.current = setTimeout(() => void finishRef.current(), delay);
   }, []);
+
+  const publishSpoken = React.useCallback(() => {
+    const base = optsRef.current.baseText();
+    const spoken = finalRef.current.trim();
+    optsRef.current.onTranscript(base ? `${base} ${spoken}`.trim() : spoken);
+  }, []);
+
+  const applyPendingSegments = React.useCallback(() => {
+    while (pendingTextRef.current.has(applySeqRef.current)) {
+      const text = pendingTextRef.current.get(applySeqRef.current) ?? "";
+      pendingTextRef.current.delete(applySeqRef.current);
+      applySeqRef.current += 1;
+      if (!text) continue;
+      finalRef.current = `${finalRef.current} ${text}`.trim();
+      publishSpoken();
+    }
+  }, [publishSpoken]);
+
+  const queueSegmentTranscription = React.useCallback(
+    (blob: Blob) => {
+      if (blob.size < 800) return;
+      const seq = segmentSeqRef.current;
+      segmentSeqRef.current += 1;
+      inFlightRef.current += 1;
+      setTranscribing(true);
+      const file = new File([blob], `origin-dictation-${seq}.webm`, {
+        type: blob.type || "audio/webm",
+      });
+      void transcribeAssistantVoice(file)
+        .then((text) => {
+          pendingTextRef.current.set(seq, text.trim());
+          applyPendingSegments();
+        })
+        .catch(() => {
+          // Keep listening; a missed phrase shouldn't kill the whole pass.
+          pendingTextRef.current.set(seq, "");
+          applyPendingSegments();
+        })
+        .finally(() => {
+          inFlightRef.current = Math.max(0, inFlightRef.current - 1);
+          if (inFlightRef.current === 0) setTranscribing(false);
+        });
+    },
+    [applyPendingSegments]
+  );
 
   const stopAudioMonitor = React.useCallback(() => {
     if (analyserFrameRef.current !== null) cancelAnimationFrame(analyserFrameRef.current);
@@ -122,6 +191,79 @@ export function useOriginSpeech(opts: {
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
   }, [stopAudioMonitor]);
+
+  const stopCurrentRecorder = React.useCallback(async (): Promise<Blob | null> => {
+    const recorder = recorderRef.current;
+    if (!recorder) return null;
+    const blob = await new Promise<Blob | null>((resolve) => {
+      recorder.onstop = () => {
+        const parts = chunksRef.current;
+        chunksRef.current = [];
+        resolve(parts.length ? new Blob(parts, { type: recorder.mimeType || "audio/webm" }) : null);
+      };
+      if (recorder.state !== "inactive") recorder.stop();
+      else resolve(null);
+    });
+    recorderRef.current = null;
+    return blob;
+  }, []);
+
+  const beginRecorderSegment = React.useCallback(() => {
+    const stream = streamRef.current;
+    if (!stream || stoppingRef.current || !listeningRef.current) return false;
+    if (typeof MediaRecorder === "undefined") return false;
+    try {
+      const recorder = new MediaRecorder(stream);
+      recorderRef.current = recorder;
+      chunksRef.current = [];
+      hadSpeechInSegmentRef.current = false;
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) chunksRef.current.push(event.data);
+      };
+      // Timeslice so a quick stop still has bytes to transcribe.
+      recorder.start(250);
+      if (segmentMaxTimerRef.current) clearTimeout(segmentMaxTimerRef.current);
+      segmentMaxTimerRef.current = setTimeout(() => {
+        if (hadSpeechInSegmentRef.current) void flushSegmentRef.current();
+      }, MAX_SEGMENT_MS);
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const flushSegmentRef = React.useRef<() => Promise<void>>(async () => undefined);
+
+  const flushSegment = React.useCallback(async () => {
+    if (flushingSegmentRef.current) return;
+    if (!hadSpeechInSegmentRef.current && recorderRef.current) {
+      // Quiet segment — don't burn a transcription call.
+      return;
+    }
+    if (!recorderRef.current) return;
+    flushingSegmentRef.current = true;
+    if (segmentFlushTimerRef.current) clearTimeout(segmentFlushTimerRef.current);
+    if (segmentMaxTimerRef.current) clearTimeout(segmentMaxTimerRef.current);
+    segmentFlushTimerRef.current = null;
+    segmentMaxTimerRef.current = null;
+    try {
+      const blob = await stopCurrentRecorder();
+      const keepGoing = listeningRef.current && !stoppingRef.current;
+      if (keepGoing) beginRecorderSegment();
+      if (blob) queueSegmentTranscription(blob);
+    } finally {
+      flushingSegmentRef.current = false;
+    }
+  }, [beginRecorderSegment, queueSegmentTranscription, stopCurrentRecorder]);
+
+  flushSegmentRef.current = flushSegment;
+
+  const scheduleSegmentFlush = React.useCallback(() => {
+    if (segmentFlushTimerRef.current) clearTimeout(segmentFlushTimerRef.current);
+    segmentFlushTimerRef.current = setTimeout(() => {
+      void flushSegmentRef.current();
+    }, SEGMENT_FLUSH_MS);
+  }, []);
 
   const monitorRecordingSilence = React.useCallback(
     (stream: MediaStream) => {
@@ -144,12 +286,16 @@ export function useOriginSpeech(opts: {
           sum += normalized * normalized;
         }
         const level = Math.sqrt(sum / samples.length);
-        if (level >= SPEECH_LEVEL) finishAfter(SILENCE_MS);
+        if (level >= SPEECH_LEVEL) {
+          hadSpeechInSegmentRef.current = true;
+          finishAfter(SILENCE_MS);
+          scheduleSegmentFlush();
+        }
         analyserFrameRef.current = requestAnimationFrame(sample);
       };
       sample();
     },
-    [finishAfter]
+    [finishAfter, scheduleSegmentFlush]
   );
 
   const startLive = React.useCallback(() => {
@@ -179,20 +325,25 @@ export function useOriginSpeech(opts: {
         setMicDenied(true);
         setError("TEMPO can't hear the microphone. You can type instead.");
         setListening(false);
+        listeningRef.current = false;
         clearStopTimers();
-      } else if (event.error !== "no-speech" && event.error !== "aborted") {
+      } else if (event.error === "no-speech" || event.error === "aborted") {
+        // Benign — onend will reopen if we're still listening.
+      } else if (event.error === "network" || event.error === "audio-capture") {
+        // Recoverable on the web path; keep transcript, let onend retry.
+      } else {
         setError("Dictation stopped unexpectedly. What you already said is kept.");
       }
     };
     recognition.onend = () => {
-      // Chrome periodically ends long sessions. Reopen it until the artist,
-      // silence detector, or permission state deliberately ends dictation.
       if (!stoppingRef.current && !micDeniedRef.current) {
         try {
           recognition.start();
         } catch {
           setListening(false);
+          listeningRef.current = false;
           clearStopTimers();
+          setError("Dictation stopped unexpectedly. What you already said is kept.");
         }
       }
     };
@@ -212,32 +363,38 @@ export function useOriginSpeech(opts: {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
-      const recorder = new MediaRecorder(stream);
-      recorderRef.current = recorder;
-      chunksRef.current = [];
-      recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) chunksRef.current.push(event.data);
-      };
-      recorder.start();
+      listeningRef.current = true;
+      if (!beginRecorderSegment()) {
+        releaseStream();
+        listeningRef.current = false;
+        setError("Voice input isn't available in this browser. You can type instead.");
+        return false;
+      }
       monitorRecordingSilence(stream);
       return true;
     } catch {
       micDeniedRef.current = true;
       setMicDenied(true);
+      listeningRef.current = false;
       setError("TEMPO couldn't reach your microphone. You can type instead.");
       return false;
     }
-  }, [monitorRecordingSilence]);
+  }, [beginRecorderSegment, monitorRecordingSilence, releaseStream]);
 
   const start = React.useCallback(async () => {
     setError(null);
     stoppingRef.current = false;
     micDeniedRef.current = false;
     finalRef.current = "";
+    segmentSeqRef.current = 0;
+    applySeqRef.current = 0;
+    pendingTextRef.current.clear();
+    inFlightRef.current = 0;
     clearStopTimers();
 
     const ok = mode === "live" ? startLive() : mode === "record" ? await startRecording() : false;
     if (!ok) return;
+    listeningRef.current = true;
     setListening(true);
     finishAfter(INITIAL_SILENCE_MS);
     maxTimerRef.current = setTimeout(() => void finishRef.current(), MAX_DICTATION_MS);
@@ -247,6 +404,7 @@ export function useOriginSpeech(opts: {
     if (stoppingRef.current) return;
     stoppingRef.current = true;
     clearStopTimers();
+    listeningRef.current = false;
     setListening(false);
 
     if (mode === "live") {
@@ -256,42 +414,52 @@ export function useOriginSpeech(opts: {
     }
 
     stopAudioMonitor();
-    const recorder = recorderRef.current;
-    if (!recorder) {
-      releaseStream();
-      return;
-    }
+    if (segmentFlushTimerRef.current) clearTimeout(segmentFlushTimerRef.current);
+    if (segmentMaxTimerRef.current) clearTimeout(segmentMaxTimerRef.current);
 
-    const blob = await new Promise<Blob | null>((resolve) => {
-      recorder.onstop = () => {
-        const parts = chunksRef.current;
-        resolve(parts.length ? new Blob(parts, { type: recorder.mimeType || "audio/webm" }) : null);
-      };
-      if (recorder.state !== "inactive") recorder.stop();
-      else resolve(null);
-    });
-
-    recorderRef.current = null;
-    chunksRef.current = [];
+    const blob = await stopCurrentRecorder();
     releaseStream();
-    if (!blob) return;
 
-    setTranscribing(true);
-    try {
-      const file = new File([blob], "origin-dictation.webm", { type: blob.type });
-      const text = await transcribeAssistantVoice(file);
-      const base = optsRef.current.baseText();
-      optsRef.current.onTranscript(base ? `${base} ${text}`.trim() : text);
-    } catch (transcriptionError) {
-      setError(
-        transcriptionError instanceof Error
-          ? transcriptionError.message
-          : "That recording couldn't be transcribed. You can type instead."
-      );
-    } finally {
-      setTranscribing(false);
+    if (blob && blob.size >= 800) {
+      setTranscribing(true);
+      try {
+        const file = new File([blob], "origin-dictation-final.webm", {
+          type: blob.type || "audio/webm",
+        });
+        const text = await transcribeAssistantVoice(file);
+        if (text.trim()) {
+          finalRef.current = `${finalRef.current} ${text}`.trim();
+          publishSpoken();
+        }
+      } catch (transcriptionError) {
+        if (!finalRef.current.trim()) {
+          setError(
+            transcriptionError instanceof Error
+              ? transcriptionError.message
+              : "That recording couldn't be transcribed. You can type instead."
+          );
+        }
+      } finally {
+        if (inFlightRef.current === 0) setTranscribing(false);
+      }
     }
-  }, [clearStopTimers, mode, releaseStream, stopAudioMonitor]);
+
+    // Wait briefly for any in-flight phrase transcriptions to land.
+    const started = Date.now();
+    while (inFlightRef.current > 0 && Date.now() - started < 8_000) {
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    applyPendingSegments();
+    setTranscribing(false);
+  }, [
+    applyPendingSegments,
+    clearStopTimers,
+    mode,
+    publishSpoken,
+    releaseStream,
+    stopAudioMonitor,
+    stopCurrentRecorder,
+  ]);
 
   finishRef.current = finish;
 
@@ -300,6 +468,7 @@ export function useOriginSpeech(opts: {
   React.useEffect(
     () => () => {
       stoppingRef.current = true;
+      listeningRef.current = false;
       clearStopTimers();
       recognitionRef.current?.abort();
       if (recorderRef.current?.state !== "inactive") recorderRef.current?.stop();

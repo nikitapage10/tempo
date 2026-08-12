@@ -624,64 +624,68 @@ export function OriginStoryScroll({
       {editAction(2)}
     </div>,
 
-    <div key="story" className="flex flex-col gap-4">
-      {interpretation.storySections.map((section, index) => (
-        <div key={`story-${index}`} className="rounded-2xl border border-line/60 bg-white/[0.025] p-4">
-          {editingChapter === 3 ? (
-            <div className="grid gap-2">
-              <div className="flex items-center gap-2">
-                <Input
-                  value={section.title}
-                  onChange={(event) => updateStorySection(index, { title: event.target.value })}
-                  maxLength={120}
-                  placeholder="Section title"
-                  aria-label={`Story section ${index + 1} title`}
-                  className="font-display"
+    <div key="story" className="flex max-h-[min(78dvh,100%)] flex-col gap-4">
+      <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1 pb-2">
+        {interpretation.storySections.map((section, index) => (
+          <div key={`story-${index}`} className="mb-4 rounded-2xl border border-line/60 bg-white/[0.025] p-4 last:mb-0">
+            {editingChapter === 3 ? (
+              <div className="grid gap-2">
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={section.title}
+                    onChange={(event) => updateStorySection(index, { title: event.target.value })}
+                    maxLength={120}
+                    placeholder="Section title"
+                    aria-label={`Story section ${index + 1} title`}
+                    className="font-display"
+                  />
+                  <button type="button" onClick={() => moveStorySection(index, -1)} disabled={index === 0} className="p-2 text-text-lo disabled:opacity-30" aria-label="Move story section up">
+                    <ArrowUp className="size-3.5" />
+                  </button>
+                  <button type="button" onClick={() => moveStorySection(index, 1)} disabled={index === interpretation.storySections.length - 1} className="p-2 text-text-lo disabled:opacity-30" aria-label="Move story section down">
+                    <ArrowDown className="size-3.5" />
+                  </button>
+                  <button type="button" onClick={() => patchInterpretation({ storySections: interpretation.storySections.filter((_, itemIndex) => itemIndex !== index) })} className="p-2 text-text-lo hover:text-warn" aria-label="Remove story section">
+                    <Trash2 className="size-3.5" />
+                  </button>
+                </div>
+                <Textarea
+                  value={section.body}
+                  onChange={(event) => updateStorySection(index, { body: event.target.value })}
+                  maxLength={2000}
+                  rows={4}
+                  placeholder="Write this part of the story in your own words"
+                  aria-label={`Story section ${index + 1} body`}
+                  className="resize-none"
                 />
-                <button type="button" onClick={() => moveStorySection(index, -1)} disabled={index === 0} className="p-2 text-text-lo disabled:opacity-30" aria-label="Move story section up">
-                  <ArrowUp className="size-3.5" />
-                </button>
-                <button type="button" onClick={() => moveStorySection(index, 1)} disabled={index === interpretation.storySections.length - 1} className="p-2 text-text-lo disabled:opacity-30" aria-label="Move story section down">
-                  <ArrowDown className="size-3.5" />
-                </button>
-                <button type="button" onClick={() => patchInterpretation({ storySections: interpretation.storySections.filter((_, itemIndex) => itemIndex !== index) })} className="p-2 text-text-lo hover:text-warn" aria-label="Remove story section">
-                  <Trash2 className="size-3.5" />
-                </button>
               </div>
-              <Textarea
-                value={section.body}
-                onChange={(event) => updateStorySection(index, { body: event.target.value })}
-                maxLength={2000}
-                rows={4}
-                placeholder="Write this part of the story in your own words"
-                aria-label={`Story section ${index + 1} body`}
-                className="resize-none"
-              />
-            </div>
-          ) : (
-            <>
-              <p className="text-[11px] uppercase tracking-[0.22em] text-ice/70">
-                {String(index + 1).padStart(2, "0")}
-              </p>
-              {section.title ? <h3 className="mt-2 font-display text-lg text-text-hi">{section.title}</h3> : null}
-              <p className="mt-2 text-sm leading-7 text-text-lo">{section.body}</p>
-            </>
-          )}
-        </div>
-      ))}
-      {!interpretation.storySections.length && editingChapter !== 3 ? (
-        <p className="text-sm leading-7 text-text-lo">Add the parts of your story you want people to know.</p>
-      ) : null}
-      {editingChapter === 3 && interpretation.storySections.length < 8 ? (
-        <button
-          type="button"
-          onClick={() => patchInterpretation({ storySections: [...interpretation.storySections, { title: "", body: "" }] })}
-          className="flex w-fit items-center gap-1 text-xs text-ice"
-        >
-          <Plus className="size-3.5" /> Add a story section
-        </button>
-      ) : null}
-      {editAction(3)}
+            ) : (
+              <>
+                <p className="text-[11px] uppercase tracking-[0.22em] text-ice/70">
+                  {String(index + 1).padStart(2, "0")}
+                </p>
+                {section.title ? <h3 className="mt-2 font-display text-lg text-text-hi">{section.title}</h3> : null}
+                <p className="mt-2 text-sm leading-7 text-text-lo">{section.body}</p>
+              </>
+            )}
+          </div>
+        ))}
+        {!interpretation.storySections.length && editingChapter !== 3 ? (
+          <p className="text-sm leading-7 text-text-lo">Add the parts of your story you want people to know.</p>
+        ) : null}
+        {editingChapter === 3 && interpretation.storySections.length < 8 ? (
+          <button
+            type="button"
+            onClick={() => patchInterpretation({ storySections: [...interpretation.storySections, { title: "", body: "" }] })}
+            className="flex w-fit items-center gap-1 text-xs text-ice"
+          >
+            <Plus className="size-3.5" /> Add a story section
+          </button>
+        ) : null}
+      </div>
+      <div className="shrink-0 border-t border-line/40 bg-[rgb(9_10_13/0.92)] pt-3 backdrop-blur-sm">
+        {editAction(3)}
+      </div>
     </div>,
 
     // Import lives inside the story rather than as a page you get sent to, so
@@ -819,7 +823,7 @@ export function OriginStoryScroll({
     >
       {/* The scroll range. The sticky child stays in view across all of it. */}
       <div style={{ height: `${sections.length * VH_PER_CHAPTER + 100}vh` }} className="w-full">
-        <div className="sticky top-0 flex h-[100dvh] items-center px-5">
+        <div className="sticky top-0 flex h-[100dvh] items-start overflow-hidden px-5 py-8">
           {sections.map((content, i) => (
             <div
               key={i}

@@ -29,7 +29,7 @@ export function SpotifyEmbedPlayer({
   const spotifyId = resolveSpotifyTrackId(spotifyTrackId, spotifyUrl);
   if (!spotifyId) return null;
 
-  const embedUrl = `https://open.spotify.com/embed/track/${encodeURIComponent(spotifyId)}?utm_source=tempo`;
+  const embedUrl = `https://open.spotify.com/embed/track/${encodeURIComponent(spotifyId)}?utm_source=tempo&theme=0`;
 
   return (
     <div className={cn("space-y-3", className)}>
@@ -38,16 +38,21 @@ export function SpotifyEmbedPlayer({
           Spotify playback
         </span>
       </div>
-      <iframe
-        title={`Spotify player for ${trackTitle}`}
-        src={embedUrl}
-        width="100%"
-        height="152"
-        loading="lazy"
-        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-        allowFullScreen
-        className="block w-full rounded-card border-0 bg-bg-2"
-      />
+      {/* Spotify's own chrome rounds ~12px; match or exceed that so TEMPO's
+          frame never peeks light corners around the embed. */}
+      <div className="overflow-hidden rounded-[14px] bg-[#121212] shadow-e1 ring-1 ring-line/60">
+        <iframe
+          title={`Spotify player for ${trackTitle}`}
+          src={embedUrl}
+          width="100%"
+          height="152"
+          loading="lazy"
+          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+          allowFullScreen
+          className="block w-full border-0 bg-[#121212]"
+          style={{ borderRadius: 14 }}
+        />
+      </div>
       {explainBounce ? (
         <p className="text-xs leading-relaxed text-text-lo">
           Spotify handles this playback. Upload a bounce whenever you want TEMPO’s waveform,

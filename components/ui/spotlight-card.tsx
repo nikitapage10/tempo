@@ -16,6 +16,10 @@ import { cn } from "@/lib/utils";
  * 2. One pointer listener for the whole page instead of one per card, and
  *    the CSS lives in globals.css rather than an injected <style> per
  *    instance. A board with twenty cards used to mean twenty of each.
+ *
+ * Edge glow uses **local** `--spot-x` / `--spot-y` (not `background-attachment:
+ * fixed`) so Board columns with `transform` / `overflow` still light up the
+ * same way as Tracks rows.
  */
 
 type SpotlightTone = "ramp" | "ice" | "amber" | "violet" | "ok" | "warn";
@@ -126,16 +130,30 @@ export function SpotlightCard({
 }: SpotlightCardProps) {
   useSpotlightPointer();
 
+  const syncLocalSpot = React.useCallback(
+    (event: React.PointerEvent<HTMLElement>) => {
+      const el = event.currentTarget;
+      const rect = el.getBoundingClientRect();
+      el.style.setProperty("--spot-x", `${event.clientX - rect.left}px`);
+      el.style.setProperty("--spot-y", `${event.clientY - rect.top}px`);
+    },
+    []
+  );
+
   return (
     <Tag
       id={id}
       className={cn("spotlight", className)}
+      onPointerEnter={syncLocalSpot}
+      onPointerMove={syncLocalSpot}
       style={
         {
           "--spot-color": accent ?? TONE_VAR[tone],
           "--spot-radius": radius,
           "--spot-border": borderWidth,
           "--spot-size": size,
+          "--spot-x": "50%",
+          "--spot-y": "50%",
         } as React.CSSProperties
       }
     >

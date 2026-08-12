@@ -121,8 +121,9 @@ function RegisterForm() {
     }
 
     // ORIGIN comes before Import for a brand-new account; Origin itself hands
-    // off to /import when it finishes or is skipped.
-    router.replace(isSafeRedirect(redirectTo) ? redirectTo : "/origin");
+    // off to /import when it finishes or is skipped. Fresh invite signups land
+    // on /welcome first so the artist can choose browser vs desktop.
+    router.replace(isSafeRedirect(redirectTo) ? redirectTo : "/welcome");
     router.refresh();
   }
 

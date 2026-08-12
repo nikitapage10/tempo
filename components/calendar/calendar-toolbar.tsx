@@ -93,7 +93,7 @@ export function CalendarToolbar({
                 animate={{ opacity: 1, y: 0 }}
                 exit={reduceMotion ? undefined : { opacity: 0, y: 4 }}
                 transition={{ duration: 0.16 }}
-                className="block truncate font-display text-base font-semibold text-text-hi sm:text-lg"
+                className="block truncate font-data text-base font-semibold tracking-tight text-text-hi sm:text-lg"
               >
                 {title}
               </motion.span>

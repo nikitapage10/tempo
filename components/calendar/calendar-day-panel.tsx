@@ -66,11 +66,11 @@ export function CalendarDayPanel({
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between gap-2 border-b border-line/60 px-4 py-3">
         <div className="min-w-0">
-          <p className="label-mono text-text-lo">{shortDateLabel(date, today)}</p>
-          <h2 className="truncate font-display text-base font-semibold text-text-hi">{formatDayHeading(date)}</h2>
+          <p className="font-data text-[11px] font-semibold uppercase tracking-[0.12em] text-text-lo">{shortDateLabel(date, today)}</p>
+          <h2 className="truncate font-data text-base font-semibold tracking-tight text-text-hi">{formatDayHeading(date)}</h2>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="font-mono text-xs text-text-lo">{dayItems.length}</span>
+          <span className="font-data text-xs tabular-nums text-text-lo">{dayItems.length}</span>
           <button
             type="button"
             onClick={onClose}

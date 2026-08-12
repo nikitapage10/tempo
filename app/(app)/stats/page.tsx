@@ -128,7 +128,7 @@ export default function ArtistStatsPage() {
   return (
     <div className="space-y-5">
       {/* Identity hero — glass shell; inner field window restores Spectra. */}
-      <div className="glass-hero relative overflow-hidden">
+      <div className="glass-hero prism-edge relative overflow-hidden">
         <div className="absolute inset-0">
           <LfWindow field className="absolute inset-0" aria-hidden />
           <div className="scrim-reveal absolute inset-0" aria-hidden />

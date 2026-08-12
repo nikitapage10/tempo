@@ -47,6 +47,8 @@ export type DesktopBridge = {
       title: string;
       body?: string | null;
       url?: string | null;
+      ice?: string | null;
+      amber?: string | null;
     }) => Promise<boolean>;
     onOpen: (callback: (url: string) => void) => () => void;
   };
@@ -195,6 +197,9 @@ export async function showDesktopNotification(input: {
   title: string;
   body?: string | null;
   url?: string | null;
+  /** Active artist Cool/Warm — matches profile palette in the toast. */
+  ice?: string | null;
+  amber?: string | null;
 }): Promise<boolean> {
   const notifications = bridge()?.notifications;
   if (!notifications) return false;
@@ -203,6 +208,17 @@ export async function showDesktopNotification(input: {
   } catch {
     return false;
   }
+}
+
+/** Read the live artist palette from the document (ArtistThemeProvider). */
+export function readDesktopAlertAccents(): { ice: string; amber: string } {
+  if (typeof document === "undefined") {
+    return { ice: "#7FB4FF", amber: "#FFB56B" };
+  }
+  const styles = getComputedStyle(document.documentElement);
+  const ice = styles.getPropertyValue("--ice").trim() || "#7FB4FF";
+  const amber = styles.getPropertyValue("--amber").trim() || "#FFB56B";
+  return { ice, amber };
 }
 
 export function onDesktopNotificationOpen(callback: (url: string) => void): () => void {

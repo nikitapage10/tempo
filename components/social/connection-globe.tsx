@@ -52,12 +52,12 @@ const PIN_R = 1.02;
 const THETA = 0.3;
 /** Slow, ambient drift — about one rotation every ~3.5 minutes. */
 const BASE_SPEED = 0.0008;
-/** Fraction of the (square) canvas kept visible — a bit more than half, so
- *  the lower latitudes still read before the horizon fade takes over. */
-const VISIBLE = 0.58;
+/** Fraction of the (square) canvas kept visible — enough crest above the
+ *  horizon that the globe doesn't sit sunk under the fold. */
+const VISIBLE = 0.68;
 /** Room above the sphere crest for the atmosphere glow — without this the
  *  halo clips against the container and reads as a flat square top. */
-const GLOW_PAD = 52;
+const GLOW_PAD = 40;
 const ZOOM_MIN = 1;
 const ZOOM_MAX = 2.55;
 /** At zoom 1, pins closer than this (degrees) hide behind each other;
@@ -437,8 +437,8 @@ export function ConnectionGlobe({
           height: size,
           top: GLOW_PAD,
           cursor: dragging ? "grabbing" : "grab",
-          transform: `translateX(-50%) scale(${zoom})`,
-          transformOrigin: "50% 42%",
+          transform: `translateX(-50%) translateY(-18px) scale(${zoom})`,
+          transformOrigin: "50% 40%",
         }}
       >
         {/* Atmosphere — soft outer glow only. Box-shadow on a circle that

@@ -4,6 +4,60 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-11
 
+- Changed (v0.118.0): Scene cards keep the frosted footer, but the banner
+  now runs behind it to the bottom of the card — no hard cutoff between
+  artwork and glass.
+- Fixed (v0.118.0; Desktop v0.100.11): dictation on TEMPO Desktop shows your
+  words in the field while you’re still talking — it no longer waits until you
+  hit Stop to transcribe everything at once.
+- Fixed (v0.118.0): Board track cards light the same cursor-edge glow as
+  Tracks again — the column’s overflow clip had been killing that hover
+  animation.
+- Fixed (v0.118.0): Calendar month and day titles use Inter again, so years
+  like 2026 no longer show Jura’s dotted zeros.
+- Changed (v0.118.0): Today’s Needs attention list shows four tracks at a
+  time (was five), so the cover strip peeks in below without scrolling.
+- Fixed (v0.118.0; Desktop v0.100.11): the Windows Start / taskbar app icon
+  is the equalizer mark again — the previous icon file was corrupted and
+  could look like a broken cube instead of the light bars.
+- Changed (v0.118.0): Spotify players sit in a darker, more rounded frame so
+  light corners stop peeking around the embed. The Social globe sits a little
+  higher, and Scene cards use a frosted glass footer for the title and member
+  count.
+- Changed (v0.118.0; Desktop v0.100.11): desktop message toasts are larger,
+  use your artist Cool/Warm colours, and keep the Spectra side edge inside
+  the rounded corners.
+- Changed (v0.118.0): Board track cards no longer carry a permanent side
+  line — hover still lights the Spectra edge the same way as Tracks.
+- Changed (v0.118.0): the amber-to-ice side line is only on page heroes and
+  Board columns now — not on every glass tile or every track card — and it
+  stops short of rounded corners so it no longer sticks out past the curve.
+- Fixed (v0.118.0): glass widgets across the app share one soft drop shadow
+  instead of mixing a heavy panel shadow next to a nearly flat quiet tile —
+  Today’s Needs attention / Tasks due pair (and the same pattern elsewhere)
+  now sit at the same height.
+- Fixed (v0.118.0; Desktop v0.100.11): when TEMPO Desktop is in the tray or
+  behind other windows, a new message shows a glass toast in the bottom-right
+  with the preview text and a soft chime — including on Windows 11, where the
+  old popup could sit there invisibly.
+- Added (v0.118.0): after you accept an invite and create your account, TEMPO
+  asks whether you want to continue in the browser or download the Windows
+  desktop app — your call before Origin starts.
+- Changed (v0.118.0): major glass panels across the workspace pick up Origin’s
+  thin amber-to-ice side edge, so the regular app shares that prism edge light.
+- Fixed (v0.118.0): a long Origin story no longer runs off the bottom of the
+  screen — The Story scrolls inside its panel, and Edit stays reachable.
+- Fixed (v0.118.0; Desktop v0.100.11): dictation in Origin on TEMPO Desktop no
+  longer dies with “stopped unexpectedly” at the start — desktop uses the same
+  solid mic recording path as Messages instead of the browser speech shortcut
+  that fails inside Electron.
+- Fixed (v0.118.0; Desktop v0.100.11): the desktop tray / Start icon shows the
+  TEMPO emblem instead of a blank slot, and opening TEMPO again focuses the
+  window you already have instead of starting a second copy.
+- Changed (v0.118.0): if Desktop is already on your account, Download for
+  Windows becomes Open in desktop (or Update when the install is too old), on
+  both the rail and the Download page.
+
 - Changed (v0.117.0): everyday UI type sits a step larger — body copy, rail
   links, buttons, labels, and the dense meta text under cards and counts —
   so smaller lines are easier to read without changing the big titles.

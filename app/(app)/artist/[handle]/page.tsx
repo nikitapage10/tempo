@@ -66,7 +66,7 @@ export default function ArtistProfileByHandlePage() {
 
   return (
     <div className="space-y-5">
-      <div className="glass-hero relative overflow-hidden">
+      <div className="glass-hero prism-edge relative overflow-hidden">
         <div className="absolute inset-0">
           <LfWindow field className="absolute inset-0" aria-hidden />
           <div className="scrim-reveal absolute inset-0" aria-hidden />

@@ -64,9 +64,11 @@
     --edge-hi-strong: rgb(255 255 255 / 0.09);
 
     /* Elevation */
-    --shadow-1: 0 1px 2px rgb(0 0 0 / 0.4);
-    --shadow-2: 0 4px 16px -2px rgb(0 0 0 / 0.5), 0 2px 6px -2px rgb(0 0 0 / 0.4);
-    --shadow-3: 0 16px 48px -12px rgb(0 0 0 / 0.7), 0 4px 12px -4px rgb(0 0 0 / 0.5);
+    /* Elevation ramp — shared cast shadow for peer modules. Quiet surfaces
+     * differentiate via fill/blur, not by looking flat next to a deep drop. */
+    --shadow-1: 0 1px 2px rgb(0 0 0 / 0.32);
+    --shadow-2: 0 8px 24px -8px rgb(0 0 0 / 0.48), 0 2px 8px -4px rgb(0 0 0 / 0.32);
+    --shadow-3: 0 14px 36px -10px rgb(0 0 0 / 0.55), 0 4px 12px -4px rgb(0 0 0 / 0.36);
 
     /* Larger radius for major surfaces; card/input/chip stay as spec'd */
     --radius-panel: 16px;
@@ -545,7 +547,8 @@
     border-radius: var(--radius-panel);
     background-color: rgb(var(--bg-0-rgb) / 0.46);
     border: 1px solid rgb(var(--line-rgb) / 0.7);
-    box-shadow: var(--shadow-3);
+    /* Same cast as panel-quiet — peers must match; quiet is quieter fill. */
+    box-shadow: var(--shadow-2);
     backdrop-filter: blur(20px) saturate(1.1);
     -webkit-backdrop-filter: blur(20px) saturate(1.1);
   }
@@ -567,13 +570,15 @@
     pointer-events: none;
   }
 
-  /* Quieter sibling — for secondary regions that shouldn't compete. */
+  /* Quieter sibling — for secondary regions that shouldn't compete.
+   * Same elevation as .panel so a quiet tile beside a primary tile doesn't
+   * look like a sticker; softer fill + lighter blur carry the hierarchy. */
   .panel-quiet {
     position: relative;
     border-radius: var(--radius-panel);
     background-color: rgb(var(--bg-1-rgb) / 0.42);
     border: 1px solid rgb(var(--line-rgb) / 0.62);
-    box-shadow: var(--shadow-1);
+    box-shadow: var(--shadow-2);
     backdrop-filter: blur(14px) saturate(1.05);
     -webkit-backdrop-filter: blur(14px) saturate(1.05);
   }
@@ -599,7 +604,7 @@
     border-radius: var(--radius-panel);
     background: rgb(var(--bg-0-rgb) / 0.32);
     border: 1px solid rgb(var(--line-rgb) / 0.55);
-    box-shadow: var(--shadow-3);
+    box-shadow: var(--shadow-2);
     backdrop-filter: blur(22px) saturate(1.15);
     -webkit-backdrop-filter: blur(22px) saturate(1.15);
   }
@@ -611,7 +616,7 @@
     border-radius: var(--radius-panel);
     background: rgb(var(--bg-0-rgb) / 0.16);
     border: 1px solid rgb(var(--line-rgb) / 0.48);
-    box-shadow: var(--shadow-3);
+    box-shadow: var(--shadow-2);
     backdrop-filter: blur(7px) saturate(1.08);
     -webkit-backdrop-filter: blur(7px) saturate(1.08);
   }
@@ -668,6 +673,43 @@
     border-color: rgb(var(--ice-rgb) / 0.4);
     background: rgb(var(--ice-rgb) / 0.12);
     color: var(--ice);
+  }
+
+  /* Vertical Spectra edge — Origin motif, opt-in only.
+   * Put `.prism-edge` on major shells (heroes, board columns) — never on
+   * every `.panel` / `.glass`, or dense screens like Calendar drown in lines.
+   * Do NOT set overflow:hidden here: it breaks `background-attachment: fixed`
+   * on descendant Spotlight cards (Board track hover edge). The stroke is
+   * already inset top/bottom past the corner radius. */
+  .prism-edge {
+    position: relative;
+  }
+
+  .prism-edge::after {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    left: 0;
+    /* Inset past the corner radius so the bright mid-line doesn't poke out of
+       the rounded square; ends stay soft via the gradient. */
+    top: 10px;
+    bottom: 10px;
+    width: 1px;
+    background: linear-gradient(
+      to bottom,
+      transparent 0%,
+      var(--amber) 32%,
+      var(--ice) 68%,
+      transparent 100%
+    );
+    opacity: 0.72;
+    box-shadow: 0 0 12px rgb(var(--ice-rgb) / 0.22);
+    z-index: 1;
+  }
+
+  .prism-edge-sm::after {
+    top: 6px;
+    bottom: 6px;
   }
 
   /* backdrop-filter unsupported (very old browsers / some in-app webviews):
@@ -818,8 +860,8 @@
     inset: calc(var(--border-size) * -1);
     border: var(--border-size) solid transparent;
     border-radius: calc(var(--spot-radius) * 1px);
-    /* fixed attachment is what lets viewport pointer coords line up */
-    background-attachment: fixed;
+    /* Local coords (--spot-x/y from SpotlightCard) — not background-attachment
+       fixed — so Board stage transforms / overflow don't kill the edge glow. */
     background-size:
       calc(100% + (2 * var(--border-size))) calc(100% + (2 * var(--border-size)));
     background-repeat: no-repeat;
@@ -842,7 +884,8 @@
   .spotlight::before {
     background-image: radial-gradient(
       calc(var(--spotlight-size) * 0.75) calc(var(--spotlight-size) * 0.75) at
-        calc(var(--pointer-x, 0) * 1px) calc(var(--pointer-y, 0) * 1px),
+        calc(var(--spot-x, 50%) + var(--border-size))
+        calc(var(--spot-y, 50%) + var(--border-size)),
       var(--spot-color, var(--ice)),
       transparent 100%
     );
@@ -853,7 +896,8 @@
   .spotlight::after {
     background-image: radial-gradient(
       calc(var(--spotlight-size) * 0.4) calc(var(--spotlight-size) * 0.4) at
-        calc(var(--pointer-x, 0) * 1px) calc(var(--pointer-y, 0) * 1px),
+        calc(var(--spot-x, 50%) + var(--border-size))
+        calc(var(--spot-y, 50%) + var(--border-size)),
       rgb(255 255 255 / 0.9),
       transparent 100%
     );
@@ -863,22 +907,23 @@
   .spotlight:hover::before,
   .spotlight:focus-within::before {
     opacity: 1;
+    z-index: 2;
   }
 
   .spotlight:hover::after,
   .spotlight:focus-within::after {
     opacity: 0.75;
+    z-index: 2;
   }
 
   /* Faint interior wash so the card itself reacts, not just its edge. */
   .spotlight-fill {
     background-image: radial-gradient(
       calc(var(--spotlight-size) * 1.1) calc(var(--spotlight-size) * 1.1) at
-        calc(var(--pointer-x, 0) * 1px) calc(var(--pointer-y, 0) * 1px),
+        var(--spot-x, 50%) var(--spot-y, 50%),
       var(--spot-color, var(--ice)),
       transparent 70%
     );
-    background-attachment: fixed;
     background-repeat: no-repeat;
     opacity: 0;
     transition: opacity 200ms ease;

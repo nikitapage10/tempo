@@ -6,6 +6,7 @@ import { useToast } from "@/components/ui/toast";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import {
   onDesktopNotificationOpen,
+  readDesktopAlertAccents,
   showDesktopNotification,
 } from "@/lib/desktop/bridge";
 import {
@@ -51,11 +52,14 @@ export function useRealtimeInbox(admin = false) {
         const title = notification.title ?? (alertKind === "message" ? "New message" : "New notification");
 
         playIncomingAlert(alertKind);
+        const accents = readDesktopAlertAccents();
         void showDesktopNotification({
           kind: alertKind,
           title,
           body: notification.body,
           url: notification.link_url,
+          ice: accents.ice,
+          amber: accents.amber,
         });
 
         if (isDirectMessageSignal(notification.type)) {

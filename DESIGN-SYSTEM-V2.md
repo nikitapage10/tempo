@@ -34,10 +34,26 @@ layers, but use translucent fills and backdrop blur over the persistent
 workspace video. `.well` remains the quieter nested surface and deliberately
 does not add a second backdrop blur.
 
+As of v0.118, peer modules share one cast shadow (`--shadow-2`) on `.panel`,
+`.panel-quiet`, `.glass`, and `.glass-hero`. Quiet/primary hierarchy comes from
+fill opacity and blur strength — not from stacking a deep drop next to a flat
+tile. `--shadow-3` is reserved for true overlays (menus, dialogs, Origin
+chapters). Soften the whole ramp so glass on the dark wash does not read as a
+heavy black halo.
+
+The amber→ice side stroke is **opt-in** via `.prism-edge` (with `.prism-edge-sm`
+for tighter cards). Use it on page heroes and Board **columns** — not on every
+track card or Calendar chrome. Board tracks keep the hover Spectra frame
+(`LfWindow` + spotlight) instead of a permanent side line. The stroke is
+vertically inset past the corner radius; do not put `overflow: hidden` on
+`.prism-edge` itself (that breaks spotlight `fixed`/transform descendants).
+
 Also added: `.spotlight` / `<SpotlightCard>` (`components/ui/spotlight-card.tsx`)
 — a cursor-tracked highlight for clickable surfaces. Default tone is `ramp`,
 which cross-fades ice → white → amber with pointer X (one shared listener via
-`useSpotlightPointer`, not one per card). Applied to every place a track,
+`useSpotlightPointer`, not one per card). Edge glow tracks **local**
+`--spot-x` / `--spot-y` on the card so Board stage transforms still show the
+same hover rim as Tracks. Applied to every place a track,
 project, or task appears as a clickable row/card — board cards, Tracks rows,
 Today's attention list, project track lists, release track rows, project
 cards, task rows. Don't invent a new hue for it; `tone` accepts the existing

@@ -88,10 +88,12 @@ export function KanbanColumn({
     <section
       ref={setNodeRef}
       className={cn(
-        "relative flex flex-col overflow-hidden rounded-panel border border-line",
+        "prism-edge relative flex flex-col rounded-panel border border-line",
         "bg-gradient-to-b from-[rgb(20_20_25/0.70)] to-[rgb(14_14_18/0.55)] shadow-e2 backdrop-blur-xl",
         "transition-[flex-grow,flex-basis,border-color,box-shadow] duration-300 ease-out motion-reduce:transition-none",
         // Stacked full-width below lg; sized columns from lg up.
+        // No overflow-hidden — it kills Board track Spotlight hover edges
+        // (fixed-attachment gradients break under overflow ≠ visible).
         "w-full lg:min-h-[220px] lg:w-auto",
         fillAvailable
           ? "lg:min-w-0 lg:w-auto lg:basis-0 lg:grow"

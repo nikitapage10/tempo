@@ -1,6 +1,6 @@
 {
   "name": "tempo-desktop",
-  "version": "0.100.10",
+  "version": "0.100.11",
   "private": true,
   "description": "TEMPO Desktop — Electron shell. Deliberately its own package, separate from the root TEMPO package.json, so Vercel's web deploy never installs Electron's Chromium binary. Run `npm install` inside this folder before desktop:dev / desktop:build from the repo root.",
   "repository": {
@@ -35,10 +35,22 @@
       {
         "from": "../public/tempo-emblem.png",
         "to": "assets/tempo-icon.png"
+      },
+      {
+        "from": "../public/tempo-icon.ico",
+        "to": "assets/tempo-icon.ico"
+      },
+      {
+        "from": "../public/tempo-tray-16.png",
+        "to": "assets/tempo-tray-16.png"
+      },
+      {
+        "from": "../public/tempo-tray-32.png",
+        "to": "assets/tempo-tray-32.png"
       }
     ],
     "extraMetadata": {
-      "version": "0.100.10"
+      "version": "0.100.11"
     },
     "protocols": [
       {
@@ -50,7 +62,7 @@
     ],
     "win": {
       "target": "nsis",
-      "icon": "../public/tempo-emblem.png",
+      "icon": "../public/tempo-icon.ico",
       "artifactName": "TEMPO-Setup.${ext}"
     },
     "mac": {
