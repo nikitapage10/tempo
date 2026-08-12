@@ -56,12 +56,13 @@ export function WebGlassAlertHost() {
 
   if (!alert) return null;
 
-  const ice = useHex(alert.ice, "#7FB4FF");
-  const amber = useHex(alert.amber, "#FFB56B");
-  const label = alert.kind === "message" ? "NEW MESSAGE" : "TEMPO NOTIFICATION";
+  const active = alert;
+  const ice = useHex(active.ice, "#7FB4FF");
+  const amber = useHex(active.amber, "#FFB56B");
+  const label = active.kind === "message" ? "NEW MESSAGE" : "TEMPO NOTIFICATION";
 
   function open() {
-    const url = alert.url?.trim();
+    const url = active.url?.trim();
     setAlert(null);
     if (url) window.location.assign(url);
   }
@@ -81,7 +82,7 @@ export function WebGlassAlertHost() {
           "bg-[linear-gradient(145deg,rgb(18_18_22/0.92),rgb(10_10_12/0.88))] shadow-3 backdrop-blur-xl",
           "transition-transform duration-300 hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
         )}
-        aria-label={`${label}: ${alert.title}`}
+        aria-label={`${label}: ${active.title}`}
       >
         <span
           aria-hidden
@@ -126,11 +127,11 @@ export function WebGlassAlertHost() {
               {label}
             </span>
             <span className="block truncate text-base font-semibold leading-snug text-text-hi">
-              {alert.title}
+              {active.title}
             </span>
-            {alert.body ? (
+            {active.body ? (
               <span className="mt-1.5 line-clamp-2 block text-[13px] leading-snug text-text-lo">
-                {alert.body}
+                {active.body}
               </span>
             ) : null}
           </span>
