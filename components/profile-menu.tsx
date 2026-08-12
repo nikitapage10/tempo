@@ -19,7 +19,8 @@ import { cn } from "@/lib/utils";
 
 /**
  * Toolbar account menu — sits beside Messages for Artist, Settings, Download,
- * and Sign out without hunting through the rail.
+ * and Sign out without hunting through the rail. The trigger is your artist
+ * profile photo (emblem), same source as the Artist page hero.
  */
 export function ProfileMenu() {
   const [open, setOpen] = React.useState(false);
@@ -36,6 +37,11 @@ export function ProfileMenu() {
     "Artist";
   const handle = profile?.handle?.trim() || null;
   const email = user?.email ?? null;
+  // Artist page identity photo lives on the artist row; profile copy is fallback.
+  const emblemUrl =
+    activeArtist?.emblem_url?.trim() ||
+    profile?.emblem_url?.trim() ||
+    null;
 
   React.useEffect(() => {
     if (!open) return;
@@ -70,20 +76,18 @@ export function ProfileMenu() {
         aria-label={`Account menu for ${displayName}`}
         title={displayName}
         className={cn(
-          "relative flex size-9 items-center justify-center rounded-full text-text-lo transition-colors duration-hover hover:bg-bg-2 hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
-          open && "bg-bg-2 text-text-hi"
+          "relative size-9 shrink-0 overflow-hidden rounded-full border border-line bg-bg-2 p-0 transition-opacity duration-hover hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
+          open && "ring-2 ring-ice"
         )}
       >
         <ArtistMark
-          emblemUrl={
-            profile?.emblem_url ?? activeArtist?.emblem_url ?? null
-          }
+          emblemUrl={emblemUrl}
           paletteId={activeArtist?.palette_id}
           iceColor={activeArtist?.ice_color}
           amberColor={activeArtist?.amber_color}
           name={displayName}
-          size={28}
-          className="size-7"
+          size={36}
+          className="size-full rounded-full border-0"
         />
       </button>
 
@@ -93,18 +97,29 @@ export function ProfileMenu() {
           aria-label="Account"
           className="fixed inset-x-3 top-16 z-[70] overflow-hidden rounded-card border border-line bg-bg-1 shadow-e3 sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-1.5 sm:w-64 sm:max-w-[calc(100vw-1.5rem)]"
         >
-          <div className="border-b border-line px-3 py-3">
-            <p className="truncate font-display text-sm tracking-wide text-text-hi">
-              {displayName}
-            </p>
-            {handle ? (
-              <p className="mt-0.5 truncate font-mono text-[11px] text-text-lo">
-                @{handle}
+          <div className="flex items-center gap-3 border-b border-line px-3 py-3">
+            <ArtistMark
+              emblemUrl={emblemUrl}
+              paletteId={activeArtist?.palette_id}
+              iceColor={activeArtist?.ice_color}
+              amberColor={activeArtist?.amber_color}
+              name={displayName}
+              size={40}
+              className="size-10 shrink-0 rounded-full"
+            />
+            <div className="min-w-0">
+              <p className="truncate font-display text-sm tracking-wide text-text-hi">
+                {displayName}
               </p>
-            ) : null}
-            {email ? (
-              <p className="mt-0.5 truncate text-xs text-text-lo">{email}</p>
-            ) : null}
+              {handle ? (
+                <p className="mt-0.5 truncate font-mono text-[11px] text-text-lo">
+                  @{handle}
+                </p>
+              ) : null}
+              {email ? (
+                <p className="mt-0.5 truncate text-xs text-text-lo">{email}</p>
+              ) : null}
+            </div>
           </div>
 
           <div className="py-1">

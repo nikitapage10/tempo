@@ -25,4 +25,11 @@ describe("toolbar profile menu", () => {
     expect(menu).toContain("signOut");
     expect(menu).toContain("Sign out");
   });
+
+  it("shows the artist emblem as the trigger and menu header photo", () => {
+    expect(menu).toContain("activeArtist?.emblem_url");
+    expect(menu).toContain("ArtistMark");
+    expect(menu).toContain("size-full");
+    expect(menu).toContain("overflow-hidden rounded-full");
+  });
 });
