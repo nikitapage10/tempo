@@ -8,11 +8,11 @@
 // secret stays on Vercel. This process only ever authenticates as the
 // signed-in artist, same as a browser tab would.
 
-const { app, BrowserWindow, Tray, Menu, nativeImage, shell, ipcMain, protocol, net, dialog, screen, session, systemPreferences } = require("electron");
+const { app, BrowserWindow, Tray, Menu, nativeImage, shell, ipcMain, protocol, dialog, screen, session, systemPreferences } = require("electron");
 const path = require("path");
-const { pathToFileURL } = require("url");
 const { autoUpdater } = require("electron-updater");
 const { Vault } = require("./vault");
+const { createVaultMediaResponse } = require("./vault-media-response");
 const { isMediaRequestAllowed } = require("./media-permissions");
 const { isAllowedDesktopNavigation } = require("./oauth-navigation");
 const { version: appVersion } = require("./package.json");
@@ -543,13 +543,15 @@ function registerVaultProtocol() {
     // tempo-local://tracks/{id}/versions/{id}/file.mp3 — host segment of a
     // "standard" custom scheme is the URL's first path component, so the
     // storage path has to be reassembled from host + pathname.
+    // Must honor Range (206) so Chromium can seek <audio>/<video> — bare
+    // net.fetch(file://) leaves seekable empty and scrub-then-play resets to 0.
     const url = new URL(request.url);
     const storagePath = decodeURIComponent(`${url.host}${url.pathname}`);
     if (!vault || !vault.has(storagePath)) {
       return new Response("Not found in the local vault.", { status: 404 });
     }
     const absolute = path.join(vault.root, ...storagePath.split("/"));
-    return net.fetch(pathToFileURL(absolute).toString());
+    return createVaultMediaResponse(absolute, request);
   });
 }
 
