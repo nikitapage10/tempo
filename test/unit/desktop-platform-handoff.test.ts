@@ -142,6 +142,7 @@ describe("web and desktop platform handoff", () => {
     expect(read("electron/build/installer.nsh")).toContain("customWelcomePage");
     expect(read("electron/build/installer.nsh")).toContain("Welcome to TEMPO");
     expect(read("electron/build/installer.nsh")).not.toContain("TEMPO Desktop");
+    expect(existsSync(resolve("scripts/generate-installer-branding.ps1"))).toBe(true);
   });
 
   it("exposes a stable unsigned Mac DMG on the public release channel", () => {
