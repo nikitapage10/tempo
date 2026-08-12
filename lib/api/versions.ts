@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/client";
 import {
   convertLosslessToMp3,
+  mp3FilenameForOriginal,
   needsMp3Conversion,
 } from "@/lib/audio-convert";
 import { logActivity } from "@/lib/api/activity";
@@ -17,7 +18,7 @@ import {
   evictFromCloud,
   uploadFile,
 } from "@/lib/storage";
-import { isDesktopApp } from "@/lib/desktop/bridge";
+import { isDesktopApp, vaultRemove, vaultWrite } from "@/lib/desktop/bridge";
 import {
   fetchLocalCopiesForVersions,
   recordLocalCopy,
@@ -120,59 +121,142 @@ export async function uploadVersion(
 ): Promise<Version> {
   assertAudioFile(input.file);
 
-  let fileToUpload = input.file;
   const originalLabel =
     input.label?.trim() ||
     input.file.name.replace(/\.[^.]+$/, "") ||
     "Bounce";
 
-  if (needsMp3Conversion(input.file)) {
+  const versionId = crypto.randomUUID();
+  const desktop = isDesktopApp();
+  const lossless = needsMp3Conversion(input.file);
+
+  // Desktop + wav/aiff: keep the original in the local vault immediately,
+  // convert only for the cloud twin (the newest two in_cloud bounces). The
+  // web path still converts before upload so the bucket never stores wav.
+  let fileForCloud = input.file;
+  let fileSizeForRow = input.file.size;
+  let vaultChecksum: string | null = null;
+  let cloudPath: string;
+  let originalVaultPath: string | null = null;
+
+  if (desktop && lossless) {
+    originalVaultPath = buildStoragePath({
+      trackId: input.trackId,
+      kind: "version",
+      entityId: versionId,
+      filename: input.file.name,
+    });
+    cloudPath = buildStoragePath({
+      trackId: input.trackId,
+      kind: "version",
+      entityId: versionId,
+      filename: mp3FilenameForOriginal(input.file.name),
+    });
+
+    input.onPhase?.("uploading");
+    input.onProgress?.(0);
+    try {
+      const written = await vaultWrite(
+        originalVaultPath,
+        await input.file.arrayBuffer()
+      );
+      if (!written) {
+        throw new Error(
+          "Couldn’t save that bounce on this computer — check disk space and try again."
+        );
+      }
+      vaultChecksum = written.checksum;
+      fileSizeForRow = written.size;
+    } catch (err) {
+      if (err instanceof Error && err.message.startsWith("Couldn’t save")) {
+        throw err;
+      }
+      console.error("[tempo] vault write for original bounce failed", err);
+      throw new Error(
+        "Couldn’t save that bounce on this computer — check disk space and try again."
+      );
+    }
+
     input.onPhase?.("converting");
     input.onProgress?.(0);
     try {
-      fileToUpload = await convertLosslessToMp3(input.file, input.onProgress);
+      fileForCloud = await convertLosslessToMp3(input.file, input.onProgress);
     } catch (err) {
-      // If conversion fails but the original is still under the app cap, upload it.
-      if (input.file.size <= MAX_UPLOAD_BYTES) {
-        console.warn("[tempo] mp3 conversion failed; uploading original", err);
-        fileToUpload = input.file;
-      } else {
-        throw err instanceof Error
-          ? err
-          : new Error(
-              "Couldn’t convert that bounce — export an mp3 from your DAW and upload that."
-            );
+      // Original is safe in the vault — refuse to put wav in the cloud.
+      throw err instanceof Error
+        ? err
+        : new Error(
+            "Couldn’t convert that bounce for the cloud — export an mp3 from your DAW, or try again."
+          );
+    }
+
+    if (fileForCloud.size > MAX_UPLOAD_BYTES) {
+      throw new Error(
+        "Upload failed — even after converting to mp3 this file is over 200 MB. Export a shorter bounce or a lower bitrate mp3 from your DAW."
+      );
+    }
+
+    input.onPhase?.("uploading");
+    input.onProgress?.(0);
+    try {
+      await uploadFile(cloudPath, fileForCloud, {
+        onProgress: input.onProgress,
+        contentType: fileForCloud.type || "audio/mpeg",
+        skipVault: true,
+      });
+    } catch (err) {
+      throw err instanceof Error
+        ? err
+        : new Error("Upload failed — try again, or pick a different file.");
+    }
+  } else {
+    if (lossless) {
+      input.onPhase?.("converting");
+      input.onProgress?.(0);
+      try {
+        fileForCloud = await convertLosslessToMp3(input.file, input.onProgress);
+      } catch (err) {
+        if (input.file.size <= MAX_UPLOAD_BYTES) {
+          console.warn("[tempo] mp3 conversion failed; uploading original", err);
+          fileForCloud = input.file;
+        } else {
+          throw err instanceof Error
+            ? err
+            : new Error(
+                "Couldn’t convert that bounce — export an mp3 from your DAW and upload that."
+              );
+        }
       }
     }
-  }
 
-  if (fileToUpload.size > MAX_UPLOAD_BYTES) {
-    throw new Error(
-      "Upload failed — even after converting to mp3 this file is over 200 MB. Export a shorter bounce or a lower bitrate mp3 from your DAW."
-    );
-  }
+    if (fileForCloud.size > MAX_UPLOAD_BYTES) {
+      throw new Error(
+        "Upload failed — even after converting to mp3 this file is over 200 MB. Export a shorter bounce or a lower bitrate mp3 from your DAW."
+      );
+    }
 
-  input.onPhase?.("uploading");
-  input.onProgress?.(0);
-
-  const versionId = crypto.randomUUID();
-  const path = buildStoragePath({
-    trackId: input.trackId,
-    kind: "version",
-    entityId: versionId,
-    filename: fileToUpload.name,
-  });
-
-  let uploadResult: { path: string; vault: { checksum: string; size: number } | null };
-  try {
-    uploadResult = await uploadFile(path, fileToUpload, {
-      onProgress: input.onProgress,
-      contentType: fileToUpload.type || "audio/mpeg",
+    fileSizeForRow = fileForCloud.size;
+    cloudPath = buildStoragePath({
+      trackId: input.trackId,
+      kind: "version",
+      entityId: versionId,
+      filename: fileForCloud.name,
     });
-  } catch (err) {
-    throw err instanceof Error
-      ? err
-      : new Error("Upload failed — try again, or pick a different file.");
+
+    input.onPhase?.("uploading");
+    input.onProgress?.(0);
+
+    try {
+      const uploadResult = await uploadFile(cloudPath, fileForCloud, {
+        onProgress: input.onProgress,
+        contentType: fileForCloud.type || "audio/mpeg",
+      });
+      if (uploadResult.vault) vaultChecksum = uploadResult.vault.checksum;
+    } catch (err) {
+      throw err instanceof Error
+        ? err
+        : new Error("Upload failed — try again, or pick a different file.");
+    }
   }
 
   const supabase = createClient();
@@ -185,8 +269,8 @@ export async function uploadVersion(
       version_no: 0, // DB trigger assigns the real number
       label: originalLabel,
       changelog: input.changelog?.trim() || null,
-      file_url: path,
-      file_size: fileToUpload.size,
+      file_url: cloudPath,
+      file_size: fileSizeForRow,
       is_current: true,
     })
     .select()
@@ -194,20 +278,26 @@ export async function uploadVersion(
 
   if (error) {
     try {
-      await deleteFile(path);
+      await deleteFile(cloudPath);
     } catch {
       /* best-effort cleanup */
+    }
+    if (originalVaultPath) {
+      try {
+        await vaultRemove(originalVaultPath);
+      } catch {
+        /* best-effort */
+      }
     }
     throw new Error(
       `Couldn’t save the version — ${error.message}. The file upload was rolled back; try again.`
     );
   }
 
-  // Desktop: this device already has the bytes (uploadFile wrote to the
-  // vault first) — confirm it with the server so retention eviction knows a
-  // local copy exists once this version ages out of the cloud cap.
-  if (uploadResult.vault) {
-    await recordLocalCopy(data.id, uploadResult.vault.checksum);
+  // Desktop: confirm the local copy so retention eviction knows a device
+  // holds the bounce once this version ages out of the cloud cap.
+  if (vaultChecksum) {
+    await recordLocalCopy(data.id, vaultChecksum);
   }
 
   await evictExcessCloudVersions(input.trackId);

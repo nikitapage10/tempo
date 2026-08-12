@@ -33,6 +33,16 @@ describe("desktop background notifications", () => {
     expect(inbox).toContain("playIncomingAlert");
   });
 
+  it("tints glass alerts from the active artist palette and stays quiet on Messages", () => {
+    expect(inbox).toContain("useActiveArtistPalette");
+    expect(inbox).toContain("normalizeAccentHex");
+    expect(inbox).toContain("isMessagesSurface");
+    expect(inbox).toContain('alertKind === "message" && isMessagesSurface');
+    expect(inbox).toContain("router.push(link)");
+    expect(main).toContain("iceHex");
+    expect(main).toContain("amberHex");
+  });
+
   it("packages the TEMPO emblem and tray icons for the shell", () => {
     expect(desktopPackage.build.extraResources).toEqual(
       expect.arrayContaining([

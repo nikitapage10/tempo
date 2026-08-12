@@ -1,6 +1,7 @@
 "use client";
 
 import { IntroPreload } from "@/components/intro-preload";
+import { AuthAmbientBed } from "@/components/auth/auth-ambient-bed";
 import { LfWindow } from "@/components/lf-windows";
 
 /**
@@ -18,6 +19,7 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
     <div className="relative flex min-h-screen flex-col md:flex-row" data-lf-chrome>
       {/* No intro here — but warm it now so it starts instantly after login. */}
       <IntroPreload />
+      <AuthAmbientBed />
 
       <div className="flex flex-1 items-center justify-center px-6 py-14 sm:px-10">
         <div className="w-full max-w-sm">{children}</div>

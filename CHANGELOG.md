@@ -4,6 +4,9 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-11
 
+- Fixed (v0.127.0 / Desktop v0.100.15): Google and Microsoft sign-in complete inside TEMPO Desktop again (they were bouncing out to a browser tab, so the desktop app never got the session). The stuck Redirecting… lock on the login buttons is cleared if you cancel or come back. Re-download / update the desktop app after Desktop Release publishes.
+- Changed (v0.127.0): on TEMPO Desktop, wav/aiff bounces stay in their original format in the local vault; TEMPO only converts to mp3 when syncing the newest cloud copies (the cloud itself never stores wav). The browser upload path is unchanged — it still converts before upload.
+- Added (v0.127.0): sign-in carries a quiet Tempo Theme bed (starts on your first click or key), and the once-a-day boot film plays the same soft soundtrack underneath. New-message glass toasts follow your active artist's Cool / Warm colours. On Messages itself they stay quiet — the thread just updates (and jumps to the conversation when needed) instead of stacking another popup over the chat. On TEMPO Desktop, Social's globe shows about two-thirds of the sphere instead of nearly the whole ball. Scene banners, scene photos, and artist profile images keep a stable signed link for the session (and mirror into the desktop vault after the first open), so revisiting Social or Scenes doesn't re-download every picture from scratch.
 - Fixed (v0.126.1): Origin's Look preview gives the banner, logo, and profile room again - taller banner strip, logo contained inside it, profile sitting below so nothing looks cropped on desktop.
 - Fixed (v0.126.0 / Desktop v0.100.14): the Windows install wizard side panel and header now say TEMPO only - the leftover Desktop label in the artwork is gone. Re-download after Desktop Release finishes.
 - Fixed (v0.125.1): Download page glass reads more clearly over Spectra, and the Windows / Mac buttons no longer overlap.

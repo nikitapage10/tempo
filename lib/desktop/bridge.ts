@@ -210,15 +210,40 @@ export async function showDesktopNotification(input: {
   }
 }
 
+/** Normalize CSS / artist accent values into #RRGGBB for glass alerts. */
+export function normalizeAccentHex(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const v = raw.trim();
+  if (/^#[0-9A-Fa-f]{6}$/.test(v)) return `#${v.slice(1).toUpperCase()}`;
+  if (/^#[0-9A-Fa-f]{3}$/.test(v)) {
+    const a = v[1];
+    const b = v[2];
+    const c = v[3];
+    return `#${a}${a}${b}${b}${c}${c}`.toUpperCase();
+  }
+  if (/^[0-9A-Fa-f]{6}$/.test(v)) return `#${v.toUpperCase()}`;
+  const rgb = v.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+  if (rgb) {
+    const h = (n: string) =>
+      Math.max(0, Math.min(255, Number(n)))
+        .toString(16)
+        .padStart(2, "0")
+        .toUpperCase();
+    return `#${h(rgb[1])}${h(rgb[2])}${h(rgb[3])}`;
+  }
+  return null;
+}
+
 /** Read the live artist palette from the document (ArtistThemeProvider). */
 export function readDesktopAlertAccents(): { ice: string; amber: string } {
   if (typeof document === "undefined") {
     return { ice: "#7FB4FF", amber: "#FFB56B" };
   }
   const styles = getComputedStyle(document.documentElement);
-  const ice = styles.getPropertyValue("--ice").trim() || "#7FB4FF";
-  const amber = styles.getPropertyValue("--amber").trim() || "#FFB56B";
-  return { ice, amber };
+  return {
+    ice: normalizeAccentHex(styles.getPropertyValue("--ice")) ?? "#7FB4FF",
+    amber: normalizeAccentHex(styles.getPropertyValue("--amber")) ?? "#FFB56B",
+  };
 }
 
 export function onDesktopNotificationOpen(callback: (url: string) => void): () => void {

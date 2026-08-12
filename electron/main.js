@@ -14,6 +14,7 @@ const { pathToFileURL } = require("url");
 const { autoUpdater } = require("electron-updater");
 const { Vault } = require("./vault");
 const { isMediaRequestAllowed } = require("./media-permissions");
+const { isAllowedDesktopNavigation } = require("./oauth-navigation");
 const { version: appVersion } = require("./package.json");
 
 const APP_URL = process.env.TEMPO_DESKTOP_URL || "https://tempo-ten-sigma.vercel.app";
@@ -210,20 +211,7 @@ function createWindow() {
   pendingAppLink = null;
   mainWindow.loadURL(initialUrl);
   registerZoomShortcuts(mainWindow);
-
-  // Navigation allowlist — the renderer is a real Chromium context and
-  // could otherwise be steered anywhere; keep it to the TEMPO origin.
-  // OAuth providers and any other external link open in the system browser.
-  mainWindow.webContents.on("will-navigate", (event, url) => {
-    if (!ALLOWED_ORIGINS.includes(new URL(url).origin)) {
-      event.preventDefault();
-      shell.openExternal(url);
-    }
-  });
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
-    return { action: "deny" };
-  });
+  guardRendererNavigation(mainWindow.webContents);
 
   // Closing the window always steps back to the tray instead of quitting.
   mainWindow.on("close", (event) => {
@@ -234,6 +222,29 @@ function createWindow() {
 
   mainWindow.on("closed", () => {
     mainWindow = null;
+  });
+}
+
+/**
+ * Keep TEMPO + OAuth provider navigations inside Electron so the session
+ * cookies are written in this app. Everything else still opens externally.
+ */
+function guardRendererNavigation(webContents) {
+  if (!webContents || webContents.__tempoNavGuarded) return;
+  webContents.__tempoNavGuarded = true;
+
+  webContents.on("will-navigate", (event, url) => {
+    if (isAllowedDesktopNavigation(url, ALLOWED_ORIGINS)) return;
+    event.preventDefault();
+    shell.openExternal(url);
+  });
+
+  webContents.setWindowOpenHandler(({ url }) => {
+    if (isAllowedDesktopNavigation(url, ALLOWED_ORIGINS)) {
+      return { action: "allow" };
+    }
+    shell.openExternal(url);
+    return { action: "deny" };
   });
 }
 
@@ -609,6 +620,12 @@ app.whenReady().then(() => {
   registerVaultIpc();
   registerUpdateIpc();
   registerMediaPermissions();
+
+  // OAuth popups (and any future in-app windows) get the same navigation
+  // allowlist as the main window.
+  app.on("web-contents-created", (_event, contents) => {
+    guardRendererNavigation(contents);
+  });
 
   // Windows: no menu bar at all — File/Edit/View/Window/Help added nothing
   // (no custom items were ever in it) and just looked like leftover browser

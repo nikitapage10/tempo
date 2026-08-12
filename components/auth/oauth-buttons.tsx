@@ -30,10 +30,34 @@ type OAuthButtonsProps = {
  * actually complete a sign-in — step-by-step: `OAUTH-SETUP.md` in the repo
  * root. Until then the button still renders; Supabase just returns an error,
  * shown as a toast.
+ *
+ * On TEMPO Desktop the Electron shell keeps Google / Microsoft / Supabase
+ * navigations in-app so the session cookies land here (not in a browser tab).
  */
 export function OAuthButtons({ next = "/" }: OAuthButtonsProps) {
   const { toast } = useToast();
   const [pending, setPending] = React.useState<Provider | null>(null);
+
+  // If OAuth is cancelled or opened externally, we can stay on /login with
+  // the button stuck on "Redirecting…". Clear that so email/password and the
+  // other provider stay usable.
+  React.useEffect(() => {
+    if (!pending) return;
+    const clear = () => setPending(null);
+    const timer = window.setTimeout(clear, 12_000);
+    window.addEventListener("pageshow", clear);
+    window.addEventListener("focus", clear);
+    const onVis = () => {
+      if (document.visibilityState === "visible") clear();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("pageshow", clear);
+      window.removeEventListener("focus", clear);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, [pending]);
 
   async function handleClick(provider: Provider) {
     setPending(provider);
@@ -60,7 +84,8 @@ export function OAuthButtons({ next = "/" }: OAuthButtonsProps) {
       }
       return;
     }
-    // On success the browser is already navigating to the provider; nothing left to do.
+    // On success the shell navigates to the provider; pending clears via the
+    // effect above if the artist cancels and returns to login.
   }
 
   const disabled = pending !== null;

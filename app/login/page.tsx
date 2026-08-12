@@ -26,11 +26,16 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect");
+  const authError = searchParams.get("error") === "auth";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    authError
+      ? "That sign-in didn’t finish — try again, or use email and password."
+      : null
+  );
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

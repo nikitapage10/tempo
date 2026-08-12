@@ -12,6 +12,7 @@
  */
 
 import { createClient } from "@/lib/supabase/client";
+import { losslessVaultSiblings } from "@/lib/audio-convert";
 import {
   isDesktopApp,
   vaultRemove,
@@ -118,6 +119,8 @@ export type UploadOptions = {
   onProgress?: (percent: number) => void;
   contentType?: string;
   signal?: AbortSignal;
+  /** Skip the vault write (cloud-only upload — desktop keeps a sibling original). */
+  skipVault?: boolean;
 };
 
 export async function uploadFile(
@@ -142,8 +145,10 @@ export async function uploadFile(
   // the cloud upload, which remains the system of record either way. The
   // caller uses the returned checksum to confirm a local copy with the
   // server (see lib/api/versions.ts), which is what makes cloud eviction safe.
+  // skipVault is for desktop lossless uploads that already wrote the original
+  // beside the cloud mp3 path before calling here.
   let vault: { checksum: string; size: number } | null = null;
-  if (isDesktopApp()) {
+  if (isDesktopApp() && !options.skipVault) {
     try {
       const bytes = await file.arrayBuffer();
       vault = await vaultWrite(path, bytes);
@@ -235,8 +240,11 @@ export async function ensureVaultMirror(
 ): Promise<{ checksum: string; size: number } | null> {
   if (!isDesktopApp()) return null;
 
-  const existing = await vaultStat(path);
-  if (existing) return { checksum: existing.checksum, size: existing.size };
+  // Already have the cloud object — or a lossless original beside it.
+  for (const candidate of [...losslessVaultSiblings(path), path]) {
+    const existing = await vaultStat(candidate);
+    if (existing) return { checksum: existing.checksum, size: existing.size };
+  }
 
   const supabase = createClient();
   const { data, error } = await supabase.storage
@@ -333,6 +341,36 @@ export function peekSignedUrl(
   return null;
 }
 
+/**
+ * Remember a signed URL obtained outside createSignedUrl (scene / social
+ * proxy routes, artwork helpers). Keeps <img> src stable so the browser
+ * can reuse the bytes, and mirrors into the desktop vault on first sight.
+ */
+export function cacheSignedUrl(
+  path: string,
+  url: string,
+  expiresInSeconds = DEFAULT_EXPIRY
+): void {
+  if (!path || !url) return;
+  if (
+    path.startsWith("/") ||
+    path.startsWith("http://") ||
+    path.startsWith("https://") ||
+    path.startsWith("data:") ||
+    path.startsWith("blob:")
+  ) {
+    return;
+  }
+  const key = signedUrlCacheKey(path, expiresInSeconds);
+  const entry: SignedUrlEntry = {
+    url,
+    expiresAt: Date.now() + expiresInSeconds * 1000,
+  };
+  signedUrlMemory.set(key, entry);
+  writeSessionSignedUrl(key, entry);
+  mirrorToVaultInBackground(path, url);
+}
+
 export async function getSignedUrl(
   path: string,
   expiresInSeconds = DEFAULT_EXPIRY
@@ -350,11 +388,13 @@ export async function getSignedUrl(
   }
 
   // Desktop: a local hit skips the network entirely — no signing, no
-  // waiting on a connection. This is the "opens instantly" promise for
-  // anything already mirrored. See planning/desktop/02 §3.
+  // waiting on a connection. Prefer a lossless sibling when the cloud
+  // path is mp3 but the vault still holds the original wav/aiff.
   if (isDesktopApp()) {
-    const local = await vaultResolveUrl(path);
-    if (local) return local;
+    for (const candidate of [...losslessVaultSiblings(path), path]) {
+      const local = await vaultResolveUrl(candidate);
+      if (local) return local;
+    }
   }
 
   const cached = peekSignedUrl(path, expiresInSeconds);
@@ -421,8 +461,14 @@ export async function deleteFile(path: string): Promise<void> {
   if (error) throw mapStorageError(error.message);
   // Full delete (not a cloud-only eviction — see lib/version-prune.ts) takes
   // the local vault copy with it too, so a manually deleted bounce doesn't
-  // linger on disk with no row to explain it.
-  if (isDesktopApp()) void vaultRemove(path);
+  // linger on disk with no row to explain it. Also clear any lossless
+  // original that sat beside a cloud mp3 path.
+  if (isDesktopApp()) {
+    void vaultRemove(path);
+    for (const sibling of losslessVaultSiblings(path)) {
+      void vaultRemove(sibling);
+    }
+  }
 }
 
 /**

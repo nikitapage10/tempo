@@ -11,6 +11,11 @@ kept only as a reference if you add it later.
 Production site: `https://tempo-ten-sigma.vercel.app`  
 Auth callback TEMPO uses: `https://tempo-ten-sigma.vercel.app/auth/callback`
 
+**TEMPO Desktop:** Google / Microsoft sign-in must finish inside the Electron
+window (not a system browser tab) so the session cookies land in the app.
+The desktop shell allowlists Supabase + Google + Microsoft hosts for that
+reason. No extra redirect URI is required beyond the production callback above.
+
 Do this once per provider. Localhost testing needs the same redirect URLs with
 `http://localhost:3000` instead of the production host.
 

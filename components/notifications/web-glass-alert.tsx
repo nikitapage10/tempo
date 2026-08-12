@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { normalizeAccentHex } from "@/lib/desktop/bridge";
 import { cn } from "@/lib/utils";
 
 export type WebGlassAlertInput = {
@@ -24,9 +25,7 @@ export function showWebGlassAlert(input: WebGlassAlertInput) {
 }
 
 function hexOrFallback(value: string | null | undefined, fallback: string) {
-  return typeof value === "string" && /^#[0-9A-Fa-f]{6}$/.test(value)
-    ? value
-    : fallback;
+  return normalizeAccentHex(value) ?? fallback;
 }
 
 /**
