@@ -93,7 +93,7 @@ describe("web and desktop platform handoff", () => {
     // Stale DB version still opens desktop; Update stays a secondary path.
     expect(stale.kind).toBe("open-desktop");
     expect(stale.label).toBe("Open in desktop");
-    expect(stale.secondaryLabel).toBe("Update TEMPO Desktop");
+    expect(stale.secondaryLabel).toBe("Update TEMPO");
   });
 
   it("prefers a link-capable install over a newer-seen old build", () => {
@@ -134,9 +134,13 @@ describe("web and desktop platform handoff", () => {
     expect(desktop).toContain('"oneClick": false');
     expect(desktop).toContain('"allowToChangeInstallationDirectory": true');
     expect(desktop).toContain("installerSidebar.bmp");
+    expect(desktop).toContain("media-permissions.js");
     expect(existsSync(resolve("electron/build/installerSidebar.bmp"))).toBe(true);
     expect(existsSync(resolve("electron/build/installer.nsh"))).toBe(true);
+    expect(existsSync(resolve("electron/media-permissions.js"))).toBe(true);
     expect(read("electron/build/installer.nsh")).toContain("customWelcomePage");
+    expect(read("electron/build/installer.nsh")).toContain("Welcome to TEMPO");
+    expect(read("electron/build/installer.nsh")).not.toContain("TEMPO Desktop");
   });
 
   it("exposes a stable unsigned Mac DMG on the public release channel", () => {

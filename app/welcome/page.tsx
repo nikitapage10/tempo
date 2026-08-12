@@ -88,7 +88,7 @@ export default function WelcomePage() {
         </div>
 
         <p className="text-xs text-text-lo/70">
-          After the installer finishes, open TEMPO Desktop and sign in with the
+          After the installer finishes, open TEMPO and sign in with the
           same account — or keep going in the browser with{" "}
           <Link href="/origin" className="text-ice hover:underline">
             Continue in the browser

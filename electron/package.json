@@ -1,8 +1,8 @@
 {
   "name": "tempo-desktop",
-  "version": "0.100.12",
+  "version": "0.100.13",
   "private": true,
-  "description": "TEMPO Desktop — Electron shell. Deliberately its own package, separate from the root TEMPO package.json, so Vercel's web deploy never installs Electron's Chromium binary. Run `npm install` inside this folder before desktop:dev / desktop:build from the repo root.",
+  "description": "TEMPO — Electron shell. Deliberately its own package, separate from the root TEMPO package.json, so Vercel's web deploy never installs Electron's Chromium binary. Run `npm install` inside this folder before desktop:dev / desktop:build from the repo root.",
   "repository": {
     "type": "git",
     "url": "https://github.com/nikitapage10/tempo.git"
@@ -28,6 +28,7 @@
     },
     "files": [
       "main.js",
+      "media-permissions.js",
       "preload.js",
       "vault.js",
       "package.json"
@@ -51,7 +52,7 @@
       }
     ],
     "extraMetadata": {
-      "version": "0.100.12"
+      "version": "0.100.13"
     },
     "protocols": [
       {

@@ -9,7 +9,7 @@ const downloadPage = fs.readFileSync(
 
 describe("Download page layout", () => {
   it("is a public page outside the signed-in app shell", () => {
-    expect(downloadPage).toContain("TEMPO Desktop");
+    expect(downloadPage).toContain("Download TEMPO for Windows and Mac");
     expect(downloadPage).toContain('href="/login"');
     expect(fs.existsSync(path.join(process.cwd(), "app/(app)/download/page.tsx"))).toBe(
       false

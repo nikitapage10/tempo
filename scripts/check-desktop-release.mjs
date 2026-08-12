@@ -39,6 +39,18 @@ if (desktopPackage.build?.win?.target !== "nsis") {
   errors.push("Windows desktop releases must use the NSIS updater-compatible target");
 }
 
+// Every local require() from main.js must ship inside the asar — omitting one
+// crashes launch with "Cannot find module" (media-permissions on v0.100.12).
+const packagedFiles = new Set(desktopPackage.build?.files ?? []);
+for (const required of ["main.js", "media-permissions.js", "preload.js", "vault.js"]) {
+  if (!packagedFiles.has(required)) {
+    errors.push(`electron build.files must include ${required}`);
+  }
+  if (!fs.existsSync(path.join(root, "electron", required))) {
+    errors.push(`missing electron/${required}`);
+  }
+}
+
 if (desktopPackage.build?.win?.artifactName !== "TEMPO-Setup.${ext}") {
   errors.push("the Windows installer must keep the stable TEMPO-Setup.${ext} asset name");
 }

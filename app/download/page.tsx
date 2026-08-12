@@ -99,10 +99,10 @@ export default function DownloadPage() {
 
         <div>
           <h1 className="font-display text-2xl tracking-tight text-text-hi">
-            TEMPO Desktop
+            TEMPO
           </h1>
           <p className="mt-1 text-sm text-text-lo">
-            A downloadable version of TEMPO for Windows and Mac.
+            Download TEMPO for Windows and Mac.
           </p>
         </div>
 
@@ -168,7 +168,7 @@ export default function DownloadPage() {
 
         <section className="panel space-y-4 p-6 sm:p-8">
           <h2 className="font-mono text-xs uppercase tracking-[0.08em] text-text-lo">
-            What the desktop app adds
+            What the app adds
           </h2>
           <div className="grid gap-4 sm:grid-cols-2">
             {HIGHLIGHTS.map(({ icon: Icon, title, body }) => (

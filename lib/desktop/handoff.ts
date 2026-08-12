@@ -78,7 +78,7 @@ export function supportsDesktopLink(version: string): boolean {
 /**
  * Among recently-seen installs, prefer one that can open tempo://, then the
  * highest reported app version. Stops an older leftover row from forcing
- * "Update TEMPO Desktop" after a newer install has checked in.
+ * "Update TEMPO" after a newer install has checked in.
  */
 export function pickActiveDesktopDevice<T extends DesktopDeviceRef>(
   devices: T[],
@@ -153,7 +153,7 @@ export function resolveDesktopHandoff(opts: {
       label: "Open in desktop",
       href: `tempo://open?path=${encodeURIComponent(pathname)}`,
       secondaryHref: windowsInstallerUrl,
-      secondaryLabel: canLink ? "Get the installer" : "Update TEMPO Desktop",
+      secondaryLabel: canLink ? "Get the installer" : "Update TEMPO",
     };
   }
 
