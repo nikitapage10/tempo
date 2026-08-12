@@ -12,11 +12,20 @@ import {
   uploadTrackGroupCover,
 } from "@/lib/api/track-groups";
 import type { Track, TrackGroup, TrackGroupAccent } from "@/lib/types";
+import { warmSignedUrls } from "@/lib/storage";
 
 export function useTrackGroups(spaceId: string | null) {
   return useQuery({
     queryKey: ["track-groups", spaceId],
-    queryFn: () => fetchTrackGroups(spaceId!),
+    queryFn: async () => {
+      const groups = await fetchTrackGroups(spaceId!);
+      void warmSignedUrls(
+        groups
+          .map((g) => g.cover_url)
+          .filter((url): url is string => !!url)
+      );
+      return groups;
+    },
     enabled: !!spaceId,
   });
 }

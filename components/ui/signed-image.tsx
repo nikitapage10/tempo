@@ -71,6 +71,12 @@ export function SignedImage({
 
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={src} alt={alt} className={cn("object-cover", className)} style={style} />
+    <img
+      src={src}
+      alt={alt}
+      decoding="async"
+      className={cn("object-cover", className)}
+      style={style}
+    />
   );
 }

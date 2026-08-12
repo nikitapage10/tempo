@@ -20,6 +20,13 @@ export function isAbsoluteMediaSrc(path: string): boolean {
   );
 }
 
+/** Scene / social art usually isn't client-signable (RLS) — go straight to proxy. */
+export function proxyRouteForStoragePath(path: string): string | null {
+  if (/^scenes\//.test(path)) return "/api/scenes/media/url";
+  if (/^(artists|profiles)\//.test(path)) return "/api/social/media/url";
+  return null;
+}
+
 async function fetchProxySignedUrl(
   route: string,
   path: string
@@ -65,6 +72,15 @@ export async function resolveStorageImageUrl(path: string): Promise<string> {
   if (inflight) return inflight;
 
   const request = (async () => {
+    const proxy = proxyRouteForStoragePath(path);
+    if (proxy) {
+      try {
+        return await fetchProxySignedUrl(proxy, path);
+      } catch {
+        /* fall through to client sign / track artwork helpers */
+      }
+    }
+
     try {
       return await getSignedUrl(path);
     } catch (error) {
@@ -85,13 +101,9 @@ export async function resolveStorageImageUrl(path: string): Promise<string> {
         return body.url;
       }
 
-      const route = /^scenes\//.test(path)
-        ? "/api/scenes/media/url"
-        : /^(artists|profiles)\//.test(path)
-          ? "/api/social/media/url"
-          : null;
-      if (route) {
-        return fetchProxySignedUrl(route, path);
+      if (proxy) {
+        // Already tried; rethrow original client-sign failure.
+        throw error;
       }
 
       throw error;

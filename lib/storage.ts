@@ -452,6 +452,67 @@ export async function getSignedUrl(
   }
 }
 
+const BATCH_SIGN_CHUNK = 40;
+
+/**
+ * Sign many storage paths in fewer round-trips and fill the session cache so
+ * SignedImage mounts can paint without waiting on per-tile createSignedUrl.
+ * Skips paths that already have a fresh cache entry. Paths that need the
+ * scene/social proxy should use resolveStorageImageUrl instead.
+ */
+export async function warmSignedUrls(
+  paths: string[],
+  expiresInSeconds = DEFAULT_EXPIRY
+): Promise<number> {
+  const need: string[] = [];
+  const seen = new Set<string>();
+  for (const raw of paths) {
+    const path = raw?.trim();
+    if (!path || seen.has(path)) continue;
+    seen.add(path);
+    if (
+      path.startsWith("/") ||
+      path.startsWith("http://") ||
+      path.startsWith("https://") ||
+      path.startsWith("data:") ||
+      path.startsWith("blob:") ||
+      path.startsWith("tempo-local://")
+    ) {
+      continue;
+    }
+    if (/^scenes\//.test(path) || /^(artists|profiles)\//.test(path)) {
+      continue;
+    }
+    if (peekSignedUrl(path, expiresInSeconds)) continue;
+    need.push(path);
+  }
+  if (need.length === 0) return 0;
+
+  let warmed = 0;
+  const supabase = createClient();
+
+  for (let i = 0; i < need.length; i += BATCH_SIGN_CHUNK) {
+    const chunk = need.slice(i, i + BATCH_SIGN_CHUNK);
+    try {
+      const { data, error } = await supabase.storage
+        .from(BUCKET)
+        .createSignedUrls(chunk, expiresInSeconds);
+      if (error || !data) continue;
+      for (const row of data) {
+        const signed = row.signedUrl ?? null;
+        const path = typeof row.path === "string" ? row.path : null;
+        if (!signed || !path || row.error) continue;
+        cacheSignedUrl(path, signed, expiresInSeconds);
+        warmed += 1;
+      }
+    } catch {
+      /* best-effort — individual SignedImage resolves still work */
+    }
+  }
+
+  return warmed;
+}
+
 /** Drop cached signed URLs for a storage path (call when the file is replaced/removed). */
 export function invalidateSignedUrl(path: string): void {
   if (!path || path.startsWith("http://") || path.startsWith("https://")) return;

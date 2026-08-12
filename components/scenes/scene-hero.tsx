@@ -72,16 +72,15 @@ export function SceneHero({ scene, actions }: { scene: Scene; actions?: React.Re
   return (
     <SceneThemeScope scene={scene} className="relative overflow-hidden rounded-panel border border-line shadow-e2">
       <div className="relative h-44 overflow-hidden sm:h-[clamp(260px,24vw,360px)]">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,color-mix(in_srgb,var(--ice)_32%,transparent),transparent_48%),radial-gradient(circle_at_82%_35%,color-mix(in_srgb,var(--amber)_25%,transparent),transparent_52%),linear-gradient(135deg,var(--bg-2),var(--bg-0))]" />
         {scene.banner_url ? (
           <SignedImage
             path={scene.banner_url}
             alt={scene.banner_alt ?? ""}
-            className="size-full"
+            className="absolute inset-0 size-full"
             style={{ objectPosition: `${focalX}% ${focalY}%` }}
           />
-        ) : (
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_20%,color-mix(in_srgb,var(--ice)_32%,transparent),transparent_48%),radial-gradient(circle_at_82%_35%,color-mix(in_srgb,var(--amber)_25%,transparent),transparent_52%),linear-gradient(135deg,var(--bg-2),var(--bg-0))]" />
-        )}
+        ) : null}
         <div className="pointer-events-none absolute inset-0" style={{ background: overlay }} />
         <div className="scene-hero-grain pointer-events-none absolute inset-0 opacity-[0.075]" />
         <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />

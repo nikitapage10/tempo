@@ -46,13 +46,9 @@ export function SceneCard({ scene, href }: { scene: Scene; href?: string }) {
             where a short image box ends above the footer. */}
         <div
           className="relative aspect-[1.55/1] min-h-[220px] w-full"
-          style={
-            scene.banner_url
-              ? undefined
-              : {
-                  background: `linear-gradient(135deg, color-mix(in srgb, ${ice} 30%, transparent), color-mix(in srgb, ${amber} 22%, transparent))`,
-                }
-          }
+          style={{
+            background: `linear-gradient(135deg, color-mix(in srgb, ${ice} 30%, transparent), color-mix(in srgb, ${amber} 22%, transparent))`,
+          }}
         >
           {scene.banner_url ? (
             <SignedImage

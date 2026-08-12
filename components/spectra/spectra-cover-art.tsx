@@ -60,6 +60,14 @@ export function SpectraCoverArt({
           path={artworkUrl}
           alt=""
           className="absolute inset-0 size-full"
+          fallback={
+            <SpectraPlaceholder
+              trackId={trackId}
+              title={title}
+              showTitle={false}
+              animate={animate}
+            />
+          }
         />
       )}
     </div>
