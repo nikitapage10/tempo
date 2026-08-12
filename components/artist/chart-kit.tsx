@@ -86,11 +86,11 @@ export function ChartTooltip({ state }: { state: TooltipState }) {
       style={{ left: state.x, top: state.y - 8 }}
       role="status"
     >
-      <p className="text-[11px] text-text-hi">{state.title}</p>
+      <p className="text-xs text-text-hi">{state.title}</p>
       {state.rows.map((row) => (
         <p
           key={row.label}
-          className="mt-0.5 flex items-center gap-1.5 whitespace-nowrap text-[11px] text-text-lo"
+          className="mt-0.5 flex items-center gap-1.5 whitespace-nowrap text-xs text-text-lo"
         >
           {row.color ? (
             <span
@@ -120,7 +120,7 @@ export function ChartLegend({
       {items.map((item) => (
         <li
           key={item.label}
-          className="flex items-center gap-1.5 text-[11px] text-text-lo"
+          className="flex items-center gap-1.5 text-xs text-text-lo"
         >
           <span
             className="size-2 rounded-full"
@@ -175,7 +175,7 @@ export function NumbersTable({
 }) {
   return (
     <div className="mt-3 max-h-56 overflow-auto rounded-input border border-line/70">
-      <table className="w-full text-left text-[11px]">
+      <table className="w-full text-left text-xs">
         <thead className="sticky top-0 bg-bg-2/95">
           <tr>
             {head.map((h) => (
@@ -223,7 +223,7 @@ export function NumbersToggle({
     <button
       type="button"
       onClick={onToggle}
-      className="rounded-input px-1.5 py-0.5 text-[11px] text-text-lo transition-colors duration-hover hover:text-ice focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+      className="rounded-input px-1.5 py-0.5 text-xs text-text-lo transition-colors duration-hover hover:text-ice focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
       aria-expanded={open}
     >
       {open ? "Hide numbers" : "Numbers"}

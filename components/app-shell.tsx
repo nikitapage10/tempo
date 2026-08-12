@@ -143,16 +143,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <ArtistFavicon />
       <IntroMoment />
 
-      {/* Desktop-app window-drag handle, full viewport width. The toolbar row
-          below is only draggable within its centered max-w-[1440px] column,
-          which otherwise leaves the gutters on a wide window, and the whole
-          left rail, with no way to drag the window at all. This sits behind
-          both (lower z-index) so every real
-          clickable element still wins the hit test; only the genuinely
-          empty space around them becomes draggable. No-op outside Electron. */}
+      {/* Desktop-app window-drag handle for empty top gutters. Kept below the
+          rail and main stacking contexts (z-10) so it can never eat clicks on
+          search / notifications — those live in main at z-30. No-op outside
+          Electron. */}
       <div
         aria-hidden
-        className="pointer-events-auto fixed inset-x-0 top-0 z-20 h-10 [-webkit-app-region:drag]"
+        className="pointer-events-auto fixed inset-x-0 top-0 z-10 h-12 [-webkit-app-region:drag]"
       />
 
       <div className="flex flex-1">
@@ -199,8 +196,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   className={cn(
                     "group relative flex items-center gap-2.5 rounded-input px-3 py-2 text-sm transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
                     active
-                      ? "text-text-hi"
-                      : "text-text-lo hover:bg-bg-2/60 hover:text-text-hi"
+                      ? "font-semibold text-text-hi"
+                      : "font-medium text-text-lo hover:bg-bg-2/60 hover:text-text-hi"
                   )}
                 >
                   {active ? (
@@ -234,8 +231,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               className={cn(
                 "group relative flex items-center gap-2.5 rounded-input px-3 py-2 text-sm transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
                 isActive(pathname, "/settings")
-                  ? "text-text-hi"
-                  : "text-text-lo hover:bg-bg-2/60 hover:text-text-hi"
+                  ? "font-semibold text-text-hi"
+                  : "font-medium text-text-lo hover:bg-bg-2/60 hover:text-text-hi"
               )}
             >
               {isActive(pathname, "/settings") ? (
@@ -257,21 +254,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </span>
             </Link>
             <SupportReportDialog />
-            <Link href="/beta" className="mt-3 block rounded-input px-3 py-1 font-mono text-[11px] text-text-lo/70 transition-colors hover:bg-bg-2 hover:text-ice">
+            <Link href="/beta" className="mt-3 block rounded-input px-3 py-1 font-mono text-xs text-text-lo/70 transition-colors hover:bg-bg-2 hover:text-ice">
               v{APP_VERSION}
             </Link>
           </div>
         </aside>
 
-        <main className="relative isolate flex-1 overflow-x-hidden pb-20 md:pb-0">
+        {/* z-30 keeps this stacking context above the desktop drag strip so
+            search and notification hit targets stay clickable. */}
+        <main className="relative z-30 isolate flex-1 overflow-x-hidden pb-20 md:pb-0">
           <AppVideoBackdrop className="fixed inset-x-0 bottom-0 top-0 z-0 md:bottom-[6px] md:left-[220px]" />
           <div className="relative z-[1] mx-auto w-full max-w-[1440px] px-4 md:px-8">
             {/* [-webkit-app-region:drag] makes this row double as the desktop
                 app's window-drag handle (a no-op outside Electron, so it's
                 safe unconditionally) — each interactive child below is
                 explicitly carved out with the matching no-drag utility so
-                clicks still reach them instead of moving the window. */}
-            <div className="sticky top-0 z-40 mb-2 flex items-center justify-end gap-1.5 pb-4 pt-1.5 [-webkit-app-region:drag]">
+                clicks still reach them instead of moving the window.
+                Extra top padding clears the window edge; tighter bottom
+                padding pulls the chrome closer to page content. */}
+            <div className="sticky top-0 z-40 mb-1 flex items-center justify-end gap-1.5 pb-2 pt-5 [-webkit-app-region:drag]">
               <div className="[-webkit-app-region:no-drag]">
                 <NotificationCenter />
               </div>
@@ -280,7 +281,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </div>
               <div
                 data-tour="global-search"
-                className="w-full max-w-[280px] [-webkit-app-region:no-drag]"
+                className="relative z-50 w-full max-w-[280px] [-webkit-app-region:no-drag]"
               >
                 <GlobalSearch className="ml-1" />
               </div>
@@ -290,7 +291,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <DemoBanner />
             <DesktopUpdateBanner />
             <OfflineBanner />
-            <div className="pb-6 pt-1">{children}</div>
+            <div className="pb-6 pt-0">{children}</div>
           </div>
         </main>
       </div>
@@ -311,7 +312,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               href={href}
               data-context-tour={href.slice(1) || "today"}
               className={cn(
-                "relative flex flex-1 flex-col items-center justify-center gap-1 py-2.5 text-[11px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ice",
+                "relative flex flex-1 flex-col items-center justify-center gap-1 py-2.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ice",
                 active ? "text-ice" : "text-text-lo"
               )}
             >
@@ -329,7 +330,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <button
           type="button"
           className={cn(
-            "relative flex flex-1 flex-col items-center justify-center gap-1 py-2.5 text-[11px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ice",
+            "relative flex flex-1 flex-col items-center justify-center gap-1 py-2.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ice",
             moreOpen || moreNav.some((item) => isActive(pathname, item.href))
               ? "text-ice"
               : "text-text-lo"
@@ -344,7 +345,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </button>
         <button
           type="button"
-          className="flex flex-1 flex-col items-center justify-center gap-1 py-2.5 text-[11px] text-text-lo focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ice"
+          className="flex flex-1 flex-col items-center justify-center gap-1 py-2.5 text-xs text-text-lo focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ice"
           aria-label={tasksFocused ? "Add task" : "Add track"}
           onClick={() =>
             router.push(tasksFocused ? "/tasks" : "/board?new=1")

@@ -271,7 +271,7 @@ function ActionRow({
   return (
     <li className="rounded-card border border-line bg-bg-2/50 p-3">
       <div className="mb-2 flex items-start justify-between gap-2">
-        <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-text-lo">
+        <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
           {actionTypeLabel(action.type)}
         </span>
         <div className="flex items-center gap-0.5">
@@ -447,7 +447,7 @@ function ActionRow({
         </div>
       ) : null}
 
-      <p className="mt-2 text-[11px] text-text-lo">
+      <p className="mt-2 text-xs text-text-lo">
         {describeRecipeAction(action, templates)}
       </p>
     </li>

@@ -425,7 +425,8 @@ export default function SocialView() {
               <div className="grid gap-6 sm:grid-cols-2">
                 <section>
                   <p className="label-mono mb-2 flex items-center gap-1.5">
-                    <Users className="size-3" /> Following ({following.length})
+                    <Users className="size-3" /> Following (
+                    <span className="tabular-nums">{following.length}</span>)
                   </p>
                   <ul className="space-y-1.5">
                     {following.length === 0 ? (
@@ -460,7 +461,9 @@ export default function SocialView() {
                   </ul>
                 </section>
                 {onNetwork ? <section>
-                  <p className="label-mono mb-2">Followers ({followers.length})</p>
+                  <p className="label-mono mb-2">
+                    Followers (<span className="tabular-nums">{followers.length}</span>)
+                  </p>
                   <ul className="space-y-1.5">
                     {followers.length === 0 ? (
                       <li className="text-sm text-text-lo">No followers yet</li>
@@ -554,7 +557,7 @@ export default function SocialView() {
                   <>
                     <div className="flex items-center justify-between gap-3">
                       <p className="label-mono">Active around TEMPO</p>
-                      <span className="text-[11px] text-text-lo">
+                      <span className="text-xs text-text-lo">
                         Followed and new-to-you artists
                       </span>
                     </div>
@@ -585,7 +588,7 @@ export default function SocialView() {
                                     {p.display_name}
                                   </p>
                                   {followingIds.has(p.id) ? (
-                                    <span className="shrink-0 rounded-chip border border-ice/25 px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-ice">
+                                    <span className="shrink-0 rounded-chip border border-ice/25 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-ice">
                                       Following
                                     </span>
                                   ) : null}
@@ -651,7 +654,7 @@ export default function SocialView() {
             <div className="flex items-center justify-between gap-2 px-4 pt-4">
               <p className="label-mono">Feed</p>
               {onNetwork && timeline.length ? (
-                <span className="text-[11px] text-text-lo">
+                <span className="text-xs text-text-lo">
                   {timeline.length} recent
                 </span>
               ) : null}

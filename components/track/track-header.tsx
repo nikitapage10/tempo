@@ -115,7 +115,7 @@ export function TrackHeader({
             />
             <span className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-bg-0/70 opacity-0 transition-opacity duration-hover group-hover:opacity-100 group-focus-visible:opacity-100">
               <ImagePlus className="size-5 text-ice" />
-              <span className="text-[10px] text-text-hi">
+              <span className="text-[11px] text-text-hi">
                 {coverBusy ? "Uploading…" : "Cover"}
               </span>
             </span>
@@ -130,7 +130,7 @@ export function TrackHeader({
               e.target.value = "";
             }}
           />
-          <p className="mt-1.5 max-w-[6rem] text-center text-[10px] text-text-lo sm:max-w-[6.5rem]">
+          <p className="mt-1.5 max-w-[6rem] text-center text-[11px] text-text-lo sm:max-w-[6.5rem]">
             Tap to set cover
           </p>
         </div>
@@ -181,7 +181,7 @@ export function TrackHeader({
           </p>
 
           {track.spotify_track_id ? (
-            <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 font-data text-[11px] text-text-lo">
+            <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 font-data text-xs text-text-lo">
               <span className="text-[#1DB954]">Spotify</span>
               {track.spotify_album_name ? <span>{track.spotify_album_name}</span> : null}
               {track.spotify_release_date ? <span>{track.spotify_release_date}</span> : null}

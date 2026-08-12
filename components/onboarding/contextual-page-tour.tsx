@@ -259,7 +259,7 @@ export function ContextualPageTour() {
           <div>
             <span className="flex size-8 items-center justify-center rounded-full border border-ice/25 bg-ice/10 text-ice"><Sparkles className="size-3.5" /></span>
             <p className="label-mono mt-3 text-ice">{step.kicker}</p>
-            <p className="mt-2 font-mono text-[11px] tabular-nums text-text-lo">{String(stepIndex + 1).padStart(2, "0")} / {String(tour.steps.length).padStart(2, "0")}</p>
+            <p className="mt-2 font-mono text-xs tabular-nums text-text-lo">{String(stepIndex + 1).padStart(2, "0")} / {String(tour.steps.length).padStart(2, "0")}</p>
           </div>
           <button type="button" onClick={() => finish(true)} className="rounded-input p-1.5 text-text-lo transition-colors hover:bg-bg-2 hover:text-text-hi" aria-label="Skip this page tour"><X className="size-4" /></button>
         </div>

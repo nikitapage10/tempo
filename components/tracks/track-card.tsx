@@ -92,7 +92,7 @@ export function TrackCard({
   }
 
   const removeClass =
-    "text-[10px] text-text-lo/25 transition-colors duration-hover hover:text-text-lo/55 focus-visible:text-text-lo/55 focus-visible:outline-none";
+    "text-[11px] text-text-lo/25 transition-colors duration-hover hover:text-text-lo/55 focus-visible:text-text-lo/55 focus-visible:outline-none";
 
   return (
     <article
@@ -248,14 +248,14 @@ export function TrackCard({
                 <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                   <span
                     className={cn(
-                      "rounded-chip px-2 py-0.5 text-[11px]",
+                      "rounded-chip px-2 py-0.5 text-xs",
                       typeChipClass(track.type)
                     )}
                   >
                     {formatTrackType(track.type)}
                   </span>
                   {metaParts.length > 0 ? (
-                    <span className="font-mono text-[11px] text-text-lo">
+                    <span className="font-mono text-xs text-text-lo">
                       {metaParts.join(" · ")}
                     </span>
                   ) : null}
@@ -264,7 +264,7 @@ export function TrackCard({
                 {track.next_action?.trim() ? (
                   <p
                     className={cn(
-                      "mt-1.5 truncate text-[11px]",
+                      "mt-1.5 truncate text-xs",
                       nextActionOverdue ? "text-warn" : "text-text-lo"
                     )}
                   >
@@ -276,7 +276,7 @@ export function TrackCard({
                 {deadlineLabel ? (
                   <p
                     className={cn(
-                      "mt-1 font-mono text-[11px]",
+                      "mt-1 font-mono text-xs",
                       overdue ? "text-warn" : "text-text-lo"
                     )}
                   >

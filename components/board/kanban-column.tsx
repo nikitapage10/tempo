@@ -133,7 +133,7 @@ export function KanbanColumn({
           <span className="order-1 font-display text-xs font-medium tracking-tight text-text-lo/70 lg:order-2 lg:[text-orientation:mixed] lg:[writing-mode:vertical-rl]">
             {stage.name}
           </span>
-          <span className="order-2 ml-auto font-mono text-[10px] tabular-nums text-text-lo/40 lg:order-1 lg:ml-0">
+          <span className="order-2 ml-auto font-mono text-[11px] tabular-nums text-text-lo/40 lg:order-1 lg:ml-0">
             0
           </span>
         </div>
@@ -146,7 +146,7 @@ export function KanbanColumn({
               </h2>
               <span
                 className={cn(
-                  "rounded-chip px-1.5 py-0.5 font-mono text-[10px] tabular-nums",
+                  "rounded-chip px-1.5 py-0.5 font-mono text-[11px] tabular-nums",
                   itemCount > 0 ? "bg-bg-3 text-text-hi" : "text-text-lo/50"
                 )}
               >
@@ -189,7 +189,7 @@ export function KanbanColumn({
                     : "border-line/70 bg-bg-0/30"
                 )}
               >
-                <p className="text-[11px] leading-relaxed text-text-lo/70">
+                <p className="text-xs leading-relaxed text-text-lo/70">
                   {isOver ? (
                     <span className="text-ice">Drop to move here</span>
                   ) : (
@@ -222,7 +222,7 @@ export function KanbanColumn({
                   <button
                     type="button"
                     onClick={() => setShowAll(true)}
-                    className="rounded-card border border-dashed border-line/70 bg-bg-0/30 px-3 py-2 text-center text-[11px] font-medium text-text-lo/70 transition-colors duration-hover hover:border-ice/40 hover:text-text-hi"
+                    className="rounded-card border border-dashed border-line/70 bg-bg-0/30 px-3 py-2 text-center text-xs font-medium text-text-lo/70 transition-colors duration-hover hover:border-ice/40 hover:text-text-hi"
                   >
                     Show {hiddenCount} more
                   </button>
@@ -230,7 +230,7 @@ export function KanbanColumn({
                   <button
                     type="button"
                     onClick={() => setShowAll(false)}
-                    className="rounded-card border border-dashed border-line/70 bg-bg-0/30 px-3 py-2 text-center text-[11px] font-medium text-text-lo/70 transition-colors duration-hover hover:border-ice/40 hover:text-text-hi"
+                    className="rounded-card border border-dashed border-line/70 bg-bg-0/30 px-3 py-2 text-center text-xs font-medium text-text-lo/70 transition-colors duration-hover hover:border-ice/40 hover:text-text-hi"
                   >
                     Show less
                   </button>

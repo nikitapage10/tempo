@@ -25,7 +25,7 @@ export function Chip({
       onClick={onClick}
       className={cn(
         "inline-flex items-center rounded-chip border transition-colors duration-hover",
-        size === "sm" ? "px-2 py-0.5 text-[11px]" : "px-2.5 py-1 text-xs",
+        size === "sm" ? "px-2 py-0.5 text-xs" : "px-2.5 py-1 text-sm",
         active
           ? "border-ice/40 bg-ice/15 text-ice"
           : "border-line bg-bg-2 text-text-lo hover:text-text-hi",

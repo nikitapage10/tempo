@@ -5,13 +5,8 @@ import type { Artist } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 /**
- * An artist's banner, as a background layer inside existing chrome.
- *
- * Two rules keep this feeling like TEMPO rather than a photo with text on it:
- * images always get a scrim that fades to --bg-0, and flat colours render as
- * a wash toward --bg-0 rather than a flat fill (surfaces here are lit, not
- * painted). With neither set the component renders nothing at all, so the
- * default account is visually untouched.
+ * An artist's banner, as a translucent tint over glass — never a sealed plate.
+ * The photo stays light so the video wash and Spectra lines remain visible.
  */
 export function ArtistBanner({
   artist,
@@ -37,13 +32,13 @@ export function ArtistBanner({
   if (!hasBanner) return children ? <>{children}</> : null;
 
   const fadeMask = fadeRight
-    ? "linear-gradient(100deg, #000 0%, #000 42%, rgb(0 0 0 / 0.55) 62%, transparent 82%)"
+    ? "linear-gradient(100deg, #000 0%, #000 34%, rgb(0 0 0 / 0.4) 52%, transparent 74%)"
     : undefined;
 
   const colorWash =
     artist.banner_color && artist.banner_color_end
-      ? `linear-gradient(125deg, ${artist.banner_color} 0%, ${artist.banner_color_end} 42%, rgb(10 10 12 / 0.65) 72%, var(--bg-0) 100%)`
-      : `linear-gradient(180deg, ${artist.banner_color} 0%, rgb(10 10 12 / 0.65) 70%, var(--bg-0) 100%)`;
+      ? `linear-gradient(125deg, color-mix(in oklab, ${artist.banner_color} 40%, transparent) 0%, color-mix(in oklab, ${artist.banner_color_end} 28%, transparent) 42%, transparent 100%)`
+      : `linear-gradient(180deg, color-mix(in oklab, ${artist.banner_color} 36%, transparent) 0%, transparent 100%)`;
 
   return (
     <div
@@ -59,15 +54,15 @@ export function ArtistBanner({
           <SignedImage
             path={artist.banner_url}
             alt=""
-            className="absolute inset-0 size-full object-cover"
+            className="absolute inset-0 size-full object-cover opacity-[0.22]"
           />
-          {/* Scrim — keeps overlaid text at the same contrast as an unbannered panel. */}
+          {/* Soft veil only — no extra blur (that turned Spectra into smoke). */}
           <div
             aria-hidden
             className="absolute inset-0"
             style={{
               background:
-                "linear-gradient(180deg, rgb(10 10 12 / 0.55) 0%, rgb(10 10 12 / 0.75) 60%, var(--bg-0) 100%)",
+                "linear-gradient(180deg, rgb(10 10 12 / 0.12) 0%, rgb(10 10 12 / 0.18) 50%, rgb(10 10 12 / 0.28) 100%)",
             }}
           />
         </>

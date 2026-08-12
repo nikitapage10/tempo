@@ -118,7 +118,7 @@ function ChapterBackButton({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="mb-4 flex w-fit items-center gap-1 text-[11px] uppercase tracking-[0.16em] text-text-lo transition-colors hover:text-text-hi"
+      className="mb-4 flex w-fit items-center gap-1 text-xs uppercase tracking-[0.16em] text-text-lo transition-colors hover:text-text-hi"
     >
       <ChevronLeft className="size-3.5" /> Back
     </button>
@@ -164,7 +164,7 @@ function ChapterSection({
             className="absolute -right-24 -top-28 size-72 rounded-full border border-ice/10 bg-ice/[0.035]"
           />
           <div className="origin-first-shape__content relative grid grid-cols-[3rem_1fr] gap-6 px-6 py-7 sm:grid-cols-[3.5rem_1fr] sm:gap-8 sm:px-8 sm:py-9">
-            <div className="flex flex-col items-center gap-3 pt-1 text-[10px] uppercase tracking-[0.22em] text-text-lo/60">
+            <div className="flex flex-col items-center gap-3 pt-1 text-[11px] uppercase tracking-[0.22em] text-text-lo/60">
               <span className="font-mono text-ice">01</span>
               <span className="h-12 w-px bg-line" />
               <span className="[writing-mode:vertical-rl]">Origin</span>
@@ -218,7 +218,7 @@ function ChapterSection({
           )}
         />
         <div className="relative grid grid-cols-[2.5rem_1fr] gap-5 px-6 py-7 sm:grid-cols-[3rem_1fr] sm:gap-7 sm:px-8 sm:py-8">
-          <div className="flex flex-col items-center gap-3 pt-0.5 text-[9px] uppercase tracking-[0.2em] text-text-lo/70">
+          <div className="flex flex-col items-center gap-3 pt-0.5 text-[10px] uppercase tracking-[0.2em] text-text-lo/70">
             <span className={cn("font-mono", index % 2 === 0 ? "text-amber" : "text-ice")}>
               {String(index + 1).padStart(2, "0")}
             </span>
@@ -552,7 +552,7 @@ export function OriginStoryScroll({
               </div>
             ) : (
               <>
-                <span className="absolute right-3 top-2 font-mono text-[10px] text-ice/55">
+                <span className="absolute right-3 top-2 font-mono text-[11px] text-ice/55">
                   {String(index + 1).padStart(2, "0")}
                 </span>
                 <h3 className="pr-7 font-display text-base text-text-hi">{signal.label}</h3>
@@ -660,7 +660,7 @@ export function OriginStoryScroll({
             </div>
           ) : (
             <>
-              <p className="text-[10px] uppercase tracking-[0.22em] text-ice/70">
+              <p className="text-[11px] uppercase tracking-[0.22em] text-ice/70">
                 {String(index + 1).padStart(2, "0")}
               </p>
               {section.title ? <h3 className="mt-2 font-display text-lg text-text-hi">{section.title}</h3> : null}
@@ -884,7 +884,7 @@ function ScrollCue({ onAdvance }: { onAdvance: () => void }) {
           <span className="md:hidden">Swipe up to reveal your story</span>
           <span className="hidden md:inline">Scroll to reveal your story</span>
         </span>
-        <span className="mt-0.5 block font-mono text-[10px] uppercase tracking-[0.16em] text-text-lo">
+        <span className="mt-0.5 block font-mono text-[11px] uppercase tracking-[0.16em] text-text-lo">
           Six chapters ahead
         </span>
       </span>

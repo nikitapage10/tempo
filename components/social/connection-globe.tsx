@@ -417,12 +417,12 @@ export function ConnectionGlobe({
       className={cn("relative w-full overflow-hidden touch-none select-none", className)}
       style={{
         height: height || undefined,
-        // Gentle falloff toward the crop — keeps most of the visible disc
-        // solid, then softens only near the bottom edge.
+        // Soft elliptical dissolve — no hard rectangular frame against the
+        // moving workspace wash. Sides and horizon fall off together.
         WebkitMaskImage:
-          "linear-gradient(to bottom, #000 0%, #000 58%, rgba(0,0,0,0.75) 82%, transparent 100%)",
+          "radial-gradient(ellipse 92% 88% at 50% 28%, #000 42%, rgba(0,0,0,0.85) 58%, rgba(0,0,0,0.35) 72%, transparent 82%)",
         maskImage:
-          "linear-gradient(to bottom, #000 0%, #000 58%, rgba(0,0,0,0.75) 82%, transparent 100%)",
+          "radial-gradient(ellipse 92% 88% at 50% 28%, #000 42%, rgba(0,0,0,0.85) 58%, rgba(0,0,0,0.35) 72%, transparent 82%)",
       }}
       onMouseLeave={() => setHoverId(null)}
       onPointerMove={onPointerMoveDrag}
@@ -496,13 +496,12 @@ export function ConnectionGlobe({
             aria-hidden
           />
 
-          {/* Stable inner edge. The WebGL canvas can otherwise expose a dark
-              antialias pixel at different longitudes.
-              Divide by zoom so this cap stays visually one pixel wide. */}
+          {/* Soften the limb without a hard inset ring — a dark hairline was
+              reading as a rectangular frame once the page wash went translucent. */}
           <div
             className="pointer-events-none absolute inset-0 rounded-full"
             style={{
-              boxShadow: `inset 0 0 0 ${1.25 / zoom}px rgb(27 30 42)`,
+              boxShadow: `inset 0 0 ${14 / zoom}px ${2 / zoom}px rgb(14 15 21 / 0.55)`,
             }}
             aria-hidden
           />
@@ -564,8 +563,8 @@ export function ConnectionGlobe({
                       rendered fully transparent. */}
                   <div className="rounded-card border border-line bg-bg-1 p-2.5 text-left shadow-e3">
                     <p className="truncate text-sm font-medium text-text-hi">{m.name}</p>
-                    <p className="truncate text-[11px] text-text-lo">{m.detail}</p>
-                    <p className="mt-1 truncate text-[11px] text-ice">{m.label}</p>
+                    <p className="truncate text-xs text-text-lo">{m.detail}</p>
+                    <p className="mt-1 truncate text-xs text-ice">{m.label}</p>
                   </div>
                 </div>
               ) : null}
@@ -574,19 +573,20 @@ export function ConnectionGlobe({
         })}
       </div>
 
-      {/* Horizon scrim — light dissolve near the crop, not a heavy wipe. */}
+      {/* Horizon scrim — soft alpha only, so it blends into the video wash
+          instead of painting an opaque black rectangle under the globe. */}
       <div
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%]"
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-[48%]"
         style={{
           background:
-            "linear-gradient(to top, var(--bg-0) 0%, transparent 100%)",
+            "linear-gradient(to top, rgb(10 10 12 / 0.45) 0%, rgb(10 10 12 / 0.18) 45%, transparent 100%)",
         }}
         aria-hidden
       />
 
       {allMarkers.length > 0 ? (
         <div className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center gap-3 px-3">
-          <p className="text-[10px] text-text-lo">
+          <p className="text-[11px] text-text-lo">
             {culled
               ? "Scroll to zoom — denser areas open up as you get closer"
               : zoom > 1.04
@@ -596,7 +596,7 @@ export function ConnectionGlobe({
           {zoom > 1.04 ? (
             <button
               type="button"
-              className="pointer-events-auto text-[10px] text-ice hover:underline"
+              className="pointer-events-auto text-[11px] text-ice hover:underline"
               onClick={() => {
                 zoomRef.current = ZOOM_MIN;
                 setZoom(ZOOM_MIN);

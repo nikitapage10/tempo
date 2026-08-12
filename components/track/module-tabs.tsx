@@ -64,7 +64,7 @@ export function ModuleTabs({
             >
               {labelOverrides?.[id] ?? shortLabel(id)}
               {badge ? (
-                <span className="rounded-chip bg-amber/15 px-1.5 py-0.5 font-mono text-[10px] text-amber">
+                <span className="rounded-chip bg-amber/15 px-1.5 py-0.5 font-mono text-[11px] text-amber">
                   {badge}
                 </span>
               ) : null}

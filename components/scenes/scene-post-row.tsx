@@ -37,7 +37,7 @@ export function ScenePostRow({
   return (
     <div className="space-y-1.5">
       {kindLabel || post.pinned_at ? (
-        <div className="flex items-center gap-2 px-1 text-[11px] text-text-lo">
+        <div className="flex items-center gap-2 px-1 text-xs text-text-lo">
           {post.pinned_at ? (
             <span className="flex items-center gap-1 text-amber">
               <Pin className="size-3" />

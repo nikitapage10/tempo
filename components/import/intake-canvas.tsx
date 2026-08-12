@@ -507,7 +507,7 @@ export function IntakeCanvas({
               </div>
 
               <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-                <p className="text-[11px] leading-relaxed text-text-lo">
+                <p className="text-xs leading-relaxed text-text-lo">
                   What you add here is sent to an AI service to be read. Remove anything
                   you&rsquo;d rather not send.
                 </p>
@@ -570,13 +570,13 @@ function SourceBubble({
             </div>
           )}
           {!isNote ? (
-            <p className="mt-1 font-data text-[11px] text-text-lo">
+            <p className="mt-1 font-data text-xs text-text-lo">
               {KIND_LABEL[source.kind]}
               {source.byte_size ? ` · ${formatFileSize(source.byte_size)}` : ""}
             </p>
           ) : null}
           {source.error ? (
-            <p className="mt-1 text-[11px] text-warn">{source.error}</p>
+            <p className="mt-1 text-xs text-warn">{source.error}</p>
           ) : null}
         </div>
       </div>

@@ -75,7 +75,7 @@ export function SessionLog({ trackId }: SessionLogProps) {
   return (
     <section className="panel p-5">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <h2 className="font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+        <h2 className="font-mono text-xs uppercase tracking-[0.08em] text-text-lo">
           Session log
         </h2>
         {!open ? (
@@ -163,7 +163,7 @@ function SessionRow({
     return (
       <li className="rounded-card border border-line bg-bg-2/40 px-3 py-2">
         <p className="text-sm text-text-hi">{s.note}</p>
-        <p className="mt-1 font-mono text-[11px] text-text-lo">
+        <p className="mt-1 font-mono text-xs text-text-lo">
           {formatShortDate(s.logged_at)}
           {s.version_id ? (
             <VersionChip versions={versions} versionId={s.version_id} />
@@ -179,7 +179,7 @@ function SessionRow({
         <p className="text-sm text-text-hi">
           {s.goal || <span className="text-text-lo">Focus session</span>}
         </p>
-        <span className={cn("font-mono text-[10px] uppercase tracking-wider", STATUS_CLASS[s.status])}>
+        <span className={cn("font-mono text-[11px] uppercase tracking-wider", STATUS_CLASS[s.status])}>
           {STATUS_LABEL[s.status]}
         </span>
       </div>
@@ -196,7 +196,7 @@ function SessionRow({
           {s.next_action_after}
         </p>
       ) : null}
-      <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5 font-mono text-[11px] text-text-lo">
+      <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5 font-mono text-xs text-text-lo">
         <span>{formatShortDate(s.logged_at)}</span>
         {s.elapsed_sec != null ? (
           <>

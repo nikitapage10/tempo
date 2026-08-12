@@ -197,8 +197,9 @@ export default function ArtistProfilePage() {
 
   return (
     <div className="space-y-5">
-      <LfWindow className="glass relative overflow-hidden">
+      <div className="glass-hero relative overflow-hidden">
         <div className="absolute inset-0">
+          <LfWindow field className="absolute inset-0" aria-hidden />
           <div className="scrim-reveal absolute inset-0" aria-hidden />
           {activeArtist ? (
             <ArtistBanner artist={activeArtist} fadeRight className="absolute inset-0" />
@@ -220,7 +221,7 @@ export default function ArtistProfilePage() {
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="label-mono mb-1.5">Artist profile</p>
-              <h1 className="min-w-0 font-display text-3xl font-medium tracking-[0.025em] text-text-hi sm:text-[40px] sm:leading-[1.05]">
+              <h1 className="min-w-0 font-display text-3xl font-semibold tracking-[0.02em] text-text-hi sm:text-[40px] sm:leading-[1.05]">
                 {loading ? "—" : (activeArtist?.name ?? "No artist")}
               </h1>
               {profile?.handle ? (
@@ -289,7 +290,7 @@ export default function ArtistProfilePage() {
             />
           </div>
         ) : null}
-      </LfWindow>
+      </div>
 
       {editing && draft ? (
         <ProfileEditor
@@ -702,7 +703,7 @@ function Field({
     <div>
       <p className="label-mono mb-1.5">{label}</p>
       {children}
-      {hint ? <p className="mt-1 text-[11px] text-text-lo">{hint}</p> : null}
+      {hint ? <p className="mt-1 text-xs text-text-lo">{hint}</p> : null}
     </div>
   );
 }

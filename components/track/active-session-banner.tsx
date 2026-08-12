@@ -63,7 +63,7 @@ export function ActiveSessionBanner({
             <span className="text-text-lo"> — {session.goal}</span>
           ) : null}
         </p>
-        <p className="mt-0.5 font-mono text-[11px] text-text-lo">
+        <p className="mt-0.5 font-mono text-xs text-text-lo">
           {formatDuration(elapsed)} elapsed
           {stale ? " · this one's been running a while" : ""}
         </p>

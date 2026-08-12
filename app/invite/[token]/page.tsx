@@ -93,7 +93,7 @@ export default function InvitePage() {
               a{" "}
               <span className="text-ice">{roleLabel}</span>.
             </p>
-            <p className="mt-1 font-mono text-[11px] text-text-lo">
+            <p className="mt-1 font-mono text-xs text-text-lo">
               Invited: {previewQuery.data.invited_email}
             </p>
 

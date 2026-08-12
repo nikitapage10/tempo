@@ -55,7 +55,7 @@ export function PipelineBars({ pipelines }: { pipelines: SpacePipeline[] }) {
                 <span className="min-w-0 flex-1 truncate text-[12px] text-text-hi">
                   {pipeline.spaceName}
                 </span>
-                <span className="text-[11px] tabular-nums text-text-lo">
+                <span className="text-xs tabular-nums text-text-lo">
                   {pipeline.total} track{pipeline.total === 1 ? "" : "s"} staged
                 </span>
               </div>
@@ -79,7 +79,7 @@ export function PipelineBars({ pipelines }: { pipelines: SpacePipeline[] }) {
                 {staged.map((stage) => (
                   <li
                     key={stage.id}
-                    className="flex items-center gap-1.5 text-[11px] text-text-lo"
+                    className="flex items-center gap-1.5 text-xs text-text-lo"
                   >
                     <span
                       className="size-2 shrink-0 rounded-full"
@@ -99,7 +99,7 @@ export function PipelineBars({ pipelines }: { pipelines: SpacePipeline[] }) {
       </ul>
 
       {emptyCount > 0 ? (
-        <p className="mt-4 text-[11px] text-text-lo">
+        <p className="mt-4 text-xs text-text-lo">
           {emptyCount} other space{emptyCount === 1 ? "" : "s"} with nothing
           staged yet.
         </p>
@@ -146,7 +146,7 @@ export function MomentumBar({
         {momentum.map((m, i) => (
           <li
             key={m.value}
-            className="flex items-center gap-1.5 text-[11px] text-text-lo"
+            className="flex items-center gap-1.5 text-xs text-text-lo"
           >
             <span
               className="size-2 rounded-full"
@@ -192,12 +192,12 @@ export function LingeringList({
             <span className="min-w-0 flex-1 truncate text-sm text-text-hi">
               {item.track.title}
             </span>
-            <span className="shrink-0 text-[11px] text-text-lo">
+            <span className="shrink-0 text-xs text-text-lo">
               {item.stageName ?? "No stage"}
               {" · "}
               <span className="tabular-nums">{item.daysInStage}d</span> in stage
             </span>
-            <span className="shrink-0 text-[11px] tabular-nums text-amber">
+            <span className="shrink-0 text-xs tabular-nums text-amber">
               {item.daysOpen}d old
             </span>
           </Link>

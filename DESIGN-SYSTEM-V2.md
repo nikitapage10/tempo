@@ -79,22 +79,24 @@ Rules that changed:
 | `--ok` | `#6FD99A` | Success |
 | `--warn` | `#FF7A6B` | Danger / overdue |
 
-### Typography (v0.16 — two families, not three)
-- **Jura** — light geometric display face for titles, track identity and the
-  wordmark; primary page titles use weight 500 with gently positive tracking
-- **Inter** — everything else: body UI *and* BPM, keys, timestamps, version
-  numbers, durations, counts, deadlines. JetBrains Mono was dropped at the
-  user's request (three fonts read as inconsistent); `font-mono` and
-  `.font-data` both resolve to Inter now. Numeric alignment is looser than a
-  true monospace gave — accepted tradeoff, don't "fix" it by bringing a third
-  family back without asking.
+### Typography (v0.117 — Jura UI, Inter numerals, lifted small sizes)
+- **Jura** — geometric face for the product UI (rail, menus, titles, body).
+  Hierarchy from weight: **300** wordmark, **500** body/controls, **600**
+  titles, active nav, labels.
+- **Inter** — numerals only (`.stat-value`, `.font-data`, `font-mono`, and
+  `.tabular-nums`). Jura’s zero has a centre dot that reads oddly on counts;
+  Inter keeps those clean.
+- **Size** — body is 15px; Tailwind `text-sm` / `text-xs` sit one step up
+  (15px / 13px); section labels are 12px. Dense meta that was 10–11px was
+  lifted with the same pass.
+- Custom artist logos remain images, not fonts.
 
 ### Rules
 - Dark UI only.
 - Ice = interaction; amber = status. Never both as competing CTAs.
 - Radius: 10px cards, 8px inputs, 999px chips.
 - `.flare-line` for active dividers / markers.
-- The root Spectra shader stays in approved atmospheric moments (intro, empty states, active marks, selected feature areas), not as the dense-data backdrop. A separate softly focused video is the persistent signed-in workspace backdrop behind the shared glass surfaces; the former top-edge shader strip is removed.
+- The root Spectra shader stays in approved atmospheric moments (intro, empty states, active marks, selected feature areas), not as the dense-data backdrop. A separate softly focused video is the persistent signed-in workspace backdrop behind the shared glass surfaces; thin flare / slit dividers still punch through that video so the shader can run along page-header rules and rail ticks. The former top-edge shader strip is removed.
 - `prefers-reduced-motion`: pause shaders; disable non-essential transitions; ambient tint may be static.
 
 ---

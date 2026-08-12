@@ -100,7 +100,7 @@ export function StarterChecklist() {
           <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-bg-2">
             <div className="h-full rounded-full bg-[linear-gradient(90deg,var(--ice),var(--amber))] transition-[width]" style={{ width: `${progress}%` }} />
           </div>
-          <span className="font-mono text-[10px] tabular-nums text-text-lo">{progress}%</span>
+          <span className="font-mono text-[11px] tabular-nums text-text-lo">{progress}%</span>
         </div>
       </div>
 
@@ -122,7 +122,7 @@ export function StarterChecklist() {
               <Icon className="size-4 shrink-0 text-text-lo" />
               <Link href={step.href} className="min-w-0 flex-1" onClick={() => setExpanded(false)}>
                 <p className={cn("text-sm text-text-hi", complete && "line-through")}>{step.label}</p>
-                <p className="mt-0.5 line-clamp-1 text-[11px] text-text-lo">{step.detail}</p>
+                <p className="mt-0.5 line-clamp-1 text-xs text-text-lo">{step.detail}</p>
               </Link>
               <ChevronRight className="size-4 shrink-0 text-text-lo transition-transform group-hover:translate-x-0.5 group-hover:text-ice" />
             </div>
@@ -131,7 +131,7 @@ export function StarterChecklist() {
       </div>
 
       <div className="flex items-center justify-between border-t border-line px-4 py-3">
-        <p className="text-[11px] text-text-lo">Check items off at your own pace.</p>
+        <p className="text-xs text-text-lo">Check items off at your own pace.</p>
         <Button type="button" size="sm" variant="ghost" onClick={() => onboarding.update.mutate({ checklistDismissed: true })} disabled={onboarding.update.isPending}>
           Remove
         </Button>

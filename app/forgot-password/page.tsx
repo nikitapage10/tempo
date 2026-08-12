@@ -70,7 +70,7 @@ export default function ForgotPasswordPage() {
             <div>
               <label
                 htmlFor="email"
-                className="mb-1.5 block font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo"
+                className="mb-1.5 block font-mono text-xs uppercase tracking-[0.08em] text-text-lo"
               >
                 Email
               </label>

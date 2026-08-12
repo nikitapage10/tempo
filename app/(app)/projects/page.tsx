@@ -126,14 +126,14 @@ export default function ProjectsPage() {
                     {p.name}
                   </h2>
                   {p.project_type !== "general" ? (
-                    <span className="shrink-0 rounded-chip border border-amber/30 bg-amber/10 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-amber">
+                    <span className="shrink-0 rounded-chip border border-amber/30 bg-amber/10 px-1.5 py-0.5 font-mono text-[11px] uppercase tracking-wide text-amber">
                       {PROJECT_TYPES.find((t) => t.value === p.project_type)
                         ?.label ?? p.project_type}
                     </span>
                   ) : null}
                 </div>
                 {p.deadline ? (
-                  <p className="mt-1 font-mono text-[11px] text-text-lo">
+                  <p className="mt-1 font-mono text-xs text-text-lo">
                     Due {formatShortDate(p.deadline + "T12:00:00")}
                   </p>
                 ) : null}
@@ -150,14 +150,14 @@ export default function ProjectsPage() {
                     <>
                       <div className="mb-1.5 flex items-baseline justify-between">
                         <span className="label-mono">Checklist</span>
-                        <span className="font-mono text-[11px] tabular-nums text-text-hi">
+                        <span className="font-mono text-xs tabular-nums text-text-hi">
                           {p.checklist_pct}%
                         </span>
                       </div>
                       <FlareLine variant="partial" pct={p.checklist_pct} />
                     </>
                   ) : (
-                    <p className="text-[11px] text-text-lo/70">
+                    <p className="text-xs text-text-lo/70">
                       {p.track_count === 0
                         ? "No tracks attached yet"
                         : "No checklist items yet"}
@@ -178,7 +178,7 @@ export default function ProjectsPage() {
           >
             <Plus className="size-5" />
             <span className="text-sm">New project</span>
-            <span className="max-w-[22ch] text-center text-[11px] text-text-lo/70">
+            <span className="max-w-[22ch] text-center text-xs text-text-lo/70">
               An EP, an edit pack, a campaign
             </span>
           </button>
@@ -218,7 +218,7 @@ export default function ProjectsPage() {
                 ))}
               </select>
               {projectType !== "general" ? (
-                <p className="mt-1 text-[11px] text-text-lo">
+                <p className="mt-1 text-xs text-text-lo">
                   Adds a release workspace — date, readiness, track order, metadata, pitching.
                 </p>
               ) : null}

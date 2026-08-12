@@ -154,7 +154,7 @@ export default function SceneManageMembersPage() {
       </section>
 
       <section className="space-y-2">
-        <p className="label-mono">Members ({members.length})</p>
+        <p className="label-mono">Members (<span className="tabular-nums">{members.length}</span>)</p>
         <div className="space-y-1.5">
           {members.map((m) => (
             <SceneMemberRow

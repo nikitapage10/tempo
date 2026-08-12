@@ -169,7 +169,7 @@ function SettingsPageInner() {
                   )}
                 >
                   <span className="block text-sm font-medium">{item.label}</span>
-                  <span className="mt-0.5 hidden text-[11px] text-text-lo lg:block">
+                  <span className="mt-0.5 hidden text-xs text-text-lo lg:block">
                     {item.hint}
                   </span>
                 </button>

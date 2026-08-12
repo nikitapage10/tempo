@@ -104,7 +104,9 @@
 
   body {
     @apply bg-bg-0 text-text-hi font-sans antialiased;
-    font-size: 14px;
+    font-family: var(--font-jura), sans-serif;
+    font-size: 15px;
+    font-weight: 500;
     line-height: 1.5;
   }
 
@@ -512,7 +514,24 @@
   }
 
   .font-data {
+    /* Inter for numerals — Jura's zero carries a centre dot. */
     font-family: var(--font-inter), sans-serif;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Any tabular figure run uses Inter — catches counts that only opted into
+   * tabular-nums without font-mono / font-data. */
+  .tabular-nums {
+    font-family: var(--font-inter), sans-serif;
+  }
+
+  input[type="number"],
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"] {
+    font-family: var(--font-inter), sans-serif;
+    font-variant-numeric: tabular-nums;
   }
 
   /* ---------------------------------------------------------------------
@@ -578,11 +597,39 @@
   .glass {
     position: relative;
     border-radius: var(--radius-panel);
-    background: rgb(var(--bg-0-rgb) / 0.42);
-    border: 1px solid rgb(var(--line-rgb) / 0.7);
+    background: rgb(var(--bg-0-rgb) / 0.32);
+    border: 1px solid rgb(var(--line-rgb) / 0.55);
     box-shadow: var(--shadow-3);
-    backdrop-filter: blur(20px) saturate(1.1);
-    -webkit-backdrop-filter: blur(20px) saturate(1.1);
+    backdrop-filter: blur(22px) saturate(1.15);
+    -webkit-backdrop-filter: blur(22px) saturate(1.15);
+  }
+
+  /* Heroes over Spectra / video — lighter frost so prismatic lines stay
+   * readable instead of dissolving into smoke, and the wash shows through. */
+  .glass-hero {
+    position: relative;
+    border-radius: var(--radius-panel);
+    background: rgb(var(--bg-0-rgb) / 0.16);
+    border: 1px solid rgb(var(--line-rgb) / 0.48);
+    box-shadow: var(--shadow-3);
+    backdrop-filter: blur(7px) saturate(1.08);
+    -webkit-backdrop-filter: blur(7px) saturate(1.08);
+  }
+
+  .glass-hero::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    border-radius: var(--radius-panel) var(--radius-panel) 0 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      var(--edge-hi-strong) 25%,
+      var(--edge-hi-strong) 75%,
+      transparent 100%
+    );
+    pointer-events: none;
   }
 
   .glass::before {
@@ -627,7 +674,8 @@
      fall back to a solid enough fill that text stays legible. */
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     .panel,
-    .glass {
+    .glass,
+    .glass-hero {
       background: var(--bg-1);
     }
     .panel-quiet,
@@ -674,35 +722,35 @@
 
   /* Section label — compact, uppercase, tracked. Replaces ad-hoc h2 styling. */
   .label-mono {
-    font-family: var(--font-inter), sans-serif;
-    font-size: 11px;
+    font-family: var(--font-jura), sans-serif;
+    font-size: 12px;
+    font-weight: 600;
     line-height: 1;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.12em;
     color: var(--text-lo);
   }
 
-  /* Big glanceable numerals in the shared UI family. */
+  /* Big glanceable numerals — Inter so zeros stay clean (no centre dot). */
   .stat-value {
     font-family: var(--font-inter), sans-serif;
     font-size: 34px;
     line-height: 1;
-    font-weight: 500;
+    font-weight: 600;
     letter-spacing: -0.02em;
     font-variant-numeric: tabular-nums;
   }
 
-  /* Hero scrim: opaque where copy sits, clearing to the right so the
-   * lightfield is actually visible. Left band stays ≥85% black per the
-   * legibility rule in .cursorrules. */
+  /* Hero scrim: readable where copy sits, clearing harder to the right so
+   * Spectra and the video wash can show through the glass. */
   .scrim-reveal {
     background: linear-gradient(
       100deg,
-      rgb(10 10 12 / 0.96) 0%,
-      rgb(10 10 12 / 0.93) 38%,
-      rgb(10 10 12 / 0.72) 58%,
-      rgb(10 10 12 / 0.42) 78%,
-      rgb(10 10 12 / 0.3) 100%
+      rgb(10 10 12 / 0.72) 0%,
+      rgb(10 10 12 / 0.48) 36%,
+      rgb(10 10 12 / 0.22) 58%,
+      rgb(10 10 12 / 0.08) 78%,
+      rgb(10 10 12 / 0.02) 100%
     );
   }
 
@@ -866,9 +914,9 @@
     .scrim-reveal {
       background: linear-gradient(
         170deg,
-        rgb(10 10 12 / 0.95) 0%,
-        rgb(10 10 12 / 0.9) 55%,
-        rgb(10 10 12 / 0.55) 100%
+        rgb(10 10 12 / 0.7) 0%,
+        rgb(10 10 12 / 0.4) 55%,
+        rgb(10 10 12 / 0.12) 100%
       );
     }
   }

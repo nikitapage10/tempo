@@ -27,7 +27,7 @@ export function FilterRow({
     <>
       {divider ? <SlitDivider /> : null}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-2.5 py-1.5 sm:flex-nowrap">
-        <span className="label-mono w-10 shrink-0 text-[10px]">{label}</span>
+        <span className="label-mono w-10 shrink-0 text-[11px]">{label}</span>
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1">
           {children}
         </div>
@@ -53,7 +53,7 @@ export function FilterGroup({
   if (stacked) {
     return (
       <div className={cn("flex flex-col gap-1.5", className)}>
-        <span className="label-mono text-[10px] text-text-lo/70">{label}</span>
+        <span className="label-mono text-[11px] text-text-lo/70">{label}</span>
         <div className="flex flex-wrap gap-1">{children}</div>
       </div>
     );
@@ -66,7 +66,7 @@ export function FilterGroup({
         className
       )}
     >
-      <span className="label-mono shrink-0 text-[10px] text-text-lo/70">
+      <span className="label-mono shrink-0 text-[11px] text-text-lo/70">
         {label}
       </span>
       {children}
@@ -154,7 +154,7 @@ export function FilterDisclosure({
           aria-expanded={open}
           onClick={toggle}
           className={cn(
-            "inline-flex items-center gap-1 rounded-chip border px-2 py-0.5 text-[11px] transition-colors duration-hover",
+            "inline-flex items-center gap-1 rounded-chip border px-2 py-0.5 text-xs transition-colors duration-hover",
             open || active
               ? "border-ice/40 bg-ice/10 text-ice"
               : "border-line bg-bg-2 text-text-lo hover:text-text-hi"
@@ -178,7 +178,7 @@ export function FilterDisclosure({
           <button
             type="button"
             onClick={onClear}
-            className="text-[11px] text-ice hover:underline"
+            className="text-xs text-ice hover:underline"
           >
             Clear
           </button>

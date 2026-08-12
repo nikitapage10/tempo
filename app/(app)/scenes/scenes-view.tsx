@@ -185,7 +185,7 @@ export default function ScenesView() {
               >
                 {t.label}
                 {t.count ? (
-                  <span className="ml-1.5 rounded-full bg-ice/20 px-1.5 py-0.5 text-[10px] text-ice">
+                  <span className="ml-1.5 rounded-full bg-ice/20 px-1.5 py-0.5 text-[11px] text-ice">
                     {t.count}
                   </span>
                 ) : null}

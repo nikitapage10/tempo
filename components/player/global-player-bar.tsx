@@ -29,7 +29,7 @@ export function GlobalPlayerBar() {
         </span>
         <div className="min-w-0 w-full">
           <p className="truncate text-xs font-medium text-text-hi">{current.title}</p>
-          <p className="truncate text-[11px] text-text-lo">{current.artist ?? "—"}</p>
+          <p className="truncate text-xs text-text-lo">{current.artist ?? "—"}</p>
         </div>
       </Link>
 

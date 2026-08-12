@@ -47,7 +47,7 @@ export function SceneMemberRow({
       </div>
       <span
         className={cn(
-          "shrink-0 rounded-chip border px-2 py-0.5 text-[11px]",
+          "shrink-0 rounded-chip border px-2 py-0.5 text-xs",
           member.role === "owner"
             ? "border-amber/40 bg-amber/10 text-amber"
             : member.role === "moderator"

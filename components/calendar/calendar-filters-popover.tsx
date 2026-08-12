@@ -93,7 +93,7 @@ export function CalendarFiltersPopover({
       }
     >
       <div>
-        <span className="label-mono text-[10px] text-text-lo/70">Sources</span>
+        <span className="label-mono text-[11px] text-text-lo/70">Sources</span>
         <div className="mt-1.5 flex flex-wrap gap-1">
           {SOURCE_FILTERS.map((filter) => (
             <Chip key={filter.value} size="sm" active={sourceFilters.has(filter.value)} onClick={() => onToggleSource(filter.value)}>
@@ -108,7 +108,7 @@ export function CalendarFiltersPopover({
         </Chip>
       </div>
       <div className="border-t border-line/60 pt-2">
-        <span className="label-mono text-[10px] text-text-lo/70">Saved views</span>
+        <span className="label-mono text-[11px] text-text-lo/70">Saved views</span>
         <div className="mt-1.5 space-y-0.5">
           {presets.length ? (
             presets.map((preset) => (
@@ -121,7 +121,7 @@ export function CalendarFiltersPopover({
               />
             ))
           ) : (
-            <p className="px-2 text-[11px] text-text-lo">No saved views yet.</p>
+            <p className="px-2 text-xs text-text-lo">No saved views yet.</p>
           )}
         </div>
         <form

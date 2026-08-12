@@ -108,8 +108,8 @@ export function CalendarSignalLine({
           ].map(([label, value, note]) => (
             <div key={label as string} className="well px-3 py-2">
               <p className="label-mono text-text-lo">{label}</p>
-              <p className={cn("mt-1 font-display text-xl font-semibold", Number(value) ? "text-text-hi" : "text-ok")}>{value}</p>
-              <p className="text-[11px] text-text-lo">{note}</p>
+              <p className={cn("mt-1 text-xl font-semibold tabular-nums", Number(value) ? "text-text-hi" : "text-ok")}>{value}</p>
+              <p className="text-xs text-text-lo">{note}</p>
             </div>
           ))}
         </div>

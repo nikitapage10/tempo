@@ -70,7 +70,7 @@ export function CalendarDayPanel({
           <h2 className="truncate font-display text-base font-semibold text-text-hi">{formatDayHeading(date)}</h2>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="font-mono text-[11px] text-text-lo">{dayItems.length}</span>
+          <span className="font-mono text-xs text-text-lo">{dayItems.length}</span>
           <button
             type="button"
             onClick={onClose}
@@ -137,7 +137,7 @@ export function CalendarDayPanel({
                       <GripVertical className="mt-0.5 size-3.5 shrink-0 text-text-lo" />
                       <button type="button" onClick={() => onOpenUnscheduled(item.destinationHref)} className="min-w-0 flex-1 text-left">
                         <span className="block truncate text-xs text-text-hi">{item.title}</span>
-                        <span className="text-[10px] text-text-lo">{item.subtitle}</span>
+                        <span className="text-[11px] text-text-lo">{item.subtitle}</span>
                       </button>
                     </div>
                     <div className="mt-2 flex gap-1.5">
@@ -146,7 +146,7 @@ export function CalendarDayPanel({
                         value={scheduleDates[item.id] ?? ""}
                         onChange={(event) => setScheduleDates((current) => ({ ...current, [item.id]: event.target.value }))}
                         aria-label={`Schedule ${item.title}`}
-                        className="h-7 min-w-0 flex-1 rounded-input border border-line bg-bg-2 px-1.5 font-mono text-[10px] text-text-hi"
+                        className="h-7 min-w-0 flex-1 rounded-input border border-line bg-bg-2 px-1.5 font-mono text-[11px] text-text-hi"
                       />
                       <Button type="button" size="sm" variant="ghost" onClick={() => setScheduleDates((current) => ({ ...current, [item.id]: date }))}>
                         Today

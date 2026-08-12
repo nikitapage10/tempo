@@ -65,7 +65,7 @@ export function SpacesOverview({ spaces }: { spaces: SpaceSummary[] }) {
                 <ArrowRight className="size-3.5 shrink-0 text-text-lo opacity-0 transition-opacity duration-hover group-hover:opacity-100" />
               </div>
 
-              <p className="mt-0.5 text-[11px] text-text-lo">
+              <p className="mt-0.5 text-xs text-text-lo">
                 {tasksFocused ? "Tasks & projects" : "Music"}
                 {summary.topStageName && !tasksFocused
                   ? ` · mostly ${summary.topStageName}`
@@ -93,7 +93,7 @@ export function SpacesOverview({ spaces }: { spaces: SpaceSummary[] }) {
                 )}
               </dl>
 
-              <p className="mt-3 text-[11px] text-text-lo">
+              <p className="mt-3 text-xs text-text-lo">
                 {summary.lastActivityAt
                   ? `Last touched ${formatShortDate(summary.lastActivityAt)}`
                   : "Nothing in here yet"}

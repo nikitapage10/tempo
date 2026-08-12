@@ -66,7 +66,7 @@ export function Top8Rail({
         <p className="label-mono flex items-center gap-1.5">
           <Star className="size-3" /> Top 8
         </p>
-        {saving ? <span className="text-[10px] text-text-lo">Saving…</span> : null}
+        {saving ? <span className="text-[11px] text-text-lo">Saving…</span> : null}
       </div>
 
       {picked.length === 0 && !editable ? (

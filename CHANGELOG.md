@@ -4,6 +4,33 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-11
 
+- Changed (v0.117.0): everyday UI type sits a step larger — body copy, rail
+  links, buttons, labels, and the dense meta text under cards and counts —
+  so smaller lines are easier to read without changing the big titles.
+- Fixed (v0.116.2): dotted zeros are cleared across the rest of the app —
+  project stats, board counts, calendar figures, scene metrics, and other
+  number runs now use the same clean numeral face as the Today counts.
+- Changed (v0.116.1): Today’s banner lets more of the moving wash show
+  through, and Spectra behind it stays a little sharper so it reads as lines
+  again instead of smoke. Headers, rail links, and search sit a step heavier.
+  The dotted zeros on homepage counts were Jura’s — those numbers are back on
+  Inter so zeros stay clean.
+- Changed (v0.116.0): the whole workspace now uses one typeface — Jura —
+  including the rail, menus, body copy, and numbers. Hierarchy comes from
+  weight (lighter wordmark, regular UI, medium titles and labels, heavier
+  stats) instead of mixing families.
+- Fixed (v0.115.1): the Today / Artist / Stats heroes show Spectra moving
+  behind the glass again, without the stray bright line under the banner.
+  Custom banner photos stay more translucent so the frost and light still
+  read through.
+- Changed (v0.115.0): search and the notification buttons sit a little lower
+  under clearer top padding, stay clickable again, and sit closer to the page
+  content. Thin shader lines under page titles and along the rail return while
+  the soft video wash keeps running behind everything else. Custom banner
+  photos on Today, Artist, and Stats keep a frosted glass feel instead of
+  sealing the panel shut. The Social globe dissolves into the wash without a
+  hard black frame around it, and type stays on the two-family system — Jura
+  for titles, Inter for everything else.
 - Fixed (v0.114.2): the populated Tracks catalog now sits inside the same
   darker glass depth as Calendar instead of placing its faint rows directly
   over the moving wash. Group colours, cursor lighting, and row interactions

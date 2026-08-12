@@ -39,7 +39,7 @@ export function StageRail({ stage, stages, itemCount, isOver, onOpen }: {
       <span className="relative order-2 min-w-0 flex-1 truncate font-display text-xs font-medium text-text-lo group-hover:text-text-hi lg:order-3 lg:flex-none lg:[text-orientation:mixed] lg:[writing-mode:vertical-rl]">
         {stage.name}
       </span>
-      <span className="relative order-1 rounded-chip bg-bg-3 px-1.5 py-0.5 font-mono text-[10px] tabular-nums text-text-mid lg:order-2">
+      <span className="relative order-1 rounded-chip bg-bg-3 px-1.5 py-0.5 font-mono text-[11px] tabular-nums text-text-mid lg:order-2">
         {itemCount}
       </span>
       <ChevronRight className="relative order-3 ml-auto size-3.5 text-text-lo/50 group-hover:text-ice lg:mt-auto lg:ml-0 lg:rotate-90" />

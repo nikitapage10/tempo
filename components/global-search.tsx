@@ -232,7 +232,7 @@ export function GlobalSearch({ className }: { className?: string }) {
             }}
             onFocus={() => setOpen(true)}
             onKeyDown={onKeyDown}
-            className="relative z-[1] h-10 w-full rounded-input border-none bg-bg-0 py-2 pl-10 pr-10 text-sm text-text-hi placeholder:text-text-lo focus:outline-none focus-visible:ring-0"
+            className="relative z-[1] h-10 w-full rounded-input border-none bg-bg-0 py-2 pl-10 pr-10 text-sm font-medium text-text-hi placeholder:font-medium placeholder:text-text-lo focus:outline-none focus-visible:ring-0"
           />
 
           <button
@@ -376,7 +376,7 @@ export function GlobalSearch({ className }: { className?: string }) {
                 key={group.category}
                 className="border-b border-line last:border-b-0"
               >
-                <h2 className="sticky top-0 bg-bg-1/95 px-3 py-1.5 font-data text-[10px] uppercase tracking-[0.08em] text-text-lo backdrop-blur-sm">
+                <h2 className="sticky top-0 bg-bg-1/95 px-3 py-1.5 font-data text-[11px] uppercase tracking-[0.08em] text-text-lo backdrop-blur-sm">
                   {group.label}
                 </h2>
                 <ul>
@@ -414,7 +414,7 @@ export function GlobalSearch({ className }: { className?: string }) {
                             <span className="block truncate text-sm text-text-hi">
                               {hit.title}
                             </span>
-                            <span className="block truncate font-data text-[11px] text-text-lo">
+                            <span className="block truncate font-data text-xs text-text-lo">
                               {hit.subtitle}
                             </span>
                           </span>

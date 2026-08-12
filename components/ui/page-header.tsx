@@ -29,7 +29,7 @@ export function PageHeader({
     <header className={cn("mb-5", className)}>
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
         <div className="min-w-0">
-          <h1 className="font-display text-2xl font-medium tracking-[0.025em] text-text-hi sm:text-[28px] sm:leading-tight">
+          <h1 className="font-display text-2xl font-semibold tracking-[0.02em] text-text-hi sm:text-[28px] sm:leading-tight">
             {title}
           </h1>
           {subtitle ? (

@@ -41,7 +41,7 @@ export function CalendarOverflowMenu({
   return (
     <HeaderMenu label="More" panelWidth={280}>
       <div>
-        <span className="label-mono text-[10px] text-text-lo/70">Scope</span>
+        <span className="label-mono text-[11px] text-text-lo/70">Scope</span>
         <select
           value={scope}
           onChange={(event) => onScopeChange(event.target.value as "space" | "all")}
@@ -65,13 +65,13 @@ export function CalendarOverflowMenu({
       </label>
 
       <div className="border-t border-line/60 pt-2">
-        <span className="label-mono text-[10px] text-text-lo/70">Calendar settings</span>
+        <span className="label-mono text-[11px] text-text-lo/70">Calendar settings</span>
         <label className="mt-1.5 flex items-center justify-between gap-2 text-xs text-text-hi">
           Week numbers
           <input type="checkbox" checked={showWeekNumbers} onChange={(event) => onShowWeekNumbersChange(event.target.checked)} className="size-4 accent-[var(--ice)]" />
         </label>
         <div className="mt-2">
-          <span className="text-[11px] text-text-lo">First day of week</span>
+          <span className="text-xs text-text-lo">First day of week</span>
           <select
             value={weekStartsMonday ? "monday" : "sunday"}
             onChange={(event) => onWeekStartsMondayChange(event.target.value === "monday")}
@@ -83,7 +83,7 @@ export function CalendarOverflowMenu({
           </select>
         </div>
         <div className="mt-2">
-          <span className="text-[11px] text-text-lo">Display timezone</span>
+          <span className="text-xs text-text-lo">Display timezone</span>
           <select
             value={displayTimezone}
             onChange={(event) => onDisplayTimezoneChange(event.target.value)}
@@ -100,7 +100,7 @@ export function CalendarOverflowMenu({
       </div>
 
       <div className="border-t border-line/60 pt-2">
-        <span className="label-mono text-[10px] text-text-lo/70">Export</span>
+        <span className="label-mono text-[11px] text-text-lo/70">Export</span>
         <div className="mt-1.5 flex gap-1.5">
           <Button type="button" size="sm" variant="ghost" onClick={() => exportCalendarCsv(items)}>
             CSV

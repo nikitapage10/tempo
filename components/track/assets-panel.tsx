@@ -93,7 +93,7 @@ export function AssetsPanel({ trackId }: AssetsPanelProps) {
 
   return (
     <section className="rounded-card border border-line bg-bg-1 p-4">
-      <h2 className="mb-3 font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+      <h2 className="mb-3 font-mono text-xs uppercase tracking-[0.08em] text-text-lo">
         Stems & assets
       </h2>
 
@@ -135,7 +135,7 @@ export function AssetsPanel({ trackId }: AssetsPanelProps) {
             {progress != null ? `${progress}%` : "Upload"}
           </Button>
         </div>
-        <p className="mt-2 text-[11px] text-text-lo">
+        <p className="mt-2 text-xs text-text-lo">
           Drop a file here. Artwork uploads set the track cover.
         </p>
         </>
@@ -157,7 +157,7 @@ export function AssetsPanel({ trackId }: AssetsPanelProps) {
               ASSET_KINDS.find((x) => x.value === k)?.label ?? k;
             return (
               <div key={k}>
-                <p className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.08em] text-text-lo">
+                <p className="mb-1.5 font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
                   {label}
                 </p>
                 <ul className="space-y-1.5">
@@ -168,7 +168,7 @@ export function AssetsPanel({ trackId }: AssetsPanelProps) {
                     >
                       <div className="min-w-0">
                         <p className="truncate text-xs text-text-hi">{a.name}</p>
-                        <p className="font-mono text-[10px] text-text-lo">
+                        <p className="font-mono text-[11px] text-text-lo">
                           {formatShortDate(a.created_at)} ·{" "}
                           {formatFileSize(a.file_size)}
                         </p>
@@ -183,7 +183,7 @@ export function AssetsPanel({ trackId }: AssetsPanelProps) {
                           <Download className="size-3.5" />
                         </button>
                         {confirmId === a.id ? (
-                          <span className="flex items-center gap-1 text-[10px]">
+                          <span className="flex items-center gap-1 text-[11px]">
                             <button
                               type="button"
                               className="text-warn hover:underline"

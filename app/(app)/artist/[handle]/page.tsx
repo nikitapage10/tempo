@@ -66,8 +66,9 @@ export default function ArtistProfileByHandlePage() {
 
   return (
     <div className="space-y-5">
-      <LfWindow className="glass relative overflow-hidden">
+      <div className="glass-hero relative overflow-hidden">
         <div className="absolute inset-0">
+          <LfWindow field className="absolute inset-0" aria-hidden />
           <div className="scrim-reveal absolute inset-0" aria-hidden />
           {profile.banner_url || profile.banner_color ? (
             <div className="absolute inset-0">
@@ -75,7 +76,7 @@ export default function ArtistProfileByHandlePage() {
                 <SignedImage
                   path={profile.banner_url}
                   alt=""
-                  className="absolute inset-0 size-full object-cover"
+                  className="absolute inset-0 size-full object-cover opacity-[0.22]"
                 />
               ) : (
                 <div
@@ -83,8 +84,8 @@ export default function ArtistProfileByHandlePage() {
                   className="absolute inset-0"
                   style={{
                     background: profile.banner_color_end
-                      ? `linear-gradient(125deg, ${profile.banner_color} 0%, ${profile.banner_color_end} 42%, var(--bg-0) 100%)`
-                      : `linear-gradient(180deg, ${profile.banner_color} 0%, var(--bg-0) 100%)`,
+                      ? `linear-gradient(125deg, ${profile.banner_color} 0%, ${profile.banner_color_end} 42%, transparent 100%)`
+                      : `linear-gradient(180deg, ${profile.banner_color} 0%, transparent 100%)`,
                   }}
                 />
               )}
@@ -93,7 +94,7 @@ export default function ArtistProfileByHandlePage() {
                 className="absolute inset-0"
                 style={{
                   background:
-                    "linear-gradient(180deg, rgb(10 10 12 / 0.55) 0%, rgb(10 10 12 / 0.8) 70%, var(--bg-0) 100%)",
+                    "linear-gradient(180deg, rgb(10 10 12 / 0.12) 0%, rgb(10 10 12 / 0.2) 55%, rgb(10 10 12 / 0.3) 100%)",
                 }}
               />
             </div>
@@ -181,7 +182,7 @@ export default function ArtistProfileByHandlePage() {
         </div>
 
         <FlareLine className="relative z-[1] mx-6 mb-6 max-w-[420px] opacity-60 sm:mx-8" />
-      </LfWindow>
+      </div>
 
       <ArtistProfileStoryView profile={profile} releasedTracks={releasedTracks} />
     </div>

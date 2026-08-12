@@ -91,7 +91,7 @@ export default function DownloadPage() {
                     <Download className="size-4" strokeWidth={1.75} />
                     {label}
                   </span>
-                  <span className="font-mono text-[11px] font-normal text-text-lo/80">
+                  <span className="font-mono text-xs font-normal text-text-lo/80">
                     {fileHint}
                   </span>
                 </a>
@@ -109,7 +109,7 @@ export default function DownloadPage() {
                   <Download className="size-4" strokeWidth={1.75} />
                   {label}
                 </span>
-                <span className="font-mono text-[11px] font-normal text-text-lo/80">
+                <span className="font-mono text-xs font-normal text-text-lo/80">
                   {fileHint}
                 </span>
               </Button>
@@ -124,7 +124,7 @@ export default function DownloadPage() {
       </section>
 
       <section className="panel space-y-4 p-6 sm:p-8">
-        <h2 className="font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+        <h2 className="font-mono text-xs uppercase tracking-[0.08em] text-text-lo">
           What the desktop app adds
         </h2>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -143,7 +143,7 @@ export default function DownloadPage() {
       </section>
 
       <section className="panel space-y-3 p-6 sm:p-8">
-        <h2 className="font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+        <h2 className="font-mono text-xs uppercase tracking-[0.08em] text-text-lo">
           Beta install notice
         </h2>
         <p className="text-sm leading-relaxed text-text-lo">

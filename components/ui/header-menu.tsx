@@ -98,14 +98,14 @@ export function HeaderMenu({
             )}
           >
             <div className="mb-2 flex items-center justify-between gap-2">
-              <span className="label-mono text-[10px] text-text-lo/70">
+              <span className="label-mono text-[11px] text-text-lo/70">
                 {label}
               </span>
               {active && onClear ? (
                 <button
                   type="button"
                   onClick={() => onClear()}
-                  className="text-[11px] text-ice hover:underline"
+                  className="text-xs text-ice hover:underline"
                 >
                   Clear
                 </button>

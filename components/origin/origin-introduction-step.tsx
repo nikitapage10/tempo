@@ -118,7 +118,7 @@ export function OriginIntroductionStep({
           <ChevronLeft className="size-3.5" /> Back
         </button>
         <div className="flex flex-col gap-3">
-        <p className="text-[10px] uppercase tracking-[0.28em] text-text-lo/70">
+        <p className="text-[11px] uppercase tracking-[0.28em] text-text-lo/70">
           Signal / in your own words
         </p>
         {voiceStarted ? (

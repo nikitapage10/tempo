@@ -161,7 +161,7 @@ export function ReleaseTrackRow({
           {master ? (
             <span
               className={cn(
-                "rounded-chip border px-1.5 py-0.5 font-mono text-[10px]",
+                "rounded-chip border px-1.5 py-0.5 font-mono text-[11px]",
                 masterWarning
                   ? "border-warn/30 bg-warn/10 text-warn"
                   : "border-ok/30 bg-ok/10 text-ok"
@@ -171,13 +171,13 @@ export function ReleaseTrackRow({
               {masterWarning ? "Master ≠ current" : "Master ✓"}
             </span>
           ) : (
-            <span className="rounded-chip border border-line bg-bg-1 px-1.5 py-0.5 font-mono text-[10px] text-text-lo">
+            <span className="rounded-chip border border-line bg-bg-1 px-1.5 py-0.5 font-mono text-[11px] text-text-lo">
               No master
             </span>
           )}
           <span
             className={cn(
-              "rounded-chip border px-1.5 py-0.5 font-mono text-[10px]",
+              "rounded-chip border px-1.5 py-0.5 font-mono text-[11px]",
               track.artwork_url
                 ? "border-ok/30 bg-ok/10 text-ok"
                 : "border-line bg-bg-1 text-text-lo"
@@ -189,7 +189,7 @@ export function ReleaseTrackRow({
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="shrink-0 rounded-input px-2 py-1 text-[11px] text-ice hover:bg-ice/10"
+          className="shrink-0 rounded-input px-2 py-1 text-xs text-ice hover:bg-ice/10"
           aria-expanded={open}
         >
           {open ? "Close" : "Edit metadata"}
@@ -197,7 +197,7 @@ export function ReleaseTrackRow({
       </div>
 
       {missing.length > 0 ? (
-        <p className="border-t border-line px-3 py-1.5 text-[11px] text-text-lo">
+        <p className="border-t border-line px-3 py-1.5 text-xs text-text-lo">
           Missing: {missing.join(", ")}
         </p>
       ) : null}
@@ -228,7 +228,7 @@ export function ReleaseTrackRow({
                 className="mt-1 font-mono"
               />
               {isrcLooksOff ? (
-                <p className="mt-1 text-[11px] text-amber">
+                <p className="mt-1 text-xs text-amber">
                   Doesn’t look like a standard ISRC — double check with your distributor.
                 </p>
               ) : null}

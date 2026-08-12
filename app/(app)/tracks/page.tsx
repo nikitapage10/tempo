@@ -939,7 +939,7 @@ export default function TracksPage() {
                           <span
                             key={preset.id}
                             className={cn(
-                              "inline-flex items-center gap-0.5 rounded-chip border text-[11px]",
+                              "inline-flex items-center gap-0.5 rounded-chip border text-xs",
                               sortSelection === `preset:${preset.id}`
                                 ? "border-ice/40 bg-ice/15 text-ice"
                                 : "border-line bg-bg-2 text-text-lo"
@@ -974,7 +974,7 @@ export default function TracksPage() {
                         setSaveName("");
                         setSaveOpen(true);
                       }}
-                      className="self-start text-[11px] text-ice hover:underline"
+                      className="self-start text-xs text-ice hover:underline"
                     >
                       Save current Custom order…
                     </button>
@@ -1188,7 +1188,7 @@ export default function TracksPage() {
               setStageFilter("all");
               setAttentionFilter("all");
             }}
-            className="mt-2 text-[11px] text-ice hover:underline"
+            className="mt-2 text-xs text-ice hover:underline"
           >
             Clear filters
           </button>
@@ -1196,7 +1196,7 @@ export default function TracksPage() {
       ) : (
         <section className="panel p-3 sm:p-4">
           {sortSelection === "custom" && !selecting ? (
-            <p className="mb-2 text-[11px] text-text-lo/70">
+            <p className="mb-2 text-xs text-text-lo/70">
               {showGroups
                 ? "Drag to rearrange or move between groups · "
                 : "Drag to rearrange · "}
@@ -1226,7 +1226,7 @@ export default function TracksPage() {
             </p>
           ) : null}
           {activePreset ? (
-            <p className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-text-lo/70">
+            <p className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-lo/70">
               <span>“{activePreset.name}”</span>
               <button
                 type="button"
@@ -1245,7 +1245,7 @@ export default function TracksPage() {
             </p>
           ) : null}
           {!isPresetSort(sortSelection) && sortSelection !== "custom" ? (
-            <p className="mb-2 text-[11px] text-text-lo/70">
+            <p className="mb-2 text-xs text-text-lo/70">
               Sorted by{" "}
               {BUILTIN_SORTS.find((o) => o.value === sortSelection)?.label}
             </p>
@@ -1451,7 +1451,7 @@ export default function TracksPage() {
 
           <div className="mt-4">
             <span className="label-mono">Color</span>
-            <p className="mt-1 text-[11px] text-text-lo/70">
+            <p className="mt-1 text-xs text-text-lo/70">
               Optional. Tints the group so it stands apart from the others.
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -1460,7 +1460,7 @@ export default function TracksPage() {
                 onClick={() => setGroupAccent(null)}
                 aria-pressed={groupAccent === null}
                 className={cn(
-                  "rounded-chip border px-2.5 py-1 text-[11px] transition-colors",
+                  "rounded-chip border px-2.5 py-1 text-xs transition-colors",
                   groupAccent === null
                     ? "border-text-hi/60 text-text-hi"
                     : "border-line text-text-lo hover:text-text-hi"
@@ -1490,7 +1490,7 @@ export default function TracksPage() {
                   so clicking Custom opens it immediately. */}
               <span
                 className={cn(
-                  "relative inline-flex rounded-chip border px-2.5 py-1 text-[11px] transition-colors",
+                  "relative inline-flex rounded-chip border px-2.5 py-1 text-xs transition-colors",
                   groupAccent === "custom"
                     ? "border-text-hi/60 text-text-hi"
                     : "border-line text-text-lo hover:text-text-hi"
@@ -1765,7 +1765,7 @@ function SortableTrackRow({
                 )}
                 title={track.momentum}
               />
-              <span className="hidden shrink-0 truncate text-[11px] text-text-lo sm:inline sm:max-w-[7rem]">
+              <span className="hidden shrink-0 truncate text-xs text-text-lo sm:inline sm:max-w-[7rem]">
                 {stageLabel}
               </span>
             </button>
@@ -1863,19 +1863,19 @@ function SortableTrackRow({
                 <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
                   <span
                     className={cn(
-                      "rounded-chip px-2 py-0.5 text-[11px]",
+                      "rounded-chip px-2 py-0.5 text-xs",
                       typeChipClass(track.type)
                     )}
                   >
                     {formatTrackType(track.type)}
                   </span>
                   {meta.length > 0 ? (
-                    <span className="font-mono text-[11px] text-text-lo">
+                    <span className="font-mono text-xs text-text-lo">
                       {meta.join(" · ")}
                     </span>
                   ) : null}
                 </span>
-                <span className="mt-1.5 block truncate text-[11px]">
+                <span className="mt-1.5 block truncate text-xs">
                   {blocked ? (
                     <span className="text-warn">
                       Blocked — {track.blocked_reason}

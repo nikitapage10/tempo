@@ -33,7 +33,7 @@ function Identity({ scene, compact = false }: { scene: Scene; compact?: boolean 
           <h1 className="truncate font-display text-xl font-semibold tracking-tight text-text-hi sm:text-3xl">
             {scene.name}
           </h1>
-          <span className="rounded-chip border border-white/15 bg-black/25 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.12em] text-white/70 backdrop-blur-sm">
+          <span className="rounded-chip border border-white/15 bg-black/25 px-2 py-0.5 text-[11px] font-medium uppercase tracking-[0.12em] text-white/70 backdrop-blur-sm">
             {KIND_LABEL[scene.kind]}
           </span>
         </div>

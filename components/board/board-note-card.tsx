@@ -103,14 +103,14 @@ export function BoardNoteCard({
             value={body}
             onChange={(e) => setBody(e.target.value)}
             rows={compact ? 2 : 3}
-            className="w-full resize-none rounded-input border border-line bg-bg-2 px-2 py-1.5 text-[11px] text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+            className="w-full resize-none rounded-input border border-line bg-bg-2 px-2 py-1.5 text-xs text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
             placeholder="Optional details…"
             aria-label="Note body"
           />
           <div className="flex justify-end gap-2">
             <button
               type="button"
-              className="text-[10px] text-text-lo/50 hover:text-text-lo"
+              className="text-[11px] text-text-lo/50 hover:text-text-lo"
               onClick={() => {
                 setTitle(note.title);
                 setBody(note.body ?? "");
@@ -121,7 +121,7 @@ export function BoardNoteCard({
             </button>
             <button
               type="button"
-              className="text-[10px] text-ice hover:underline"
+              className="text-[11px] text-ice hover:underline"
               onClick={commit}
             >
               Save
@@ -150,7 +150,7 @@ export function BoardNoteCard({
             <p
               className={cn(
                 "mt-1 whitespace-pre-wrap text-text-lo",
-                compact ? "text-[10px] line-clamp-2" : "text-[11px] line-clamp-4"
+                compact ? "text-[11px] line-clamp-2" : "text-xs line-clamp-4"
               )}
             >
               {note.body}
@@ -158,12 +158,12 @@ export function BoardNoteCard({
           ) : null}
           {!isDragOverlay ? (
             <div className="mt-1.5 flex items-center justify-between gap-2">
-              <span className="text-[9px] uppercase tracking-wide text-text-lo/35">
+              <span className="text-[10px] uppercase tracking-wide text-text-lo/35">
                 Note
               </span>
               <button
                 type="button"
-                className="text-[10px] text-text-lo/40 hover:text-warn"
+                className="text-[11px] text-text-lo/40 hover:text-warn"
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -174,7 +174,7 @@ export function BoardNoteCard({
               </button>
             </div>
           ) : (
-            <p className="mt-1 text-[9px] uppercase tracking-wide text-text-lo/35">
+            <p className="mt-1 text-[10px] uppercase tracking-wide text-text-lo/35">
               Note
             </p>
           )}

@@ -88,7 +88,7 @@ export function SceneCard({ scene, href }: { scene: Scene; href?: string }) {
             {scene.member_count} {scene.member_count === 1 ? "member" : "members"}
           </span>
           {scene.my_status === "pending" ? (
-            <span className={cn("rounded-chip border border-line px-2 py-0.5 text-[11px]")}>
+            <span className={cn("rounded-chip border border-line px-2 py-0.5 text-xs")}>
               Waiting on approval
             </span>
           ) : null}

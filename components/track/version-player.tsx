@@ -211,7 +211,7 @@ export const VersionPlayer = React.forwardRef<VersionPlayerHandle, VersionPlayer
         return (
           <section className="panel p-5">
             <div className="mb-3">
-              <h2 className="font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+              <h2 className="font-mono text-xs uppercase tracking-[0.08em] text-text-lo">
                 Player
               </h2>
               <p className="mt-1 text-xs text-text-lo">Playing the released track from Spotify.</p>
@@ -227,7 +227,7 @@ export const VersionPlayer = React.forwardRef<VersionPlayerHandle, VersionPlayer
       }
       return (
         <section className="rounded-card border border-dashed border-line bg-bg-1/60 p-4">
-          <h2 className="mb-2 font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+          <h2 className="mb-2 font-mono text-xs uppercase tracking-[0.08em] text-text-lo">
             Player
           </h2>
           <p className="text-sm text-text-lo">
@@ -243,7 +243,7 @@ export const VersionPlayer = React.forwardRef<VersionPlayerHandle, VersionPlayer
     return (
       <section className="panel p-5">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+          <h2 className="font-mono text-xs uppercase tracking-[0.08em] text-text-lo">
             Player
           </h2>
           <label className="flex items-center gap-2 text-xs text-text-lo">
@@ -361,7 +361,7 @@ export const VersionPlayer = React.forwardRef<VersionPlayerHandle, VersionPlayer
             </button>
           ) : null}
           {selected?.is_current ? (
-            <span className="ml-auto font-mono text-[11px] text-amber">
+            <span className="ml-auto font-mono text-xs text-amber">
               current
             </span>
           ) : null}

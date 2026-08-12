@@ -113,7 +113,7 @@ function ProfileContent({ profile }: { profile: PublicArtistProfile }) {
       />
 
       <FlareLine className="max-w-[240px] opacity-50" />
-      <p className="text-center text-[11px] text-text-lo">Made with TEMPO</p>
+      <p className="text-center text-xs text-text-lo">Made with TEMPO</p>
     </div>
   );
 }

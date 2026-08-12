@@ -81,7 +81,7 @@ export function OriginDirectionStep({
         </button>
 
         <div className="flex flex-col gap-3">
-          <p className="text-[10px] uppercase tracking-[0.28em] text-text-lo/70">
+          <p className="text-[11px] uppercase tracking-[0.28em] text-text-lo/70">
             Direction / 02
           </p>
           <MorphingText

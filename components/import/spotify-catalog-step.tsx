@@ -199,7 +199,7 @@ export function SpotifyCatalogStep({
                         <span className="block truncate text-sm font-medium text-text-hi">
                           {artist.name}
                         </span>
-                        <span className="font-data text-[11px] text-[#1DB954]">
+                        <span className="font-data text-xs text-[#1DB954]">
                           Spotify artist
                         </span>
                       </span>
@@ -222,7 +222,7 @@ export function SpotifyCatalogStep({
                   <p className="text-sm font-medium text-text-hi">
                     Connected as {preview.artist.name}
                   </p>
-                  <p className="font-data text-[11px] text-text-lo">
+                  <p className="font-data text-xs text-text-lo">
                     {preview.catalogTrackCount} released Spotify track
                     {preview.catalogTrackCount === 1 ? "" : "s"} found
                   </p>
@@ -291,7 +291,7 @@ export function SpotifyCatalogStep({
                         <p className="mt-0.5 text-xs text-text-lo">No confident match</p>
                       )}
                       {selected ? (
-                        <div className="mt-1 flex flex-wrap items-center gap-2 font-data text-[10px]">
+                        <div className="mt-1 flex flex-wrap items-center gap-2 font-data text-[11px]">
                           <span className={selected.confidence === "high" ? "text-ok" : "text-amber"}>
                             {selected.reason}
                           </span>

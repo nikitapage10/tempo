@@ -169,7 +169,7 @@ export function TrackWorkPanel({
           >
             {tab.label}
             {tab.badge ? (
-              <span className="rounded-chip bg-amber/15 px-1.5 py-0.5 font-mono text-[10px] text-amber">
+              <span className="rounded-chip bg-amber/15 px-1.5 py-0.5 font-mono text-[11px] text-amber">
                 {tab.badge}
               </span>
             ) : null}

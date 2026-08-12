@@ -17,14 +17,33 @@ export type LfHole = {
   w: number;
   h: number;
   rx?: number;
+  /** Large hero / reveal windows that should show Spectra through glass. */
+  field?: boolean;
 };
 
 type Ctx = {
   upsertHole: (hole: LfHole) => void;
   removeHole: (id: string) => void;
+  /** Live window rects — used to cut matching slits in the video backdrop. */
+  holes: LfHole[];
 };
 
 const LfWindowsContext = React.createContext<Ctx | null>(null);
+
+/** Thin slits — page headers, rail ticks, dividers. */
+export function isLfSlit(hole: LfHole): boolean {
+  return (hole.h <= 8 && hole.w >= 12) || (hole.w <= 8 && hole.h >= 12);
+}
+
+/** Holes that must be cut out of the video so the root Spectra field shows. */
+export function shouldCutVideoForHole(hole: LfHole): boolean {
+  return !!hole.field || isLfSlit(hole);
+}
+
+/** Read registered lightfield windows (empty outside the provider). */
+export function useLfHoles(): LfHole[] {
+  return React.useContext(LfWindowsContext)?.holes ?? [];
+}
 
 let holeSeq = 0;
 
@@ -57,7 +76,8 @@ export function LightfieldWindowsProvider({
         existing.y === hole.y &&
         existing.w === hole.w &&
         existing.h === hole.h &&
-        existing.rx === hole.rx
+        existing.rx === hole.rx &&
+        existing.field === hole.field
       ) {
         return prev;
       }
@@ -76,9 +96,11 @@ export function LightfieldWindowsProvider({
     });
   }, []);
 
+  const list = React.useMemo(() => Array.from(holes.values()), [holes]);
+
   const ctx = React.useMemo(
-    () => ({ upsertHole, removeHole }),
-    [upsertHole, removeHole]
+    () => ({ upsertHole, removeHole, holes: list }),
+    [upsertHole, removeHole, list]
   );
 
   React.useEffect(() => {
@@ -86,7 +108,6 @@ export function LightfieldWindowsProvider({
     removeHoleRef.current = removeHole;
   }, [upsertHole, removeHole]);
 
-  const list = React.useMemo(() => Array.from(holes.values()), [holes]);
   const maskId = "tempo-lf-chrome-mask";
 
   return (
@@ -158,7 +179,8 @@ const removeHoleRef: { current: ((id: string) => void) | null } = {
  * The element itself should use `.lf-window` (transparent fill).
  */
 export function useLfWindow<T extends HTMLElement = HTMLDivElement>(
-  enabled = true
+  enabled = true,
+  field = false
 ) {
   const ref = React.useRef<T | null>(null);
   const idRef = React.useRef(`lf-hole-${++holeSeq}`);
@@ -175,13 +197,17 @@ export function useLfWindow<T extends HTMLElement = HTMLDivElement>(
     const publish = () => {
       const r = el.getBoundingClientRect();
       const radius = parseFloat(getComputedStyle(el).borderRadius) || 0;
+      // Inset large field windows by 1px so Spectra can't fringe outside the
+      // parent glass border and read as a stray line under the card.
+      const inset = field && r.width > 24 && r.height > 24 ? 1 : 0;
       upsertHoleRef.current?.({
         id: idRef.current,
-        x: r.left,
-        y: r.top,
-        w: r.width,
-        h: r.height,
-        rx: radius,
+        x: r.left + inset,
+        y: r.top + inset,
+        w: Math.max(0, r.width - inset * 2),
+        h: Math.max(0, r.height - inset * 2),
+        rx: Math.max(0, radius - inset),
+        field,
       });
     };
 
@@ -197,7 +223,7 @@ export function useLfWindow<T extends HTMLElement = HTMLDivElement>(
       window.removeEventListener("resize", publish);
       removeHoleRef.current?.(idRef.current);
     };
-  }, [enabled]);
+  }, [enabled, field]);
 
   return ref;
 }
@@ -206,13 +232,16 @@ export function useLfWindow<T extends HTMLElement = HTMLDivElement>(
 export function LfWindow({
   className,
   enabled = true,
+  field = false,
   children,
   style,
   ...rest
 }: React.HTMLAttributes<HTMLDivElement> & {
   enabled?: boolean;
+  /** Punch the video too so Spectra can wash a glass hero. */
+  field?: boolean;
 }) {
-  const ref = useLfWindow<HTMLDivElement>(enabled);
+  const ref = useLfWindow<HTMLDivElement>(enabled, field);
   return (
     <div
       ref={ref}

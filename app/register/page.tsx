@@ -140,7 +140,7 @@ function RegisterForm() {
           <div>
             <label
               htmlFor="email"
-              className="mb-1.5 block font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo"
+              className="mb-1.5 block font-mono text-xs uppercase tracking-[0.08em] text-text-lo"
             >
               Email
             </label>
@@ -159,7 +159,7 @@ function RegisterForm() {
           <div>
             <label
               htmlFor="password"
-              className="mb-1.5 block font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo"
+              className="mb-1.5 block font-mono text-xs uppercase tracking-[0.08em] text-text-lo"
             >
               Password
             </label>
@@ -192,7 +192,7 @@ function RegisterForm() {
           <div>
             <label
               htmlFor="confirm"
-              className="mb-1.5 block font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo"
+              className="mb-1.5 block font-mono text-xs uppercase tracking-[0.08em] text-text-lo"
             >
               Confirm password
             </label>
@@ -211,7 +211,7 @@ function RegisterForm() {
           <div>
             <label
               htmlFor="invite"
-              className="mb-1.5 block font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo"
+              className="mb-1.5 block font-mono text-xs uppercase tracking-[0.08em] text-text-lo"
             >
               Invite code
             </label>

@@ -67,7 +67,7 @@ export function CalendarMonthView({
           const labels = weekStartsMonday ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
           const label = labels[index];
           return (
-            <div key={label} className="px-1 py-2 text-center font-mono text-[9px] uppercase tracking-[0.08em] text-text-lo sm:text-[10px]">
+            <div key={label} className="px-1 py-2 text-center font-mono text-[10px] uppercase tracking-[0.08em] text-text-lo sm:text-[11px]">
               {label}
             </div>
           );
@@ -111,7 +111,7 @@ export function CalendarMonthView({
                   onClick={() => onSelectDate(date)}
                   aria-label={formatDayHeading(date)}
                   className={cn(
-                    "relative flex size-6 items-center justify-center rounded-input font-mono text-[10px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice sm:text-[11px]",
+                    "relative flex size-6 items-center justify-center rounded-input font-mono text-[11px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice sm:text-xs",
                     outside ? "text-text-lo/45" : "text-text-lo",
                     isToday && "text-ice",
                     selected && "bg-bg-2 text-text-hi"
@@ -152,7 +152,7 @@ export function CalendarMonthView({
                   <button
                     type="button"
                     onClick={() => onMore(date)}
-                    className="block w-full truncate px-1 text-left text-[10px] text-text-lo hover:text-ice focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+                    className="block w-full truncate px-1 text-left text-[11px] text-text-lo hover:text-ice focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
                   >
                     +{dateItems.length - visible.length} more
                   </button>

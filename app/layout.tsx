@@ -5,6 +5,7 @@ import { FirstOpenReveal } from "@/components/origin/first-open-reveal";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
+/* Jura carries the UI; Inter is kept only for numerals (Jura's dotted zero). */
 const jura = Jura({
   subsets: ["latin"],
   variable: "--font-jura",
@@ -15,7 +16,7 @@ const jura = Jura({
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
-  weight: ["400", "500"],
+  weight: ["400", "500", "600"],
   display: "swap",
 });
 
@@ -44,10 +45,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${jura.variable} ${inter.variable}`}
-    >
+    <html lang="en" className={`${jura.variable} ${inter.variable}`}>
       <body>
         <Providers>
           <LightfieldRoot>{children}</LightfieldRoot>

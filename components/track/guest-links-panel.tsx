@@ -55,7 +55,7 @@ export function GuestLinksPanel({
   if (!versions.length) {
     return (
       <section className="rounded-card border border-dashed border-line bg-bg-1/60 p-4">
-        <h2 className="mb-2 font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+        <h2 className="mb-2 font-mono text-xs uppercase tracking-[0.08em] text-text-lo">
           Guest review links
         </h2>
         <p className="text-sm text-text-lo">
@@ -105,7 +105,7 @@ export function GuestLinksPanel({
   return (
     <section className="rounded-card border border-line bg-bg-1 p-4">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <h2 className="font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+        <h2 className="font-mono text-xs uppercase tracking-[0.08em] text-text-lo">
           Guest review links
         </h2>
         {!open ? (
@@ -218,7 +218,7 @@ export function GuestLinksPanel({
           </div>
           <button
             type="button"
-            className="mt-2 text-[11px] text-text-lo hover:text-text-hi"
+            className="mt-2 text-xs text-text-lo hover:text-text-hi"
             onClick={() => setFreshLink(null)}
           >
             Done
@@ -251,7 +251,7 @@ export function GuestLinksPanel({
                       </span>
                       <StatusChip status={status} />
                     </div>
-                    <p className="mt-1 font-mono text-[11px] text-text-lo">
+                    <p className="mt-1 font-mono text-xs text-text-lo">
                       {version ? `v${version.version_no} · ` : ""}
                       created {formatShortDate(link.created_at)}
                       {link.expires_at
@@ -261,14 +261,14 @@ export function GuestLinksPanel({
                         ? ` · last viewed ${formatShortDate(link.last_accessed_at)}`
                         : ""}
                     </p>
-                    <p className="mt-0.5 text-[11px] text-text-lo">
+                    <p className="mt-0.5 text-xs text-text-lo">
                       {link.allow_comments ? "Comments on" : "Comments off"} ·{" "}
                       {link.allow_download ? "Download on" : "Download off"}
                     </p>
                   </div>
                   {status === "active" ? (
                     confirmRevokeId === link.id ? (
-                      <span className="flex shrink-0 items-center gap-1 text-[11px]">
+                      <span className="flex shrink-0 items-center gap-1 text-xs">
                         <span className="text-warn">Revoke?</span>
                         <button
                           type="button"
@@ -299,7 +299,7 @@ export function GuestLinksPanel({
                     ) : (
                       <button
                         type="button"
-                        className="shrink-0 rounded-input px-2 py-1 text-[11px] text-text-lo hover:bg-bg-1 hover:text-warn"
+                        className="shrink-0 rounded-input px-2 py-1 text-xs text-text-lo hover:bg-bg-1 hover:text-warn"
                         onClick={() => setConfirmRevokeId(link.id)}
                       >
                         Revoke
@@ -320,7 +320,7 @@ function StatusChip({ status }: { status: "active" | "expired" | "revoked" }) {
   return (
     <span
       className={cn(
-        "rounded-chip px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider",
+        "rounded-chip px-1.5 py-0.5 font-mono text-[11px] uppercase tracking-wider",
         status === "active" && "bg-ok/15 text-ok",
         status === "expired" && "bg-text-lo/15 text-text-lo",
         status === "revoked" && "bg-warn/15 text-warn"

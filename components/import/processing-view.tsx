@@ -74,7 +74,7 @@ export function ProcessingView({ sources, phase, warnings }: ProcessingViewProps
                 >
                   {source.label || PHASE_COPY[source.kind]}
                 </span>
-                <span className="font-data shrink-0 text-[11px] text-text-lo">
+                <span className="font-data shrink-0 text-xs text-text-lo">
                   {isWorking
                     ? PHASE_COPY[source.kind]
                     : isDone
@@ -100,7 +100,7 @@ export function ProcessingView({ sources, phase, warnings }: ProcessingViewProps
         {warnings.length > 0 ? (
           <ul className="mt-5 space-y-1 border-t border-line pt-4">
             {warnings.map((warning, i) => (
-              <li key={i} className="text-[11px] text-text-lo">
+              <li key={i} className="text-xs text-text-lo">
                 {warning}
               </li>
             ))}

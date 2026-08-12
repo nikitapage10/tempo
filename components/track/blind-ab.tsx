@@ -226,7 +226,7 @@ export function BlindAB({
           className="w-full accent-[var(--ice)]"
           aria-label="Shared seek position"
         />
-        <p className="font-mono text-[11px] text-text-lo">
+        <p className="font-mono text-xs text-text-lo">
           {formatDuration(time)} / {formatDuration(maxDuration)}
         </p>
       </div>
@@ -290,7 +290,7 @@ export function BlindAB({
               </>
             )}
           </p>
-          <p className="font-mono text-[11px] text-text-lo">
+          <p className="font-mono text-xs text-text-lo">
             A was v{versionA.version_no} · B was v{versionB.version_no}
           </p>
           {!decisionOpen ? (
@@ -365,7 +365,7 @@ function BlindSide({
           Bounce {label}
         </span>
         {isChoice ? (
-          <span className="font-mono text-[10px] uppercase tracking-wider text-ice">
+          <span className="font-mono text-[11px] uppercase tracking-wider text-ice">
             your pick
           </span>
         ) : null}

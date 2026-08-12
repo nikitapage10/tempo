@@ -88,7 +88,7 @@ export function SceneManageShell({
             <Icon className="size-3.5" />
             {label}
             {count > 0 ? (
-              <span className="min-w-4 rounded-full bg-amber/15 px-1.5 py-0.5 text-center font-mono text-[10px] font-semibold leading-4 text-amber">
+              <span className="min-w-4 rounded-full bg-amber/15 px-1.5 py-0.5 text-center font-mono text-[11px] font-semibold leading-4 text-amber">
                 {count > 99 ? "99+" : count}
               </span>
             ) : null}

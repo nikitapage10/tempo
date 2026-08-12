@@ -168,7 +168,7 @@ export function CommentsPanel({
   if (!versions.length) {
     return (
       <section className="rounded-card border border-dashed border-line bg-bg-1/60 p-4">
-        <h2 className="mb-2 font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+        <h2 className="mb-2 font-mono text-xs uppercase tracking-[0.08em] text-text-lo">
           Comments
         </h2>
         <p className="text-sm text-text-lo">
@@ -182,7 +182,7 @@ export function CommentsPanel({
     <AttributionContext.Provider value={attributionFor}>
     <section className="rounded-card border border-line bg-bg-1 p-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+        <h2 className="font-mono text-xs uppercase tracking-[0.08em] text-text-lo">
           Comments
         </h2>
         <div className="flex gap-1.5">
@@ -239,7 +239,7 @@ export function CommentsPanel({
                 <button
                   type="button"
                   onClick={() => setResolvedOpen((v) => !v)}
-                  className="flex items-center gap-1 text-[11px] text-text-lo hover:text-text-hi"
+                  className="flex items-center gap-1 text-xs text-text-lo hover:text-text-hi"
                   aria-expanded={resolvedOpen}
                 >
                   <ChevronDown
@@ -473,7 +473,7 @@ function CommentRow({
 
   return (
     <article className="text-sm">
-      <div className="flex flex-wrap items-center gap-1.5 font-mono text-[11px] text-text-lo">
+      <div className="flex flex-wrap items-center gap-1.5 font-mono text-xs text-text-lo">
         {comment.timestamp_sec != null ? (
           <button
             type="button"
@@ -533,7 +533,7 @@ function CommentRow({
       )}
 
       {!editing ? (
-        <div className="mt-1.5 flex flex-wrap items-center gap-3 text-[11px]">
+        <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs">
           <button
             type="button"
             className="text-text-lo hover:text-ice"
@@ -611,7 +611,7 @@ function ReplyComposer({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="mt-2 flex items-center gap-1 text-[11px] text-text-lo hover:text-ice"
+        className="mt-2 flex items-center gap-1 text-xs text-text-lo hover:text-ice"
       >
         <ReplyIcon className="size-3" />
         Reply

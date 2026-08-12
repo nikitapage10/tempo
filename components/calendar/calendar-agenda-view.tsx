@@ -58,7 +58,7 @@ export function CalendarAgendaView({
       <aside className="glass-quiet h-fit p-4 xl:sticky xl:top-24">
         <div className="mb-3 flex items-baseline justify-between gap-2">
           <h2 className="label-mono text-warn">Overdue</h2>
-          <span className="font-mono text-[11px] text-text-lo">{overdue.length}</span>
+          <span className="font-mono text-xs text-text-lo">{overdue.length}</span>
         </div>
         {overdue.length ? (
           <div className="space-y-2">
