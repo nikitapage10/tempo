@@ -52,11 +52,11 @@ export function supportsDesktopLink(version: string): boolean {
  * highest reported app version. Stops an older leftover row from forcing
  * "Update TEMPO Desktop" after a newer install has checked in.
  */
-export function pickActiveDesktopDevice(
-  devices: DesktopDeviceRef[],
+export function pickActiveDesktopDevice<T extends DesktopDeviceRef>(
+  devices: T[],
   nowMs = Date.now(),
   recentWindowMs = 30 * 24 * 60 * 60 * 1000
-): DesktopDeviceRef | undefined {
+): T | undefined {
   const cutoff = nowMs - recentWindowMs;
   const recent = devices.filter((d) => {
     const seen = Date.parse(d.last_seen_at);
