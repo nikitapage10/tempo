@@ -13,7 +13,16 @@ export type AdminMember = { id: string; email: string; createdAt: string; lastSi
 export type AdminUserDetail = AdminMember & { emailConfirmedAt: string | null; assistant: { messages: number; escalations: number }; invite: { code: string; memberRole: AdminInviteRole; redeemedAt: string } | null; accountEvents: { id: string; event_type: string; created_at: string }[] };
 export type AdminInviteRole = "artist" | "team_member" | "administrator";
 export type AdminInvite = { id: string; code: string; email: string | null; note: string | null; member_role: AdminInviteRole; welcome_note: string | null; created_at: string; expires_at: string | null; max_uses: number; used_count: number; revoked_at: string | null; last_sent_at: string | null; send_count: number; email_provider_id: string | null; last_send_error: string | null };
-export type InviteDeliveryConfig = { configured: boolean; apiKeyPresent: boolean; fromPresent: boolean; from: string | null; domain: string | null };
+export type InviteDeliveryConfig = {
+  configured: boolean;
+  apiKeyPresent: boolean;
+  fromPresent: boolean;
+  from: string | null;
+  domain: string | null;
+  siteHost: string | null;
+  linkDomainAligned: boolean;
+  replyTo: string | null;
+};
 export type AdminReport = { id: string; target_type: "post" | "post_comment" | "profile"; target_id: string; reason: string; details: string | null; status: string; created_at: string; target: Record<string, unknown> | null };
 export type AdminAuditEntry = { id: string; admin_user_id: string | null; action: string; target_type: string; target_id: string; meta: Record<string, unknown>; created_at: string };
 import type { MessageAttachment } from "@/lib/types";

@@ -65,10 +65,42 @@ For v0.63.3 realtime messaging, run `migrations/040_realtime_inbox.sql` after
 039 so each signed-in user can receive their private notification changefeed.
 
 For v0.60.0, run `migrations/036_support_conversations.sql` before deploying
-the matching support-reply code. For invitation email, production also needs
-both `RESEND_API_KEY` and `INVITE_FROM_EMAIL`; the latter must use a domain
-whose sending status is **Verified** in Resend. Redeploy after changing either
-environment variable.
+the matching support-reply code.
+
+## Invitation email (Resend)
+
+Production needs:
+
+- `RESEND_API_KEY`
+- `INVITE_FROM_EMAIL` — address on a domain whose status is **Verified** in
+  Resend (display name optional; bare addresses are sent as `TEMPO <addr>`)
+- Optional `INVITE_REPLY_TO_EMAIL` — defaults to the From address so recipients
+  can reply into your inbox (avoid `no-reply@…`)
+
+Redeploy after changing any of these.
+
+### Link domain must match the sender
+
+Invite and Pulse links use `NEXT_PUBLIC_SITE_URL` (default
+`https://mytempo.dev`). Inbox providers spam-filter mail when those URLs sit on
+a different domain than the From address. Admin → Invites warns when they
+diverge.
+
+Pick **one** alignment path:
+
+1. **Preferred (current product domain):** Verify `mytempo.dev` in Resend, set
+   `INVITE_FROM_EMAIL` to something like `TEMPO <connect@mytempo.dev>`, leave
+   `NEXT_PUBLIC_SITE_URL=https://mytempo.dev`.
+2. **Keep sending from another domain (e.g. `nikita.page`):** Add a Vercel
+   host under that domain (e.g. `app.nikita.page`), set
+   `NEXT_PUBLIC_SITE_URL=https://app.nikita.page`, and update Supabase Auth
+   redirect allowlists the same way as `OAUTH-SETUP.md` for `mytempo.dev`.
+
+Do **not** merge Resend into the root Outlook SPF on a dual-use domain —
+Resend’s return-path SPF lives on the `send` subdomain. Leave open/click
+tracking off until you configure a **custom** tracking subdomain in Resend
+(shared tracking domains hurt deliverability).
+
 The Supabase database is production from day one — it holds real music data.
 
 1. Cursor writes schema changes as numbered SQL files in `/migrations`

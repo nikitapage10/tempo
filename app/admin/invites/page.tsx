@@ -76,7 +76,21 @@ export default function AdminInvitesPage() {
     <PageHeader title="Invites" subtitle="Send a designed, one-click invitation with a unique code—or create a link to share yourself." actions={<Button size="sm" onClick={() => setOpen(true)}><Plus /> New invite</Button>} />
     {invites.isLoading ? <div className="panel h-64 animate-pulse" /> : null}
     {invites.error ? <div className="panel-quiet p-4 text-sm text-warn">{invites.error.message}</div> : null}
-    {invites.data ? <div className="flex items-start gap-3 rounded-card border border-line bg-bg-1 px-4 py-3">{invites.data.deliveryConfig.configured ? <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-ok"/> : <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warn"/>}<div><p className="text-sm text-text-hi">{invites.data.deliveryConfig.configured ? "Email delivery is configured" : "Email delivery needs configuration"}</p><p className="mt-0.5 text-xs leading-relaxed text-text-lo">{invites.data.deliveryConfig.configured ? <>Sending from <span className="text-text-hi">{invites.data.deliveryConfig.from}</span>. Resend must show <span className="text-text-hi">{invites.data.deliveryConfig.domain}</span> as verified.</> : <>Add both <span className="text-text-hi">RESEND_API_KEY</span> and <span className="text-text-hi">INVITE_FROM_EMAIL</span> to the production environment, then redeploy.</>}</p></div></div> : null}
+    {invites.data ? <div className="flex items-start gap-3 rounded-card border border-line bg-bg-1 px-4 py-3">{invites.data.deliveryConfig.configured ? <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-ok"/> : <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warn"/>}<div><p className="text-sm text-text-hi">{invites.data.deliveryConfig.configured ? "Email delivery is configured" : "Email delivery needs configuration"}</p><p className="mt-0.5 text-xs leading-relaxed text-text-lo">{invites.data.deliveryConfig.configured ? <>Sending from <span className="text-text-hi">{invites.data.deliveryConfig.from}</span>. Resend must show <span className="text-text-hi">{invites.data.deliveryConfig.domain}</span> as verified. Invite links use <span className="text-text-hi">{invites.data.deliveryConfig.siteHost ?? "—"}</span>.</> : <>Add both <span className="text-text-hi">RESEND_API_KEY</span> and <span className="text-text-hi">INVITE_FROM_EMAIL</span> to the production environment, then redeploy.</>}</p></div></div> : null}
+    {invites.data?.deliveryConfig.configured && !invites.data.deliveryConfig.linkDomainAligned ? (
+      <div className="flex items-start gap-3 rounded-card border border-warn/40 bg-warn/5 px-4 py-3">
+        <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warn" />
+        <div>
+          <p className="text-sm text-text-hi">Invite links don’t match the sending domain</p>
+          <p className="mt-0.5 text-xs leading-relaxed text-text-lo">
+            You’re sending from <span className="text-text-hi">{invites.data.deliveryConfig.domain}</span> but links point at{" "}
+            <span className="text-text-hi">{invites.data.deliveryConfig.siteHost}</span>. Inbox providers treat that mismatch as a spam signal.
+            Verify the app’s domain in Resend and set <span className="text-text-hi">INVITE_FROM_EMAIL</span> there, or point{" "}
+            <span className="text-text-hi">NEXT_PUBLIC_SITE_URL</span> at a host under the sending domain (see DEPLOYMENT).
+          </p>
+        </div>
+      </div>
+    ) : null}
     {invites.data ? <AdminTable columns={columns} rows={invites.data.invites} rowKey={(row) => row.id} empty="No invites yet." /> : null}
     <Dialog open={open} onOpenChange={setOpen}><DialogContent title="Create invitation" description="Add an email to send TEMPO’s invitation automatically. Leave it blank to create a copyable link." onClose={() => setOpen(false)}><div className="space-y-3">
       <Input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Recipient email" />
@@ -86,7 +100,7 @@ export default function AdminInvitesPage() {
       <Textarea value={welcomeNote} onChange={(event) => setWelcomeNote(event.target.value)} rows={4} placeholder="Personal welcome note from Nikita (optional)" />
       <Input value={note} onChange={(event) => setNote(event.target.value)} placeholder="Private admin note (optional)" />
       <Input type="datetime-local" value={expiresAt} onChange={(event) => setExpiresAt(event.target.value)} />
-      {email ? <div className="well rounded-input p-4"><p className="label-mono text-amber">Email preview</p><p className="mt-3 font-display text-lg text-text-hi">Bring your music into focus.</p><p className="mt-1 text-xs leading-relaxed text-text-lo">The invitation identifies them as a <span className="text-text-hi">{ROLE_OPTIONS.find((option) => option.value === memberRole)?.label.toLowerCase()}</span>, explains Origin, the tour, starter checklist, and direct access to Nikita, then includes their code and one-click account button.</p>{welcomeNote.trim() ? <div className="mt-3 border-l-2 border-ice pl-3 text-xs leading-relaxed text-text-hi">{welcomeNote}</div> : null}</div> : null}
+      {email ? <div className="well rounded-input p-4"><p className="label-mono text-amber">Email preview</p><p className="mt-3 font-display text-lg text-text-hi">You’re invited to TEMPO</p><p className="mt-1 text-xs leading-relaxed text-text-lo">The invitation identifies them as a <span className="text-text-hi">{ROLE_OPTIONS.find((option) => option.value === memberRole)?.label.toLowerCase()}</span>, shares their code, leads with Download TEMPO, and keeps Use the web app as a quieter path.</p>{welcomeNote.trim() ? <div className="mt-3 border-l-2 border-ice pl-3 text-xs leading-relaxed text-text-hi">{welcomeNote}</div> : null}</div> : null}
       <div className="flex justify-end gap-2"><Button variant="secondary" onClick={() => setOpen(false)}>Cancel</Button><Button onClick={() => void create()} disabled={invites.create.isPending}>{invites.create.isPending ? "…" : email ? "Create & send" : "Create & copy"}</Button></div>
     </div></DialogContent></Dialog>
     <ConfirmDialog

@@ -1,3 +1,4 @@
+import { formatFromHeader, resolveReplyTo } from "@/lib/admin/invite-email";
 import type { RawPulseItem } from "./normalize";
 import { labelForEmail } from "./normalize";
 
@@ -56,8 +57,10 @@ export async function sendDigestEmail(input: {
   idempotencyKey: string;
 }): Promise<{ providerId: string }> {
   const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.INVITE_FROM_EMAIL; // same verified sender as invites, per plan §2.5
-  if (!apiKey || !from) throw new Error("Pulse email delivery is not configured.");
+  const fromRaw = process.env.INVITE_FROM_EMAIL; // same verified sender as invites, per plan §2.5
+  if (!apiKey || !fromRaw) throw new Error("Pulse email delivery is not configured.");
+  const from = formatFromHeader(fromRaw);
+  const replyTo = resolveReplyTo(fromRaw, process.env.INVITE_REPLY_TO_EMAIL);
 
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -69,6 +72,7 @@ export async function sendDigestEmail(input: {
     body: JSON.stringify({
       from,
       to: [input.to],
+      reply_to: replyTo,
       subject: input.message.subject,
       html: input.message.html,
       text: input.message.text,

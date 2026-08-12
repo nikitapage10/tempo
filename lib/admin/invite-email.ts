@@ -16,6 +16,7 @@ function escapeHtml(value: string) {
       ] ?? character,
   );
 }
+
 function siteUrl() {
   return (process.env.NEXT_PUBLIC_SITE_URL ?? "https://mytempo.dev").replace(/\/$/, "");
 }
@@ -24,16 +25,58 @@ export function inviteLink(code: string) {
   return `${siteUrl()}/register?invite=${encodeURIComponent(code)}`;
 }
 
+/** Bare address from `Name <addr@domain>` or a plain address. */
+export function parseFromAddress(from: string) {
+  const trimmed = from.trim();
+  return trimmed.match(/<([^>]+)>/)?.[1]?.trim() ?? trimmed;
+}
+
+/** Prefer an explicit display name; otherwise `TEMPO <addr>`. */
+export function formatFromHeader(from: string) {
+  const trimmed = from.trim();
+  if (!trimmed) return trimmed;
+  if (/<[^>]+>/.test(trimmed)) return trimmed;
+  return `TEMPO <${trimmed}>`;
+}
+
+export function resolveReplyTo(from: string, replyToEnv?: string | null) {
+  const explicit = replyToEnv?.trim() ?? "";
+  if (explicit) return parseFromAddress(explicit);
+  return parseFromAddress(from);
+}
+
+/**
+ * True when the app host is the sending domain or a subdomain of it
+ * (e.g. app.nikita.page ↔ nikita.page). Different registrable domains
+ * (mytempo.dev ↔ nikita.page) fail — a common spam signal.
+ */
+export function linkDomainAligned(siteHost: string | null, fromDomain: string | null) {
+  if (!siteHost || !fromDomain) return false;
+  const host = siteHost.toLowerCase();
+  const domain = fromDomain.toLowerCase();
+  return host === domain || host.endsWith(`.${domain}`);
+}
+
 export function inviteDeliveryConfig() {
-  const from = process.env.INVITE_FROM_EMAIL?.trim() ?? "";
-  const address = from.match(/<([^>]+)>/)?.[1] ?? from;
-  const domain = address.includes("@") ? address.split("@").at(-1) ?? null : null;
+  const fromRaw = process.env.INVITE_FROM_EMAIL?.trim() ?? "";
+  const from = fromRaw ? formatFromHeader(fromRaw) : "";
+  const address = parseFromAddress(from);
+  const domain = address.includes("@") ? address.split("@").at(-1)?.toLowerCase() ?? null : null;
+  let siteHost: string | null = null;
+  try {
+    siteHost = new URL(siteUrl()).hostname.toLowerCase();
+  } catch {
+    siteHost = null;
+  }
   return {
-    configured: Boolean(process.env.RESEND_API_KEY?.trim() && from),
+    configured: Boolean(process.env.RESEND_API_KEY?.trim() && fromRaw),
     apiKeyPresent: Boolean(process.env.RESEND_API_KEY?.trim()),
-    fromPresent: Boolean(from),
+    fromPresent: Boolean(fromRaw),
     from: from || null,
     domain,
+    siteHost,
+    linkDomainAligned: linkDomainAligned(siteHost, domain),
+    replyTo: fromRaw ? resolveReplyTo(fromRaw, process.env.INVITE_REPLY_TO_EMAIL) : null,
   };
 }
 
@@ -69,46 +112,37 @@ export function renderInviteEmail(input: Omit<InviteEmail, "idempotencyKey">) {
     ? `This invitation is available through ${escapeHtml(expiry)}.`
     : "This invitation does not have a scheduled expiry.";
   const welcomeHtml = input.welcomeNote
-    ? `<div style="margin:22px 0 0;padding:16px 18px;border-radius:12px;border:1px solid rgba(127,180,255,0.28);background:rgba(127,180,255,0.08);color:#D7D6DC;font-size:14px;line-height:1.65"><div style="margin-bottom:7px;font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:#7FB4FF">A note from Nikita</div>${escapeHtml(input.welcomeNote).replace(/\n/g, "<br>")}</div>`
+    ? `<p style="margin:20px 0 0;color:#D7D6DC;font-size:14px;line-height:1.65"><strong style="color:#7FB4FF">A note from Nikita:</strong><br>${escapeHtml(input.welcomeNote).replace(/\n/g, "<br>")}</p>`
     : "";
 
-  // Email clients can't run Spectra or real glass blur — we approximate the
-  // dark glass card, flare rule, and ice CTA hierarchy from the product UI.
+  // Lean transactional layout — heavy glass/gradients look promotional to filters.
   const html = `<!doctype html>
 <html>
 <body style="margin:0;background:#0A0A0C;color:#F2F0EB;font-family:Inter,Arial,sans-serif">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#0A0A0C;background-image:radial-gradient(ellipse at 20% 0%,rgba(127,180,255,0.16),transparent 52%),radial-gradient(ellipse at 90% 10%,rgba(255,181,107,0.10),transparent 45%),radial-gradient(ellipse at 50% 100%,rgba(157,140,255,0.08),transparent 50%);padding:36px 16px">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#0A0A0C;padding:32px 16px">
     <tr>
       <td align="center">
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;border:1px solid rgba(242,240,235,0.10);border-radius:18px;background:rgba(18,18,22,0.88);overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.45)">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;border:1px solid #26262E;border-radius:12px;background:#121216">
           <tr>
-            <td style="height:2px;background:linear-gradient(90deg,transparent,#7FB4FF,#F2F0EB,#FFB56B,transparent)"></td>
-          </tr>
-          <tr>
-            <td style="padding:34px 32px 30px">
-              <div style="font-family:'Space Grotesk',Arial,sans-serif;font-size:26px;font-weight:700;letter-spacing:-1px">TEMPO</div>
-              <div style="margin-top:28px;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#FFB56B">You’re invited · ${label}</div>
-              <h1 style="margin:10px 0 12px;font-family:'Space Grotesk',Arial,sans-serif;font-size:30px;line-height:1.15;color:#F2F0EB">Bring your music into focus.</h1>
-              <p style="margin:0;color:#B6B5BE;font-size:15px;line-height:1.65">TEMPO is a private studio for moving music from first idea through release. Start by installing TEMPO on your computer — then create your account there with the invite code below. The web app is ready too if you prefer the browser first.</p>
+            <td style="padding:28px 28px 24px">
+              <div style="font-family:Arial,sans-serif;font-size:20px;font-weight:700;letter-spacing:-0.5px">TEMPO</div>
+              <p style="margin:20px 0 0;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#8B8B96">Invitation · ${label}</p>
+              <h1 style="margin:8px 0 12px;font-family:Arial,sans-serif;font-size:22px;line-height:1.3;color:#F2F0EB;font-weight:600">You’re invited to TEMPO</h1>
+              <p style="margin:0;color:#B6B5BE;font-size:15px;line-height:1.6">TEMPO is a private studio for moving music from first idea through release. Download TEMPO on your computer, then create your account with the invite code below. You can also use the web app first if you prefer.</p>
               ${welcomeHtml}
-              <div style="margin:24px 0 0;padding:18px;border:1px solid rgba(242,240,235,0.08);border-radius:14px;background:rgba(10,10,12,0.45)">
-                <div style="font-size:10px;letter-spacing:1.3px;text-transform:uppercase;color:#8B8B96">What happens when you join</div>
-                <div style="margin-top:12px;color:#B6B5BE;font-size:13px;line-height:1.85">01 · Introduce your artist through Origin<br>02 · Take a one-minute workspace tour<br>03 · Follow a starter checklist at your own pace<br>04 · Message Nikita directly whenever you need help</div>
-              </div>
-              <div style="margin:18px 0 0;padding:18px;border:1px solid rgba(242,240,235,0.08);border-radius:14px;background:rgba(10,10,12,0.45);text-align:center">
-                <div style="font-size:10px;letter-spacing:1.3px;text-transform:uppercase;color:#8B8B96">Your invite code</div>
-                <div style="margin-top:8px;font-size:22px;font-weight:600;letter-spacing:1.5px;color:#F2F0EB">${safeCode}</div>
-              </div>
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:26px 0 0">
+              <p style="margin:22px 0 0;color:#B6B5BE;font-size:14px;line-height:1.7">When you join: introduce your artist in Origin, take a short workspace tour, follow a starter checklist at your own pace, and message Nikita whenever you need help.</p>
+              <p style="margin:22px 0 0;text-align:center;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#8B8B96">Your invite code</p>
+              <p style="margin:8px 0 0;text-align:center;font-size:22px;font-weight:600;letter-spacing:1.5px;color:#F2F0EB">${safeCode}</p>
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:24px 0 0">
                 <tr>
-                  <td align="center" style="border-radius:10px;background:#7FB4FF">
+                  <td align="center" style="border-radius:8px;background:#7FB4FF">
                     <a href="${safeDownload}" style="display:block;padding:14px 22px;color:#0A0A0C;font-size:14px;font-weight:600;text-decoration:none">Download TEMPO</a>
                   </td>
                 </tr>
-                <tr><td height="12" style="font-size:0;line-height:0">&nbsp;</td></tr>
+                <tr><td height="10" style="font-size:0;line-height:0">&nbsp;</td></tr>
                 <tr>
-                  <td align="center" style="border-radius:10px;border:1px solid rgba(242,240,235,0.14);background:rgba(26,26,33,0.72)">
-                    <a href="${safeLink}" style="display:block;padding:13px 22px;color:#F2F0EB;font-size:14px;font-weight:600;text-decoration:none">Use the web app</a>
+                  <td align="center">
+                    <a href="${safeLink}" style="display:block;padding:10px 22px;color:#8B8B96;font-size:13px;font-weight:500;text-decoration:underline">Use the web app</a>
                   </td>
                 </tr>
               </table>
@@ -116,7 +150,7 @@ export function renderInviteEmail(input: Omit<InviteEmail, "idempotencyKey">) {
             </td>
           </tr>
         </table>
-        <p style="margin:18px 0 0;color:#62626D;font-size:11px">This invitation was sent specifically to ${escapeHtml(input.email)}.</p>
+        <p style="margin:16px 0 0;color:#62626D;font-size:11px">This invitation was sent specifically to ${escapeHtml(input.email)}. Reply to this email if you have questions.</p>
       </td>
     </tr>
   </table>
@@ -125,13 +159,9 @@ export function renderInviteEmail(input: Omit<InviteEmail, "idempotencyKey">) {
 
   const text = `You’re invited to TEMPO as ${label}.
 
-TEMPO is a private studio for moving music from first idea through release. Start by downloading TEMPO, then create your account there with your invite code. Or use the web app if you prefer the browser first.${input.welcomeNote ? `\n\nA note from Nikita:\n${input.welcomeNote}` : ""}
+TEMPO is a private studio for moving music from first idea through release. Download TEMPO on your computer, then create your account with the invite code below. You can also use the web app first if you prefer.${input.welcomeNote ? `\n\nA note from Nikita:\n${input.welcomeNote}` : ""}
 
-When you join:
-1. Introduce your artist through Origin
-2. Take a one-minute workspace tour
-3. Follow a starter checklist at your own pace
-4. Message Nikita directly whenever you need help
+When you join: introduce your artist in Origin, take a short workspace tour, follow a starter checklist at your own pace, and message Nikita whenever you need help.
 
 Your invite code: ${input.code}
 
@@ -140,15 +170,18 @@ Use the web app: ${link}
 
 ${expiryCopy}
 
-If a button doesn’t work, copy one of the addresses above.`;
+If a button doesn’t work, copy one of the addresses above.
+Reply to this email if you have questions.`;
 
-  return { subject: "Your invitation to TEMPO", html, text, link };
+  return { subject: "You’re invited to TEMPO", html, text, link };
 }
 
 export async function sendInviteEmail(input: InviteEmail) {
   const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.INVITE_FROM_EMAIL;
-  if (!apiKey || !from) throw new Error("Invite email delivery is not configured.");
+  const fromRaw = process.env.INVITE_FROM_EMAIL;
+  if (!apiKey || !fromRaw) throw new Error("Invite email delivery is not configured.");
+  const from = formatFromHeader(fromRaw);
+  const replyTo = resolveReplyTo(fromRaw, process.env.INVITE_REPLY_TO_EMAIL);
   const message = renderInviteEmail(input);
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -157,7 +190,14 @@ export async function sendInviteEmail(input: InviteEmail) {
       "Content-Type": "application/json",
       "Idempotency-Key": input.idempotencyKey,
     },
-    body: JSON.stringify({ from, to: [input.email], subject: message.subject, html: message.html, text: message.text }),
+    body: JSON.stringify({
+      from,
+      to: [input.email],
+      reply_to: replyTo,
+      subject: message.subject,
+      html: message.html,
+      text: message.text,
+    }),
   });
   const body = await response.json().catch(() => null);
   if (!response.ok || typeof body?.id !== "string") throw new Error(providerError(response.status, body));
