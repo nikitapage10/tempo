@@ -129,7 +129,7 @@ export function OriginLookStep({
         aria-hidden
         className="absolute inset-y-0 left-0 w-px bg-[linear-gradient(to_bottom,transparent,var(--ice),var(--amber),transparent)] opacity-75"
       />
-      <div className="relative flex max-h-[min(78vh,640px)] flex-col gap-5 overflow-y-auto px-7 py-8 sm:px-9">
+      <div className="relative flex max-h-[min(84vh,720px)] flex-col gap-5 overflow-y-auto px-7 py-8 sm:px-9">
         <button
           type="button"
           onClick={onBack}
@@ -194,7 +194,7 @@ export function OriginLookStep({
         </div>
 
         <div className="flex flex-col gap-3">
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <div className="grid gap-3 sm:grid-cols-2">
             <LookUploadRow
               label="Logo"
               hint="wide mark"
@@ -395,8 +395,9 @@ export function OriginLookStep({
 
 function LookPreview({ artist }: { artist: Artist }) {
   return (
-    <div className="overflow-hidden rounded-[10px] border border-line/70 bg-bg-2/40">
-      <div className="relative h-28 sm:h-36">
+    <div className="overflow-hidden rounded-[12px] border border-line/70 bg-bg-2/25">
+      {/* Wide banner strip — tall enough that logos aren't clipped on desktop. */}
+      <div className="relative aspect-[2.4/1] min-h-[10.5rem] w-full sm:min-h-[12.5rem]">
         {artist.banner_url || artist.banner_color ? (
           <ArtistBanner artist={artist} className="absolute inset-0 size-full" />
         ) : (
@@ -409,30 +410,34 @@ function LookPreview({ artist }: { artist: Artist }) {
           />
         )}
         {artist.logo_url ? (
-          <div className="pointer-events-none absolute inset-y-2 right-2 z-[1] flex w-[48%] items-center justify-end sm:inset-y-3 sm:right-3">
+          <div className="pointer-events-none absolute inset-y-4 right-4 z-[1] flex w-[min(55%,16rem)] items-center justify-end sm:inset-y-5 sm:right-5">
             <SignedImage
               path={artist.logo_url}
               alt=""
-              className="max-h-full w-auto max-w-full object-contain object-right"
+              className="max-h-full max-w-full object-contain object-right drop-shadow-[0_10px_28px_rgb(0_0_0/0.5)]"
             />
           </div>
         ) : null}
-        <div className="absolute inset-x-0 bottom-0 z-[2] flex items-end gap-3 bg-gradient-to-t from-bg-0/85 via-bg-0/45 to-transparent px-3 pb-3 pt-10">
+      </div>
+
+      {/* Profile lives under the banner so it isn't cropped by the strip height. */}
+      <div className="relative flex items-end gap-3 px-3 pb-3 pt-0">
+        <div className="-mt-8 shrink-0 sm:-mt-9">
           <ArtistMark
             emblemUrl={artist.emblem_url}
             paletteId={artist.palette_id}
             iceColor={artist.ice_color}
             amberColor={artist.amber_color}
             name={artist.name}
-            size={48}
-            className="size-12 shrink-0 shadow-e2 ring-2 ring-bg-0/80"
+            size={64}
+            className="size-16 shadow-e2 ring-2 ring-bg-0/90 sm:size-[4.5rem]"
           />
-          <div className="min-w-0 pb-0.5">
-            <p className="truncate font-display text-sm font-semibold text-text-hi sm:text-base">
-              {artist.name}
-            </p>
-            <p className="text-[11px] text-text-lo">Preview</p>
-          </div>
+        </div>
+        <div className="min-w-0 pb-1.5 pt-3">
+          <p className="truncate font-display text-base font-semibold text-text-hi sm:text-lg">
+            {artist.name}
+          </p>
+          <p className="text-[11px] text-text-lo">Preview</p>
         </div>
       </div>
     </div>
@@ -463,52 +468,56 @@ function LookUploadRow({
   onClear: () => void;
 }) {
   return (
-    <div className="flex items-center gap-1.5">
-      <span className="font-mono text-[11px] uppercase tracking-wider text-text-lo">
-        {label}
-      </span>
-      <span className="hidden text-xs text-text-lo sm:inline">({hint})</span>
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={(e) => {
-          onFile(e.target.files);
-          e.target.value = "";
-        }}
-      />
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        disabled={disabled}
-        onClick={onPick}
-      >
-        {busy ? (
-          <Loader2 className="size-3.5 animate-spin" />
-        ) : (
-          <ImagePlus className="size-3.5" />
-        )}
-        {busy ? "Uploading…" : hasValue ? "Replace" : "Upload"}
-      </Button>
-      {hasValue ? (
+    <div className="flex min-w-0 flex-col gap-1.5 rounded-[10px] border border-line/50 bg-bg-0/20 px-3 py-2.5">
+      <div className="min-w-0">
+        <span className="font-mono text-[11px] uppercase tracking-wider text-text-lo">
+          {label}
+        </span>
+        <span className="ml-1.5 text-xs text-text-lo/80">({hint})</span>
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            onFile(e.target.files);
+            e.target.value = "";
+          }}
+        />
         <Button
           type="button"
           variant="ghost"
           size="sm"
-          className="text-text-lo hover:text-warn"
           disabled={disabled}
-          onClick={onClear}
+          onClick={onPick}
         >
-          {clearing ? (
+          {busy ? (
             <Loader2 className="size-3.5 animate-spin" />
           ) : (
-            <X className="size-3.5" />
+            <ImagePlus className="size-3.5" />
           )}
-          {clearing ? "Removing…" : "Remove"}
+          {busy ? "Uploading…" : hasValue ? "Replace" : "Upload"}
         </Button>
-      ) : null}
+        {hasValue ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="text-text-lo hover:text-warn"
+            disabled={disabled}
+            onClick={onClear}
+          >
+            {clearing ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
+              <X className="size-3.5" />
+            )}
+            {clearing ? "Removing…" : "Remove"}
+          </Button>
+        ) : null}
+      </div>
     </div>
   );
 }

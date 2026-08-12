@@ -4,6 +4,7 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-11
 
+- Fixed (v0.126.1): Origin's Look preview gives the banner, logo, and profile room again - taller banner strip, logo contained inside it, profile sitting below so nothing looks cropped on desktop.
 - Fixed (v0.126.0 / Desktop v0.100.14): the Windows install wizard side panel and header now say TEMPO only - the leftover Desktop label in the artwork is gone. Re-download after Desktop Release finishes.
 - Fixed (v0.125.1): Download page glass reads more clearly over Spectra, and the Windows / Mac buttons no longer overlap.
 - Changed (v0.125.0): Download (Windows and Mac) always follows the newest public installer as soon as Desktop Release publishes it - no waiting on a separate web bump. The page shows that live version next to the buttons.
