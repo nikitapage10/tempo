@@ -43,6 +43,22 @@ if (desktopPackage.build?.win?.artifactName !== "TEMPO-Setup.${ext}") {
   errors.push("the Windows installer must keep the stable TEMPO-Setup.${ext} asset name");
 }
 
+const mac = desktopPackage.build?.mac;
+if (mac?.artifactName !== "TEMPO-Mac.${ext}") {
+  errors.push("the Mac DMG must keep the stable TEMPO-Mac.${ext} asset name");
+}
+if (mac?.identity !== null) {
+  errors.push("Mac releases stay unsigned until Apple signing is configured (identity must be null)");
+}
+
+const macTargets = Array.isArray(mac?.target) ? mac.target : mac?.target ? [mac.target] : [];
+const hasDmg = macTargets.some((t) =>
+  typeof t === "string" ? t === "dmg" : t?.target === "dmg"
+);
+if (!hasDmg) {
+  errors.push("Mac desktop releases must include a dmg target");
+}
+
 if (errors.length > 0) {
   console.error("Desktop release contract failed:\n");
   for (const error of errors) console.error(`- ${error}`);

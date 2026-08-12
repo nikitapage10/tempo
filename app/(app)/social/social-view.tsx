@@ -334,17 +334,7 @@ export default function SocialView() {
                 Messages
               </Link>
             </Button>
-          ) : (
-            <Button
-              type="button"
-              size="sm"
-              disabled={publish.isPending || profileLoading}
-              onClick={() => void joinNetwork()}
-            >
-              <Users className="size-3.5" />
-              Join the network
-            </Button>
-          )
+          ) : undefined
         }
       />
 
@@ -704,17 +694,9 @@ export default function SocialView() {
               <div className="space-y-3 p-4 text-sm text-text-lo">
                 <p>
                   The feed opens up once you join the network — follows, posts, and
-                  what your collaborators are shipping.
+                  what your collaborators are shipping. Use the Join button in the
+                  center of the page when you’re ready.
                 </p>
-                <Button
-                  type="button"
-                  size="sm"
-                  disabled={publish.isPending || profileLoading}
-                  onClick={() => void joinNetwork()}
-                >
-                  <Users className="size-3.5" />
-                  Join the network
-                </Button>
               </div>
             )}
           </div>

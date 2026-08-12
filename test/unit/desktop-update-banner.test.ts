@@ -18,6 +18,7 @@ describe("desktop update banner", () => {
 
   it("is desktop-only and remains outside distraction-free focus sessions", () => {
     expect(banner).toContain("isDesktopApp()");
+    expect(banner).toContain("!isDesktopApp()");
     expect(shell.indexOf("FOCUS_ROUTE.test(pathname)")).toBeLessThan(
       shell.indexOf("<DesktopUpdateBanner />")
     );

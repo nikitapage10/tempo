@@ -10,10 +10,31 @@ export type DesktopDeviceRef = {
 /** Desktop builds before this lack a working tempo:// handler. */
 export const DESKTOP_LINK_MIN_VERSION = [0, 100, 10] as const;
 
-/** Public-channel Windows installer (stable asset name on latest release). */
+/**
+ * Intended public-channel installer once Desktop Release has published
+ * TEMPO-Setup.exe + latest.yml to tempo-desktop-releases. Set
+ * NEXT_PUBLIC_DESKTOP_WINDOWS_URL to this after the first successful publish.
+ */
+export const DESKTOP_PUBLIC_CHANNEL_INSTALLER_URL =
+  "https://github.com/nikitapage10/tempo-desktop-releases/releases/latest/download/TEMPO-Setup.exe";
+
+/**
+ * Public-channel Mac DMG (unsigned universal build from Desktop Release).
+ * Override with NEXT_PUBLIC_DESKTOP_MAC_URL if the asset name ever changes.
+ */
+export const DESKTOP_MAC_INSTALLER_URL =
+  process.env.NEXT_PUBLIC_DESKTOP_MAC_URL ||
+  "https://github.com/nikitapage10/tempo-desktop-releases/releases/latest/download/TEMPO-Mac.dmg";
+
+/**
+ * Windows installer the web app actually serves today. The public GitHub
+ * channel is empty until Desktop Release runs, so the default stays on the
+ * bundled beta under /downloads (avoids a GitHub 404 for every artist).
+ * Override with NEXT_PUBLIC_DESKTOP_WINDOWS_URL when the channel is live.
+ */
 export const DESKTOP_WINDOWS_INSTALLER_URL =
   process.env.NEXT_PUBLIC_DESKTOP_WINDOWS_URL ||
-  "https://github.com/nikitapage10/tempo-desktop-releases/releases/latest/download/TEMPO-Setup.exe";
+  "/downloads/TEMPO-Setup-0.100.6.exe";
 
 function versionParts(version: string): number[] {
   return version
@@ -115,23 +136,17 @@ export function resolveDesktopHandoff(opts: {
     };
   }
 
-  if (activeDevice && supportsDesktopLink(activeDevice.app_version)) {
+  if (activeDevice) {
+    // Any recent registered install means desktop is in play. Prefer Open even
+    // when the stored version is stale — an updated app may not have
+    // re-checked-in yet, and "Update" was trapping people on an old installer.
+    const canLink = supportsDesktopLink(activeDevice.app_version);
     return {
       kind: "open-desktop",
       label: "Open in desktop",
       href: `tempo://open?path=${encodeURIComponent(pathname)}`,
       secondaryHref: windowsInstallerUrl,
-      secondaryLabel: "Get the installer",
-    };
-  }
-
-  if (activeDevice) {
-    return {
-      kind: "update-desktop",
-      label: "Update TEMPO Desktop",
-      href: windowsInstallerUrl,
-      secondaryHref: "/download",
-      secondaryLabel: "Desktop details",
+      secondaryLabel: canLink ? "Get the installer" : "Update TEMPO Desktop",
     };
   }
 

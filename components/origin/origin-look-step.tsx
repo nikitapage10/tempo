@@ -396,7 +396,7 @@ export function OriginLookStep({
 function LookPreview({ artist }: { artist: Artist }) {
   return (
     <div className="overflow-hidden rounded-[10px] border border-line/70 bg-bg-2/40">
-      <div className="relative h-16 sm:h-20">
+      <div className="relative h-28 sm:h-36">
         {artist.banner_url || artist.banner_color ? (
           <ArtistBanner artist={artist} className="absolute inset-0 size-full" />
         ) : (
@@ -409,28 +409,30 @@ function LookPreview({ artist }: { artist: Artist }) {
           />
         )}
         {artist.logo_url ? (
-          <div className="pointer-events-none absolute inset-y-0 right-0 z-[1] flex w-[45%] items-end justify-end p-1.5">
+          <div className="pointer-events-none absolute inset-y-2 right-2 z-[1] flex w-[48%] items-center justify-end sm:inset-y-3 sm:right-3">
             <SignedImage
               path={artist.logo_url}
               alt=""
-              className="max-h-[85%] w-auto max-w-full object-contain object-right-bottom"
+              className="max-h-full w-auto max-w-full object-contain object-right"
             />
           </div>
         ) : null}
-      </div>
-      <div className="flex items-center gap-2.5 px-3 py-2.5">
-        <ArtistMark
-          emblemUrl={artist.emblem_url}
-          paletteId={artist.palette_id}
-          iceColor={artist.ice_color}
-          amberColor={artist.amber_color}
-          name={artist.name}
-          size={36}
-          className="size-9"
-        />
-        <div className="min-w-0">
-          <p className="truncate text-sm text-text-hi">{artist.name}</p>
-          <p className="text-[11px] text-text-lo">Preview</p>
+        <div className="absolute inset-x-0 bottom-0 z-[2] flex items-end gap-3 bg-gradient-to-t from-bg-0/85 via-bg-0/45 to-transparent px-3 pb-3 pt-10">
+          <ArtistMark
+            emblemUrl={artist.emblem_url}
+            paletteId={artist.palette_id}
+            iceColor={artist.ice_color}
+            amberColor={artist.amber_color}
+            name={artist.name}
+            size={48}
+            className="size-12 shrink-0 shadow-e2 ring-2 ring-bg-0/80"
+          />
+          <div className="min-w-0 pb-0.5">
+            <p className="truncate font-display text-sm font-semibold text-text-hi sm:text-base">
+              {artist.name}
+            </p>
+            <p className="text-[11px] text-text-lo">Preview</p>
+          </div>
         </div>
       </div>
     </div>

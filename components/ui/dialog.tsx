@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -11,28 +12,39 @@ type DialogProps = {
   workspaceCentered?: boolean;
 };
 
+/**
+ * Modal shell. Portaled to document.body so it is not trapped inside rail /
+ * sticky / isolate stacking contexts (those made Report a problem look dead).
+ */
 export function Dialog({
   open,
   onOpenChange,
   children,
   workspaceCentered = false,
 }: DialogProps) {
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
   React.useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onOpenChange(false);
     };
     document.addEventListener("keydown", onKey);
+    const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
+      document.body.style.overflow = previousOverflow;
     };
   }, [open, onOpenChange]);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
-  return (
+  return createPortal(
     <div
       className={cn(
         "fixed inset-0 z-[200] flex items-end justify-center sm:items-center",
@@ -48,7 +60,8 @@ export function Dialog({
       <div className="relative z-10 w-full max-w-lg px-4 pb-4 sm:pb-0">
         {children}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

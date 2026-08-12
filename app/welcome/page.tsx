@@ -8,10 +8,14 @@ import { AuthShell } from "@/components/auth/auth-shell";
 import { Wordmark } from "@/components/wordmark";
 import { Button } from "@/components/ui/button";
 import { isDesktopApp } from "@/lib/desktop/bridge";
-import { DESKTOP_WINDOWS_INSTALLER_URL } from "@/lib/desktop/handoff";
+import {
+  DESKTOP_WINDOWS_INSTALLER_URL,
+  DESKTOP_MAC_INSTALLER_URL,
+} from "@/lib/desktop/handoff";
 import { detectOS } from "@/lib/platform";
 
 const WINDOWS_INSTALLER_URL = DESKTOP_WINDOWS_INSTALLER_URL;
+const MAC_INSTALLER_URL = DESKTOP_MAC_INSTALLER_URL;
 
 /**
  * Post-invite chooser — after creating an account from an invite, pick how to
@@ -38,7 +42,12 @@ export default function WelcomePage() {
 
   if (isDesktopApp()) return null;
 
-  const windowsReady = os !== "mac";
+  const preferMac = os === "mac";
+  const desktopHref = preferMac ? MAC_INSTALLER_URL : WINDOWS_INSTALLER_URL;
+  const desktopLabel = preferMac ? "Download for Mac" : "Download for Windows";
+  const desktopHint = preferMac
+    ? "Unsigned universal build — right-click → Open the first time Gatekeeper warns."
+    : "Install the desktop app, then come back to finish Origin in either place.";
 
   return (
     <AuthShell>
@@ -65,47 +74,27 @@ export default function WelcomePage() {
             </Link>
           </Button>
 
-          {windowsReady ? (
-            <Button asChild variant="secondary" size="lg" className="h-auto justify-start gap-3 py-4 text-left">
-              <a href={WINDOWS_INSTALLER_URL} download>
-                <Download className="size-5 shrink-0" strokeWidth={1.75} />
-                <span>
-                  <span className="block text-sm font-medium">Download for Windows</span>
-                  <span className="mt-0.5 block text-xs font-normal text-text-lo/80">
-                    Install the desktop app, then come back to finish Origin in either place.
-                  </span>
-                </span>
-              </a>
-            </Button>
-          ) : (
-            <Button
-              variant="secondary"
-              size="lg"
-              className="h-auto justify-start gap-3 py-4 text-left"
-              disabled
-              title="A Mac build isn’t available yet."
-            >
+          <Button asChild variant="secondary" size="lg" className="h-auto justify-start gap-3 py-4 text-left">
+            <a href={desktopHref} download={!preferMac || undefined}>
               <Download className="size-5 shrink-0" strokeWidth={1.75} />
               <span>
-                <span className="block text-sm font-medium">Download for Mac</span>
+                <span className="block text-sm font-medium">{desktopLabel}</span>
                 <span className="mt-0.5 block text-xs font-normal text-text-lo/80">
-                  Not built yet — continue in the browser for now.
+                  {desktopHint}
                 </span>
               </span>
-            </Button>
-          )}
+            </a>
+          </Button>
         </div>
 
-        {windowsReady ? (
-          <p className="text-xs text-text-lo/70">
-            After the installer finishes, open TEMPO Desktop and sign in with the
-            same account — or keep going in the browser with{" "}
-            <Link href="/origin" className="text-ice hover:underline">
-              Continue in the browser
-            </Link>
-            .
-          </p>
-        ) : null}
+        <p className="text-xs text-text-lo/70">
+          After the installer finishes, open TEMPO Desktop and sign in with the
+          same account — or keep going in the browser with{" "}
+          <Link href="/origin" className="text-ice hover:underline">
+            Continue in the browser
+          </Link>
+          .
+        </p>
       </div>
     </AuthShell>
   );

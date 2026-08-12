@@ -79,7 +79,7 @@ describe("web and desktop platform handoff", () => {
     expect(open.kind).toBe("open-desktop");
     expect(open.href).toContain("tempo://open?path=");
 
-    const update = resolveDesktopHandoff({
+    const stale = resolveDesktopHandoff({
       isDesktop: false,
       pathname: "/download",
       activeDevice: {
@@ -90,7 +90,10 @@ describe("web and desktop platform handoff", () => {
       webAppUrl: "https://tempo-ten-sigma.vercel.app",
       windowsInstallerUrl: "/downloads/TEMPO-Setup.exe",
     });
-    expect(update.kind).toBe("update-desktop");
+    // Stale DB version still opens desktop; Update stays a secondary path.
+    expect(stale.kind).toBe("open-desktop");
+    expect(stale.label).toBe("Open in desktop");
+    expect(stale.secondaryLabel).toBe("Update TEMPO Desktop");
   });
 
   it("prefers a link-capable install over a newer-seen old build", () => {
@@ -113,11 +116,25 @@ describe("web and desktop platform handoff", () => {
     expect(picked?.id).toBe("new");
   });
 
-  it("points the Windows installer fallback at the public latest asset", () => {
+  it("defaults the Windows installer to the bundled public download", () => {
+    expect(read("lib/desktop/handoff.ts")).toContain(
+      "/downloads/TEMPO-Setup-0.100.6.exe"
+    );
     expect(read("lib/desktop/handoff.ts")).toContain(
       "tempo-desktop-releases/releases/latest/download/TEMPO-Setup.exe"
     );
     expect(button).toContain("DESKTOP_WINDOWS_INSTALLER_URL");
-    expect(welcome).not.toContain("TEMPO-Setup-0.100.6.exe");
+  });
+
+  it("exposes a stable unsigned Mac DMG on the public release channel", () => {
+    expect(read("lib/desktop/handoff.ts")).toContain(
+      "tempo-desktop-releases/releases/latest/download/TEMPO-Mac.dmg"
+    );
+    expect(read("electron/package.json")).toContain('"identity": null');
+    expect(read("electron/package.json")).toContain("TEMPO-Mac.${ext}");
+    expect(read(".github/workflows/desktop-release.yml")).toContain("macos-latest");
+    expect(read(".github/workflows/desktop-release.yml")).toContain(
+      "CSC_IDENTITY_AUTO_DISCOVERY"
+    );
   });
 });

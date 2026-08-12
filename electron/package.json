@@ -66,9 +66,18 @@
       "artifactName": "TEMPO-Setup.${ext}"
     },
     "mac": {
-      "target": "dmg",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["universal"]
+        }
+      ],
+      "artifactName": "TEMPO-Mac.${ext}",
       "icon": "../public/tempo-emblem.png",
       "category": "public.app-category.music",
+      "identity": null,
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
       "extendInfo": {
         "NSMicrophoneUsageDescription": "TEMPO uses your microphone for dictation and voice notes when you choose to record."
       }

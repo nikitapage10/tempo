@@ -29,6 +29,7 @@ describe("desktop background notifications", () => {
     expect(main).toContain('ipcMain.handle("notifications:show"');
     expect(preload).toContain('ipcRenderer.invoke("notifications:show"');
     expect(inbox).toContain("showDesktopNotification");
+    expect(inbox).toContain("showWebGlassAlert");
     expect(inbox).toContain("playIncomingAlert");
   });
 

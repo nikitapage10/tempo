@@ -57,8 +57,8 @@ const OPENING_LINES = [
 ];
 
 const SOUNDTRACK_SRC = "/onboarding/origin/tempo-theme.mp3";
-// Tempo Theme sits under the film, not over it — keep this modest.
-const SOUNDTRACK_VOLUME = 0.14;
+// Quiet bed under the film — loud enough to feel, soft enough to stay behind copy.
+const SOUNDTRACK_VOLUME = 0.19;
 const SOUNDTRACK_FADE_IN_MS = 1400;
 const SOUNDTRACK_FADE_OUT_MS = 1100;
 

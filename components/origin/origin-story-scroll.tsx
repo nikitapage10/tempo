@@ -37,8 +37,15 @@ import { cn } from "@/lib/utils";
  * scrubbing, which is a complete experience rather than a degraded one.
  */
 
-/** Chapter boundaries as fractions of the scroll range — §20. */
-export const CHAPTER_STOPS = [0, 0.16, 0.34, 0.52, 0.72, 0.88];
+/**
+ * Chapter boundaries as fractions of the scroll range — §20.
+ * The Story (index 3) gets a longer stretch so its tiles can pan with the
+ * page scroller instead of living in a nested overflow box.
+ */
+export const CHAPTER_STOPS = [0, 0.14, 0.28, 0.42, 0.74, 0.9];
+
+/** Chapter index for "The Story" — tall panel that pans on outer scroll. */
+const STORY_CHAPTER = 3;
 
 const CHAPTER_TITLES = [
   "About the artist",
@@ -200,7 +207,12 @@ function ChapterSection({
           from the right, so the copy sits on the quieter side of the frame. */}
       <div
         className={cn(
-          "origin-story-chapter relative flex max-h-[min(86dvh,52rem)] w-full flex-col overflow-hidden rounded-[26px] border bg-[linear-gradient(125deg,rgb(9_10_13/0.9),rgb(21_25_32/0.76),rgb(10_10_13/0.86))] shadow-3 backdrop-blur-xl",
+          "origin-story-chapter relative flex w-full flex-col overflow-hidden rounded-[26px] border bg-[linear-gradient(125deg,rgb(9_10_13/0.9),rgb(21_25_32/0.76),rgb(10_10_13/0.86))] shadow-3 backdrop-blur-xl",
+          // Short chapters stay viewport-bound; The Story grows with its tiles
+          // and pans via the outer scrub transform instead of an inner scroll.
+          index === STORY_CHAPTER
+            ? null
+            : "max-h-[min(86dvh,52rem)]",
           index % 2 === 0 ? "border-amber/25" : "border-ice/30",
           "transition-[max-width,transform] duration-700 motion-reduce:transition-none",
           wide ? "max-w-5xl" : "max-w-3xl",
@@ -354,9 +366,24 @@ export function OriginStoryScroll({
         x = 10 * t;
       }
 
+      // Tall story panels: pan with the outer scroller so tiles aren't trapped
+      // in an inner overflow box people won't notice. At the start of the
+      // chapter the top of the panel is in view; by EXIT_AT the bottom is.
+      let yPx = 0;
+      if (i === STORY_CHAPTER) {
+        const viewH = window.innerHeight * 0.88;
+        const contentH = el.offsetHeight;
+        const overflow = Math.max(0, contentH - viewH);
+        if (overflow > 0) {
+          const storyT =
+            local <= 0 ? 0 : local >= EXIT_AT ? 1 : local / EXIT_AT;
+          yPx = overflow * (0.5 - storyT);
+        }
+      }
+
       const clamped = Math.max(0, Math.min(1, opacity));
       el.style.opacity = String(clamped);
-      el.style.transform = `translate3d(${x}%, -50%, 0) scale(${scale})`;
+      el.style.transform = `translate3d(${x}%, calc(-50% + ${yPx}px), 0) scale(${scale})`;
       // Only the chapter in focus should be clickable, and a chapter that is
       // all but invisible must never intercept a click meant for the one above.
       el.style.pointerEvents = clamped > 0.6 ? "auto" : "none";
@@ -630,68 +657,64 @@ export function OriginStoryScroll({
       {editAction(2)}
     </div>,
 
-    <div key="story" className="flex min-h-0 max-h-[min(62dvh,32rem)] flex-col gap-4">
-      <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1 pb-2">
-        {interpretation.storySections.map((section, index) => (
-          <div key={`story-${index}`} className="mb-4 rounded-2xl border border-line/60 bg-white/[0.025] p-4 last:mb-0 sm:p-5">
-            {editingChapter === 3 ? (
-              <div className="grid gap-2">
-                <div className="flex items-center gap-2">
-                  <Input
-                    value={section.title}
-                    onChange={(event) => updateStorySection(index, { title: event.target.value })}
-                    maxLength={120}
-                    placeholder="Section title"
-                    aria-label={`Story section ${index + 1} title`}
-                    className="font-display"
-                  />
-                  <button type="button" onClick={() => moveStorySection(index, -1)} disabled={index === 0} className="p-2 text-text-lo disabled:opacity-30" aria-label="Move story section up">
-                    <ArrowUp className="size-3.5" />
-                  </button>
-                  <button type="button" onClick={() => moveStorySection(index, 1)} disabled={index === interpretation.storySections.length - 1} className="p-2 text-text-lo disabled:opacity-30" aria-label="Move story section down">
-                    <ArrowDown className="size-3.5" />
-                  </button>
-                  <button type="button" onClick={() => patchInterpretation({ storySections: interpretation.storySections.filter((_, itemIndex) => itemIndex !== index) })} className="p-2 text-text-lo hover:text-warn" aria-label="Remove story section">
-                    <Trash2 className="size-3.5" />
-                  </button>
-                </div>
-                <Textarea
-                  value={section.body}
-                  onChange={(event) => updateStorySection(index, { body: event.target.value })}
-                  maxLength={2000}
-                  rows={4}
-                  placeholder="Write this part of the story in your own words"
-                  aria-label={`Story section ${index + 1} body`}
-                  className="resize-none"
+    <div key="story" className="flex flex-col gap-4">
+      {interpretation.storySections.map((section, index) => (
+        <div key={`story-${index}`} className="rounded-2xl border border-line/60 bg-white/[0.025] p-4 sm:p-5">
+          {editingChapter === 3 ? (
+            <div className="grid gap-2">
+              <div className="flex items-center gap-2">
+                <Input
+                  value={section.title}
+                  onChange={(event) => updateStorySection(index, { title: event.target.value })}
+                  maxLength={120}
+                  placeholder="Section title"
+                  aria-label={`Story section ${index + 1} title`}
+                  className="font-display"
                 />
+                <button type="button" onClick={() => moveStorySection(index, -1)} disabled={index === 0} className="p-2 text-text-lo disabled:opacity-30" aria-label="Move story section up">
+                  <ArrowUp className="size-3.5" />
+                </button>
+                <button type="button" onClick={() => moveStorySection(index, 1)} disabled={index === interpretation.storySections.length - 1} className="p-2 text-text-lo disabled:opacity-30" aria-label="Move story section down">
+                  <ArrowDown className="size-3.5" />
+                </button>
+                <button type="button" onClick={() => patchInterpretation({ storySections: interpretation.storySections.filter((_, itemIndex) => itemIndex !== index) })} className="p-2 text-text-lo hover:text-warn" aria-label="Remove story section">
+                  <Trash2 className="size-3.5" />
+                </button>
               </div>
-            ) : (
-              <>
-                <p className="text-[11px] uppercase tracking-[0.22em] text-ice/70">
-                  {String(index + 1).padStart(2, "0")}
-                </p>
-                {section.title ? <h3 className="mt-2 font-display text-lg text-text-hi sm:text-xl">{section.title}</h3> : null}
-                <p className="mt-2 max-w-none text-sm leading-7 text-text-lo sm:text-[15px] sm:leading-8">{section.body}</p>
-              </>
-            )}
-          </div>
-        ))}
-        {!interpretation.storySections.length && editingChapter !== 3 ? (
-          <p className="text-sm leading-7 text-text-lo">Add the parts of your story you want people to know.</p>
-        ) : null}
-        {editingChapter === 3 && interpretation.storySections.length < 8 ? (
-          <button
-            type="button"
-            onClick={() => patchInterpretation({ storySections: [...interpretation.storySections, { title: "", body: "" }] })}
-            className="flex w-fit items-center gap-1 text-xs text-ice"
-          >
-            <Plus className="size-3.5" /> Add a story section
-          </button>
-        ) : null}
-      </div>
-      <div className="shrink-0 border-t border-line/40 bg-[rgb(9_10_13/0.92)] pt-3 backdrop-blur-sm">
-        {editAction(3)}
-      </div>
+              <Textarea
+                value={section.body}
+                onChange={(event) => updateStorySection(index, { body: event.target.value })}
+                maxLength={2000}
+                rows={4}
+                placeholder="Write this part of the story in your own words"
+                aria-label={`Story section ${index + 1} body`}
+                className="resize-none"
+              />
+            </div>
+          ) : (
+            <>
+              <p className="text-[11px] uppercase tracking-[0.22em] text-ice/70">
+                {String(index + 1).padStart(2, "0")}
+              </p>
+              {section.title ? <h3 className="mt-2 font-display text-lg text-text-hi sm:text-xl">{section.title}</h3> : null}
+              <p className="mt-2 max-w-none text-sm leading-7 text-text-lo sm:text-[15px] sm:leading-8">{section.body}</p>
+            </>
+          )}
+        </div>
+      ))}
+      {!interpretation.storySections.length && editingChapter !== 3 ? (
+        <p className="text-sm leading-7 text-text-lo">Add the parts of your story you want people to know.</p>
+      ) : null}
+      {editingChapter === 3 && interpretation.storySections.length < 8 ? (
+        <button
+          type="button"
+          onClick={() => patchInterpretation({ storySections: [...interpretation.storySections, { title: "", body: "" }] })}
+          className="flex w-fit items-center gap-1 text-xs text-ice"
+        >
+          <Plus className="size-3.5" /> Add a story section
+        </button>
+      ) : null}
+      {editAction(3)}
     </div>,
 
     // Import lives inside the story rather than as a page you get sent to, so

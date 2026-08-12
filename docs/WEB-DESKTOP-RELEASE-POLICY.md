@@ -84,8 +84,14 @@ TEMPO source code. A Windows release must contain at least:
 - `TEMPO-Setup.exe.blockmap`
 - `latest.yml`
 
-`latest.yml` is the map the installed app reads to learn the newest version
-and verify the downloaded file.
+A Mac release (same tag) must contain at least:
+
+- `TEMPO-Mac.dmg`
+- `TEMPO-Mac.dmg.blockmap`
+- `latest-mac.yml`
+
+`latest.yml` / `latest-mac.yml` are the maps the installed app reads to learn
+the newest version and verify the downloaded file.
 
 ## One-time update-channel setup
 
@@ -103,8 +109,10 @@ and verify the downloaded file.
    browser.
 6. In Vercel, set `NEXT_PUBLIC_DESKTOP_WINDOWS_URL` to
    `https://github.com/nikitapage10/tempo-desktop-releases/releases/latest/download/TEMPO-Setup.exe`
-   and redeploy. The web app falls back to that same public latest URL when the
-   env var is unset (it no longer serves the bundled `0.100.6` installer).
+   **after** the first successful Desktop Release publish (installer +
+   `latest.yml` on that repo), then redeploy. Until then, leave the env
+   unset — the web app defaults to the bundled
+   `/downloads/TEMPO-Setup-0.100.6.exe` so Download / Update never 404.
 7. In Vercel project settings, keep **Automatically expose System Environment
    Variables** enabled. The unified desktop banner uses
    `VERCEL_GIT_COMMIT_SHA` to notice every newly deployed build, with the
@@ -126,14 +134,21 @@ later releases can update automatically.
    window/tray behavior, external links, vault playback, quit, and relaunch.
 6. Merge the tested commit to `main`.
 7. Run GitHub Actions -> `Desktop Release` -> `Run workflow`.
-8. Verify the public release has the installer, blockmap, and `latest.yml`.
+8. Verify the public release has the Windows installer, blockmap, and
+   `latest.yml`, plus the Mac `TEMPO-Mac.dmg` and `latest-mac.yml`.
 9. From the previous installed version, check that the update downloads and
    installs after a full quit/relaunch.
 
 For a broad public launch, code-sign the Windows installer before publishing.
-Unsigned beta releases trigger SmartScreen and reduce trust. macOS publishing
-must not be enabled until Apple signing and notarization are configured; an
-unsigned Mac build is not a reliable production update path.
+Unsigned beta releases trigger SmartScreen and reduce trust. Mac ships the
+same way for now: an **unsigned** universal DMG from GitHub Actions
+(`macos-latest`), opened the first time via right-click → **Open**. Apple
+signing and notarization can replace that path later; until then Gatekeeper
+warnings are expected, not a broken build.
+
+The Desktop Release workflow builds Windows first, then Mac, so both assets
+land on the same public release (`TEMPO-Setup.exe`, `latest.yml`,
+`TEMPO-Mac.dmg`, `latest-mac.yml`).
 
 ## Rollback
 

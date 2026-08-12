@@ -5,7 +5,11 @@ import { Download, HardDrive, MonitorSmartphone, RadioTower, Wifi, WifiOff } fro
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { useActiveDesktopDevice } from "@/hooks/use-devices";
-import { resolveDesktopHandoff, DESKTOP_WINDOWS_INSTALLER_URL } from "@/lib/desktop/handoff";
+import {
+  resolveDesktopHandoff,
+  DESKTOP_WINDOWS_INSTALLER_URL,
+  DESKTOP_MAC_INSTALLER_URL,
+} from "@/lib/desktop/handoff";
 import { detectOS, isDesktopApp } from "@/lib/platform";
 import { getSiteUrl } from "@/lib/site";
 
@@ -32,15 +36,16 @@ const HIGHLIGHTS = [
   },
 ];
 
-// NEXT_PUBLIC_DESKTOP_WINDOWS_URL overrides the public-channel latest URL
-// when set in Vercel; otherwise we use the shared GitHub latest asset.
+// NEXT_PUBLIC_DESKTOP_WINDOWS_URL / NEXT_PUBLIC_DESKTOP_MAC_URL override the
+// defaults when the public GitHub release channel is live.
 const WINDOWS_INSTALLER_URL = DESKTOP_WINDOWS_INSTALLER_URL;
+const MAC_INSTALLER_URL = DESKTOP_MAC_INSTALLER_URL;
 
 const DOWNLOADS: {
   os: "windows" | "mac";
   label: string;
   fileHint: string;
-  href: string | null;
+  href: string;
 }[] = [
   {
     os: "windows",
@@ -51,8 +56,8 @@ const DOWNLOADS: {
   {
     os: "mac",
     label: "Download for Mac",
-    fileHint: "Not built yet — needs a Mac",
-    href: null,
+    fileHint: "Unsigned universal DMG · about 120 MB",
+    href: MAC_INSTALLER_URL,
   },
 ];
 
@@ -115,34 +120,15 @@ export default function DownloadPage() {
           </div>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
-            {DOWNLOADS.map(({ os: downloadOs, label, fileHint, href }) =>
-              href ? (
-                <Button
-                  key={downloadOs}
-                  asChild
-                  variant={os === downloadOs ? "default" : "secondary"}
-                  size="lg"
-                  className="h-auto flex-col items-start gap-0.5 py-3 text-left"
-                >
-                  <a href={href} download>
-                    <span className="flex items-center gap-2 text-sm font-medium">
-                      <Download className="size-4" strokeWidth={1.75} />
-                      {label}
-                    </span>
-                    <span className="font-mono text-xs font-normal text-text-lo/80">
-                      {fileHint}
-                    </span>
-                  </a>
-                </Button>
-              ) : (
-                <Button
-                  key={downloadOs}
-                  variant="secondary"
-                  size="lg"
-                  className="h-auto flex-col items-start gap-0.5 py-3 text-left"
-                  disabled
-                  title="A Mac build has to be built on a Mac — it isn’t available yet."
-                >
+            {DOWNLOADS.map(({ os: downloadOs, label, fileHint, href }) => (
+              <Button
+                key={downloadOs}
+                asChild
+                variant={os === downloadOs ? "default" : "secondary"}
+                size="lg"
+                className="h-auto flex-col items-start gap-0.5 py-3 text-left"
+              >
+                <a href={href} download={downloadOs === "windows" || undefined}>
                   <span className="flex items-center gap-2 text-sm font-medium">
                     <Download className="size-4" strokeWidth={1.75} />
                     {label}
@@ -150,15 +136,14 @@ export default function DownloadPage() {
                   <span className="font-mono text-xs font-normal text-text-lo/80">
                     {fileHint}
                   </span>
-                </Button>
-              )
-            )}
+                </a>
+              </Button>
+            ))}
           </div>
         )}
         <p className="text-xs text-text-lo/70">
-          Windows is a real, unsigned beta build — see the install notice
-          below before you run it. The Mac build needs to be built on a Mac
-          and isn’t up yet.
+          Both builds are unsigned betas — see the install notice below before
+          you open them. Mac is a universal app (Apple Silicon and Intel).
         </p>
       </section>
 
@@ -186,7 +171,7 @@ export default function DownloadPage() {
           Beta install notice
         </h2>
         <p className="text-sm leading-relaxed text-text-lo">
-          This build isn’t code-signed yet, so Windows will warn you before
+          These builds aren’t code-signed yet, so your OS will warn you before
           the first run — this is expected, not a sign anything’s wrong.
         </p>
         <ul className="space-y-1.5 text-sm text-text-lo">
@@ -195,6 +180,13 @@ export default function DownloadPage() {
             <span className="text-text-hi">More info</span>, then{" "}
             <span className="text-text-hi">Run anyway</span> on the SmartScreen
             prompt.
+          </li>
+          <li>
+            <span className="text-text-hi">Mac:</span> if macOS says the app
+            can’t be opened, right-click the app (or the DMG icon), choose{" "}
+            <span className="text-text-hi">Open</span>, then confirm{" "}
+            <span className="text-text-hi">Open</span> again. You can also allow
+            it under System Settings → Privacy &amp; Security.
           </li>
         </ul>
       </section>

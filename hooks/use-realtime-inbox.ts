@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/components/ui/toast";
+import { showWebGlassAlert } from "@/components/notifications/web-glass-alert";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import {
   onDesktopNotificationOpen,
@@ -28,7 +28,6 @@ const adminMessageTypes = new Set(["support_member_reply", "support_new"]);
 
 export function useRealtimeInbox(admin = false) {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
   // Shares the one `auth.getUser()` the app already makes, rather than asking
   // the auth server who we are a second time on every page load.
   const currentUser = useCurrentUser();
@@ -53,19 +52,32 @@ export function useRealtimeInbox(admin = false) {
 
         playIncomingAlert(alertKind);
         const accents = readDesktopAlertAccents();
-        void showDesktopNotification({
-          kind: alertKind,
-          title,
-          body: notification.body,
-          url: notification.link_url,
-          ice: accents.ice,
-          amber: accents.amber,
-        });
+        void (async () => {
+          const shownOnDesktop = await showDesktopNotification({
+            kind: alertKind,
+            title,
+            body: notification.body,
+            url: notification.link_url,
+            ice: accents.ice,
+            amber: accents.amber,
+          });
+          // Browser (and focused desktop) get the same glass card in-app —
+          // bottom-right, above Get help — so new messages aren't silent on web.
+          if (!shownOnDesktop) {
+            showWebGlassAlert({
+              kind: alertKind,
+              title,
+              body: notification.body,
+              url: notification.link_url,
+              ice: accents.ice,
+              amber: accents.amber,
+            });
+          }
+        })();
 
         if (isDirectMessageSignal(notification.type)) {
           // A DM belongs exclusively to Messages. Use this internal row to
-          // refresh its thread and unread badge, but do not touch the bell or
-          // raise a second toast notification.
+          // refresh its thread and unread badge, but do not touch the bell.
           void queryClient.invalidateQueries({ queryKey: ["messages"] });
           void queryClient.invalidateQueries({ queryKey: ["conversations"] });
           void queryClient.invalidateQueries({ queryKey: ["dm-unread"] });
@@ -85,13 +97,11 @@ export function useRealtimeInbox(admin = false) {
           void queryClient.invalidateQueries({ queryKey: ["admin", "support"] });
           void queryClient.invalidateQueries({ queryKey: ["admin", "overview"] });
         }
-        const isInboxEvent = memberMessageTypes.has(notification.type ?? "") || (admin && adminMessageTypes.has(notification.type ?? ""));
-        if (isInboxEvent) toast(notification.title ?? "New message", "info", notification.link_url ? { label: "Open", onClick: () => window.location.assign(notification.link_url!) } : undefined);
       })
       .subscribe();
 
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [admin, queryClient, toast, userId]);
+  }, [admin, queryClient, userId]);
 }

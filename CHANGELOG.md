@@ -4,6 +4,42 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-11
 
+- Fixed (v0.120.1): the browser now shows the same glass **new message**
+  popup as desktop (bottom-right, above Get help). The mistaken “TEMPO update
+  is available” card on the web was removed — updates stay a desktop-only
+  prompt.
+- Added (v0.120.0): **Download for Mac** is wired up — Desktop Release now
+  builds an unsigned universal Mac app on GitHub Actions (no Mac on your desk
+  required). Gatekeeper will warn the first time; right-click → Open. Run the
+  Desktop Release workflow once so the DMG is actually on the download channel.
+- Changed (v0.119.6): Social’s globe sits higher, and after the first spin it
+  gently tips so Australia and southern South America come into view before
+  settling back. The “Scroll to zoom · drag to spin” line is readable again.
+- Fixed (v0.119.5): Social only keeps the center **Join as TEMPO member**
+  button when you’re off the network — the header and Feed duplicates are
+  gone.
+- Added (v0.119.5): *(superseded by v0.120.1)* an earlier web “update available”
+  card was a misread of the request; message alerts are what belong on the web.
+- Fixed (v0.119.5): Download / Update TEMPO Desktop works again — the
+  GitHub release channel wasn’t published yet, so the link 404’d; it now
+  serves the working Windows installer from TEMPO itself.
+- Fixed (v0.119.4): Origin’s **The Story** chapter scrolls with the page —
+  you no longer have to hunt for a scroll box inside the window, and the odd
+  black bar under Edit is gone.
+- Fixed (v0.119.4): **Report a problem** opens again on web and desktop — the
+  dialog was stuck behind the workspace chrome.
+- Changed (v0.119.4): Origin’s Look preview is taller so banner, logo, and
+  profile image aren’t clipped in that little strip.
+- Fixed (v0.119.4): “The signal has a history now” keeps history and now on
+  one line instead of wrapping awkwardly.
+- Changed (v0.119.4): Origin’s Tempo Theme bed sits a little louder so it reads
+  under the film without taking over.
+- Changed (v0.119.4): invitation emails offer **Create your TEMPO account** or
+  **Download TEMPO** (no Windows-only wording), since you can create the
+  account in the desktop app too.
+- Fixed (v0.119.4): if TEMPO Desktop is registered on your account, the web
+  rail says **Open in desktop** instead of keeping you on Update when the
+  stored version is a little behind.
 - Fixed (v0.119.3): the web rail no longer keeps saying **Update TEMPO Desktop**
   after you’ve already updated — it prefers a desktop install that can open
   from the browser, and Update downloads the current public installer instead

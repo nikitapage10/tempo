@@ -49,15 +49,21 @@ type ConnectionGlobeProps = {
 const SPHERE_R = 0.8;
 /** Where the avatar floats, as a multiple of the sphere radius. */
 const PIN_R = 1.02;
-const THETA = 0.3;
+/** Resting tilt — northern mid-latitudes facing the viewer. */
+const BASE_THETA = 0.3;
+/** How far past BASE_THETA the auto-tilt leans toward the southern hemisphere. */
+const SOUTH_TIP = 0.72;
 /** Slow, ambient drift — about one rotation every ~3.5 minutes. */
 const BASE_SPEED = 0.0008;
-/** Fraction of the (square) canvas kept visible — enough crest above the
- *  horizon that the globe doesn't sit sunk under the fold. */
-const VISIBLE = 0.68;
+/** Fraction of the (square) canvas kept visible — crest sits high enough
+ *  that the sphere isn't sunk under the fold. */
+const VISIBLE = 0.8;
 /** Room above the sphere crest for the atmosphere glow — without this the
  *  halo clips against the container and reads as a flat square top. */
-const GLOW_PAD = 40;
+const GLOW_PAD = 28;
+/** Shift the square globe up within its crop so more of the planet reads
+ *  above the page fold. */
+const GLOBE_LIFT_PX = 56;
 const ZOOM_MIN = 1;
 const ZOOM_MAX = 2.55;
 /** At zoom 1, pins closer than this (degrees) hide behind each other;
@@ -134,6 +140,19 @@ function cullDense(markers: GlobeMarker[], zoom: number): GlobeMarker[] {
     }
   }
   return shown;
+}
+
+/**
+ * After the first full horizontal lap, gently tip the axis toward the
+ * southern hemisphere (Australia, southern South America) and ease back
+ * to the resting tilt — one tip cycle every ~1.5 revolutions.
+ */
+function autoTiltTheta(phi: number): number {
+  const revolutions = phi / (Math.PI * 2);
+  if (revolutions < 1) return BASE_THETA;
+  const cycle = ((revolutions - 1) % 1.5) / 1.5;
+  const envelope = Math.sin(cycle * Math.PI);
+  return BASE_THETA + envelope * SOUTH_TIP;
 }
 
 function clampZoom(z: number) {
@@ -299,7 +318,7 @@ export function ConnectionGlobe({
       width: size * 2,
       height: size * 2,
       phi: 0,
-      theta: THETA,
+      theta: BASE_THETA,
       dark: 1,
       // diffuse 0 = no lambert shading on the sphere body, so the "water"
       // between dots renders flat black instead of a lit blue-gray ball.
@@ -348,10 +367,11 @@ export function ConnectionGlobe({
         phiRef.current = phi;
       }
 
+      const restTheta = reduce ? BASE_THETA : autoTiltTheta(phi);
       const effPhi = phi + dragPhiOffset.current + dragLive.current.phi;
       const effTheta = Math.max(
         -1.4,
-        Math.min(1.4, THETA + dragThetaOffset.current + dragLive.current.theta)
+        Math.min(1.4, restTheta + dragThetaOffset.current + dragLive.current.theta)
       );
 
       globe.update({ phi: effPhi, theta: effTheta });
@@ -414,33 +434,36 @@ export function ConnectionGlobe({
   return (
     <div
       ref={rootRef}
-      className={cn("relative w-full overflow-hidden touch-none select-none", className)}
-      style={{
-        height: height || undefined,
-        // Soft elliptical dissolve — no hard rectangular frame against the
-        // moving workspace wash. Sides and horizon fall off together.
-        WebkitMaskImage:
-          "radial-gradient(ellipse 92% 88% at 50% 28%, #000 42%, rgba(0,0,0,0.85) 58%, rgba(0,0,0,0.35) 72%, transparent 82%)",
-        maskImage:
-          "radial-gradient(ellipse 92% 88% at 50% 28%, #000 42%, rgba(0,0,0,0.85) 58%, rgba(0,0,0,0.35) 72%, transparent 82%)",
-      }}
+      className={cn("relative w-full touch-none select-none", className)}
+      style={{ height: height || undefined }}
       onMouseLeave={() => setHoverId(null)}
       onPointerMove={onPointerMoveDrag}
       onPointerDown={onPointerDown}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
     >
+      {/* Mask only the globe wash — the scroll/drag caption stays outside so
+          the soft dissolve can't wipe its contrast into the page background. */}
       <div
-        className="absolute left-1/2"
+        className="absolute inset-0 overflow-hidden"
         style={{
-          width: size,
-          height: size,
-          top: GLOW_PAD,
-          cursor: dragging ? "grabbing" : "grab",
-          transform: `translateX(-50%) translateY(-18px) scale(${zoom})`,
-          transformOrigin: "50% 40%",
+          WebkitMaskImage:
+            "radial-gradient(ellipse 92% 88% at 50% 22%, #000 42%, rgba(0,0,0,0.85) 58%, rgba(0,0,0,0.35) 72%, transparent 82%)",
+          maskImage:
+            "radial-gradient(ellipse 92% 88% at 50% 22%, #000 42%, rgba(0,0,0,0.85) 58%, rgba(0,0,0,0.35) 72%, transparent 82%)",
         }}
       >
+        <div
+          className="absolute left-1/2"
+          style={{
+            width: size,
+            height: size,
+            top: GLOW_PAD,
+            cursor: dragging ? "grabbing" : "grab",
+            transform: `translateX(-50%) translateY(-${GLOBE_LIFT_PX}px) scale(${zoom})`,
+            transformOrigin: "50% 36%",
+          }}
+        >
         {/* Atmosphere — soft outer glow only. Box-shadow on a circle that
             matches the sphere disc, sitting BEHIND the clipped globe so
             nothing additive lands on the planet face and there's no rim
@@ -571,22 +594,23 @@ export function ConnectionGlobe({
             </div>
           );
         })}
+        </div>
+
+        {/* Horizon scrim — soft alpha only, so it blends into the video wash
+            instead of painting an opaque black rectangle under the globe. */}
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%]"
+          style={{
+            background:
+              "linear-gradient(to top, rgb(10 10 12 / 0.35) 0%, rgb(10 10 12 / 0.12) 45%, transparent 100%)",
+          }}
+          aria-hidden
+        />
       </div>
 
-      {/* Horizon scrim — soft alpha only, so it blends into the video wash
-          instead of painting an opaque black rectangle under the globe. */}
-      <div
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-[48%]"
-        style={{
-          background:
-            "linear-gradient(to top, rgb(10 10 12 / 0.45) 0%, rgb(10 10 12 / 0.18) 45%, transparent 100%)",
-        }}
-        aria-hidden
-      />
-
       {allMarkers.length > 0 ? (
-        <div className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center gap-3 px-3">
-          <p className="text-[11px] text-text-lo">
+        <div className="pointer-events-none absolute inset-x-0 bottom-1 z-10 flex justify-center gap-3 px-3">
+          <p className="rounded-full bg-bg-0/55 px-2.5 py-0.5 text-[11px] text-text-hi/80 backdrop-blur-sm">
             {culled
               ? "Scroll to zoom — denser areas open up as you get closer"
               : zoom > 1.04
@@ -596,7 +620,7 @@ export function ConnectionGlobe({
           {zoom > 1.04 ? (
             <button
               type="button"
-              className="pointer-events-auto text-[11px] text-ice hover:underline"
+              className="pointer-events-auto rounded-full bg-bg-0/55 px-2.5 py-0.5 text-[11px] text-ice backdrop-blur-sm hover:underline"
               onClick={() => {
                 zoomRef.current = ZOOM_MIN;
                 setZoom(ZOOM_MIN);
