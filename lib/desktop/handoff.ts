@@ -10,18 +10,18 @@ export type DesktopDeviceRef = {
 /** Desktop builds before this lack a working tempo:// handler. */
 export const DESKTOP_LINK_MIN_VERSION = [0, 100, 10] as const;
 
-/** Must match electron/package.json version — pins public download assets. */
+/** Must match electron/package.json — fallback pin if the public channel is empty. */
 export const DESKTOP_SHELL_VERSION = "0.100.13";
 
 /**
- * Current Windows installer on the public release channel (version-pinned so
- * browsers and CDNs cannot keep serving a stale /latest/ build).
+ * Fallback Windows installer URL (version-pinned). Live Download prefers
+ * whatever GitHub marks as latest — see app/api/desktop/windows/route.ts.
  */
 export const DESKTOP_PUBLIC_CHANNEL_INSTALLER_URL =
   `https://github.com/nikitapage10/tempo-desktop-releases/releases/download/v${DESKTOP_SHELL_VERSION}/TEMPO-Setup.exe`;
 
 /**
- * Current Mac DMG on the public release channel (same pin as Windows).
+ * Fallback Mac DMG URL (same pin). Live Download prefers the public latest.
  * Override with NEXT_PUBLIC_DESKTOP_MAC_URL if needed.
  */
 export const DESKTOP_MAC_INSTALLER_URL =

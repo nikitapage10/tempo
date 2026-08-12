@@ -71,9 +71,26 @@ const DOWNLOADS: {
 export default function DownloadPage() {
   const os = React.useMemo(() => detectOS(), []);
   const [mounted, setMounted] = React.useState(false);
+  const [channelVersion, setChannelVersion] = React.useState(DESKTOP_SHELL_VERSION);
+  const [macReady, setMacReady] = React.useState(true);
   const activeDevice = useActiveDesktopDevice();
 
   React.useEffect(() => setMounted(true), []);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    void fetch("/api/desktop/latest", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || !data || typeof data.version !== "string") return;
+        setChannelVersion(data.version);
+        setMacReady(Boolean(data.mac));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handoff = mounted
     ? resolveDesktopHandoff({
@@ -158,7 +175,8 @@ export default function DownloadPage() {
                       </span>
                       <span className="font-mono text-xs font-normal text-text-lo/80">
                         {fileHint}
-                        {downloadOs === "windows" ? ` · v${DESKTOP_SHELL_VERSION}` : ""}
+                        {` · v${channelVersion}`}
+                        {downloadOs === "mac" && !macReady ? " · publishing soon" : ""}
                       </span>
                     </a>
                   </Button>

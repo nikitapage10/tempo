@@ -97,10 +97,11 @@ interrupts active work, and the banner stays out of distraction-free focus
 sessions. You do not need to keep downloading a fresh installer by hand for
 ordinary updates. When the native desktop shell itself changes, TEMPO
 publishes a new Windows and Mac build to the public download channel
-(automatically on those changes, with a daily catch-up). Download and Update
-links on the web prefer that newest public installer, and fall back to a
-working Windows installer from TEMPO itself if the channel is empty. The
-Download page is reachable from an invite without signing in first.
+(automatically on those changes, with a daily catch-up). The Download page
+and Update links follow that newest Windows and Mac installer as soon as it
+publishes — no separate web bump required — and fall back to a working
+Windows installer from TEMPO itself if the channel is empty. The Download
+page is reachable from an invite without signing in first.
 
 **Admin and support experience.** The Admin overview is an operating dashboard:
 it calls out support and moderation work needing attention, shows 30-day member

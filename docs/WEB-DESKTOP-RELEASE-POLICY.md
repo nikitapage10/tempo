@@ -93,10 +93,13 @@ public channel when:
    version is not already tagged on `tempo-desktop-releases`.
 3. Someone runs the workflow manually (`workflow_dispatch`).
 
-Web Download / Update links use `/api/desktop/windows` and `/api/desktop/mac`,
-which prefer the public `latest` assets and fall back to the bundled Windows
-beta under `/downloads` when the channel is empty. Mac returns 404 until a DMG
-has been published.
+Web Download / Update links use `/api/desktop/windows` and `/api/desktop/mac`.
+Those routes ask GitHub which release is currently `latest` and redirect to that
+exact Windows or Mac asset — so a newly published Desktop Release shows up on
+the Download page **immediately**, without waiting for a web redeploy. If the
+channel is empty, Windows falls back to the bundled beta under `/downloads`;
+Mac returns 404 until a DMG exists. A small `/api/desktop/latest` probe powers
+the version label on the Download page.
 
 The public release repository contains binaries and update metadata only, not
 TEMPO source code. A Windows release must contain at least:
