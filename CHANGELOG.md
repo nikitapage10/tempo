@@ -4,6 +4,7 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-12
 
+- Changed (v0.132.0): search understands tempo more clearly — try `bpm 140`, `140 bpm`, or a range like `140-150` / `bpm 140 through 150` to list tracks in that speed, without every song that merely mentions “BPM” in a note crowding the results.
 - Fixed (v0.131.0 / Desktop v0.100.19): Google and Microsoft sign-in on TEMPO Desktop open in your normal browser again (so those providers stop blocking Electron as “not secure”), then hand you back into the app. Update the desktop app after Desktop Release publishes, and add `/auth/desktop-bridge` to the Supabase redirect allow-list (see OAuth setup notes).
 - Changed (v0.130.0): covers, logos, and scene banners show up faster in the browser — TEMPO keeps a Spectra / tint placeholder while art finishes loading, signs many track covers in one go instead of one-by-one, and quietly warms pictures after you sign in so the next page feels less empty. Scenes and Social art also skip a wasted failed sign before the working link.
 - Fixed (v0.129.1 / Desktop v0.100.18): on Mac, the new-message glass toast still shows when another app (or TEMPO) is in fullscreen. Re-download after Desktop Release publishes.
