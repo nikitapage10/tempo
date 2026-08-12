@@ -46,6 +46,12 @@ contextBridge.exposeInMainWorld("tempoDesktop", {
     out: () => ipcRenderer.invoke("zoom:out"),
     reset: () => ipcRenderer.invoke("zoom:reset"),
     get: () => ipcRenderer.invoke("zoom:get"),
+    resetNative: () => ipcRenderer.invoke("zoom:resetNative"),
+    onNudge: (callback) => {
+      const listener = (_event, delta) => callback(delta);
+      ipcRenderer.on("zoom:nudge", listener);
+      return () => ipcRenderer.removeListener("zoom:nudge", listener);
+    },
   },
 
   updates: {

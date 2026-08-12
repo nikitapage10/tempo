@@ -35,6 +35,10 @@ export type DesktopBridge = {
     out: () => Promise<number>;
     reset: () => Promise<number>;
     get: () => Promise<number>;
+    /** Optional: shell Ctrl/Cmd +/- nudges content zoom (CSS on main). */
+    onNudge?: (callback: (delta: number) => void) => () => void;
+    /** Force Chromium page zoom back to 1 so only content CSS zoom applies. */
+    resetNative?: () => Promise<number>;
   };
   /** Optional until every pre-banner desktop install has updated. */
   updates?: {
@@ -255,38 +259,62 @@ export function onDesktopNotificationOpen(callback: (url: string) => void): () =
 }
 
 /**
- * Desktop-only interface zoom — there's no visible menu bar to hang the
- * usual Ctrl+=/-/0 accelerators off (see electron/main.js), so this backs
- * both a keyboard shortcut and a visible on-screen control
- * (components/desktop/zoom-control.tsx). All resolve to the new zoom factor
- * (1.0 = 100%) so the control can stay in sync; no-ops to 1.0 outside desktop.
+ * Desktop interface zoom. The left rail stays at 100% — only the main
+ * workspace scales (see hooks/use-content-zoom.ts). Older shells that still
+ * call setZoomFactor are cleared via resetNativePageZoom on mount.
  */
 export async function zoomIn(): Promise<number> {
-  const b = bridge();
-  if (!b) return 1;
-  return b.zoom.in();
+  if (!isDesktopApp()) return 1;
+  const { nudgeContentZoom } = await import("@/lib/desktop/content-zoom");
+  await resetNativePageZoom();
+  return nudgeContentZoom(0.1);
 }
 
 export async function zoomOut(): Promise<number> {
-  const b = bridge();
-  if (!b) return 1;
-  return b.zoom.out();
+  if (!isDesktopApp()) return 1;
+  const { nudgeContentZoom } = await import("@/lib/desktop/content-zoom");
+  await resetNativePageZoom();
+  return nudgeContentZoom(-0.1);
 }
 
 export async function zoomReset(): Promise<number> {
-  const b = bridge();
-  if (!b) return 1;
-  return b.zoom.reset();
+  if (!isDesktopApp()) return 1;
+  const { writeContentZoom } = await import("@/lib/desktop/content-zoom");
+  await resetNativePageZoom();
+  return writeContentZoom(1);
 }
 
 export async function getZoomFactor(): Promise<number> {
+  if (!isDesktopApp()) return 1;
+  const { readContentZoom } = await import("@/lib/desktop/content-zoom");
+  return readContentZoom();
+}
+
+export async function resetNativePageZoom(): Promise<void> {
   const b = bridge();
-  if (!b) return 1;
-  try {
-    return await b.zoom.get();
-  } catch {
-    return 1;
+  if (b?.zoom.resetNative) {
+    try {
+      await b.zoom.resetNative();
+    } catch {
+      /* ignore */
+    }
+    return;
   }
+  // Older shell: clear leftover Chromium page zoom once via reset IPC.
+  try {
+    await b?.zoom.reset();
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Shell keyboard shortcuts → content zoom (delta 0 = reset). */
+export function onDesktopZoomNudge(
+  callback: (delta: number) => void
+): () => void {
+  const b = bridge();
+  if (!b?.zoom.onNudge) return () => {};
+  return b.zoom.onNudge(callback);
 }
 
 /**

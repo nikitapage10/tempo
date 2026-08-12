@@ -36,8 +36,6 @@ const CHROME_SYMBOL = "#8B8B96";
 const TITLE_BAR_HEIGHT = 40;
 
 const ZOOM_STEP = 0.1;
-const ZOOM_MIN = 0.5;
-const ZOOM_MAX = 2.0;
 
 // Privileged-scheme registration must happen before app.whenReady().
 protocol.registerSchemesAsPrivileged([
@@ -287,13 +285,19 @@ function showMainWindow() {
 
 // No visible menu bar (autoHideMenuBar above, plus Menu.setApplicationMenu(null)
 // below on Windows), so the accelerators that would normally live on a "View"
-// menu — zoom in/out/reset — are wired up by hand, shared between the
-// keyboard shortcut here and the on-screen control's IPC calls below.
-function adjustZoom(win, delta) {
-  const current = win.webContents.getZoomFactor();
-  const next = delta === 0 ? 1.0 : Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, current + delta));
-  win.webContents.setZoomFactor(next);
-  return next;
+// menu — zoom in/out/reset — are wired up by hand. They nudge *content* zoom
+// in the renderer (CSS on <main>) and keep Chromium page zoom pinned at 1 so
+// the left rail never scales with the workspace.
+function ensureNativeZoomOne(win) {
+  if (!win || win.isDestroyed()) return;
+  if (win.webContents.getZoomFactor() !== 1) {
+    win.webContents.setZoomFactor(1);
+  }
+}
+
+function nudgeContentZoom(win, delta) {
+  ensureNativeZoomOne(win);
+  win.webContents.send("zoom:nudge", delta);
 }
 
 function registerZoomShortcuts(win) {
@@ -304,13 +308,13 @@ function registerZoomShortcuts(win) {
 
     if (input.key === "=" || input.key === "+") {
       event.preventDefault();
-      adjustZoom(win, ZOOM_STEP);
+      nudgeContentZoom(win, ZOOM_STEP);
     } else if (input.key === "-") {
       event.preventDefault();
-      adjustZoom(win, -ZOOM_STEP);
+      nudgeContentZoom(win, -ZOOM_STEP);
     } else if (input.key === "0") {
       event.preventDefault();
-      adjustZoom(win, 0);
+      nudgeContentZoom(win, 0);
     }
   });
 }
@@ -592,10 +596,23 @@ function registerVaultIpc() {
     return true;
   });
 
-  ipcMain.handle("zoom:in", () => adjustZoom(mainWindow, ZOOM_STEP));
-  ipcMain.handle("zoom:out", () => adjustZoom(mainWindow, -ZOOM_STEP));
-  ipcMain.handle("zoom:reset", () => adjustZoom(mainWindow, 0));
-  ipcMain.handle("zoom:get", () => mainWindow.webContents.getZoomFactor());
+  ipcMain.handle("zoom:in", () => {
+    nudgeContentZoom(mainWindow, ZOOM_STEP);
+    return true;
+  });
+  ipcMain.handle("zoom:out", () => {
+    nudgeContentZoom(mainWindow, -ZOOM_STEP);
+    return true;
+  });
+  ipcMain.handle("zoom:reset", () => {
+    nudgeContentZoom(mainWindow, 0);
+    return true;
+  });
+  ipcMain.handle("zoom:get", () => 1);
+  ipcMain.handle("zoom:resetNative", () => {
+    ensureNativeZoomOne(mainWindow);
+    return 1;
+  });
   ipcMain.handle("notifications:show", (_e, input) => showGlassNotification(input));
 }
 

@@ -48,6 +48,7 @@ import { ZoomControl } from "@/components/desktop/zoom-control";
 import { OfflineBanner } from "@/components/offline-banner";
 import { DesktopUpdateBanner } from "@/components/desktop/update-banner";
 import { AppVideoBackdrop } from "@/components/app-video-backdrop";
+import { useContentZoom } from "@/hooks/use-content-zoom";
 
 // Artist sits above the space-scoped screens: it rolls up every space the
 // artist owns, so it stays in the rail whatever the active space's focus is.
@@ -116,6 +117,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useRealtimeInbox();
   useDesktopMediaWarm();
   useBrowserMediaWarm();
+  const { factor: contentZoom } = useContentZoom();
   const pathname = usePathname();
   const router = useRouter();
   const { activeSpace } = useActiveSpace();
@@ -157,9 +159,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       />
 
       <div className="flex min-h-0 flex-1">
-        {/* Left 2px gutter stays transparent so active-nav windows can punch through */}
+        {/* Compact icon rail from md→xl; full labels from xl up. Left 2px
+            gutter stays transparent so active-nav windows can punch through. */}
         <aside
-          className="sticky top-0 z-30 hidden h-screen w-[220px] shrink-0 flex-col border-r border-line md:flex"
+          className="sticky top-0 z-30 hidden h-screen w-[68px] shrink-0 flex-col border-r border-line md:flex xl:w-[220px]"
           style={{
             background:
               "linear-gradient(to right, transparent 2px, var(--bg-1) 2px)",
@@ -171,24 +174,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             className="pointer-events-none absolute inset-y-0 right-[-1px] w-px"
             aria-hidden
           />
-          <div className="px-5 pt-6 pb-4">
-            <div className="flex items-center gap-2">
+          <div className="px-2 pt-6 pb-4 xl:px-5">
+            <div className="flex items-center justify-center gap-2 xl:justify-start">
               <Link
                 href="/"
                 className="rounded-input focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
               >
-                <Wordmark size={26} />
+                <Wordmark size={22} markOnly className="xl:hidden" />
+                <Wordmark size={26} className="hidden xl:inline-flex" />
               </Link>
             </div>
             <FlareLine className="mt-3" />
           </div>
 
-          <div className="flex flex-col gap-1.5 px-3 pb-4">
+          <div className="flex flex-col gap-1.5 px-1.5 pb-4 xl:px-3">
             <ArtistSwitcher />
             <SpaceSwitcher />
           </div>
 
-          <nav data-tour="workspace-nav" className="flex flex-1 flex-col gap-0.5 px-3">
+          <nav data-tour="workspace-nav" className="flex flex-1 flex-col gap-0.5 px-1.5 xl:px-3">
             {mainNav.map(({ href, label, icon: Icon }) => {
               const active = isActive(pathname, href);
               return (
@@ -197,8 +201,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   href={href}
                   data-context-tour={href.slice(1) || "today"}
                   title={NAV_DESCRIPTIONS[href]}
+                  aria-label={label}
                   className={cn(
-                    "group relative flex items-center gap-2.5 rounded-input px-3 py-2 text-sm transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
+                    "group relative flex items-center justify-center gap-2.5 rounded-input px-2 py-2 text-sm transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice xl:justify-start xl:px-3",
                     active
                       ? "font-semibold text-text-hi"
                       : "font-medium text-text-lo hover:bg-bg-2/60 hover:text-text-hi"
@@ -206,16 +211,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 >
                   {active ? (
                     <LfWindow
-                      className="absolute left-[-12px] top-1.5 bottom-1.5 w-[2px]"
+                      className="absolute left-[-6px] top-1.5 bottom-1.5 w-[2px] xl:left-[-12px]"
                       aria-hidden
                     />
                   ) : null}
                   <Icon
-                    className={cn("size-4", active ? "text-ice" : "text-text-lo")}
+                    className={cn("size-4 shrink-0", active ? "text-ice" : "text-text-lo")}
                     strokeWidth={1.75}
                   />
-                  {label}
-                  <span className="pointer-events-none absolute left-[calc(100%+12px)] top-1/2 z-[90] w-60 -translate-y-1/2 rounded-input border border-line bg-bg-1 px-3 py-2 text-xs leading-relaxed text-text-lo opacity-0 shadow-e3 transition-opacity delay-150 group-hover:opacity-100 group-focus-visible:opacity-100">
+                  <span className="hidden xl:inline">{label}</span>
+                  <span className="pointer-events-none absolute left-[calc(100%+12px)] top-1/2 z-[90] hidden w-60 -translate-y-1/2 rounded-input border border-line bg-bg-1 px-3 py-2 text-xs leading-relaxed text-text-lo opacity-0 shadow-e3 transition-opacity delay-150 group-hover:opacity-100 group-focus-visible:opacity-100 xl:block">
                     {NAV_DESCRIPTIONS[href]}
                   </span>
                 </Link>
@@ -226,14 +231,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <GlobalPlayerBar />
 
           <SlitDivider />
-          <div className="px-3 py-4">
+          <div className="px-1.5 py-4 xl:px-3">
             <DownloadButton />
             <Link
               href="/settings"
               data-context-tour="settings"
               title={NAV_DESCRIPTIONS["/settings"]}
+              aria-label="Settings"
               className={cn(
-                "group relative flex items-center gap-2.5 rounded-input px-3 py-2 text-sm transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
+                "group relative flex items-center justify-center gap-2.5 rounded-input px-2 py-2 text-sm transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice xl:justify-start xl:px-3",
                 isActive(pathname, "/settings")
                   ? "font-semibold text-text-hi"
                   : "font-medium text-text-lo hover:bg-bg-2/60 hover:text-text-hi"
@@ -241,33 +247,41 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             >
               {isActive(pathname, "/settings") ? (
                 <LfWindow
-                  className="absolute left-[-12px] top-1.5 bottom-1.5 w-[2px]"
+                  className="absolute left-[-6px] top-1.5 bottom-1.5 w-[2px] xl:left-[-12px]"
                   aria-hidden
                 />
               ) : null}
               <Settings
                 className={cn(
-                  "size-4",
+                  "size-4 shrink-0",
                   isActive(pathname, "/settings") ? "text-ice" : "text-text-lo"
                 )}
                 strokeWidth={1.75}
               />
-              Settings
-              <span className="pointer-events-none absolute left-[calc(100%+12px)] top-1/2 z-[90] w-60 -translate-y-1/2 rounded-input border border-line bg-bg-1 px-3 py-2 text-xs leading-relaxed text-text-lo opacity-0 shadow-e3 transition-opacity delay-150 group-hover:opacity-100 group-focus-visible:opacity-100">
+              <span className="hidden xl:inline">Settings</span>
+              <span className="pointer-events-none absolute left-[calc(100%+12px)] top-1/2 z-[90] hidden w-60 -translate-y-1/2 rounded-input border border-line bg-bg-1 px-3 py-2 text-xs leading-relaxed text-text-lo opacity-0 shadow-e3 transition-opacity delay-150 group-hover:opacity-100 group-focus-visible:opacity-100 xl:block">
                 {NAV_DESCRIPTIONS["/settings"]}
               </span>
             </Link>
             <SupportReportDialog />
-            <Link href="/beta" className="mt-3 block rounded-input px-3 py-1 font-mono text-xs text-text-lo/70 transition-colors hover:bg-bg-2 hover:text-ice">
+            <Link
+              href="/beta"
+              title={`v${APP_VERSION}`}
+              className="mt-3 hidden rounded-input px-3 py-1 font-mono text-xs text-text-lo/70 transition-colors hover:bg-bg-2 hover:text-ice xl:block"
+            >
               v{APP_VERSION}
             </Link>
           </div>
         </aside>
 
         {/* z-30 keeps this stacking context above the desktop drag strip so
-            search and notification hit targets stay clickable. */}
-        <main className="relative z-30 isolate min-h-0 flex-1 overflow-x-hidden overflow-y-auto pb-20 md:pb-0">
-          <AppVideoBackdrop className="fixed inset-x-0 bottom-0 top-0 z-0 md:bottom-[6px] md:left-[220px]" />
+            search and notification hit targets stay clickable. Desktop
+            content zoom scales this column only — the rail stays put. */}
+        <main
+          className="relative z-30 isolate min-h-0 flex-1 overflow-x-hidden overflow-y-auto pb-20 md:pb-0"
+          style={contentZoom !== 1 ? { zoom: contentZoom } : undefined}
+        >
+          <AppVideoBackdrop className="fixed inset-x-0 bottom-0 top-0 z-0 md:bottom-[6px] md:left-[68px] xl:left-[220px]" />
           <div className="relative z-[1] mx-auto w-full max-w-[1440px] px-4 md:px-8">
             {/* [-webkit-app-region:drag] makes this row double as the desktop
                 app's window-drag handle (a no-op outside Electron, so it's
