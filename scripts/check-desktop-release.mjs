@@ -16,6 +16,19 @@ if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version ?? "")) {
   errors.push(`electron/package.json has an invalid version: ${version ?? "missing"}`);
 }
 
+const handoffPath = path.join(root, "lib", "desktop", "handoff.ts");
+const handoffSource = fs.readFileSync(handoffPath, "utf8");
+const shellVersionMatch = handoffSource.match(
+  /export const DESKTOP_SHELL_VERSION = "([^"]+)"/
+);
+if (!shellVersionMatch) {
+  errors.push("lib/desktop/handoff.ts must export DESKTOP_SHELL_VERSION");
+} else if (shellVersionMatch[1] !== version) {
+  errors.push(
+    `DESKTOP_SHELL_VERSION (${shellVersionMatch[1]}) must match electron/package.json (${version})`
+  );
+}
+
 if (desktopPackage.build?.extraMetadata?.version !== version) {
   errors.push("electron/package.json version and build.extraMetadata.version must match");
 }

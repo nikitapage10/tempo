@@ -75,7 +75,7 @@ export default function WelcomePage() {
           </Button>
 
           <Button asChild variant="secondary" size="lg" className="h-auto justify-start gap-3 py-4 text-left">
-            <a href={desktopHref} download={!preferMac || undefined}>
+            <a href={desktopHref}>
               <Download className="size-5 shrink-0" strokeWidth={1.75} />
               <span>
                 <span className="block text-sm font-medium">{desktopLabel}</span>

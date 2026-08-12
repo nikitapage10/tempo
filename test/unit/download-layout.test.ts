@@ -8,8 +8,11 @@ const downloadPage = fs.readFileSync(
 );
 
 describe("Download page layout", () => {
-  it("is a public page outside the signed-in app shell", () => {
-    expect(downloadPage).toContain("Download TEMPO for Windows and Mac");
+  it("is a public Spectra/glass landing outside the signed-in app shell", () => {
+    expect(downloadPage).toContain("glass-hero");
+    expect(downloadPage).toContain("LfWindow");
+    expect(downloadPage).toContain("TEMPO on your computer");
+    expect(downloadPage).toContain("Use the web app");
     expect(downloadPage).toContain('href="/login"');
     expect(fs.existsSync(path.join(process.cwd(), "app/(app)/download/page.tsx"))).toBe(
       false

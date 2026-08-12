@@ -3,6 +3,9 @@
 import * as React from "react";
 import Link from "next/link";
 import { Download, HardDrive, MonitorSmartphone, RadioTower, Wifi, WifiOff } from "lucide-react";
+import { IntroPreload } from "@/components/intro-preload";
+import { LfWindow } from "@/components/lf-windows";
+import { FlareLine } from "@/components/flare-line";
 import { Button } from "@/components/ui/button";
 import { Wordmark } from "@/components/wordmark";
 import { useActiveDesktopDevice } from "@/hooks/use-devices";
@@ -10,6 +13,7 @@ import {
   resolveDesktopHandoff,
   DESKTOP_WINDOWS_INSTALLER_URL,
   DESKTOP_MAC_DOWNLOAD_URL,
+  DESKTOP_SHELL_VERSION,
 } from "@/lib/desktop/handoff";
 import { detectOS, isDesktopApp } from "@/lib/platform";
 import { getSiteUrl } from "@/lib/site";
@@ -18,22 +22,22 @@ const HIGHLIGHTS = [
   {
     icon: RadioTower,
     title: "Opens instantly",
-    body: "The app itself lives on your computer, so there's no waiting on a connection just to see your workspace.",
+    body: "The app lives on your computer — no waiting on a connection just to see your workspace.",
   },
   {
     icon: HardDrive,
-    title: "Your whole bounce history, kept",
-    body: "Every version you've ever uploaded stays on this computer — not just the newest two the cloud keeps.",
+    title: "Every bounce, kept",
+    body: "Your full version history stays here, not only the newest two the cloud keeps.",
   },
   {
     icon: WifiOff,
-    title: "Works on Board, Tracks, Projects, Tasks, and Calendar offline",
-    body: "Keep working on a plane or with bad wifi. Everything else needs a connection, same as today.",
+    title: "Works offline where it counts",
+    body: "Board, Tracks, Projects, Tasks, and Calendar keep going on a plane or bad wifi.",
   },
   {
     icon: Wifi,
-    title: "Syncs quietly in the background",
-    body: "TEMPO keeps itself current even when it isn't open, so it's already caught up by the time you get to it.",
+    title: "Quiet background sync",
+    body: "TEMPO stays current even when it isn’t open, so you’re caught up when you return.",
   },
 ];
 
@@ -49,21 +53,20 @@ const DOWNLOADS: {
   {
     os: "windows",
     label: "Download for Windows",
-    fileHint: "Windows wizard installer · about 80 MB",
+    fileHint: "Install wizard · about 80 MB",
     href: WINDOWS_INSTALLER_URL,
   },
   {
     os: "mac",
     label: "Download for Mac",
-    fileHint: "Unsigned universal DMG · about 120 MB",
+    fileHint: "Universal DMG · about 120 MB",
     href: MAC_INSTALLER_URL,
   },
 ];
 
 /**
- * Public download page — reachable without sign-in (invite email, shared
- * links). Keeps the same installer URLs and handoff as the in-app Download
- * control; outside (app) so Origin unfinished does not redirect away.
+ * Public download landing — invite emails often open here first. Uses the same
+ * Spectra / glass language as sign-in so the first impression matches TEMPO.
  */
 export default function DownloadPage() {
   const os = React.useMemo(() => detectOS(), []);
@@ -86,130 +89,146 @@ export default function DownloadPage() {
   const showUpdateDesktop = handoff?.kind === "update-desktop";
 
   return (
-    <div className="min-h-screen bg-bg-0 px-6 py-10 sm:px-10">
-      <div className="mx-auto w-full max-w-3xl space-y-6">
-        <header className="flex flex-wrap items-center justify-between gap-3">
-          <Link href="/" className="text-text-hi">
-            <Wordmark size={28} />
-          </Link>
-          <Button asChild variant="ghost" size="sm">
-            <Link href="/login">Sign in</Link>
-          </Button>
-        </header>
+    <div className="relative flex min-h-screen flex-col md:flex-row" data-lf-chrome>
+      <IntroPreload />
 
-        <div>
-          <h1 className="font-display text-2xl tracking-tight text-text-hi">
-            TEMPO
-          </h1>
-          <p className="mt-1 text-sm text-text-lo">
-            Download TEMPO for Windows and Mac.
-          </p>
-        </div>
+      <div className="relative z-10 flex flex-1 items-start justify-center overflow-y-auto px-6 py-10 sm:px-10 md:items-center md:py-14">
+        <div className="flex w-full max-w-xl flex-col gap-5">
+          <header className="flex flex-wrap items-center justify-between gap-3">
+            <Link href="/" className="text-text-hi">
+              <Wordmark size={28} />
+            </Link>
+            <Button asChild variant="ghost" size="sm">
+              <Link href="/login">Sign in</Link>
+            </Button>
+          </header>
 
-        <section className="panel space-y-4 p-6 sm:p-8">
-          <p className="text-sm leading-relaxed text-text-lo">
-            Everything about TEMPO works exactly the same — every setting, every
-            permission, every feature — while connected to the internet. What’s
-            different is what stays on your computer: the app itself, your
-            artwork, and a complete local copy of every bounce you’ve ever
-            uploaded.
-          </p>
-
-          {showOpenDesktop || showUpdateDesktop ? (
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              <Button asChild variant="default" size="lg" className="h-auto py-3">
-                <a href={handoff.href}>
-                  <span className="flex items-center gap-2 text-sm font-medium">
-                    <MonitorSmartphone className="size-4" strokeWidth={1.75} />
-                    {handoff.label}
-                  </span>
-                </a>
-              </Button>
-              {handoff.secondaryHref ? (
-                <Button asChild variant="secondary" size="lg" className="h-auto py-3">
-                  <a href={handoff.secondaryHref} download={showUpdateDesktop || undefined}>
-                    <span className="flex items-center gap-2 text-sm font-medium">
-                      <Download className="size-4" strokeWidth={1.75} />
-                      {handoff.secondaryLabel ?? "Get the installer"}
-                    </span>
-                  </a>
-                </Button>
-              ) : null}
+          <section className="glass-hero prism-edge space-y-5 p-6 sm:p-8">
+            <div>
+              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-amber">
+                You’re invited · download
+              </p>
+              <h1 className="mt-2 font-display text-3xl tracking-tight text-text-hi sm:text-4xl">
+                TEMPO on your computer
+              </h1>
+              <p className="mt-3 text-sm leading-relaxed text-text-lo">
+                Same studio as the web — with the app, your artwork, and every
+                bounce kept locally. Install first, then create your account
+                inside TEMPO with your invite code.
+              </p>
             </div>
-          ) : (
-            <div className="grid gap-3 sm:grid-cols-2">
-              {DOWNLOADS.map(({ os: downloadOs, label, fileHint, href }) => (
-                <Button
-                  key={downloadOs}
-                  asChild
-                  variant={os === downloadOs ? "default" : "secondary"}
-                  size="lg"
-                  className="h-auto flex-col items-start gap-0.5 py-3 text-left"
-                >
-                  <a href={href} download={downloadOs === "windows" || undefined}>
+
+            <FlareLine />
+
+            {showOpenDesktop || showUpdateDesktop ? (
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                <Button asChild variant="default" size="lg" className="h-auto py-3">
+                  <a href={handoff.href}>
                     <span className="flex items-center gap-2 text-sm font-medium">
-                      <Download className="size-4" strokeWidth={1.75} />
-                      {label}
-                    </span>
-                    <span className="font-mono text-xs font-normal text-text-lo/80">
-                      {fileHint}
+                      <MonitorSmartphone className="size-4" strokeWidth={1.75} />
+                      {handoff.label}
                     </span>
                   </a>
                 </Button>
+                {handoff.secondaryHref ? (
+                  <Button asChild variant="secondary" size="lg" className="h-auto py-3">
+                    <a href={handoff.secondaryHref}>
+                      <span className="flex items-center gap-2 text-sm font-medium">
+                        <Download className="size-4" strokeWidth={1.75} />
+                        {handoff.secondaryLabel ?? "Get the installer"}
+                      </span>
+                    </a>
+                  </Button>
+                ) : null}
+              </div>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {DOWNLOADS.map(({ os: downloadOs, label, fileHint, href }) => (
+                  <Button
+                    key={downloadOs}
+                    asChild
+                    variant={os === downloadOs ? "default" : "secondary"}
+                    size="lg"
+                    className="h-auto flex-col items-start gap-0.5 py-3.5 text-left"
+                  >
+                    <a href={href}>
+                      <span className="flex items-center gap-2 text-sm font-medium">
+                        <Download className="size-4" strokeWidth={1.75} />
+                        {label}
+                      </span>
+                      <span className="font-mono text-xs font-normal text-text-lo/80">
+                        {fileHint}
+                        {downloadOs === "windows" ? ` · v${DESKTOP_SHELL_VERSION}` : ""}
+                      </span>
+                    </a>
+                  </Button>
+                ))}
+              </div>
+            )}
+
+            <p className="text-xs leading-relaxed text-text-lo/75">
+              Prefer the browser for now?{" "}
+              <Link href="/register" className="text-ice hover:underline">
+                Use the web app
+              </Link>{" "}
+              with the same invite code — you can install TEMPO any time later.
+            </p>
+          </section>
+
+          <section className="glass space-y-4 p-6 sm:p-7">
+            <h2 className="font-mono text-[10px] uppercase tracking-[0.12em] text-text-lo">
+              What you get on this machine
+            </h2>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {HIGHLIGHTS.map(({ icon: Icon, title, body }) => (
+                <div key={title} className="glass-quiet flex gap-3 p-3.5">
+                  <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-input border border-line/70 bg-bg-0/30 text-ice">
+                    <Icon className="size-4" strokeWidth={1.75} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-text-hi">{title}</p>
+                    <p className="mt-0.5 text-xs leading-relaxed text-text-lo">{body}</p>
+                  </div>
+                </div>
               ))}
             </div>
-          )}
-          <p className="text-xs text-text-lo/70">
-            Windows uses a short install wizard (welcome, folder, shortcuts). Both
-            builds are unsigned betas — see the install notice below before you
-            open them. Mac is a universal app (Apple Silicon and Intel).
-          </p>
-        </section>
+          </section>
 
-        <section className="panel space-y-4 p-6 sm:p-8">
-          <h2 className="font-mono text-xs uppercase tracking-[0.08em] text-text-lo">
-            What the app adds
-          </h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {HIGHLIGHTS.map(({ icon: Icon, title, body }) => (
-              <div key={title} className="flex gap-3">
-                <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-input border border-line bg-bg-2/60 text-ice">
-                  <Icon className="size-4" strokeWidth={1.75} />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-text-hi">{title}</p>
-                  <p className="mt-0.5 text-xs leading-relaxed text-text-lo">{body}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+          <section className="glass space-y-3 p-6 sm:p-7">
+            <h2 className="font-mono text-[10px] uppercase tracking-[0.12em] text-text-lo">
+              Beta install notice
+            </h2>
+            <p className="text-sm leading-relaxed text-text-lo">
+              These builds aren’t code-signed yet, so your OS will warn you
+              before the first run — expected for this beta, not a broken
+              download.
+            </p>
+            <ul className="space-y-1.5 text-sm text-text-lo">
+              <li>
+                <span className="text-text-hi">Windows:</span> run the setup
+                wizard, then{" "}
+                <span className="text-text-hi">More info</span> →{" "}
+                <span className="text-text-hi">Run anyway</span> if SmartScreen
+                warns.
+              </li>
+              <li>
+                <span className="text-text-hi">Mac:</span> right-click the app
+                (or DMG), choose <span className="text-text-hi">Open</span>, and
+                confirm Open again.
+              </li>
+            </ul>
+          </section>
+        </div>
+      </div>
 
-        <section className="panel space-y-3 p-6 sm:p-8">
-          <h2 className="font-mono text-xs uppercase tracking-[0.08em] text-text-lo">
-            Beta install notice
-          </h2>
-          <p className="text-sm leading-relaxed text-text-lo">
-            These builds aren’t code-signed yet, so your OS will warn you before
-            the first run — this is expected, not a sign anything’s wrong.
-          </p>
-          <ul className="space-y-1.5 text-sm text-text-lo">
-            <li>
-              <span className="text-text-hi">Windows:</span> run the setup wizard,
-              pick a folder if you like, then click{" "}
-              <span className="text-text-hi">More info</span> →{" "}
-              <span className="text-text-hi">Run anyway</span> if SmartScreen
-              warns (unsigned beta).
-            </li>
-            <li>
-              <span className="text-text-hi">Mac:</span> if macOS says the app
-              can’t be opened, right-click the app (or the DMG icon), choose{" "}
-              <span className="text-text-hi">Open</span>, then confirm{" "}
-              <span className="text-text-hi">Open</span> again. You can also allow
-              it under System Settings → Privacy &amp; Security.
-            </li>
-          </ul>
-        </section>
+      <div className="relative hidden min-h-[42vh] flex-1 p-4 md:block md:min-h-0">
+        <div className="relative h-full min-h-[320px] overflow-hidden rounded-[28px] border border-line/70">
+          <LfWindow
+            field
+            className="absolute inset-0 rounded-[28px]"
+            aria-hidden
+          />
+        </div>
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-11
 
+- Changed (v0.124.0): the public Download page and invite email match TEMPO's glass look more closely. Invites now lead with **Download TEMPO**, with **Use the web app** as the quieter option, and still include the copy-paste links if a button fails. Download buttons also point at the fixed Windows installer (v0.100.13) without a browser quirk that could leave you on the broken build.
 - Fixed (v0.123.0 / Desktop v0.100.13): the Windows app opens again - the last installer left out a small helper file the app needs to start. Download and the install wizard now just say TEMPO (not TEMPO Desktop).
 - Added (v0.122.0): desktop installers stay current without a manual publish dance - when a native shell change lands on main, Desktop Release builds Windows and Mac for the public download channel; a daily catch-up fills in anything that was missed. Opening TEMPO Desktop still checks for the newest build on first launch (and every few hours after). Download links on the web prefer that newest public installer, with the older Windows beta as a backup if the channel is empty. The Download page works from an invite link without signing in first.
 - Fixed (v0.121.0): production build succeeds again - a glass message toast

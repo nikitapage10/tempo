@@ -10,28 +10,31 @@ export type DesktopDeviceRef = {
 /** Desktop builds before this lack a working tempo:// handler. */
 export const DESKTOP_LINK_MIN_VERSION = [0, 100, 10] as const;
 
-/**
- * Intended public-channel installer once Desktop Release has published
- * TEMPO-Setup.exe + latest.yml to tempo-desktop-releases.
- */
-export const DESKTOP_PUBLIC_CHANNEL_INSTALLER_URL =
-  "https://github.com/nikitapage10/tempo-desktop-releases/releases/latest/download/TEMPO-Setup.exe";
+/** Must match electron/package.json version — pins public download assets. */
+export const DESKTOP_SHELL_VERSION = "0.100.13";
 
 /**
- * Public-channel Mac DMG (unsigned universal build from Desktop Release).
- * Override with NEXT_PUBLIC_DESKTOP_MAC_URL if the asset name ever changes.
+ * Current Windows installer on the public release channel (version-pinned so
+ * browsers and CDNs cannot keep serving a stale /latest/ build).
+ */
+export const DESKTOP_PUBLIC_CHANNEL_INSTALLER_URL =
+  `https://github.com/nikitapage10/tempo-desktop-releases/releases/download/v${DESKTOP_SHELL_VERSION}/TEMPO-Setup.exe`;
+
+/**
+ * Current Mac DMG on the public release channel (same pin as Windows).
+ * Override with NEXT_PUBLIC_DESKTOP_MAC_URL if needed.
  */
 export const DESKTOP_MAC_INSTALLER_URL =
   process.env.NEXT_PUBLIC_DESKTOP_MAC_URL ||
-  "https://github.com/nikitapage10/tempo-desktop-releases/releases/latest/download/TEMPO-Mac.dmg";
+  `https://github.com/nikitapage10/tempo-desktop-releases/releases/download/v${DESKTOP_SHELL_VERSION}/TEMPO-Mac.dmg`;
 
 /** Bundled Windows beta kept in the web app as a last-resort fallback. */
 export const DESKTOP_WINDOWS_BUNDLED_FALLBACK_URL = "/downloads/TEMPO-Setup-0.100.6.exe";
 
 /**
  * Stable Windows download entry used by the Download page, welcome chooser,
- * and invite email. Resolves to the public channel when live, otherwise the
- * bundled beta — see app/api/desktop/windows/route.ts.
+ * and invite email. Resolves to the pinned public-channel installer when live,
+ * otherwise the bundled beta — see app/api/desktop/windows/route.ts.
  * Override with NEXT_PUBLIC_DESKTOP_WINDOWS_URL to pin a specific asset.
  */
 export const DESKTOP_WINDOWS_INSTALLER_URL =

@@ -122,8 +122,9 @@ describe("web and desktop platform handoff", () => {
       "/downloads/TEMPO-Setup-0.100.6.exe"
     );
     expect(read("lib/desktop/handoff.ts")).toContain(
-      "tempo-desktop-releases/releases/latest/download/TEMPO-Setup.exe"
+      "tempo-desktop-releases/releases/download/v"
     );
+    expect(read("lib/desktop/handoff.ts")).toContain('DESKTOP_SHELL_VERSION = "');
     expect(button).toContain("DESKTOP_WINDOWS_INSTALLER_URL");
     expect(existsSync(resolve("app/api/desktop/windows/route.ts"))).toBe(true);
     expect(existsSync(resolve("app/api/desktop/mac/route.ts"))).toBe(true);
@@ -145,7 +146,7 @@ describe("web and desktop platform handoff", () => {
 
   it("exposes a stable unsigned Mac DMG on the public release channel", () => {
     expect(read("lib/desktop/handoff.ts")).toContain(
-      "tempo-desktop-releases/releases/latest/download/TEMPO-Mac.dmg"
+      "/TEMPO-Mac.dmg"
     );
     expect(read("lib/desktop/handoff.ts")).toContain("/api/desktop/mac");
     expect(read("electron/package.json")).toContain('"identity": null');
