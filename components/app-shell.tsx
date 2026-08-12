@@ -49,6 +49,13 @@ import { OfflineBanner } from "@/components/offline-banner";
 import { DesktopUpdateBanner } from "@/components/desktop/update-banner";
 import { AppVideoBackdrop } from "@/components/app-video-backdrop";
 import { useContentZoom } from "@/hooks/use-content-zoom";
+import { useLabeledRail } from "@/hooks/use-labeled-rail";
+import {
+  RAIL_COMPACT_WIDTH_PX,
+  RAIL_LABELED_WIDTH_PX,
+  railLayoutWidthPx,
+  railTypeZoom,
+} from "@/lib/desktop/content-zoom";
 
 // Artist sits above the space-scoped screens: it rolls up every space the
 // artist owns, so it stays in the rail whatever the active space's focus is.
@@ -118,6 +125,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useDesktopMediaWarm();
   useBrowserMediaWarm();
   const { factor: contentZoom } = useContentZoom();
+  const labeledRail = useLabeledRail();
+  const railZoom = railTypeZoom(contentZoom, labeledRail);
+  const railWidth = railLayoutWidthPx(contentZoom, labeledRail);
   const pathname = usePathname();
   const router = useRouter();
   const { activeSpace } = useActiveSpace();
@@ -159,15 +169,32 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       />
 
       <div className="flex min-h-0 flex-1">
-        {/* Compact icon rail from md→xl; full labels from xl up. Left 2px
-            gutter stays transparent so active-nav windows can punch through. */}
+        {/* Compact icon rail from md→xl; full labels from xl up. Width grows
+            with content zoom only while labeled (so type can scale when there
+            is room). Left 2px gutter stays transparent for active-nav windows. */}
         <aside
-          className="sticky top-0 z-30 hidden h-screen w-[68px] shrink-0 flex-col border-r border-line md:flex xl:w-[220px]"
+          className="sticky top-0 z-30 hidden h-screen shrink-0 flex-col overflow-hidden border-r border-line md:flex"
           style={{
+            width: railWidth,
             background:
               "linear-gradient(to right, transparent 2px, var(--bg-1) 2px)",
           }}
         >
+          {/* Inner column is designed at compact/labeled widths; zoom scales
+              type when labeled. Layout width above matches so no black gap. */}
+          <div
+            className="relative flex h-full min-h-0 flex-col"
+            style={
+              railZoom !== 1
+                ? {
+                    width: RAIL_LABELED_WIDTH_PX,
+                    zoom: railZoom,
+                  }
+                : labeledRail
+                  ? { width: RAIL_LABELED_WIDTH_PX }
+                  : { width: RAIL_COMPACT_WIDTH_PX }
+            }
+          >
           {/* The rail's right border is a full-height slit onto the field, so
               the light is quietly present the whole time you're in the app. */}
           <LfWindow
@@ -272,16 +299,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               v{APP_VERSION}
             </Link>
           </div>
+          </div>
         </aside>
 
-        {/* z-30 keeps this stacking context above the desktop drag strip so
-            search and notification hit targets stay clickable. Desktop
-            content zoom scales this column only — the rail stays put. */}
-        <main
-          className="relative z-30 isolate min-h-0 flex-1 overflow-x-hidden overflow-y-auto pb-20 md:pb-0"
-          style={contentZoom !== 1 ? { zoom: contentZoom } : undefined}
-        >
-          <AppVideoBackdrop className="fixed inset-x-0 bottom-0 top-0 z-0 md:bottom-[6px] md:left-[68px] xl:left-[220px]" />
+        {/* Unzoomed flex column fills the remaining width (no black gap).
+            Backdrop paints the full column; only the scrollable inner zooms. */}
+        <main className="relative z-30 isolate min-h-0 min-w-0 flex-1 overflow-hidden">
+          <AppVideoBackdrop className="pointer-events-none absolute inset-0 z-0" />
+          <div
+            className="relative z-[1] h-full min-h-0 overflow-x-hidden overflow-y-auto pb-20 md:pb-0"
+            style={contentZoom !== 1 ? { zoom: contentZoom } : undefined}
+          >
           <div className="relative z-[1] mx-auto w-full max-w-[1440px] px-4 md:px-8">
             {/* [-webkit-app-region:drag] makes this row double as the desktop
                 app's window-drag handle (a no-op outside Electron, so it's
@@ -310,6 +338,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <DesktopUpdateBanner />
             <OfflineBanner />
             <div className="pb-6 pt-0">{children}</div>
+          </div>
           </div>
         </main>
       </div>

@@ -1,29 +1,39 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { Minus, Plus } from "lucide-react";
 import { useContentZoom } from "@/hooks/use-content-zoom";
+import { useLabeledRail } from "@/hooks/use-labeled-rail";
 import { isDesktopApp } from "@/lib/desktop/bridge";
+import { railLayoutWidthPx } from "@/lib/desktop/content-zoom";
 import { cn } from "@/lib/utils";
 
 /**
  * Desktop-only interface zoom — floats near the rail edge. Scales the main
- * workspace only (left rail stays put). Ctrl/Cmd +/- / 0 match this control.
- *
- * md:left clears the compact icon rail; xl:left clears the full labeled rail.
+ * workspace (and labeled-rail type when there's width). Ctrl/Cmd +/- / 0 match.
  */
 export function ZoomControl() {
   const { factor, zoomIn, zoomOut, zoomReset } = useContentZoom();
+  const labeledRail = useLabeledRail();
+  const railWidth = railLayoutWidthPx(factor, labeledRail);
 
   if (!isDesktopApp()) return null;
 
   const percent = Math.round(factor * 100);
+  // 16px gutter past the live rail width (compact or zoom-grown labeled).
+  const leftPx = railWidth + 16;
 
   return (
     <div
       className={cn(
         "fixed bottom-20 left-4 z-[90] flex h-9 items-center gap-0.5 rounded-full border border-line bg-bg-2 px-1 text-text-lo shadow-e3 [-webkit-app-region:no-drag]",
-        "md:bottom-5 md:left-[84px] xl:left-[236px]"
+        "md:bottom-5 md:left-[var(--tempo-zoom-left)]"
       )}
+      style={
+        {
+          ["--tempo-zoom-left"]: `${leftPx}px`,
+        } as CSSProperties
+      }
     >
       <button
         type="button"

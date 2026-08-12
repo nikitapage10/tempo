@@ -1,7 +1,11 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { clampContentZoom } from "@/lib/desktop/content-zoom";
+import {
+  clampContentZoom,
+  railLayoutWidthPx,
+  railTypeZoom,
+} from "@/lib/desktop/content-zoom";
 
 const read = (path: string) => readFileSync(resolve(path), "utf8");
 
@@ -12,6 +16,19 @@ describe("clampContentZoom", () => {
     expect(clampContentZoom(0.2)).toBe(0.5);
     expect(clampContentZoom(3)).toBe(2);
     expect(clampContentZoom(Number.NaN)).toBe(1);
+  });
+});
+
+describe("railTypeZoom", () => {
+  it("never scales the compact rail", () => {
+    expect(railTypeZoom(1.4, false)).toBe(1);
+    expect(railLayoutWidthPx(1.4, false)).toBe(68);
+  });
+
+  it("scales labeled rail type up to the ceiling", () => {
+    expect(railTypeZoom(1.2, true)).toBe(1.2);
+    expect(railTypeZoom(1.8, true)).toBe(1.35);
+    expect(railLayoutWidthPx(1.4, true)).toBe(Math.round(220 * 1.35));
   });
 });
 
@@ -32,11 +49,13 @@ describe("desktop content zoom wiring", () => {
     expect(bridge).toContain("resetNativePageZoom");
   });
 
-  it("applies zoom to main and keeps a compact rail below xl", () => {
+  it("zooms an inner scroller and grows labeled rail only when there is room", () => {
     expect(shell).toContain("useContentZoom");
-    expect(shell).toContain("w-[68px]");
-    expect(shell).toContain("xl:w-[220px]");
-    expect(zoom).toContain("md:left-[84px]");
-    expect(zoom).toContain("xl:left-[236px]");
+    expect(shell).toContain("railLayoutWidthPx");
+    expect(shell).toContain("overflow-hidden");
+    expect(shell).toContain("AppVideoBackdrop");
+    expect(shell).toContain("absolute inset-0");
+    expect(zoom).toContain("railLayoutWidthPx");
+    expect(zoom).toContain("--tempo-zoom-left");
   });
 });
