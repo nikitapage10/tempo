@@ -14,6 +14,7 @@ import { OriginAwakenStep } from "@/components/origin/origin-awaken-step";
 import { OriginNameStep } from "@/components/origin/origin-name-step";
 import { OriginIntroductionStep } from "@/components/origin/origin-introduction-step";
 import { OriginDirectionStep } from "@/components/origin/origin-direction-step";
+import { OriginLookStep } from "@/components/origin/origin-look-step";
 import {
   OriginInterpretationError,
   OriginProcessingStep,
@@ -55,10 +56,9 @@ const OPENING_LINES = [
   { text: "give it a name.", at: 0.42, until: 0.72 },
 ];
 
-const SOUNDTRACK_SRC = "/onboarding/origin/signal-history.mp3";
-// The source averages roughly -14 dB. At 0.09 it landed near -35 dB in the
-// browser, which is effectively inaudible under the transition films.
-const SOUNDTRACK_VOLUME = 0.24;
+const SOUNDTRACK_SRC = "/onboarding/origin/tempo-theme.mp3";
+// Tempo Theme sits under the film, not over it — keep this modest.
+const SOUNDTRACK_VOLUME = 0.14;
 const SOUNDTRACK_FADE_IN_MS = 1400;
 const SOUNDTRACK_FADE_OUT_MS = 1100;
 
@@ -265,10 +265,19 @@ export function OriginExperience({
   const mountDirection =
     state.phase === "interpreting_transition" ||
     state.phase === "direction_idle" ||
-    state.phase === "processing";
+    state.phase === "looking_transition";
   const showDirection =
     state.phase === "direction_idle" ||
     (state.phase === "interpreting_transition" &&
+      (media.staticMode || clipProgress >= PROCESSING_PRELUDE_AT));
+
+  const mountLook =
+    state.phase === "looking_transition" ||
+    state.phase === "look_idle" ||
+    state.phase === "processing";
+  const showLook =
+    state.phase === "look_idle" ||
+    (state.phase === "looking_transition" &&
       (media.staticMode || clipProgress >= PROCESSING_PRELUDE_AT));
 
   const recognitionVisible =
@@ -308,7 +317,7 @@ export function OriginExperience({
       return;
     }
     const video = activeVideoRef.current;
-    if (!video || activeKeyRef.current !== "loop04") return;
+    if (!video || activeKeyRef.current !== "loop05") return;
 
     let previous = video.currentTime;
     const onTime = () => {
@@ -351,6 +360,9 @@ export function OriginExperience({
         dispatch({ type: "recognition_ended" });
         break;
       case "interpreting_transition":
+        dispatch({ type: "transition_ended" });
+        break;
+      case "looking_transition":
         dispatch({ type: "transition_ended" });
         break;
       case "resolving":
@@ -498,7 +510,7 @@ export function OriginExperience({
             staticMode={media.staticMode}
             videoRef={activeVideoRef}
             onEnter={handleEnter}
-            onBackToDirection={() => dispatch({ type: "back_to_direction" })}
+            onBackToDirection={() => dispatch({ type: "back_to_look" })}
             busy={state.busy}
             error={state.error}
             onSkipImport={() => setImportChoice("empty")}
@@ -596,6 +608,17 @@ export function OriginExperience({
                 onDirectionChange={(text) => dispatch({ type: "set_direction", text })}
                 onBack={() => dispatch({ type: "back_to_introduction" })}
                 onFinish={() => dispatch({ type: "finish_direction" })}
+                mediaReady={media.gateOpen(gateFor("looking_transition"))}
+                busy={state.busy}
+              />
+            </StepFade>
+          ) : null}
+
+          {mountLook ? (
+            <StepFade show={showLook} className="w-full max-w-2xl">
+              <OriginLookStep
+                onBack={() => dispatch({ type: "back_to_direction" })}
+                onFinish={() => dispatch({ type: "finish_look" })}
                 busy={state.busy}
               />
             </StepFade>

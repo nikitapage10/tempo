@@ -678,9 +678,9 @@
   /* Vertical Spectra edge — Origin motif, opt-in only.
    * Put `.prism-edge` on major shells (heroes, board columns) — never on
    * every `.panel` / `.glass`, or dense screens like Calendar drown in lines.
-   * Do NOT set overflow:hidden here: it breaks `background-attachment: fixed`
-   * on descendant Spotlight cards (Board track hover edge). The stroke is
-   * already inset top/bottom past the corner radius. */
+   * The stroke is inset top/bottom past the corner radius. Board columns also
+   * use overflow:hidden so backdrop-blur clips cleanly to the radius; Spotlight
+   * cards track local --spot-x/y and still light under that clip. */
   .prism-edge {
     position: relative;
   }
@@ -1222,6 +1222,29 @@
   .origin-first-open__shader {
     animation: none;
     opacity: 0;
+  }
+}
+
+/* Origin palette picks ease ice/amber instead of snapping. */
+@property --ice {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #7fb4ff;
+}
+
+@property --amber {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #ffb56b;
+}
+
+html {
+  transition: --ice 700ms ease, --amber 700ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    transition: none;
   }
 }
 

@@ -4,6 +4,25 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-11
 
+- Fixed (v0.119.3): the web rail no longer keeps saying **Update TEMPO Desktop**
+  after you’ve already updated — it prefers a desktop install that can open
+  from the browser, and Update downloads the current public installer instead
+  of the old 0.100.6 copy.
+- Fixed (v0.119.2): Scene cards keep rounded corners while hovering — the lift
+  no longer flashes square edges, and the hover rim stays clipped to the card.
+- Fixed (v0.119.1): Board stage columns clip their glass blur to the rounded
+  corners again — no more little square jaggies around the edges.
+- Added (v0.119.0): Origin now has an optional **Look** step after direction —
+  pick a color scheme, logo, profile image, and banner before the story
+  appears. Continue or **Skip for now** both move on; picking a palette gently
+  fades Origin’s accents into those colors. The quiet bed under Origin is now
+  Tempo Theme.
+- Under the hood (v0.119.0): run migration **084** in the Supabase SQL editor
+  before relying on Origin look-step resume (`artist_origins.current_step`
+  gains `'look'`).
+- Fixed (v0.118.1): Origin’s story panels sit middle-left instead of the top
+  corner, and The Story is wider with its own scroll so long chapters aren’t
+  cut off.
 - Changed (v0.118.0): Scene cards keep the frosted footer, but the banner
   now runs behind it to the bottom of the card — no hard cutoff between
   artwork and glass.

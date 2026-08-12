@@ -8,11 +8,10 @@ import { AuthShell } from "@/components/auth/auth-shell";
 import { Wordmark } from "@/components/wordmark";
 import { Button } from "@/components/ui/button";
 import { isDesktopApp } from "@/lib/desktop/bridge";
+import { DESKTOP_WINDOWS_INSTALLER_URL } from "@/lib/desktop/handoff";
 import { detectOS } from "@/lib/platform";
 
-const WINDOWS_INSTALLER_URL =
-  process.env.NEXT_PUBLIC_DESKTOP_WINDOWS_URL ||
-  "/downloads/TEMPO-Setup-0.100.6.exe";
+const WINDOWS_INSTALLER_URL = DESKTOP_WINDOWS_INSTALLER_URL;
 
 /**
  * Post-invite chooser — after creating an account from an invite, pick how to

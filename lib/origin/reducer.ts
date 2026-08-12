@@ -31,6 +31,8 @@ export type OriginPhase =
   | "introduction_idle"
   | "recording"
   | "direction_idle"
+  | "looking_transition"
+  | "look_idle"
   | "interpreting_transition"
   | "processing"
   | "resolving"
@@ -80,10 +82,12 @@ export type OriginAction =
   | { type: "stop_recording" }
   | { type: "finish_introduction" }
   | { type: "finish_direction" }
+  | { type: "finish_look" }
   | { type: "back_to_awaken" }
   | { type: "back_to_name" }
   | { type: "back_to_introduction" }
   | { type: "back_to_direction" }
+  | { type: "back_to_look" }
   | { type: "transition_ended" }
   | { type: "processing_dwell_ended" }
   | { type: "interpretation_ok"; interpretation: ArtistOriginInterpretation }
@@ -126,17 +130,23 @@ const RESUME_PHASE: Record<OriginStep, OriginPhase> = {
   introduction: "introduction_idle",
   processing: "processing",
   review: "direction_idle",
+  look: "look_idle",
   story: "story_scroll",
   complete: "complete",
 };
 
-/** The loop or scrub asset that holds during each stable phase. */
+/**
+ * The loop or scrub asset that holds during each stable phase.
+ * Look + processing share loop05 — the film beat after direction — so the
+ * optional look panel sits on the “second video” without replaying 04→05 later.
+ */
 export const PHASE_LOOP: Partial<Record<OriginPhase, OriginMediaKey>> = {
   name_idle: "loop02",
   introduction_idle: "loop03",
   recording: "loop03",
   direction_idle: "loop04",
-  processing: "loop04",
+  look_idle: "loop05",
+  processing: "loop05",
   story_scroll: "scroll06",
   saving: "scroll06",
   complete: "scroll06",
@@ -147,7 +157,7 @@ export const PHASE_TRANSITION: Partial<Record<OriginPhase, OriginMediaKey>> = {
   opening: "opening01To02",
   recognizing: "transition02To03",
   interpreting_transition: "transition03To04",
-  resolving: "transition04To05",
+  looking_transition: "transition04To05",
   chapter_opening: "transition05To06",
 };
 
@@ -161,6 +171,9 @@ function pushUndo(state: OriginState): ArtistOriginInterpretation[] {
  * Both conditions must hold before leaving the processing loop: the covering
  * transition has finished AND the interpretation has arrived. This is the rule
  * that makes a fast model response harmless.
+ *
+ * After look, the 04→05 transition has already played, so we go straight into
+ * the chapter opening (or the story in static mode) instead of resolving again.
  */
 function maybeResolve(state: OriginState): OriginState {
   if (state.phase !== "processing") return state;
@@ -171,7 +184,11 @@ function maybeResolve(state: OriginState): OriginState {
   ) {
     return state;
   }
-  return { ...state, phase: "resolving" };
+  return {
+    ...state,
+    phase: state.staticMode ? "story_scroll" : "chapter_opening",
+    savedStep: "story",
+  };
 }
 
 export function originReducer(state: OriginState, action: OriginAction): OriginState {
@@ -201,7 +218,7 @@ export function originReducer(state: OriginState, action: OriginAction): OriginS
         direction: resume.directionText ?? "",
         interpretation: resume.interpretation ?? EMPTY_INTERPRETATION,
         interpretationReady: resume.interpretation !== null,
-        // A resumed processing step still deserves the full frame-4 hold. In
+        // A resumed processing step still deserves the full frame hold. In
         // static mode there is no media cycle to wait for.
         processingDwellSettled: staticMode,
         // Resuming lands on a stable loop, so nothing is mid-transition.
@@ -264,6 +281,15 @@ export function originReducer(state: OriginState, action: OriginAction): OriginS
       if (state.busy || state.phase !== "direction_idle") return state;
       return {
         ...state,
+        phase: state.staticMode ? "look_idle" : "looking_transition",
+        savedStep: "look",
+        error: null,
+      };
+
+    case "finish_look":
+      if (state.busy || state.phase !== "look_idle") return state;
+      return {
+        ...state,
         phase: "processing",
         savedStep: "processing",
         transitionSettled: true,
@@ -288,7 +314,7 @@ export function originReducer(state: OriginState, action: OriginAction): OriginS
         : state;
 
     case "back_to_direction":
-      return state.phase === "story_scroll" || state.phase === "processing"
+      return state.phase === "look_idle"
         ? {
             ...state,
             phase: "direction_idle",
@@ -298,9 +324,23 @@ export function originReducer(state: OriginState, action: OriginAction): OriginS
           }
         : state;
 
+    case "back_to_look":
+      return state.phase === "story_scroll" || state.phase === "processing"
+        ? {
+            ...state,
+            phase: "look_idle",
+            savedStep: "look",
+            error: null,
+            busy: false,
+          }
+        : state;
+
     case "transition_ended": {
       if (state.phase === "interpreting_transition") {
         return { ...state, phase: "direction_idle", transitionSettled: true };
+      }
+      if (state.phase === "looking_transition") {
+        return { ...state, phase: "look_idle", transitionSettled: true };
       }
       return state;
     }

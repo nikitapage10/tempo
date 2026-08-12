@@ -22,14 +22,17 @@ export function OriginDirectionStep({
   onBack,
   onFinish,
   busy,
+  mediaReady = true,
 }: {
   direction: string;
   onDirectionChange: (value: string) => void;
   onBack: () => void;
   onFinish: () => void;
   busy: boolean;
+  mediaReady?: boolean;
 }) {
   const [error, setError] = React.useState<string | null>(null);
+  const [attempted, setAttempted] = React.useState(false);
   const baseTextRef = React.useRef("");
   const directionRef = React.useRef(direction);
   directionRef.current = direction;
@@ -38,6 +41,12 @@ export function OriginDirectionStep({
     onTranscript: onDirectionChange,
     baseText: () => baseTextRef.current,
   });
+
+  const waiting = attempted && !mediaReady;
+
+  React.useEffect(() => {
+    if (attempted && mediaReady && !error) onFinish();
+  }, [attempted, mediaReady, error, onFinish]);
 
   async function handleDictation() {
     if (speech.listening) {
@@ -57,7 +66,8 @@ export function OriginDirectionStep({
       return;
     }
     setError(null);
-    onFinish();
+    setAttempted(true);
+    if (mediaReady) onFinish();
   }
 
   const canSpeak = speech.mode !== "unavailable" && !speech.micDenied;
@@ -170,7 +180,8 @@ export function OriginDirectionStep({
             disabled={busy || speech.listening || speech.transcribing}
             className="ml-auto rounded-full px-5"
           >
-            Set the direction <ArrowRight className="size-4" />
+            {waiting ? "Preparing…" : "Set the direction"}{" "}
+            <ArrowRight className="size-4" />
           </Button>
         </div>
 

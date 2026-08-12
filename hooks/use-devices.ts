@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { pickActiveDesktopDevice } from "@/lib/desktop/handoff";
 
 export type DesktopPlatform = "windows" | "mac";
 
@@ -33,10 +34,9 @@ export function useDevices() {
   });
 }
 
-/** The desktop device (if any) that should flip the header button to "Open in desktop". */
+/** The desktop device (if any) that should flip the rail button to "Open in desktop". */
 export function useActiveDesktopDevice(): UserDevice | undefined {
   const { data: devices } = useDevices();
   if (!devices?.length) return undefined;
-  const cutoff = Date.now() - RECENT_DEVICE_WINDOW_MS;
-  return devices.find((d) => new Date(d.last_seen_at).getTime() >= cutoff);
+  return pickActiveDesktopDevice(devices, Date.now(), RECENT_DEVICE_WINDOW_MS);
 }

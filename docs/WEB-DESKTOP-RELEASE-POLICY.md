@@ -103,8 +103,8 @@ and verify the downloaded file.
    browser.
 6. In Vercel, set `NEXT_PUBLIC_DESKTOP_WINDOWS_URL` to
    `https://github.com/nikitapage10/tempo-desktop-releases/releases/latest/download/TEMPO-Setup.exe`
-   and redeploy. The web Download page retains the bundled `0.100.6` installer
-   as a fallback until this variable is set.
+   and redeploy. The web app falls back to that same public latest URL when the
+   env var is unset (it no longer serves the bundled `0.100.6` installer).
 7. In Vercel project settings, keep **Automatically expose System Environment
    Variables** enabled. The unified desktop banner uses
    `VERCEL_GIT_COMMIT_SHA` to notice every newly deployed build, with the

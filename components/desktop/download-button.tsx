@@ -4,14 +4,10 @@ import * as React from "react";
 import { usePathname } from "next/navigation";
 import { Download, ExternalLink, MonitorSmartphone, RefreshCw } from "lucide-react";
 import { useActiveDesktopDevice } from "@/hooks/use-devices";
-import { resolveDesktopHandoff } from "@/lib/desktop/handoff";
+import { resolveDesktopHandoff, DESKTOP_WINDOWS_INSTALLER_URL } from "@/lib/desktop/handoff";
 import { detectOS, isDesktopApp } from "@/lib/platform";
 import { getSiteUrl } from "@/lib/site";
 import { cn } from "@/lib/utils";
-
-const WINDOWS_INSTALLER_URL =
-  process.env.NEXT_PUBLIC_DESKTOP_WINDOWS_URL ||
-  "/downloads/TEMPO-Setup-0.100.6.exe";
 
 /**
  * Platform handoff shown immediately above Settings in the rail:
@@ -37,7 +33,7 @@ export function DownloadButton({ className }: { className?: string }) {
     pathname,
     activeDevice,
     webAppUrl: getSiteUrl(),
-    windowsInstallerUrl: WINDOWS_INSTALLER_URL,
+    windowsInstallerUrl: DESKTOP_WINDOWS_INSTALLER_URL,
   });
 
   const Icon =

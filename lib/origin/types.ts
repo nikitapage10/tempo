@@ -22,6 +22,7 @@ export type OriginStep =
   | "introduction"
   | "processing"
   | "review"
+  | "look"
   | "story"
   | "complete";
 

@@ -26,10 +26,21 @@ export function SceneCard({ scene, href }: { scene: Scene; href?: string }) {
   });
 
   return (
-    <SpotlightCard radius={16} className="rounded-panel">
+    <SpotlightCard
+      radius={16}
+      className={cn(
+        "rounded-panel shadow-e1",
+        "transition-[transform,box-shadow] duration-300 ease-out",
+        "hover:-translate-y-0.5 hover:shadow-e2",
+        "motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+      )}
+    >
+      {/* Lift stays on SpotlightCard. Overflow+radius clip stays on the Link
+          only — putting both transform and overflow:hidden on one node makes
+          Chromium flash square corners for a frame. */}
       <Link
         href={href ?? `/scenes/${scene.slug}`}
-        className="group relative block overflow-hidden rounded-panel border border-line/80 shadow-e1 transition duration-300 hover:-translate-y-0.5 hover:border-white/15 hover:shadow-e2"
+        className="group relative block overflow-hidden rounded-panel border border-line/80 transition-colors duration-300 hover:border-white/15"
       >
         {/* Banner fills the whole card so glass frosts real artwork — no seam
             where a short image box ends above the footer. */}
@@ -47,7 +58,7 @@ export function SceneCard({ scene, href }: { scene: Scene; href?: string }) {
             <SignedImage
               path={scene.banner_url}
               alt={scene.banner_alt ?? ""}
-              className="absolute inset-0 size-full object-cover transition duration-700 group-hover:scale-[1.025]"
+              className="absolute inset-0 size-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.025] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
               style={{
                 objectPosition: `${scene.banner_focal_x ?? 50}% ${scene.banner_focal_y ?? 50}%`,
               }}

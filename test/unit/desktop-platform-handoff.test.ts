@@ -1,7 +1,11 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { resolveDesktopHandoff, supportsDesktopLink } from "@/lib/desktop/handoff";
+import {
+  pickActiveDesktopDevice,
+  resolveDesktopHandoff,
+  supportsDesktopLink,
+} from "@/lib/desktop/handoff";
 
 const read = (path: string) => readFileSync(resolve(path), "utf8");
 
@@ -59,16 +63,14 @@ describe("web and desktop platform handoff", () => {
   it("resolves open vs update vs download from device state", () => {
     expect(supportsDesktopLink("0.100.10")).toBe(true);
     expect(supportsDesktopLink("0.100.6")).toBe(false);
+    expect(supportsDesktopLink("v0.100.11")).toBe(true);
 
     const open = resolveDesktopHandoff({
       isDesktop: false,
       pathname: "/tracks",
       activeDevice: {
         id: "d1",
-        platform: "windows",
-        name: "Windows desktop",
         app_version: "0.100.11",
-        sync_enabled: true,
         last_seen_at: new Date().toISOString(),
       },
       webAppUrl: "https://tempo-ten-sigma.vercel.app",
@@ -82,15 +84,40 @@ describe("web and desktop platform handoff", () => {
       pathname: "/download",
       activeDevice: {
         id: "d1",
-        platform: "windows",
-        name: "Windows desktop",
         app_version: "0.100.6",
-        sync_enabled: true,
         last_seen_at: new Date().toISOString(),
       },
       webAppUrl: "https://tempo-ten-sigma.vercel.app",
       windowsInstallerUrl: "/downloads/TEMPO-Setup.exe",
     });
     expect(update.kind).toBe("update-desktop");
+  });
+
+  it("prefers a link-capable install over a newer-seen old build", () => {
+    const now = Date.parse("2026-08-12T00:00:00.000Z");
+    const picked = pickActiveDesktopDevice(
+      [
+        {
+          id: "old",
+          app_version: "0.100.6",
+          last_seen_at: "2026-08-11T23:00:00.000Z",
+        },
+        {
+          id: "new",
+          app_version: "0.100.11",
+          last_seen_at: "2026-08-11T12:00:00.000Z",
+        },
+      ],
+      now
+    );
+    expect(picked?.id).toBe("new");
+  });
+
+  it("points the Windows installer fallback at the public latest asset", () => {
+    expect(read("lib/desktop/handoff.ts")).toContain(
+      "tempo-desktop-releases/releases/latest/download/TEMPO-Setup.exe"
+    );
+    expect(button).toContain("DESKTOP_WINDOWS_INSTALLER_URL");
+    expect(welcome).not.toContain("TEMPO-Setup-0.100.6.exe");
   });
 });

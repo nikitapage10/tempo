@@ -54,12 +54,18 @@ const CHAPTER_KICKERS = ["About", "Sound", "Now", "Story", "Intake", "Arrival"];
 /**
  * Where each chapter sits horizontally.
  *
- * The opening shape reads best just left of centre against the footage;
- * everything after it settles dead centre. A translate rather than a margin —
- * with `mx-auto` in play, overriding one side's margin pushes the block the
- * *opposite* way to what you'd expect.
+ * Copy stays on the quieter left side of the frame while the scroll footage
+ * opens out on the right. Vertical centering is handled by the sticky stage
+ * (`top-1/2` + `translateY(-50%)` in `paint`), not by these margins.
  */
-const CHAPTER_ALIGN = ["sm:ml-[8%]", "sm:ml-[8%]", "sm:ml-[8%]", "sm:ml-[8%]", "sm:ml-[8%]", "sm:ml-[8%]"];
+const CHAPTER_ALIGN = [
+  "sm:ml-[6%]",
+  "sm:ml-[6%]",
+  "sm:ml-[6%]",
+  "sm:ml-[4%]",
+  "sm:ml-[4%]",
+  "sm:ml-[6%]",
+];
 
 /** Scroll distance per chapter. Enough to feel deliberate, not a marathon. */
 const VH_PER_CHAPTER = 150;
@@ -150,7 +156,7 @@ function ChapterSection({
       >
         <div
           className={cn(
-            "origin-first-shape relative w-full max-w-2xl overflow-hidden rounded-[28px] border border-line/70",
+            "origin-first-shape relative w-full max-w-4xl overflow-hidden rounded-[28px] border border-line/70",
             "bg-[linear-gradient(120deg,rgb(10_10_12/0.9),rgb(20_24_31/0.72),rgb(10_10_12/0.84))] shadow-3 backdrop-blur-xl",
             alignClass ?? CHAPTER_ALIGN[index]
           )}
@@ -194,10 +200,10 @@ function ChapterSection({
           from the right, so the copy sits on the quieter side of the frame. */}
       <div
         className={cn(
-          "origin-story-chapter relative w-full overflow-hidden rounded-[26px] border bg-[linear-gradient(125deg,rgb(9_10_13/0.9),rgb(21_25_32/0.76),rgb(10_10_13/0.86))] shadow-3 backdrop-blur-xl",
+          "origin-story-chapter relative flex max-h-[min(86dvh,52rem)] w-full flex-col overflow-hidden rounded-[26px] border bg-[linear-gradient(125deg,rgb(9_10_13/0.9),rgb(21_25_32/0.76),rgb(10_10_13/0.86))] shadow-3 backdrop-blur-xl",
           index % 2 === 0 ? "border-amber/25" : "border-ice/30",
           "transition-[max-width,transform] duration-700 motion-reduce:transition-none",
-          wide ? "max-w-5xl" : "max-w-xl",
+          wide ? "max-w-5xl" : "max-w-3xl",
           alignClass ?? CHAPTER_ALIGN[index]
         )}
       >
@@ -217,7 +223,7 @@ function ChapterSection({
             index % 2 === 0 ? "via-amber/70" : "via-ice/70"
           )}
         />
-        <div className="relative grid grid-cols-[2.5rem_1fr] gap-5 px-6 py-7 sm:grid-cols-[3rem_1fr] sm:gap-7 sm:px-8 sm:py-8">
+        <div className="relative grid min-h-0 grid-cols-[2.5rem_1fr] gap-5 px-6 py-7 sm:grid-cols-[3rem_1fr] sm:gap-7 sm:px-8 sm:py-8">
           <div className="flex flex-col items-center gap-3 pt-0.5 text-[10px] uppercase tracking-[0.2em] text-text-lo/70">
             <span className={cn("font-mono", index % 2 === 0 ? "text-amber" : "text-ice")}>
               {String(index + 1).padStart(2, "0")}
@@ -225,7 +231,7 @@ function ChapterSection({
             <span className="h-10 w-px bg-[linear-gradient(to_bottom,var(--line),transparent)]" />
             <span className="[writing-mode:vertical-rl]">{CHAPTER_KICKERS[index]}</span>
           </div>
-          <div className="min-w-0">
+          <div className="min-h-0 min-w-0">
             {onBack ? <ChapterBackButton onClick={onBack} /> : null}
             <h2
               id={`origin-chapter-${index}`}
@@ -233,7 +239,7 @@ function ChapterSection({
             >
               {title ?? CHAPTER_TITLES[index]}
             </h2>
-            <div className="mt-5">{children}</div>
+            <div className="mt-5 min-h-0">{children}</div>
           </div>
         </div>
       </div>
@@ -310,7 +316,7 @@ export function OriginStoryScroll({
       if (importStarted) {
         const own = i === 4;
         el.style.opacity = own ? "1" : "0";
-        el.style.transform = "translate3d(0, 0, 0) scale(1)";
+        el.style.transform = "translate3d(0, -50%, 0) scale(1)";
         el.style.pointerEvents = own ? "auto" : "none";
         el.style.zIndex = own ? "40" : "0";
         return;
@@ -350,7 +356,7 @@ export function OriginStoryScroll({
 
       const clamped = Math.max(0, Math.min(1, opacity));
       el.style.opacity = String(clamped);
-      el.style.transform = `translate3d(${x}%, 0, 0) scale(${scale})`;
+      el.style.transform = `translate3d(${x}%, -50%, 0) scale(${scale})`;
       // Only the chapter in focus should be clickable, and a chapter that is
       // all but invisible must never intercept a click meant for the one above.
       el.style.pointerEvents = clamped > 0.6 ? "auto" : "none";
@@ -495,11 +501,11 @@ export function OriginStoryScroll({
       ) : (
         <>
           {interpretation.artistPromise ? (
-            <p className="max-w-xl font-display text-2xl leading-snug text-text-hi sm:text-3xl">
+            <p className="max-w-3xl font-display text-2xl leading-snug text-text-hi sm:text-3xl">
               {interpretation.artistPromise}
             </p>
           ) : null}
-          <p className="max-w-xl text-sm leading-7 text-text-hi/85">
+          <p className="max-w-3xl text-sm leading-7 text-text-hi/85">
             {interpretation.creativeCompass || "Add a concise introduction to the artist and the work."}
           </p>
         </>
@@ -615,7 +621,7 @@ export function OriginStoryScroll({
           <h3 className="font-display text-2xl text-text-hi">
             {interpretation.currentChapter.title || "Add what is happening now"}
           </h3>
-          <p className="mt-3 max-w-lg text-sm leading-7 text-text-hi/80">
+          <p className="mt-3 max-w-3xl text-sm leading-7 text-text-hi/80">
             {interpretation.currentChapter.premise}
           </p>
           <span aria-hidden className="absolute -bottom-10 -right-8 size-28 rounded-full border border-amber/15" />
@@ -624,10 +630,10 @@ export function OriginStoryScroll({
       {editAction(2)}
     </div>,
 
-    <div key="story" className="flex max-h-[min(78dvh,100%)] flex-col gap-4">
+    <div key="story" className="flex min-h-0 max-h-[min(62dvh,32rem)] flex-col gap-4">
       <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1 pb-2">
         {interpretation.storySections.map((section, index) => (
-          <div key={`story-${index}`} className="mb-4 rounded-2xl border border-line/60 bg-white/[0.025] p-4 last:mb-0">
+          <div key={`story-${index}`} className="mb-4 rounded-2xl border border-line/60 bg-white/[0.025] p-4 last:mb-0 sm:p-5">
             {editingChapter === 3 ? (
               <div className="grid gap-2">
                 <div className="flex items-center gap-2">
@@ -664,8 +670,8 @@ export function OriginStoryScroll({
                 <p className="text-[11px] uppercase tracking-[0.22em] text-ice/70">
                   {String(index + 1).padStart(2, "0")}
                 </p>
-                {section.title ? <h3 className="mt-2 font-display text-lg text-text-hi">{section.title}</h3> : null}
-                <p className="mt-2 text-sm leading-7 text-text-lo">{section.body}</p>
+                {section.title ? <h3 className="mt-2 font-display text-lg text-text-hi sm:text-xl">{section.title}</h3> : null}
+                <p className="mt-2 max-w-none text-sm leading-7 text-text-lo sm:text-[15px] sm:leading-8">{section.body}</p>
               </>
             )}
           </div>
@@ -798,7 +804,7 @@ export function OriginStoryScroll({
             index={i}
             staticMode
             title={i === 4 && importStarted ? importTitle[importStep] : undefined}
-            wide={i === 4 && importStarted}
+            wide={i === 3 || (i === 4 && importStarted)}
             alignClass={i === 4 && importStarted ? importAlign : undefined}
             onBack={() => backForChapter(i)}
           >
@@ -823,7 +829,7 @@ export function OriginStoryScroll({
     >
       {/* The scroll range. The sticky child stays in view across all of it. */}
       <div style={{ height: `${sections.length * VH_PER_CHAPTER + 100}vh` }} className="w-full">
-        <div className="sticky top-0 flex h-[100dvh] items-start overflow-hidden px-5 py-8">
+        <div className="sticky top-0 flex h-[100dvh] items-center overflow-hidden px-5 py-6 sm:py-8">
           {sections.map((content, i) => (
             <div
               key={i}
@@ -833,14 +839,15 @@ export function OriginStoryScroll({
               // Transforms are written by `paint` on every scroll frame. The
               // first chapter starts at zero and is faded up by the mount
               // effect below, so the story opens rather than appearing.
-              className="absolute inset-x-5 will-change-[transform,opacity]"
+              // `top-1/2` + paint's translateY(-50%) keeps panels middle-left.
+              className="absolute inset-x-5 top-1/2 will-change-[transform,opacity]"
               style={{ opacity: 0, transition: "opacity 520ms ease-out" }}
             >
               <ChapterSection
                 index={i}
                 staticMode={false}
                 title={i === 4 && importStarted ? importTitle[importStep] : undefined}
-                wide={i === 4 && importStarted}
+                wide={i === 3 || (i === 4 && importStarted)}
                 alignClass={i === 4 && importStarted ? importAlign : undefined}
                 onBack={() => backForChapter(i)}
               >

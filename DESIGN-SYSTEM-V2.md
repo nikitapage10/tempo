@@ -45,8 +45,9 @@ The amber→ice side stroke is **opt-in** via `.prism-edge` (with `.prism-edge-s
 for tighter cards). Use it on page heroes and Board **columns** — not on every
 track card or Calendar chrome. Board tracks keep the hover Spectra frame
 (`LfWindow` + spotlight) instead of a permanent side line. The stroke is
-vertically inset past the corner radius; do not put `overflow: hidden` on
-`.prism-edge` itself (that breaks spotlight `fixed`/transform descendants).
+vertically inset past the corner radius. Board columns may use
+`overflow: hidden` so backdrop blur clips to the radius — Spotlight edge glow
+tracks local `--spot-x` / `--spot-y`, so that clip no longer kills hover.
 
 Also added: `.spotlight` / `<SpotlightCard>` (`components/ui/spotlight-card.tsx`)
 — a cursor-tracked highlight for clickable surfaces. Default tone is `ramp`,

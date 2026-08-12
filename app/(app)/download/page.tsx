@@ -5,7 +5,7 @@ import { Download, HardDrive, MonitorSmartphone, RadioTower, Wifi, WifiOff } fro
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { useActiveDesktopDevice } from "@/hooks/use-devices";
-import { resolveDesktopHandoff } from "@/lib/desktop/handoff";
+import { resolveDesktopHandoff, DESKTOP_WINDOWS_INSTALLER_URL } from "@/lib/desktop/handoff";
 import { detectOS, isDesktopApp } from "@/lib/platform";
 import { getSiteUrl } from "@/lib/site";
 
@@ -32,13 +32,9 @@ const HIGHLIGHTS = [
   },
 ];
 
-// Until the public binary-only release channel has its first verified release,
-// keep serving the bundled beta from the app's own domain. Once Vercel's
-// NEXT_PUBLIC_DESKTOP_WINDOWS_URL points at the public channel's stable
-// latest-download URL, future desktop releases require no web code change.
-const WINDOWS_INSTALLER_URL =
-  process.env.NEXT_PUBLIC_DESKTOP_WINDOWS_URL ||
-  "/downloads/TEMPO-Setup-0.100.6.exe";
+// NEXT_PUBLIC_DESKTOP_WINDOWS_URL overrides the public-channel latest URL
+// when set in Vercel; otherwise we use the shared GitHub latest asset.
+const WINDOWS_INSTALLER_URL = DESKTOP_WINDOWS_INSTALLER_URL;
 
 const DOWNLOADS: {
   os: "windows" | "mac";

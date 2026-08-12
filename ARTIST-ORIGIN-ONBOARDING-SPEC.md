@@ -149,18 +149,20 @@ interrupts the experience, because nothing is lost from memory.
 
 `lib/origin/reducer.ts`. Phases: `booting`, `opening`, `name_idle`,
 `recognizing`, `introduction_idle`, `recording`, `interpreting_transition`,
-`direction_idle`, `processing`, `resolving`, `chapter_opening`, `story_scroll`,
-`saving`, `complete`, `recoverable_error`.
+`direction_idle`, `looking_transition`, `look_idle`, `processing`,
+`chapter_opening`, `story_scroll`, `saving`, `complete`, `recoverable_error`
+(plus legacy `resolving` for older clients).
 
 **Transition timing, API timing and processing dwell are separate clocks.**
-Leaving the processing loop requires `transitionSettled` (the covering
-transition reached its handoff), `interpretationReady` (the request returned)
-and `processingDwellSettled` (frame 4 visibly completed one full media cycle).
+Leaving the processing loop requires `transitionSettled` (already true after
+look), `interpretationReady` (the request returned) and
+`processingDwellSettled` (loop-05 visibly completed one full media cycle).
 A fast model response therefore cannot skip the processing loop.
 
 **Resume never lands mid-transition.** Saved steps map to stable loops: name →
-`loop-02`, introduction → `loop-03`, processing → `loop-04`, the legacy
-`review` label → the direction question on `loop-04`, story → `scroll-06`.
+`loop-02`, introduction → `loop-03`, the legacy `review` label → the direction
+question on `loop-04`, look → `loop-05`, processing → `loop-05`, story →
+`scroll-06`.
 
 **Regeneration never destroys the current version.** A new interpretation is
 held in `pendingInterpretation` until the artist accepts it, and edits push onto
