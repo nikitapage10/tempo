@@ -49,8 +49,9 @@ timing nor an ended-video rewind can flash through. Entering the workspace uses
 a persistent horizon-and-aperture reveal that begins before navigation and
 holds until the dashboard is ready beneath it.
 
-**Messaging inbox.** Notifications, Messages, and Search sit together in the
-global top-right toolbar. Search understands tempo queries like `bpm 140` or
+**Messaging inbox.** Notifications, Messages, your profile menu, and Search sit together in the
+global top-right toolbar. The profile button (your artist mark) opens Artist profile, Stats,
+Settings, Download TEMPO, and Sign out. Search understands tempo queries like `bpm 140` or
 `140 through 150` so you get tracks in that speed range, not every note that
 mentions BPM. The Messages icon carries an unread badge and opens a
 mini-inbox for recent artist and TEMPO Support conversations, including quick

@@ -25,6 +25,7 @@ import { GlobalSearch } from "@/components/global-search";
 import { SpaceSwitcher } from "@/components/space-switcher";
 import { NotificationCenter } from "@/components/notification-center";
 import { MessageCenter } from "@/components/message-center";
+import { ProfileMenu } from "@/components/profile-menu";
 import { IntroMoment } from "@/components/intro-moment";
 import { FlareLine } from "@/components/flare-line";
 import { Wordmark } from "@/components/wordmark";
@@ -324,6 +325,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </div>
               <div className="[-webkit-app-region:no-drag]">
                 <MessageCenter />
+              </div>
+              <div className="[-webkit-app-region:no-drag]">
+                <ProfileMenu />
               </div>
               <div
                 data-tour="global-search"

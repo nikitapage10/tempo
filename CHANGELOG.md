@@ -4,6 +4,7 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-12
 
+- Added (v0.134.0): a profile button next to Messages — open your artist profile, Stats, Settings, or Download TEMPO, or sign out, without digging through the rail.
 - Fixed (v0.133.1): desktop zoom no longer leaves a black strip beside the left rail, and menu text only grows with zoom when the wide labeled rail has room (the narrow icon rail stays put).
 - Changed (v0.133.0 / Desktop v0.100.20): the left rail stays usable when you shrink the window or zoom — below a wide breakpoint it collapses to icons (with initials for artist/space), and on TEMPO Desktop the zoom control / Ctrl± only scales the main workspace so nav buttons don’t shrink with the page. Re-download after Desktop Release publishes.
 - Changed (v0.132.0): search understands tempo more clearly — try `bpm 140`, `140 bpm`, or a range like `140-150` / `bpm 140 through 150` to list tracks in that speed, without every song that merely mentions “BPM” in a note crowding the results.
