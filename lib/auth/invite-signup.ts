@@ -37,3 +37,16 @@ export function inviteLoginHref(redirectPath: string, email?: string): string {
 export function inviteRegisterHref(redirectPath: string): string {
   return `/register?redirect=${encodeURIComponent(redirectPath)}`;
 }
+
+/** Artist-program invite: sign in on an existing account, then redeem. */
+export function platformInviteLoginHref(code: string, email?: string): string {
+  const params = new URLSearchParams();
+  params.set("invite", code);
+  if (email?.trim()) params.set("email", email.trim());
+  return `/login?${params.toString()}`;
+}
+
+/** After a signed-in redeem, Origin starts from the welcome chooser. */
+export function platformInviteWelcomeHref(code: string): string {
+  return `/welcome?invite=${encodeURIComponent(code)}`;
+}

@@ -8,8 +8,9 @@ export const dynamic = "force-dynamic";
 const headers = { "Cache-Control": "private, no-store" };
 
 /**
- * Publish an artist to the member network and reconcile the account's Green
- * Room membership as one user-visible action.
+ * Publish an owned workspace (music artist or personal home) to the member
+ * network. Creates the public identity row if this person has never shaped
+ * an Artist page — team members still need to be able to join Social.
  */
 export async function POST(request: NextRequest) {
   const supabase = createClient();
@@ -21,34 +22,38 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json().catch(() => null);
-  const artistId = typeof body?.artistId === "string" ? body.artistId : "";
+  let artistId = typeof body?.artistId === "string" ? body.artistId : "";
   const visibility = body?.visibility;
-  if (!artistId || (visibility !== "members" && visibility !== "public")) {
+  if (visibility !== "members" && visibility !== "public") {
     return NextResponse.json({ error: "Choose a valid network visibility." }, { status: 400, headers });
   }
 
-  const { data: existing, error: readError } = await supabase
-    .from("artist_profiles")
-    .select("*")
-    .eq("artist_id", artistId)
-    .eq("owner_user_id", user.id)
-    .maybeSingle();
-  if (readError || !existing) {
+  if (!artistId) {
+    const { data: owned } = await supabase
+      .from("artists")
+      .select("id, workspace_kind")
+      .eq("user_id", user.id)
+      .is("demo_kind", null)
+      .order("sort", { ascending: true });
+    const personal = owned?.find((row) => row.workspace_kind === "personal");
+    artistId = personal?.id ?? owned?.[0]?.id ?? "";
+  }
+  if (!artistId) {
     return NextResponse.json(
-      { error: "Shape and save the artist profile before joining the network." },
+      { error: "Couldn't find a workspace to join from." },
       { status: 404, headers }
     );
   }
 
   const { data: artist, error: artistError } = await supabase
     .from("artists")
-    .select("demo_kind")
+    .select("name, emblem_url, banner_url, banner_color, banner_color_end, ice_color, amber_color, palette_id, demo_kind")
     .eq("id", artistId)
     .eq("user_id", user.id)
     .maybeSingle();
   if (artistError || !artist) {
     return NextResponse.json(
-      { error: "Couldn't verify this artist." },
+      { error: "Couldn't verify this workspace." },
       { status: 404, headers }
     );
   }
@@ -59,11 +64,62 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const publishedAt = existing.published_at ?? new Date().toISOString();
+  const { data: existing, error: readError } = await supabase
+    .from("artist_profiles")
+    .select("*")
+    .eq("artist_id", artistId)
+    .eq("owner_user_id", user.id)
+    .maybeSingle();
+  if (readError) {
+    return NextResponse.json(
+      { error: "Couldn't load your network identity." },
+      { status: 500, headers }
+    );
+  }
+
+  let profileId = existing?.id as string | undefined;
+  if (!existing) {
+    const { data: memberProfile } = await supabase
+      .from("artist_member_profiles")
+      .select("display_name, avatar_url")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    const displayName =
+      (typeof memberProfile?.display_name === "string" && memberProfile.display_name.trim()) ||
+      artist.name ||
+      user.email?.split("@")[0] ||
+      "Member";
+    const { data: created, error: createError } = await supabase
+      .from("artist_profiles")
+      .insert({
+        artist_id: artistId,
+        owner_user_id: user.id,
+        display_name: displayName.slice(0, 80),
+        emblem_url: memberProfile?.avatar_url ?? artist.emblem_url ?? null,
+        banner_url: artist.banner_url ?? null,
+        banner_color: artist.banner_color ?? null,
+        banner_color_end: artist.banner_color_end ?? null,
+        ice_color: artist.ice_color ?? null,
+        amber_color: artist.amber_color ?? null,
+        palette_id: artist.palette_id ?? "spectra",
+        visibility: "private",
+      })
+      .select("id")
+      .single();
+    if (createError || !created) {
+      return NextResponse.json(
+        { error: createError?.message ?? "Couldn't create a network identity." },
+        { status: 500, headers }
+      );
+    }
+    profileId = created.id;
+  }
+
+  const publishedAt = existing?.published_at ?? new Date().toISOString();
   const { data: profile, error: publishError } = await supabase
     .from("artist_profiles")
     .update({ visibility, published_at: publishedAt })
-    .eq("id", existing.id)
+    .eq("id", profileId)
     .select("*")
     .single();
   if (publishError || !profile) {
@@ -83,9 +139,6 @@ export async function POST(request: NextRequest) {
       .update({ starter_community_provisioned_at: new Date().toISOString() })
       .eq("user_id", user.id);
   } catch (error) {
-    // Network membership is the primary action. Keep it active if the starter
-    // Scene is temporarily unavailable; authenticated loads retry the
-    // idempotent Green Room reconciliation until it succeeds.
     console.error("[network/join] Green Room reconciliation pending", error);
   }
 

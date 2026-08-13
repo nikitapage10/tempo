@@ -176,7 +176,9 @@ Separate from track collaborators. Roles: **manager**, **agent**, **tour_manager
 
 Team members own a **personal workspace** (`artists.workspace_kind = personal`) for their own projects/tasks. They may `SELECT` other **active** teammates of the same artist (not pending invites or token hashes) and those people's name/photo. Calendar grants also allow listing that artist's spaces. Social people badges (`network_person_badges_for`) expose role + artist name only for humans with a published profile — never grants or emails.
 
-UI hiding (rail, Settings Account-only outside My artist, read-only Artist page in an entered workspace) is not security; RLS remains authoritative. Members never post as the managed artist.
+UI hiding (rail, Settings Look + Account in the personal home, read-only Artist page in an entered workspace) is not security; RLS remains authoritative. Members never post as the managed artist.
+
+During beta, a member may invite team members and track collaborators directly. Inviting someone as a **full TEMPO artist** creates a pending `artist_invite_requests` row; only a platform admin may approve it, which then mints a normal `invites` row and sends the email. Admin Invites lists those requests plus team/collaborator invites sent by others (inviter name, invitee, kind).
 
 ### Guest allowlist (explicit)
 **May see:** track title, artwork (signed), version number/label/changelog, waveform for linked version, comments for that version (as configured), own posted guest name.  

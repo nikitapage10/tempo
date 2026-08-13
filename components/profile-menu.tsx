@@ -137,7 +137,7 @@ export function ProfileMenu() {
         aria-label={`Account menu for ${displayName}`}
         title={displayName}
         className={cn(
-          "relative size-9 shrink-0 overflow-hidden rounded-full border border-line bg-bg-2 p-0 transition-opacity duration-hover hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
+          "relative size-11 shrink-0 overflow-hidden rounded-full border border-line bg-bg-2 p-0 transition-opacity duration-hover hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice sm:size-12",
           open && "ring-2 ring-ice"
         )}
       >

@@ -26,14 +26,14 @@ export type FanPose = {
  */
 export function teamFanPose(featured: boolean, memberIndex: number): FanPose {
   if (featured) {
-    return { x: 0, y: 0, rotate: 0, zIndex: 40 };
+    return { x: 0, y: 8, rotate: 0, zIndex: 40 };
   }
   const side = memberIndex % 2 === 0 ? -1 : 1;
   const rank = Math.floor(memberIndex / 2) + 1;
   return {
-    x: side * rank * 108,
-    y: rank * -26,
-    rotate: side * rank * 11,
+    x: side * rank * 168,
+    y: rank * 28,
+    rotate: side * rank * 9,
     zIndex: 12 - rank,
   };
 }
@@ -116,7 +116,7 @@ export function TeamConstellation({
 
       <motion.div
         className="relative mt-16 flex items-center justify-center"
-        style={{ minHeight: people.length > 0 ? 250 : 120 }}
+        style={{ minHeight: people.length > 0 ? 480 : 160 }}
         variants={containerVariants}
         initial="hidden"
         animate={controls}
@@ -136,14 +136,14 @@ export function TeamConstellation({
                 transition: { type: "spring", stiffness: 300, damping: 20 },
               }}
               onClick={() => onSelectPerson?.(person.id)}
-              className="absolute flex flex-col items-center gap-1.5"
+              className="absolute flex flex-col items-center gap-2"
             >
               <div
                 className={cn(
                   "overflow-hidden rounded-xl border-2 bg-bg-2 shadow-e2",
                   person.featured
-                    ? "h-32 w-32 border-ice/40 md:h-40 md:w-40 lg:h-44 lg:w-44"
-                    : "h-28 w-28 border-bg-0 md:h-36 md:w-36 lg:h-40 lg:w-40"
+                    ? "h-52 w-52 border-ice/40 md:h-64 md:w-64 lg:h-72 lg:w-72"
+                    : "h-32 w-32 border-bg-0 md:h-40 md:w-40 lg:h-44 lg:w-44"
                 )}
               >
                 <SignedImage
@@ -157,9 +157,16 @@ export function TeamConstellation({
                   }
                 />
               </div>
-              <span className="max-w-[7rem] truncate text-[11px] text-text-hi">{person.name}</span>
+              <span
+                className={cn(
+                  "max-w-[12rem] truncate text-text-hi",
+                  person.featured ? "text-base sm:text-lg" : "text-sm"
+                )}
+              >
+                {person.name}
+              </span>
               {person.subtitle ? (
-                <span className="label-mono max-w-[7rem] truncate text-text-lo">
+                <span className="label-mono max-w-[11rem] truncate text-text-lo">
                   {person.subtitle}
                 </span>
               ) : null}

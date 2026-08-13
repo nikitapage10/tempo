@@ -341,7 +341,7 @@ export default function SocialView() {
             Join as TEMPO member
           </Button>
           <Button asChild size="sm" variant="secondary">
-            <Link href="/artist">
+            <Link href={mode === "work" ? "/settings?tab=studio" : "/artist"}>
               <Lock className="size-3.5" />
               Network settings
             </Link>
@@ -378,8 +378,8 @@ export default function SocialView() {
             <Lock className="size-3.5 shrink-0 text-text-lo" />
             Off the network — nobody can find or follow you.
           </span>
-          <Link href="/artist" className="text-xs text-ice hover:underline">
-            Change on Artist
+          <Link href={mode === "work" ? "/settings?tab=studio" : "/artist"} className="text-xs text-ice hover:underline">
+            {mode === "work" ? "Change in Settings" : "Change on Artist"}
           </Link>
         </div>
       ) : null}

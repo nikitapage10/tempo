@@ -33,7 +33,7 @@ export function useArtistProfile(artistId: string | null) {
 
   const publish = useMutation({
     mutationFn: (visibility: "members" | "public") =>
-      publishArtistProfile(artistId!, visibility),
+      publishArtistProfile(artistId, visibility),
     onSuccess: (profile) => qc.setQueryData(queryKey, profile),
   });
 

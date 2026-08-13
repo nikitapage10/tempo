@@ -79,6 +79,7 @@ import {
 } from "@/lib/desktop/content-zoom";
 
 const ARTIST_NAV_CHILDREN = [
+  { href: "/artist", label: "Profile", icon: Disc3 },
   { href: "/team", label: "Team", icon: Users },
   { href: "/stats", label: "Stats", icon: BarChart3 },
 ] as const satisfies readonly RailItem[];
@@ -415,7 +416,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   }}
                 >
                   <ArrowLeft className="size-3.5" />
-                  Back to my work
+                  Back home
                 </button>
               </div>
             ) : null}

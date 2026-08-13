@@ -1,6 +1,6 @@
 "use client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { actOnAdminReport, checkPlatformAdminAccess, createAdminInvite, deleteAdminInvite, deleteAdminUser, getAdminActivationPulse, getAdminAnalytics, getAdminAudit, getAdminInvites, getAdminOverview, getAdminReports, getAdminSupport, getAdminSystemHealth, getAdminUser, getAdminUsers, reactivateAdminUser, revokeAdminInvite, sendAdminInvite, suspendAdminUser, updateAdminSupport, updateAdminUserRole } from "@/lib/api/admin";
+import { actOnAdminReport, approveArtistInviteRequest, checkPlatformAdminAccess, createAdminInvite, deleteAdminInvite, deleteAdminUser, getAdminActivationPulse, getAdminAnalytics, getAdminAudit, getAdminInvites, getAdminOverview, getAdminReports, getAdminSupport, getAdminSystemHealth, getAdminUser, getAdminUsers, reactivateAdminUser, rejectArtistInviteRequest, revokeAdminInvite, sendAdminInvite, suspendAdminUser, updateAdminSupport, updateAdminUserRole } from "@/lib/api/admin";
 import type { AdminInviteRole } from "@/lib/api/admin";
 
 /** Whether the signed-in account can open the Admin portal. Non-admins stay false. */
@@ -26,7 +26,7 @@ export function useAdminUserActions(id: string) {
 }
 export function useAdminInvites() {
   const client = useQueryClient(); const query = useQuery({ queryKey: ["admin", "invites"], queryFn: getAdminInvites }); const settle = () => Promise.all([client.invalidateQueries({ queryKey: ["admin", "invites"] }), client.invalidateQueries({ queryKey: ["admin", "overview"] })]);
-  return { ...query, create: useMutation({ mutationFn: createAdminInvite, onSettled: settle }), revoke: useMutation({ mutationFn: revokeAdminInvite, onSettled: settle }), remove: useMutation({ mutationFn: deleteAdminInvite, onSettled: settle }), send: useMutation({ mutationFn: sendAdminInvite, onSettled: settle }) };
+  return { ...query, create: useMutation({ mutationFn: createAdminInvite, onSettled: settle }), revoke: useMutation({ mutationFn: revokeAdminInvite, onSettled: settle }), remove: useMutation({ mutationFn: deleteAdminInvite, onSettled: settle }), send: useMutation({ mutationFn: sendAdminInvite, onSettled: settle }), approveRequest: useMutation({ mutationFn: approveArtistInviteRequest, onSettled: settle }), rejectRequest: useMutation({ mutationFn: rejectArtistInviteRequest, onSettled: settle }) };
 }
 export function useAdminReports(status: string) { const client = useQueryClient(); const query = useQuery({ queryKey: ["admin", "reports", status], queryFn: () => getAdminReports(status) }); const act = useMutation({ mutationFn: ({ id, action }: { id: string; action: "hide" | "dismiss" | "suspend_author" }) => actOnAdminReport(id, action), onSettled: () => Promise.all([client.invalidateQueries({ queryKey: ["admin", "reports"] }), client.invalidateQueries({ queryKey: ["admin", "overview"] }), client.invalidateQueries({ queryKey: ["admin", "audit"] })]) }); return { ...query, act }; }
 export function useAdminAudit(page: number) { return useQuery({ queryKey: ["admin", "audit", page], queryFn: () => getAdminAudit(page) }); }

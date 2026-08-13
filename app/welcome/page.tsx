@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Download, Globe } from "lucide-react";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { Wordmark } from "@/components/wordmark";
@@ -13,6 +13,7 @@ import {
   DESKTOP_MAC_DOWNLOAD_URL,
 } from "@/lib/desktop/handoff";
 import { detectOS } from "@/lib/platform";
+import { completePlatformInvite } from "@/lib/auth/complete-platform-invite";
 
 const WINDOWS_INSTALLER_URL = DESKTOP_WINDOWS_INSTALLER_URL;
 const MAC_INSTALLER_URL = DESKTOP_MAC_DOWNLOAD_URL;
@@ -23,14 +24,35 @@ const MAC_INSTALLER_URL = DESKTOP_MAC_DOWNLOAD_URL;
  * bounce the artist away; outside (onboarding) so ActiveArtist is not required yet.
  */
 export default function WelcomePage() {
+  return (
+    <React.Suspense
+      fallback={
+        <AuthShell>
+          <div className="h-40 animate-pulse rounded-panel bg-bg-2/40" />
+        </AuthShell>
+      }
+    >
+      <WelcomeChooser />
+    </React.Suspense>
+  );
+}
+
+function WelcomeChooser() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const inviteCode = searchParams.get("invite")?.trim() ?? "";
   const [mounted, setMounted] = React.useState(false);
   const os = React.useMemo(() => detectOS(), []);
 
   React.useEffect(() => {
     setMounted(true);
+    if (inviteCode) {
+      void completePlatformInvite(inviteCode).catch(() => {
+        /* already signed in without a usable invite — Origin still opens */
+      });
+    }
     if (isDesktopApp()) router.replace("/origin");
-  }, [router]);
+  }, [inviteCode, router]);
 
   if (!mounted) {
     return (

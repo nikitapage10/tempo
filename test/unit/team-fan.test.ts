@@ -5,7 +5,7 @@ describe("team fan layout", () => {
   it("puts the artist at the center in front", () => {
     const artist = teamFanPose(true, 0);
     expect(artist.x).toBe(0);
-    expect(artist.y).toBe(0);
+    expect(artist.y).toBe(8);
     expect(artist.rotate).toBe(0);
     expect(artist.zIndex).toBeGreaterThan(20);
   });

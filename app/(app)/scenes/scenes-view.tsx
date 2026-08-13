@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { ArrowUpRight, Lock, Plus, Search, Users } from "lucide-react";
 import { useActiveArtist } from "@/components/active-artist-provider";
+import { useWorkspaceMode } from "@/hooks/use-workspace-mode";
 import { useArtistProfile } from "@/hooks/use-artist-profile";
 import {
   useDiscoverScenes,
@@ -26,8 +27,9 @@ type Tab = "mine" | "discover" | "invites";
 export default function ScenesView() {
   const { toast } = useToast();
   const { activeArtist } = useActiveArtist();
+  const { socialArtistId, mode } = useWorkspaceMode();
   const { profile, isLoading: profileLoading, publish } = useArtistProfile(
-    activeArtist?.id ?? null
+    socialArtistId ?? activeArtist?.id ?? null
   );
   const myProfileId = profile?.id ?? null;
   const onNetwork =
@@ -112,7 +114,7 @@ export default function ScenesView() {
   const networkGate = (
     <EmptyShaderPanel
       title="You’re off the network"
-      copy="Joining a scene is a network act, same as Social — publish your artist profile so other members can see you're there."
+      copy="Joining a scene is a network act, same as Social — join so other members can see you're there."
       action={
         <div className="flex flex-wrap items-center justify-center gap-2">
           <Button
@@ -125,7 +127,7 @@ export default function ScenesView() {
             Join as TEMPO member
           </Button>
           <Button asChild size="sm" variant="secondary">
-            <Link href="/artist">
+            <Link href={mode === "work" ? "/settings?tab=studio" : "/artist"}>
               <Lock className="size-3.5" />
               Network settings
             </Link>

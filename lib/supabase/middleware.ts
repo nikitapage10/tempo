@@ -171,6 +171,8 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Recovery sessions need /reset-password; don't bounce them to Today.
+  // An artist invite on an already-signed-in team account must redeem, not
+  // dump them on Today and drop the code.
   if (
     user &&
     (path.startsWith("/login") ||
@@ -178,7 +180,14 @@ export async function updateSession(request: NextRequest) {
       path.startsWith("/forgot-password"))
   ) {
     const redirectUrl = request.nextUrl.clone();
+    const invite = request.nextUrl.searchParams.get("invite");
+    if (invite && path.startsWith("/register")) {
+      redirectUrl.pathname = "/welcome";
+      redirectUrl.search = `?invite=${encodeURIComponent(invite)}`;
+      return NextResponse.redirect(redirectUrl);
+    }
     redirectUrl.pathname = "/";
+    redirectUrl.search = "";
     return NextResponse.redirect(redirectUrl);
   }
 

@@ -106,13 +106,13 @@ export async function upsertArtistProfile(
 }
 
 export async function publishArtistProfile(
-  artistId: string,
+  artistId: string | null,
   visibility: "members" | "public"
 ): Promise<ArtistProfile> {
   const response = await fetch("/api/network/join", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ artistId, visibility }),
+    body: JSON.stringify({ artistId: artistId || undefined, visibility }),
   });
   const body = await response.json().catch(() => null);
   if (!response.ok) throw new Error(body?.error ?? "Couldn’t join the network.");

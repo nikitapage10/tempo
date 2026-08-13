@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { useWorkspaceMode } from "@/hooks/use-workspace-mode";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
@@ -45,6 +46,8 @@ export function AccountPanel() {
   const router = useRouter();
   const { toast } = useToast();
   const user = useCurrentUser();
+  const { mode } = useWorkspaceMode();
+  const lookHref = mode === "work" ? "/settings?tab=studio" : "/artist";
   const [providers, setProviders] = React.useState<IdentityProvider[]>([]);
   const [signingOut, setSigningOut] = React.useState(false);
   const [emailDraft, setEmailDraft] = React.useState("");
@@ -302,7 +305,7 @@ export function AccountPanel() {
             Who can see your published artist profile on the network.
           </p>
           <Button variant="secondary" size="sm" className="mt-4" asChild>
-            <Link href="/artist">Open Artist</Link>
+            <Link href={lookHref}>{mode === "work" ? "Open Look" : "Open Artist"}</Link>
           </Button>
         </div>
         <div className="panel-quiet p-5">
@@ -316,7 +319,7 @@ export function AccountPanel() {
             Who can start a DM with you — anyone, connections, or nobody.
           </p>
           <Button variant="secondary" size="sm" className="mt-4" asChild>
-            <Link href="/artist">Manage on Artist</Link>
+            <Link href={lookHref}>{mode === "work" ? "Manage in Look" : "Manage on Artist"}</Link>
           </Button>
         </div>
       </div>

@@ -19,8 +19,12 @@ describe("team member accounts", () => {
     const shell = read("components/app-shell.tsx");
     expect(shell).toContain('{ href: "/team", label: "Team"');
     expect(shell).toContain("ARTIST_NAV_CHILDREN");
+    expect(shell).toContain('{ href: "/artist", label: "Profile"');
+    expect(shell).toContain('{ href: "/team", label: "Team"');
+    expect(shell).toContain('{ href: "/stats", label: "Stats"');
     expect(shell).toContain('{ href: "/social", label: "Network"');
     expect(shell).toContain('{ href: "/profile", label: "Profile"');
+    expect(shell).toContain("Back home");
     expect(shell).toContain("WORK_MAIN_NAV");
     expect(existsSync(resolve("app/(app)/team/page.tsx"))).toBe(true);
     expect(existsSync(resolve("app/(app)/profile/page.tsx"))).toBe(true);
@@ -32,6 +36,9 @@ describe("team member accounts", () => {
     expect(artists).toContain('workspaceKind: "personal"');
     expect(artists).toContain("tempo.preferPersonalHome");
     expect(artists).toContain("repairTeammateHomes");
+    expect(artists).toContain("userHasTeamOrCollabHome");
+    expect(artists).toContain('return "Home"');
+    expect(read("lib/api/spaces.ts")).toContain('createSpace("Home"');
   });
 
   it("fans rectangular team cards with the artist at the center", () => {

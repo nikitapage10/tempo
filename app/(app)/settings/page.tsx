@@ -112,14 +112,23 @@ function SettingsPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { mode, isLoading: modeLoading } = useWorkspaceMode();
-  const accountOnly = !modeLoading && mode !== "artist";
-  const visibleTabs = accountOnly ? TABS.filter((t) => t.id === "account") : TABS;
+  const accountOnly = !modeLoading && mode === "entered";
+  const lookOnly = !modeLoading && mode === "work";
+  const visibleTabs = accountOnly
+    ? TABS.filter((t) => t.id === "account")
+    : lookOnly
+      ? TABS.filter((t) => t.id === "studio" || t.id === "notifications" || t.id === "account")
+      : TABS;
   const paramTab = searchParams.get("tab");
   const active: TabId = accountOnly
     ? "account"
-    : isTabId(paramTab)
+    : isTabId(paramTab) && visibleTabs.some((t) => t.id === paramTab)
       ? paramTab
-      : "studio";
+      : lookOnly
+        ? "studio"
+        : isTabId(paramTab)
+          ? paramTab
+          : "studio";
 
   React.useEffect(() => {
     if (modeLoading || !accountOnly) return;
@@ -153,7 +162,9 @@ function SettingsPageInner() {
         subtitle={
           accountOnly
             ? "Sign-in, privacy, and this device."
-            : "Artists, spaces, notifications, catalog backups, and your account — stage editing still lives on the board."
+            : lookOnly
+              ? "Your name, photo, colors, notifications, and account."
+              : "Artists, spaces, notifications, catalog backups, and your account — stage editing still lives on the board."
         }
       />
 
@@ -186,9 +197,11 @@ function SettingsPageInner() {
                       : "border-transparent text-text-lo hover:border-line hover:bg-bg-2/60 hover:text-text-hi",
                   )}
                 >
-                  <span className="block text-sm font-medium">{item.label}</span>
+                  <span className="block text-sm font-medium">
+                    {lookOnly && item.id === "studio" ? "Look" : item.label}
+                  </span>
                   <span className="mt-0.5 hidden text-xs text-text-lo lg:block">
-                    {item.hint}
+                    {lookOnly && item.id === "studio" ? "Name, photo, colors" : item.hint}
                   </span>
                 </button>
               );
@@ -205,29 +218,37 @@ function SettingsPageInner() {
               aria-labelledby="settings-tab-studio"
             >
               <SettingsPanel
-                eyebrow="Studio"
-                title="Who you’re working as"
-                description="Artists and spaces shape the rail, board, and everything scoped to the name you release under."
+                eyebrow={lookOnly ? "Look" : "Studio"}
+                title={lookOnly ? "How you show up" : "Who you’re working as"}
+                description={
+                  lookOnly
+                    ? "Your name, photo, logo, banner, and colors — the same look people see on Social and in the teams you join."
+                    : "Artists and spaces shape the rail, board, and everything scoped to the name you release under."
+                }
               >
                 <div className="space-y-4">
                   <ArtistsManager />
-                  <SpacesManager />
-                  <ActionTile
-                    href="/origin?revisit=1"
-                    secondaryHref="/origin?replay=1"
-                    icon={Sparkles}
-                    title="Artist Origin"
-                    body="The story TEMPO drafted from your introduction — promise, compass, and the chapter you’re in. Revisit or rewrite anytime."
-                    cta="Open Artist Origin"
-                    secondaryCta="Replay introduction"
-                  />
-                  <ActionTile
-                    href="/team"
-                    icon={Users2}
-                    title="Team"
-                    body="Managers, agents, and anyone else who works with this artist — who has access, and to what."
-                    cta="Open Team"
-                  />
+                  {lookOnly ? null : (
+                    <>
+                      <SpacesManager />
+                      <ActionTile
+                        href="/origin?revisit=1"
+                        secondaryHref="/origin?replay=1"
+                        icon={Sparkles}
+                        title="Artist Origin"
+                        body="The story TEMPO drafted from your introduction — promise, compass, and the chapter you’re in. Revisit or rewrite anytime."
+                        cta="Open Artist Origin"
+                        secondaryCta="Replay introduction"
+                      />
+                      <ActionTile
+                        href="/team"
+                        icon={Users2}
+                        title="Team"
+                        body="Managers, agents, and anyone else who works with this artist — who has access, and to what."
+                        cta="Open Team"
+                      />
+                    </>
+                  )}
                 </div>
               </SettingsPanel>
             </div>

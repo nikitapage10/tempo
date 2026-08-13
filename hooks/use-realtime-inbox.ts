@@ -27,7 +27,7 @@ type RealtimeNotification = {
   link_url?: string | null;
 };
 const memberMessageTypes = new Set(["support_reply"]);
-const adminMessageTypes = new Set(["support_member_reply", "support_new"]);
+const adminMessageTypes = new Set(["support_member_reply", "support_new", "artist_invite_request"]);
 
 export function useRealtimeInbox(admin = false) {
   const queryClient = useQueryClient();

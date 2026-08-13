@@ -11,7 +11,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { AdminTable, type AdminColumn } from "@/components/admin/admin-table";
 import { useAdminInvites } from "@/hooks/use-admin";
 import { useToast } from "@/components/ui/toast";
-import type { AdminInvite, AdminInviteRole } from "@/lib/api/admin";
+import type { AdminArtistInviteRequest, AdminInvite, AdminInviteRole, AdminMemberInvite } from "@/lib/api/admin";
 
 const ROLE_OPTIONS: { value: AdminInviteRole; label: string; detail: string }[] = [
   { value: "artist", label: "Artist", detail: "Standard member access and artist-first onboarding" },
@@ -72,12 +72,30 @@ export default function AdminInvitesPage() {
     { key: "actions", label: "Actions", className: "md:col-span-2 flex gap-1", render: (row) => <><Button size="icon" variant="ghost" aria-label="Copy invite" onClick={() => void copy(row)}><Copy /></Button>{row.email && !row.revoked_at && row.used_count < row.max_uses ? <Button size="icon" variant="ghost" aria-label={row.send_count ? "Send invitation again" : "Send invitation"} disabled={invites.send.isPending} onClick={() => void send(row)}>{row.send_count ? <RotateCw /> : <Mail />}</Button> : null}{!row.revoked_at ? <Button size="icon" variant="ghost" aria-label="Revoke invite" onClick={() => void invites.revoke.mutateAsync(row.id).then(() => toast("Invite revoked.", "ok")).catch((error) => toast(error.message))}><X /></Button> : null}<Button size="icon" variant="ghost" aria-label="Delete invite from history" onClick={() => setDeleteTarget(row)}><Trash2 /></Button></> },
   ];
 
+  const pendingRequests = (invites.data?.artistInviteRequests ?? []).filter((row) => row.status === "pending");
+  const requestColumns: AdminColumn<AdminArtistInviteRequest>[] = [
+    { key: "who", label: "Requested by", className: "md:col-span-3 font-medium text-text-hi", render: (row) => <div><p>{row.requestedByName}</p><p className="mt-0.5 text-xs text-text-lo">{date(row.createdAt)}</p></div> },
+    { key: "email", label: "Invite", className: "md:col-span-4 text-text-lo", render: (row) => <div><p>{row.email}</p><p className="mt-0.5 text-xs text-text-lo">{[row.artistName, row.trackTitle].filter(Boolean).join(" · ") || "Full artist account"}</p>{row.note ? <p className="mt-1 text-xs text-text-lo">{row.note}</p> : null}</div> },
+    { key: "status", label: "Status", className: "md:col-span-2 text-text-lo", render: (row) => row.status },
+    { key: "actions", label: "Actions", className: "md:col-span-3 flex gap-1", render: (row) => row.status !== "pending" ? <span className="text-xs text-text-lo">{row.reviewedAt ? date(row.reviewedAt) : ""}</span> : <><Button size="sm" disabled={invites.approveRequest.isPending} onClick={() => void invites.approveRequest.mutateAsync(row.id).then((result) => toast(result.delivery === "sent" ? "Artist invite sent." : "Approved — email still needs sending.", "ok")).catch((error) => toast(error instanceof Error ? error.message : "Couldn’t approve."))}><CheckCircle2 /> Approve</Button><Button size="sm" variant="ghost" disabled={invites.rejectRequest.isPending} onClick={() => void invites.rejectRequest.mutateAsync(row.id).then(() => toast("Request declined.", "ok")).catch((error) => toast(error instanceof Error ? error.message : "Couldn’t decline."))}><X /> Decline</Button></> },
+  ];
+
+  const memberColumns: AdminColumn<AdminMemberInvite>[] = [
+    { key: "by", label: "Invited by", className: "md:col-span-3 font-medium text-text-hi", render: (row) => row.invitedByName },
+    { key: "who", label: "Invited", className: "md:col-span-3 text-text-lo", render: (row) => row.email ?? "—" },
+    { key: "kind", label: "Kind", className: "md:col-span-2 text-text-lo", render: (row) => <div><p>{row.kind === "team" ? "Team" : "Collaborator"}</p><p className="mt-0.5 text-xs text-ice">{row.role.replace("_", " ")}</p></div> },
+    { key: "context", label: "Where", className: "md:col-span-2 text-text-lo", render: (row) => row.context },
+    { key: "status", label: "Status", className: "md:col-span-2 text-text-lo", render: (row) => `${row.status}${row.acceptedAt ? ` · ${date(row.acceptedAt)}` : ""}` },
+  ];
+
   return <div className="space-y-5">
     <PageHeader title="Invites" subtitle="Send a designed, one-click invitation with a unique code—or create a link to share yourself." actions={<Button size="sm" onClick={() => setOpen(true)}><Plus /> New invite</Button>} />
     {invites.isLoading ? <div className="panel h-64 animate-pulse" /> : null}
     {invites.error ? <div className="panel-quiet p-4 text-sm text-warn">{invites.error.message}</div> : null}
     {invites.data ? <div className="flex items-start gap-3 rounded-card border border-line bg-bg-1 px-4 py-3">{invites.data.deliveryConfig.configured ? <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-ok"/> : <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warn"/>}<div><p className="text-sm text-text-hi">{invites.data.deliveryConfig.configured ? "Email delivery is configured" : "Email delivery needs configuration"}</p><p className="mt-0.5 text-xs leading-relaxed text-text-lo">{invites.data.deliveryConfig.configured ? <>Sending from <span className="text-text-hi">{invites.data.deliveryConfig.from}</span>. Resend must show <span className="text-text-hi">{invites.data.deliveryConfig.domain}</span> as verified.</> : <>Add both <span className="text-text-hi">RESEND_API_KEY</span> and <span className="text-text-hi">INVITE_FROM_EMAIL</span> to the production environment, then redeploy.</>}</p></div></div> : null}
     {invites.data ? <AdminTable columns={columns} rows={invites.data.invites} rowKey={(row) => row.id} empty="No invites yet." /> : null}
+    {invites.data ? <div className="space-y-3"><PageHeader title="Needs approval" subtitle={pendingRequests.length ? `${pendingRequests.length} full-artist invite${pendingRequests.length === 1 ? "" : "s"} waiting on you during beta.` : "Nobody has asked to invite a full artist yet."} /><AdminTable columns={requestColumns} rows={invites.data.artistInviteRequests ?? []} rowKey={(row) => row.id} empty="No artist-invite requests." /></div> : null}
+    {invites.data ? <div className="space-y-3"><PageHeader title="Invites by others" subtitle="Team members and collaborators invited from inside TEMPO — who sent it, and who they invited." /><AdminTable columns={memberColumns} rows={invites.data.memberInvites ?? []} rowKey={(row) => `${row.kind}:${row.id}`} empty="Nobody has invited a team member or collaborator yet." /></div> : null}
     <Dialog open={open} onOpenChange={setOpen}><DialogContent title="Create invitation" description="Add an email to send TEMPO’s invitation automatically. Leave it blank to create a copyable link." onClose={() => setOpen(false)}><div className="space-y-3">
       <Input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Recipient email" />
       <select value={memberRole} onChange={(event) => setMemberRole(event.target.value as AdminInviteRole)} className="h-10 w-full rounded-input border border-line bg-bg-2 px-3 text-sm text-text-hi">

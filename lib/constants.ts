@@ -71,6 +71,7 @@ export function normalizeDefaultArtistName(name: string): string {
 }
 
 export const ACTIVE_ARTIST_KEY = "tempo.activeArtistId";
+export const PREFER_ORIGIN_ARTIST_KEY = "tempo.preferOriginArtist";
 
 export const DEFAULT_SPACE_NAMES = ["Originals", "Edits & Remixes"] as const;
 

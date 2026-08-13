@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
  * own ice/amber flare gradient across its facets, the number of facets
  * widening by grade (Glimmer: one narrow band, Corona: the full spread).
  * One shape, one component, five grades — not five separate badge assets.
+ * Locked tiles pass earned={false} so every grade sits unlit until earned.
  */
 export function useGradeStyles() {
   const hues = useActiveArtistPalette();
@@ -26,14 +27,14 @@ export function PrismShard({
   className,
 }: {
   grade: AchievementGrade;
-  /** Umbra renders unlit — no facets, no colour — until earned. */
+  /** Unearned shards stay unlit — no facets, no colour — until earned. */
   earned?: boolean;
   size?: number;
   className?: string;
 }) {
   const styles = useGradeStyles();
   const style = styles[grade];
-  const dim = grade === "umbra" && !earned;
+  const dim = !earned;
 
   // A simple angular hexagon-ish shard, faceted by evenly-spaced chords —
   // more facets = more refracted bands, which is the rarity signal.
@@ -52,11 +53,20 @@ export function PrismShard({
       className={cn("shrink-0", className)}
       aria-hidden
     >
+      {!dim ? (
+        <circle
+          cx={cx}
+          cy={cy}
+          r={r * 0.72}
+          fill={style.color}
+          opacity={0.18}
+        />
+      ) : null}
       <path
         d={outline}
-        fill={dim ? "rgba(139,139,150,0.08)" : `${style.color}22`}
-        stroke={dim ? "rgba(139,139,150,0.35)" : style.color}
-        strokeWidth={1.25}
+        fill={dim ? "rgba(139,139,150,0.08)" : `${style.color}28`}
+        stroke={dim ? "rgba(139,139,150,0.38)" : style.color}
+        strokeWidth={dim ? 1 : 1.5}
       />
       {Array.from({ length: facets }, (_, i) => {
         const t = facets === 1 ? 0.5 : i / (facets - 1);
@@ -70,11 +80,11 @@ export function PrismShard({
             y2={cy + r * 0.7}
             stroke={style.color}
             strokeWidth={1}
-            opacity={0.55}
+            opacity={0.65}
           />
         );
       })}
-      <circle cx={cx} cy={cy} r={2} fill={dim ? "rgba(139,139,150,0.4)" : style.color} />
+      <circle cx={cx} cy={cy} r={2.25} fill={dim ? "rgba(139,139,150,0.4)" : style.color} />
     </svg>
   );
 }

@@ -9,6 +9,7 @@ import { useToast } from "@/components/ui/toast";
 import { useCollaboratorMutations, useCollaborators } from "@/hooks/use-collaborators";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { inviteUrl } from "@/lib/api/collaborators";
+import { requestArtistInvite } from "@/lib/api/artist-invite-requests";
 import { COLLABORATOR_ROLES } from "@/lib/constants";
 import { formatShortDate } from "@/lib/format";
 import type { CollaboratorRole, TrackCollaborator } from "@/lib/types";
@@ -37,6 +38,7 @@ export function PeoplePanel({ trackId, ownerUserId, isOwner }: PeoplePanelProps)
   const [freshInvite, setFreshInvite] = React.useState<{ url: string } | null>(null);
   const [copied, setCopied] = React.useState(false);
   const [confirmRevokeId, setConfirmRevokeId] = React.useState<string | null>(null);
+  const [requestArtist, setRequestArtist] = React.useState(false);
 
   const active = collaborators.filter((c) => c.status !== "revoked");
 
@@ -49,10 +51,29 @@ export function PeoplePanel({ trackId, ownerUserId, isOwner }: PeoplePanelProps)
         invitedEmail: email.trim(),
         role,
       });
+      const invitedEmail = email.trim();
       setFreshInvite({ url: inviteUrl(rawToken) });
       setCopied(false);
       setEmail("");
-      toast("Invite created", "ok");
+      if (requestArtist) {
+        try {
+          await requestArtistInvite({
+            email: invitedEmail,
+            trackId,
+            note: `Collaborator on this track (${role}).`,
+          });
+          toast("Invite created. TEMPO will review the artist invite before it goes out.", "ok");
+        } catch (requestErr) {
+          toast(
+            requestErr instanceof Error
+              ? requestErr.message
+              : "Collaborator invite is ready — the artist invite still needs to be requested."
+          );
+        }
+        setRequestArtist(false);
+      } else {
+        toast("Invite created", "ok");
+      }
     } catch (err) {
       toast(err instanceof Error ? err.message : "Couldn’t create that invite — try again.");
     } finally {
@@ -115,6 +136,18 @@ export function PeoplePanel({ trackId, ownerUserId, isOwner }: PeoplePanelProps)
               ))}
             </select>
           </div>
+          <p className="text-xs leading-relaxed text-text-lo">
+            A guest link lets someone comment with no account. This invite gives them a simple collaborator login on this track. Asking TEMPO to invite them as a full artist needs approval during beta.
+          </p>
+          <label className="flex items-start gap-2 text-xs text-text-hi">
+            <input
+              type="checkbox"
+              checked={requestArtist}
+              onChange={(e) => setRequestArtist(e.target.checked)}
+              className="mt-0.5"
+            />
+            <span>Also ask TEMPO to invite them as a full artist (needs approval)</span>
+          </label>
           <div className="flex gap-2">
             <Button type="submit" size="sm" disabled={busy || !email.trim()}>
               {busy ? "Sending…" : "Create invite"}

@@ -70,7 +70,7 @@ async function personalWorkspaceName(): Promise<string> {
   } catch {
     /* profile table may not exist yet */
   }
-  return "Your work";
+  return "Home";
 }
 
 function looksLikeEmailLocalName(name: string, email: string | null | undefined): boolean {
@@ -132,7 +132,9 @@ async function repairTeammateHomes(
     homes[0];
   let next = existing;
   const rename =
-    looksLikeEmailLocalName(keeper.name, email) || keeper.name === DEFAULT_ARTIST_NAME
+    looksLikeEmailLocalName(keeper.name, email) ||
+    keeper.name === DEFAULT_ARTIST_NAME ||
+    keeper.name === "Your work"
       ? preferredName
       : undefined;
 
@@ -336,6 +338,27 @@ export async function ensureArtists(): Promise<Artist[]> {
   return ensureArtistsInflight;
 }
 
+async function userHasTeamOrCollabHome(
+  supabase: ReturnType<typeof createClient>,
+  userId: string
+): Promise<boolean> {
+  const [{ data: membership }, { count: collabCount }] = await Promise.all([
+    supabase
+      .from("artist_members")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("track_collaborators")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("status", "active"),
+  ]);
+  return !!membership || (collabCount ?? 0) > 0;
+}
+
 async function ensureArtistsOnce(): Promise<Artist[]> {
   const existing = await fetchArtists();
   const supabase = createClient();
@@ -343,30 +366,21 @@ async function ensureArtistsOnce(): Promise<Artist[]> {
   const userId = userData.user?.id;
 
   if (existing.length === 0) {
-    if (userId) {
-      const { data: membership } = await supabase
-        .from("artist_members")
-        .select("id")
-        .eq("user_id", userId)
-        .eq("status", "active")
-        .limit(1)
-        .maybeSingle();
-      if (membership) {
+    if (userId && (await userHasTeamOrCollabHome(supabase, userId))) {
+      try {
+        const personal = await createArtist(await personalWorkspaceName(), 0, {
+          workspaceKind: "personal",
+          originStatus: "legacy_complete",
+          originCompletedAt: new Date().toISOString(),
+        });
         try {
-          const personal = await createArtist(await personalWorkspaceName(), 0, {
-            workspaceKind: "personal",
-            originStatus: "legacy_complete",
-            originCompletedAt: new Date().toISOString(),
-          });
-          try {
-            sessionStorage.setItem("tempo.preferPersonalHome", personal.id);
-          } catch {
-            /* ignore */
-          }
-          return [personal];
+          sessionStorage.setItem("tempo.preferPersonalHome", personal.id);
         } catch {
-          return [];
+          /* ignore */
         }
+        return [personal];
+      } catch {
+        return [];
       }
     }
     return [await createArtist(DEFAULT_ARTIST_NAME, 0)];
@@ -375,7 +389,9 @@ async function ensureArtistsOnce(): Promise<Artist[]> {
   if (!userId) return existing;
 
   const hasMembership = membershipArtists(existing, userId).length > 0;
-  if (hasMembership) {
+  const needsPersonalHome =
+    hasMembership || (await userHasTeamOrCollabHome(supabase, userId));
+  if (needsPersonalHome) {
     const preferredName = await personalWorkspaceName();
     const repaired = await repairTeammateHomes(
       existing,

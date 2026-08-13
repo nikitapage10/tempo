@@ -2,19 +2,22 @@
 
 import * as React from "react";
 import { ChevronDown } from "lucide-react";
-import { PrismShard } from "@/components/gamification/prism-shard";
+import { PrismShard, useGradeStyles } from "@/components/gamification/prism-shard";
 import { QuietEmpty } from "@/components/ui/section-header";
 import { useAchievementAwards, useMarkAchievementsSeen } from "@/hooks/use-achievements";
-import { ACHIEVEMENTS, achievementByKey } from "@/lib/gamification/achievements";
+import {
+  ACHIEVEMENTS,
+  achievementByKey,
+  type AchievementDef,
+} from "@/lib/gamification/achievements";
 import { GRADE_ORDER } from "@/lib/gamification/grades";
 import { cn } from "@/lib/utils";
 
 /**
- * Defaults to a shelf of what's actually been earned — dumping all ~100
- * definitions (most of them locked) below the fold on every load made the
- * page scroll forever for no reason. "Show the full catalog" expands into
- * the grade-grouped view with locked entries greyed and Umbra names hidden
- * until earned; collapsing scrolls back to the shelf.
+ * Defaults to a shelf of everything actually earned — the count at the top
+ * is the list you can scroll. "Show the full catalog" expands into the
+ * grade-grouped view: earned tiles stay lit on the flare, locked ones are
+ * dashed and unlit, Umbra names stay hidden until earned.
  */
 export function AchievementList({ artistId }: { artistId: string }) {
   const { data: awards } = useAchievementAwards(artistId);
@@ -34,9 +37,11 @@ export function AchievementList({ artistId }: { artistId: string }) {
 
   if (!awards) return null;
 
-  const earned = [...awards].sort(
-    (a, b) => new Date(b.awardedAt).getTime() - new Date(a.awardedAt).getTime()
-  );
+  const earned = [...awards]
+    .filter((a) => achievementByKey(a.achievementKey))
+    .sort(
+      (a, b) => new Date(b.awardedAt).getTime() - new Date(a.awardedAt).getTime()
+    );
 
   return (
     <div className="space-y-3">
@@ -63,25 +68,17 @@ export function AchievementList({ artistId }: { artistId: string }) {
           consistent weeks — earns these, not tapping around the page.
         </QuietEmpty>
       ) : (
-        <ul className="grid gap-2 sm:grid-cols-2">
-          {earned.slice(0, 8).map((award) => {
+        <ul className="grid max-h-[28rem] gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
+          {earned.map((award) => {
             const def = achievementByKey(award.achievementKey);
             if (!def) return null;
             return (
-              <li key={award.id} className="well flex items-start gap-2.5 rounded-input p-2.5">
-                <PrismShard grade={def.grade} earned size={30} />
-                <div className="min-w-0">
-                  <p className="truncate text-xs font-medium text-text-hi">{def.name}</p>
-                  <p className="mt-0.5 text-[11px] text-text-lo">{def.flavor}</p>
-                  <p className="mt-0.5 text-[10px] text-text-lo/70">
-                    {new Date(award.awardedAt).toLocaleDateString(undefined, {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
-                  </p>
-                </div>
-              </li>
+              <AchievementTile
+                key={award.id}
+                def={def}
+                earned
+                awardedAt={award.awardedAt}
+              />
             );
           })}
         </ul>
@@ -108,41 +105,77 @@ function FullCatalog({
           <ul className="grid gap-2 sm:grid-cols-2">
             {defs.map((def) => {
               const award = awardedByKey.get(def.key);
-              const earned = !!award;
-              const hideDetails = def.grade === "umbra" && !earned;
               return (
-                <li
+                <AchievementTile
                   key={def.key}
-                  className={cn(
-                    "well flex items-start gap-2.5 rounded-input p-2.5",
-                    !earned && "opacity-60"
-                  )}
-                >
-                  <PrismShard grade={def.grade} earned={earned} size={30} />
-                  <div className="min-w-0">
-                    <p className="truncate text-xs font-medium text-text-hi">
-                      {hideDetails ? "???" : def.name}
-                    </p>
-                    <p className="mt-0.5 text-[11px] text-text-lo">
-                      {hideDetails ? "Hidden until earned." : def.flavor}
-                    </p>
-                    {award ? (
-                      <p className="mt-0.5 text-[10px] text-text-lo/70">
-                        {new Date(award.awardedAt).toLocaleDateString(undefined, {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
-                      </p>
-                    ) : null}
-                  </div>
-                </li>
+                  def={def}
+                  earned={!!award}
+                  awardedAt={award?.awardedAt}
+                />
               );
             })}
           </ul>
         </div>
       ))}
     </div>
+  );
+}
+
+function AchievementTile({
+  def,
+  earned,
+  awardedAt,
+}: {
+  def: AchievementDef;
+  earned: boolean;
+  awardedAt?: string;
+}) {
+  const styles = useGradeStyles();
+  const style = styles[def.grade];
+  const hideDetails = def.grade === "umbra" && !earned;
+
+  return (
+    <li className={cn("achievement-tile", earned ? "achievement-tile-earned" : "achievement-tile-locked")}>
+      <PrismShard grade={def.grade} earned={earned} size={32} />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline justify-between gap-2">
+          <p
+            className={cn(
+              "truncate text-xs font-medium",
+              earned ? "text-text-hi" : "text-text-lo"
+            )}
+          >
+            {hideDetails ? "???" : def.name}
+          </p>
+          <span
+            className={cn(
+              "label-mono shrink-0 text-[9px] uppercase tracking-[0.08em]",
+              earned ? "opacity-90" : "text-text-lo/60"
+            )}
+            style={earned ? { color: style.color } : undefined}
+          >
+            {hideDetails ? "Umbra" : style.label}
+          </span>
+        </div>
+        <p
+          className={cn(
+            "mt-0.5 text-[11px] leading-snug",
+            earned ? "text-text-lo" : "text-text-lo/65"
+          )}
+        >
+          {hideDetails ? "Hidden until earned." : def.flavor}
+        </p>
+        {earned && awardedAt ? (
+          <p className="mt-1 text-[10px] font-data" style={{ color: style.color }}>
+            {new Date(awardedAt).toLocaleDateString(undefined, {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })}
+          </p>
+        ) : null}
+      </div>
+    </li>
   );
 }
 

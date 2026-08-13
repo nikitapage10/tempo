@@ -9,7 +9,8 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Wordmark } from "@/components/wordmark";
 import { AuthShell } from "@/components/auth/auth-shell";
-import { isSafeRedirect, parseInviteRedirect } from "@/lib/auth/invite-signup";
+import { isSafeRedirect, parseInviteRedirect, platformInviteLoginHref } from "@/lib/auth/invite-signup";
+import { completePlatformInvite } from "@/lib/auth/complete-platform-invite";
 import { LEGAL_VERSION } from "@/lib/legal";
 import { ROLE_LABELS, type MemberRole } from "@/lib/team/roles";
 
@@ -86,10 +87,44 @@ function RegisterForm() {
     retry: false,
   });
 
+  const platformInviteQuery = useQuery({
+    queryKey: ["platform-invite-preview", inviteCode],
+    queryFn: async () => {
+      const res = await fetch("/api/auth/verify-invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: inviteCode }),
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(body?.error ?? "That invite isn’t valid.");
+      }
+      return body as {
+        inviteId: string | null;
+        email: string | null;
+        accountExists: boolean | null;
+        memberRole?: string;
+      };
+    },
+    enabled: !!inviteCode.trim() && !inviteRef,
+    retry: false,
+  });
+
   useEffect(() => {
     const invited = previewQuery.data?.invited_email;
     if (invited) setEmail(invited);
   }, [previewQuery.data?.invited_email]);
+
+  useEffect(() => {
+    const bound = platformInviteQuery.data?.email;
+    if (bound && !email) setEmail(bound);
+  }, [platformInviteQuery.data?.email, email]);
+
+  useEffect(() => {
+    const preview = platformInviteQuery.data;
+    if (!inviteCode.trim() || inviteRef || !preview?.accountExists) return;
+    router.replace(platformInviteLoginHref(inviteCode.trim(), preview.email ?? undefined));
+  }, [inviteCode, inviteRef, platformInviteQuery.data, router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -145,7 +180,14 @@ function RegisterForm() {
       setStatus("error");
       const lower = signUpError.message.toLowerCase();
       if (lower.includes("already") || lower.includes("registered")) {
-        setError("That email already has an account — go to Sign in, or reset in Supabase → Authentication → Users.");
+        const signInHref = inviteCode.trim()
+          ? platformInviteLoginHref(inviteCode.trim(), email.trim() || undefined)
+          : "/login";
+        setError(
+          `That email already has an account — sign in to continue as an artist.`
+        );
+        router.replace(signInHref);
+        return;
       } else if (lower.includes("rate limit")) {
         setError("Supabase is rate-limiting sign-ups right now — wait a bit, or create the user in the Supabase dashboard.");
       } else {
@@ -162,7 +204,19 @@ function RegisterForm() {
       return;
     }
 
-    if (verifiedInvite.inviteId) {
+    if (inviteCode.trim() && verifiedInvite.inviteId) {
+      try {
+        await completePlatformInvite(inviteCode.trim());
+      } catch (redeemError) {
+        setStatus("error");
+        setError(
+          redeemError instanceof Error
+            ? redeemError.message
+            : "Account created, but the invite could not be recorded."
+        );
+        return;
+      }
+    } else if (verifiedInvite.inviteId) {
       const redeemRes = await fetch("/api/auth/redeem-invite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -210,6 +264,9 @@ function RegisterForm() {
       return previewQuery.error instanceof Error
         ? previewQuery.error.message
         : "This invite isn’t available.";
+    }
+    if (platformInviteQuery.data?.accountExists) {
+      return "You already have a TEMPO account. Sign in to start as an artist — same login, Origin next.";
     }
     if (inviteRef) return "Create an account to accept this invite.";
     return "Create your account.";
@@ -396,7 +453,9 @@ function RegisterForm() {
             Already have an account?{" "}
             <Link
               href={
-                isSafeRedirect(redirectTo)
+                inviteCode.trim()
+                  ? platformInviteLoginHref(inviteCode.trim(), email.trim() || undefined)
+                  : isSafeRedirect(redirectTo)
                   ? `/login?redirect=${encodeURIComponent(redirectTo)}${
                       email.trim() ? `&email=${encodeURIComponent(email.trim())}` : ""
                     }`

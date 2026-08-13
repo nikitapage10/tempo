@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Wordmark } from "@/components/wordmark";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { OAuthButtons } from "@/components/auth/oauth-buttons";
-import { isSafeRedirect } from "@/lib/auth/invite-signup";
+import { isSafeRedirect, platformInviteWelcomeHref } from "@/lib/auth/invite-signup";
+import { completePlatformInvite } from "@/lib/auth/complete-platform-invite";
 
 export default function LoginPage() {
   return (
@@ -23,6 +24,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect");
+  const inviteCode = searchParams.get("invite")?.trim() ?? "";
   const authError = searchParams.get("error") === "auth";
   const [email, setEmail] = useState(() => searchParams.get("email")?.trim() ?? "");
   const [password, setPassword] = useState("");
@@ -61,6 +63,23 @@ function LoginForm() {
       return;
     }
 
+    if (inviteCode) {
+      try {
+        const result = await completePlatformInvite(inviteCode);
+        router.replace(result.startOrigin ? "/welcome" : isSafeRedirect(redirectTo) ? redirectTo : "/");
+        router.refresh();
+        return;
+      } catch (redeemError) {
+        setStatus("error");
+        setError(
+          redeemError instanceof Error
+            ? redeemError.message
+            : "Signed in, but that invite couldn’t be applied."
+        );
+        return;
+      }
+    }
+
     router.replace(isSafeRedirect(redirectTo) ? redirectTo : "/");
     router.refresh();
   }
@@ -72,7 +91,11 @@ function LoginForm() {
           <h1>
             <Wordmark size={32} />
           </h1>
-          <p className="mt-4 text-sm text-text-lo">Sign in to your studio.</p>
+          <p className="mt-4 text-sm text-text-lo">
+            {inviteCode
+              ? "Sign in with this email to start as an artist — same account, Origin next."
+              : "Sign in to your studio."}
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -152,7 +175,9 @@ function LoginForm() {
             No account?{" "}
             <Link
               href={
-                isSafeRedirect(redirectTo)
+                inviteCode
+                  ? `/register?invite=${encodeURIComponent(inviteCode)}`
+                  : isSafeRedirect(redirectTo)
                   ? `/register?redirect=${encodeURIComponent(redirectTo)}`
                   : "/register"
               }
@@ -163,7 +188,7 @@ function LoginForm() {
           </p>
         </form>
 
-        <OAuthButtons next={isSafeRedirect(redirectTo) ? redirectTo : "/"} />
+        <OAuthButtons next={inviteCode ? platformInviteWelcomeHref(inviteCode) : isSafeRedirect(redirectTo) ? redirectTo : "/"} />
 
         <p className="text-center text-xs text-text-lo">
           <Link href="/terms" className="hover:text-text-hi hover:underline">

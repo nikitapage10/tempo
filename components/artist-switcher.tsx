@@ -17,6 +17,7 @@ import { useActiveArtist } from "@/components/active-artist-provider";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useWorkspaceMode } from "@/hooks/use-workspace-mode";
 import { listMemberOfArtists } from "@/lib/api/artist-members";
+import { fetchMyMemberProfile } from "@/lib/api/member-profile";
 import { ROLE_LABELS } from "@/lib/team/roles";
 import {
   membershipArtists,
@@ -32,7 +33,20 @@ export function ArtistSwitcher() {
   const { mode } = useWorkspaceMode();
   const [open, setOpen] = React.useState(false);
   const ref = React.useRef<HTMLDivElement>(null);
-  const label = activeArtist?.name ?? "No artist";
+  const memberProfileQuery = useQuery({
+    queryKey: ["my-member-profile"],
+    queryFn: fetchMyMemberProfile,
+    enabled: mode === "work",
+    staleTime: 60_000,
+  });
+  const label =
+    mode === "work"
+      ? (memberProfileQuery.data?.displayName?.trim() ||
+          (activeArtist?.name && activeArtist.name !== "Your work"
+            ? activeArtist.name
+            : null) ||
+          "Home")
+      : (activeArtist?.name ?? "No artist");
 
   const mightHaveMemberships = artists.some((a) => a.user_id !== user?.id);
   const membershipsQuery = useQuery({

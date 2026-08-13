@@ -16,7 +16,7 @@ import {
   uploadArtistEmblem,
   uploadArtistLogo,
 } from "@/lib/api/artists";
-import { ACTIVE_ARTIST_KEY } from "@/lib/constants";
+import { ACTIVE_ARTIST_KEY, PREFER_ORIGIN_ARTIST_KEY } from "@/lib/constants";
 import { resolveArtistHues, type ResolvedArtistHues } from "@/lib/artist-theme";
 import {
   classifyOwnedKind,
@@ -62,6 +62,15 @@ async function bootstrapArtists(): Promise<Artist[]> {
   return ensureArtists();
 }
 
+function readPreferOriginArtistId(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return sessionStorage.getItem(PREFER_ORIGIN_ARTIST_KEY);
+  } catch {
+    return null;
+  }
+}
+
 export function ActiveArtistProvider({
   children,
 }: {
@@ -91,6 +100,12 @@ export function ActiveArtistProvider({
 
   React.useEffect(() => {
     if (!artists.length) return;
+    let preferOrigin: string | null = readPreferOriginArtistId();
+    if (preferOrigin && artists.some((a) => a.id === preferOrigin)) {
+      setActiveArtistIdState(preferOrigin);
+      writeStoredArtistId(preferOrigin);
+      return;
+    }
     let preferPersonal: string | null = null;
     try {
       preferPersonal = sessionStorage.getItem("tempo.preferPersonalHome");
@@ -135,8 +150,13 @@ export function ActiveArtistProvider({
     writeStoredArtistId(id);
   }, []);
 
+  const preferOriginId = hydrated ? readPreferOriginArtistId() : null;
+  const resolvedArtistId =
+    preferOriginId && artists.some((a) => a.id === preferOriginId)
+      ? preferOriginId
+      : activeArtistId;
   const activeArtist =
-    artists.find((a) => a.id === activeArtistId) ?? artists[0] ?? null;
+    artists.find((a) => a.id === resolvedArtistId) ?? artists[0] ?? null;
 
   const value: ActiveArtistContextValue = {
     artists,

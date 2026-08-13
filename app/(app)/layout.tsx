@@ -66,12 +66,16 @@ export default async function AppLayout({
   const finishedMusician = musicOwned.some(
     (row) => row.origin_status === "complete" || row.origin_status === "skipped"
   );
+  const hasPersonalHome = (ownedArtists ?? []).some(
+    (row) => row.workspace_kind === "personal"
+  );
 
   if (!ownedError && unfinishedMusic) {
-    // Team-only accounts may still have leftover not_started rows from a
-    // bug that minted Artist profiles on invite accept. Don't send them
-    // through Origin; dual users who already finished as a musician still go.
-    if (!membership || finishedMusician) {
+    // Team-only leftover Artist rows (no personal home yet) must not trap a
+    // manager in Origin. A team member who later redeems an artist invite
+    // already has a personal home plus a new unfinished music artist — send
+    // them through Origin on that artist.
+    if (!membership || finishedMusician || hasPersonalHome) {
       redirect("/origin");
     }
   }

@@ -31,7 +31,8 @@ import { useToast } from "@/components/ui/toast";
 import { SignedImage } from "@/components/ui/signed-image";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { countArtistContents } from "@/lib/api/artists";
-import { ownedMusicArtists } from "@/lib/workspace-mode";
+import { ownedMusicArtists, ownedPersonalHomes } from "@/lib/workspace-mode";
+import { useWorkspaceMode } from "@/hooks/use-workspace-mode";
 import {
   ARTIST_PALETTES,
   BANNER_COLORS,
@@ -45,7 +46,11 @@ export function ArtistsManager() {
   const { artists, activeArtistId, setActiveArtistId, isLoading } =
     useActiveArtist();
   const user = useCurrentUser();
-  const musicArtists = ownedMusicArtists(artists, user?.id);
+  const { mode } = useWorkspaceMode();
+  const identityOnly = mode === "work";
+  const musicArtists = identityOnly
+    ? ownedPersonalHomes(artists, user?.id).slice(0, 1)
+    : ownedMusicArtists(artists, user?.id);
   const {
     create,
     rename,
@@ -149,10 +154,11 @@ export function ArtistsManager() {
 
   return (
     <section id="artists" className="panel scroll-mt-24 p-5">
-      <p className="label-mono">Artists</p>
+      <p className="label-mono">{identityOnly ? "Look" : "Artists"}</p>
       <p className="mt-2 text-sm text-text-lo">
-        Each artist name you release under gets its own spaces, colors, logo,
-        profile image and banner. Switch between them from the rail.
+        {identityOnly
+          ? "Your name, photo, logo, banner, and colors — how you show up to artists you work with and on Social."
+          : "Each artist name you release under gets its own spaces, colors, logo, profile image and banner. Switch between them from the rail."}
       </p>
 
       {isLoading ? (
@@ -176,7 +182,7 @@ export function ArtistsManager() {
                     isActive={artist.id === activeArtistId}
                     confirmDelete={confirmId === artist.id}
                     counts={confirmId === artist.id ? counts : null}
-                    canDelete={musicArtists.length > 1}
+                    canDelete={!identityOnly && musicArtists.length > 1}
                     onRename={handleRename}
                     onPaletteChange={(id, paletteId) =>
                       updatePalette.mutate({ id, paletteId })
@@ -236,6 +242,7 @@ export function ArtistsManager() {
             </SortableContext>
           </DndContext>
 
+          {identityOnly ? null : (
           <form
             onSubmit={handleCreate}
             className="mt-4 flex flex-col gap-2 sm:flex-row"
@@ -252,6 +259,7 @@ export function ArtistsManager() {
               Add
             </Button>
           </form>
+          )}
         </>
       )}
 
@@ -387,6 +395,7 @@ function SortableArtistRow({
 
       <div className="px-2 py-1.5">
         <div className="flex items-center gap-2">
+          {canDelete ? (
           <button
             type="button"
             className="cursor-grab touch-none p-1 text-text-lo active:cursor-grabbing"
@@ -396,6 +405,7 @@ function SortableArtistRow({
           >
             <GripVertical className="size-4" />
           </button>
+          ) : null}
           <ArtistMark
             emblemUrl={artist.emblem_url}
             paletteId={artist.palette_id}

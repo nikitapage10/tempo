@@ -13,6 +13,9 @@ export function notificationHref(n: AppNotification): string {
     if (n.entity_type === "profile") {
       return "/social";
     }
+    if (n.entity_type === "artist_invite_request") {
+      return n.link_url || "/admin/invites";
+    }
     if (n.entity_type === "calendar_event" && n.entity_id) {
       return `/calendar?event=${n.entity_id}`;
     }
@@ -54,7 +57,9 @@ export function notificationBreadth(n: AppNotification): Exclude<NotificationBre
     type.startsWith("support_") ||
     type === "support_reply" ||
     type === "support_new" ||
-    type === "support_member_reply"
+    type === "support_member_reply" ||
+    type === "artist_invite_request" ||
+    type === "artist_invite_reviewed"
   ) {
     return "support";
   }
