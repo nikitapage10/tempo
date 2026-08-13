@@ -17,51 +17,95 @@ first agent's version bump, or — if working directly in a shared directory —
 ends up committing on top of a branch/commit they never reviewed, because the
 checked-out branch changed under them mid-task.
 
-## The protocol
+## The protocol — work in place, on `main`
 
-1. **Work in your own `git worktree`, on your own branch off `main`.**
-   ```
-   git worktree add ../TEMPO-<short-task-name> -b <branch-name> origin/main
-   ```
-   Do your work there. Never assume a shared working directory's checked-out
-   branch is stable — another agent can switch it. Before you commit, always
-   confirm: `git branch --show-current`.
+The default is **one working directory, one branch: `main`, no new folders.**
+An extra worktree is an exception you have to justify, not the starting move
+(see "When a worktree is actually warranted"). Rebasing gives you the same
+protection against a stale version bump that a throwaway push worktree did,
+without leaving a directory behind.
 
-2. **Stage narrowly.** Never `git add -A` in a directory other agents might
-   also be touching. Run `git status` first; stage only the files your change
-   actually produced. If a shared file (CHANGELOG.md, PRODUCT.md,
-   package.json, lib/version.ts) already has *someone else's* uncommitted
-   edits mixed into it, don't blindly overwrite it — either edit only your
-   own lines, or stage an isolated blob for just your change
-   (`git hash-object -w` + `git update-index --cacheinfo`) so their pending
-   edit stays intact in the working tree, uncommitted, for them to land later.
+1. **Work in the repo you're already in, on `main`.** Don't create a task
+   branch or a task folder for ordinary work. Before you commit, confirm the
+   branch is still what you think it is — another agent can switch it under
+   you mid-task:
+   ```
+   git branch --show-current
+   ```
+   If it isn't `main`, stop and look at what else is going on before
+   committing anything.
+
+2. **Stage narrowly.** Never `git add -A` — this directory carries other
+   agents' and the user's stray files. Run `git status` first and stage only
+   the paths your change actually produced, explicitly, by name. If a shared
+   file (CHANGELOG.md, PRODUCT.md, package.json, lib/version.ts) already has
+   *someone else's* uncommitted edits mixed into it, don't blindly overwrite
+   it — either edit only your own lines, or stage an isolated blob for just
+   your change (`git hash-object -w` + `git update-index --cacheinfo`) so
+   their pending edit stays intact in the working tree, uncommitted, for them
+   to land later.
 
 3. **Don't decide your version number until you're actually pushing.**
-   Mid-task, don't hardcode "this will be v0.104.0." At push time:
+   Mid-task, don't hardcode "this will be v0.104.0." Commit your work first,
+   *then* sync in place:
    ```
    git fetch origin
-   git worktree add ../TEMPO-push origin/main   # fresh, isolated
-   cd ../TEMPO-push
-   git cherry-pick <your-commit-sha>            # or rebase your branch here
+   git rebase origin/main
    ```
-   Resolve the version bump and the CHANGELOG entry's position against
-   what `origin/main` *actually* is right now, not against a stale mental
-   model. A CHANGELOG conflict is normal and easy: keep both sides' bullets
-   under the shared `## YYYY-MM-DD` heading — never delete another agent's
-   entry to make yours fit.
+   Only now do the release pass — version bump, CHANGELOG entry, PRODUCT.md —
+   against what `origin/main` actually is at this moment. That's the whole
+   reason the old protocol spun up a scratch worktree; an in-place rebase
+   achieves it, and leaves nothing behind. A CHANGELOG conflict is normal and
+   easy: keep both sides' bullets under the shared `## YYYY-MM-DD` heading —
+   never delete another agent's entry to make yours fit.
 
-4. **Validate in that fresh worktree, not your stale one.** `npm install`
-   (worktrees don't share `node_modules`), then `npx tsc --noEmit` and
-   `npm test` before pushing. A push should be validated against the state
-   it's actually landing on.
+4. **Validate after the rebase, not before.** `npx tsc --noEmit` and
+   `npm test` on the rebased state — that's the state you're actually
+   landing on. `node_modules` is already installed here, which is one more
+   reason not to spin up a fresh worktree for this.
 
-5. **Push only your own rebased/cherry-picked commit(s)** — never push a
-   branch that still carries another agent's unfinished, unreviewed commits
-   just because it happened to be the branch you built on top of.
+5. **Push only your own commits.** `git log origin/main..HEAD` before pushing;
+   if it lists work that isn't yours, sort that out rather than pushing it.
 
-6. **Clean up.** `git worktree remove ../TEMPO-push` once pushed. Leave the
-   original shared working directory exactly as you found it — don't discard
-   another agent's uncommitted changes there.
+6. **Leave the directory as you found it** — don't discard another agent's
+   uncommitted changes, and don't commit their stray untracked files.
+
+## When a worktree *is* actually warranted
+
+Only two cases:
+
+- Another agent has uncommitted tracked changes in this directory that
+  overlap the files you need to edit, so you genuinely can't work here.
+- You need two checkouts live at once (comparing old vs new behaviour, or a
+  long build running while you keep editing).
+
+If you hit one of those:
+
+```
+git worktree add ../TEMPO-worktrees/<short-task-name> -b <branch-name> origin/main
+```
+
+- Everything goes under the single `TEMPO-worktrees/` container — never
+  loose folders next to the repo.
+- One worktree per task, and **never** a second one just to push from.
+- Remove it the moment the work has landed; a merged worktree left on disk is
+  a bug, not a record:
+  ```
+  git worktree remove ../TEMPO-worktrees/<short-task-name>
+  git branch -d <branch-name>
+  ```
+
+## Housekeeping
+
+If worktrees have piled up, this lists every one that is clean and whose
+commits are all already in `origin/main` — i.e. safe to delete:
+
+```bash
+git fetch origin && git worktree list --porcelain | grep '^worktree ' | sed 's/^worktree //' | while read -r wt; do [ "$(git -C "$wt" rev-parse --git-common-dir)" = "$(git -C "$wt" rev-parse --git-dir)" ] && continue; [ -z "$(git -C "$wt" status --porcelain)" ] && [ -z "$(git -C "$wt" cherry origin/main HEAD | grep '^+')" ] && echo "$wt"; done
+```
+
+Remove them with `git worktree remove`, then `git worktree prune` and
+`git branch -d` the merged branches.
 
 ## Where the rest of the rules live
 

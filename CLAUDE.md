@@ -42,11 +42,19 @@ This repo has multiple people and multiple agents (Claude Code, Cursor,
 Codex, others) working in it at once, sometimes in the same checked-out
 working directory. Before you commit anything, confirm the branch is still
 what you think it is (`git branch --show-current`) — another agent can
-switch it mid-session. Read `AGENTS.md` before your first push in a session:
-it covers isolating your work in a `git worktree`, staging narrowly instead
-of `git add -A`, and rebasing onto fresh `origin/main` at push time (not
-mid-task) so version bumps and CHANGELOG entries don't collide with another
-agent's concurrent, unrelated work.
+switch it mid-session.
+
+**Default: work in place, on `main`, in this same directory.** Do not create
+a task branch or a worktree folder for ordinary work, and never create a
+throwaway worktree just to push from — that leaves a stray directory behind
+for every task and every push. To avoid colliding with another agent's
+version bump, commit first, then `git fetch origin && git rebase origin/main`
+in place, and only then do the version bump / CHANGELOG / PRODUCT.md pass
+against that fresh state. Stage narrowly by explicit path, never `git add -A`.
+
+Read `AGENTS.md` before your first push in a session for the full protocol,
+including the two narrow cases where a worktree really is warranted and how
+to clean up the ones that have piled up.
 
 ## Other things that bite
 
