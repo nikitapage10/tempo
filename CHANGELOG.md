@@ -4,6 +4,27 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-12
 
+- Added (v0.140.0): **Team** — under Settings → Team, bring on a manager,
+  agent, tour manager, label contact, or assistant at the artist level
+  instead of one track at a time. Each role starts with sensible defaults
+  (an agent gets calendar and performances, a label contact sees releases
+  and stats but nothing hands-on) and you can adjust any grant afterwards,
+  area by area. Invite by email, they accept the same way a track
+  collaborator does, and what they see in the rail follows what you've
+  granted — no calendar access means no Calendar tab. Your personal
+  attributes, points, and achievements always stay yours alone, no matter
+  what's granted. Under the hood: run migrations 089 and 090 in the Supabase
+  SQL editor, in order, after 085–088, on a non-production project first.
+- Changed (v0.140.0): Artist attributes now opens in a compact view by
+  default — six honest figures, no radar — instead of leading with the full
+  hexagon on first visit; switch to Full for the radar and the deeper
+  breakdown whenever you want it. Achievements now shows only what you've
+  actually unlocked by default (it used to list every one of the ~101
+  possible achievements, locked or not, which made the page scroll forever)
+  — "Show full catalog" reveals the rest, grouped by grade. Fixed a label
+  overlap on the attribute radar where two axis names could run into each
+  other. Removed the duplicate compact attribute list from the Artist page —
+  attributes live in one place (Stats) now, not two.
 - Added (v0.139.0): Stats has an **Artist attributes** section — six figures
   (Output, Velocity, Follow-Through, Consistency, Stage Presence, Reach)
   built entirely from things you actually did: bounces uploaded, tracks

@@ -7,6 +7,14 @@ import { cn } from "@/lib/utils";
 
 const RINGS = [25, 50, 75, 100];
 
+// Full names are already right there in the row list beside the radar — the
+// axis labels only need to be short enough that two adjacent vertices (60°
+// apart, in a compact hexagon) never overlap. Standard radar-chart practice.
+const SHORT_LABEL: Record<string, string> = {
+  "FOLLOW-THROUGH": "FOLLOW-THRU",
+  "STAGE PRESENCE": "STAGE",
+};
+
 function polar(cx: number, cy: number, r: number, angleDeg: number) {
   const rad = ((angleDeg - 90) * Math.PI) / 180;
   return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
@@ -23,7 +31,7 @@ export function AttributeRadar({
   attributes,
   highlightKey,
   onSelect,
-  size = 260,
+  size = 320,
   className,
 }: {
   attributes: Attribute[];
@@ -36,7 +44,7 @@ export function AttributeRadar({
   const n = attributes.length;
   const cx = size / 2;
   const cy = size / 2;
-  const maxR = size / 2 - 34;
+  const maxR = size / 2 - 46;
 
   const angleFor = (i: number) => (360 / n) * i;
 
@@ -129,12 +137,10 @@ export function AttributeRadar({
       })}
 
       {points.map((p, i) => {
-        const label = polar(cx, cy, maxR + 22, p.angle);
-        const anchor = Math.abs(Math.cos(((p.angle - 90) * Math.PI) / 180)) < 0.2
-          ? "middle"
-          : label.x > cx
-            ? "start"
-            : "end";
+        const label = polar(cx, cy, maxR + 18, p.angle);
+        const cos = Math.cos(((p.angle - 90) * Math.PI) / 180);
+        const anchor = Math.abs(cos) < 0.35 ? "middle" : cos > 0 ? "start" : "end";
+        const shortLabel = SHORT_LABEL[p.attribute.label] ?? p.attribute.label;
         return (
           <g
             key={i}
@@ -143,17 +149,18 @@ export function AttributeRadar({
           >
             <text
               x={label.x}
-              y={label.y - 4}
+              y={label.y - 3}
               textAnchor={anchor}
               className="label-mono"
               fill={highlightKey === p.attribute.key ? "var(--text-hi)" : AXIS_TEXT}
-              fontSize={9}
+              fontSize={8}
+              letterSpacing="0.02em"
             >
-              {p.attribute.label}
+              {shortLabel}
             </text>
             <text
               x={label.x}
-              y={label.y + 9}
+              y={label.y + 11}
               textAnchor={anchor}
               className="font-data tabular-nums"
               fill={p.measured ? "var(--text-hi)" : AXIS_TEXT}

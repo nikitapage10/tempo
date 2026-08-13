@@ -87,7 +87,7 @@ export function AttributeSheet({
       {isLoading || !attributes ? (
         <div className="h-48 animate-pulse rounded-panel bg-bg-2/40" />
       ) : display === "full" ? (
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,260px)_1fr]">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,320px)_1fr]">
           <AttributeRadar
             attributes={attributes}
             highlightKey={expandedKey}

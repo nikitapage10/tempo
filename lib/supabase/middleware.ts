@@ -85,7 +85,14 @@ export async function updateSession(request: NextRequest) {
     path === "/invite" ||
     path.startsWith("/invite/") ||
     path === "/api/invite" ||
-    path.startsWith("/api/invite/");
+    path.startsWith("/api/invite/") ||
+    // Artist-level team invites (managers, agents, tour managers) — same
+    // public-preview-then-authenticated-accept shape as the track invite
+    // route above, just against a different table.
+    path === "/team-invite" ||
+    path.startsWith("/team-invite/") ||
+    path === "/api/team-invite" ||
+    path.startsWith("/api/team-invite/");
 
   // The account-creation invite-code check runs before anyone has a
   // session — it has to be reachable from the (public) /register form.

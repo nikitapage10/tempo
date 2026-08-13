@@ -30,11 +30,15 @@ export type GamificationPreference = {
   display: "full" | "dim";
 };
 
-const DEFAULT_GAMIFICATION_PREFERENCE: GamificationPreference = { display: "full" };
+// Starts compact — a first open of the attribute sheet should read as "a few
+// honest figures," not "you just opened a character sheet." The radar is
+// real, and available one tap away, but it's opt-in rather than the default
+// first impression.
+const DEFAULT_GAMIFICATION_PREFERENCE: GamificationPreference = { display: "dim" };
 
 function sanitizeGamificationPreference(raw: unknown): GamificationPreference {
   const display = (raw as { display?: unknown })?.display;
-  return { display: display === "dim" ? "dim" : "full" };
+  return { display: display === "full" ? "full" : "dim" };
 }
 
 /**

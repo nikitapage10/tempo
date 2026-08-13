@@ -10,6 +10,7 @@ import { AccountPanel } from "@/components/settings/account-panel";
 import { CatalogBackupPanel } from "@/components/settings/catalog-backup-panel";
 import { NotificationsPanel } from "@/components/settings/notifications-panel";
 import { PulsePreferencesPanel } from "@/components/settings/pulse-preferences-panel";
+import { TeamPanel } from "@/components/settings/team-panel";
 import { FlareLine } from "@/components/flare-line";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
@@ -19,6 +20,7 @@ import { cn } from "@/lib/utils";
 const TABS = [
   { id: "studio", label: "Studio", hint: "Artists & spaces" },
   { id: "catalog", label: "Catalog", hint: "Import & backups" },
+  { id: "team", label: "Team", hint: "Managers & agents" },
   { id: "notifications", label: "Notifications", hint: "Full activity" },
   { id: "account", label: "Account", hint: "Sign-in & privacy" },
 ] as const;
@@ -242,6 +244,22 @@ function SettingsPageInner() {
                   </div>
                   <CatalogBackupPanel />
                 </div>
+              </SettingsPanel>
+            </div>
+          ) : null}
+
+          {active === "team" ? (
+            <div
+              role="tabpanel"
+              id="settings-panel-team"
+              aria-labelledby="settings-tab-team"
+            >
+              <SettingsPanel
+                eyebrow="Team"
+                title="Who else has access"
+                description="Invite a manager, agent, or tour manager to this artist and control exactly what they can see and change — not a full account, and not a track collaborator."
+              >
+                <TeamPanel />
               </SettingsPanel>
             </div>
           ) : null}

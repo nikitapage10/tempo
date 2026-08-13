@@ -30,7 +30,10 @@ import { IntroMoment } from "@/components/intro-moment";
 import { FlareLine } from "@/components/flare-line";
 import { Wordmark } from "@/components/wordmark";
 import { LfWindow } from "@/components/lf-windows";
+import { useActiveArtist } from "@/components/active-artist-provider";
 import { useActiveSpace } from "@/components/active-space-provider";
+import { useArtistMembership } from "@/hooks/use-artist-membership";
+import { canRead } from "@/lib/team/areas";
 import { APP_VERSION } from "@/lib/version";
 import { cn } from "@/lib/utils";
 import { SlitDivider } from "@/components/ui/slit";
@@ -132,8 +135,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { activeSpace } = useActiveSpace();
+  const { activeArtist } = useActiveArtist();
+  const { isOwner: ownsActiveArtist, areas: memberAreas } =
+    useArtistMembership(activeArtist);
   const tasksFocused = activeSpace?.focus === "tasks";
-  const mainNav = tasksFocused ? TASKS_MAIN_NAV : MUSIC_MAIN_NAV;
+  const fullNav = tasksFocused ? TASKS_MAIN_NAV : MUSIC_MAIN_NAV;
+  // A team member (stream 3) only sees rail items their grants actually
+  // cover — the owner path is untouched (ownsActiveArtist short-circuits to
+  // every item). This is UI hiding only; RLS is what actually enforces it.
+  const NAV_AREA: Partial<Record<string, "catalog" | "calendar" | "stats" | "social">> = {
+    "/board": "catalog",
+    "/tracks": "catalog",
+    "/projects": "catalog",
+    "/calendar": "calendar",
+    "/stats": "stats",
+    "/social": "social",
+  };
+  const mainNav = ownsActiveArtist
+    ? fullNav
+    : fullNav.filter((item) => {
+        const area = NAV_AREA[item.href];
+        return !area || canRead(memberAreas, area);
+      });
   const mobileNav = tasksFocused ? TASKS_MOBILE_NAV : MUSIC_MOBILE_NAV;
   const [moreOpen, setMoreOpen] = React.useState(false);
   // Everything the rail can reach that the 4-slot mobile tab bar can't —
