@@ -42,6 +42,7 @@ import { cn } from "@/lib/utils";
 export function ArtistsManager() {
   const { artists, activeArtistId, setActiveArtistId, isLoading } =
     useActiveArtist();
+  const musicArtists = artists.filter((a) => a.workspace_kind !== "personal");
   const {
     create,
     rename,
@@ -78,6 +79,7 @@ export function ArtistsManager() {
       const artist = await create.mutateAsync({
         name: newName.trim(),
         sort: artists.length,
+
       });
       setNewName("");
       setActiveArtistId(artist.id);
@@ -108,7 +110,7 @@ export function ArtistsManager() {
   }
 
   async function handleDelete(id: string) {
-    if (artists.length <= 1) {
+    if (musicArtists.length <= 1) {
       setError("Keep at least one artist.");
       return;
     }
@@ -119,7 +121,7 @@ export function ArtistsManager() {
       setConfirmId(null);
       setCounts(null);
       if (activeArtistId === id) {
-        const next = artists.find((a) => a.id !== id);
+        const next = musicArtists.find((a) => a.id !== id) ?? artists.find((a) => a.id !== id);
         if (next) setActiveArtistId(next.id);
       }
     } catch (err) {
@@ -132,10 +134,10 @@ export function ArtistsManager() {
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const oldIndex = artists.findIndex((a) => a.id === active.id);
-    const newIndex = artists.findIndex((a) => a.id === over.id);
+    const oldIndex = musicArtists.findIndex((a) => a.id === active.id);
+    const newIndex = musicArtists.findIndex((a) => a.id === over.id);
     if (oldIndex < 0 || newIndex < 0) return;
-    const next = arrayMove(artists, oldIndex, newIndex).map((a, i) => ({
+    const next = arrayMove(musicArtists, oldIndex, newIndex).map((a, i) => ({
       id: a.id,
       sort: i,
     }));
@@ -160,18 +162,18 @@ export function ArtistsManager() {
             onDragEnd={handleDragEnd}
           >
             <SortableContext
-              items={artists.map((a) => a.id)}
+              items={musicArtists.map((a) => a.id)}
               strategy={verticalListSortingStrategy}
             >
               <ul className="mt-4 space-y-3">
-                {artists.map((artist) => (
+                {musicArtists.map((artist) => (
                   <SortableArtistRow
                     key={artist.id}
                     artist={artist}
                     isActive={artist.id === activeArtistId}
                     confirmDelete={confirmId === artist.id}
                     counts={confirmId === artist.id ? counts : null}
-                    canDelete={artists.length > 1}
+                    canDelete={musicArtists.length > 1}
                     onRename={handleRename}
                     onPaletteChange={(id, paletteId) =>
                       updatePalette.mutate({ id, paletteId })

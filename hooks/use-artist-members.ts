@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   inviteMember,
+  listActiveTeamRoster,
   listArtistMembers,
   revokeMember,
   updateMemberAreas,
@@ -11,6 +12,15 @@ import {
 } from "@/lib/api/artist-members";
 import type { AreaGrants } from "@/lib/team/areas";
 import type { MemberRole } from "@/lib/team/roles";
+
+export function useActiveTeamRoster(artistId: string | null) {
+  return useQuery({
+    queryKey: ["artist-team-roster", artistId],
+    queryFn: () => listActiveTeamRoster(artistId!),
+    enabled: !!artistId,
+    staleTime: 30_000,
+  });
+}
 
 export function useArtistMembers(artistId: string | null) {
   return useQuery({
@@ -23,7 +33,10 @@ export function useArtistMembers(artistId: string | null) {
 
 export function useArtistMemberMutations(artistId: string | null) {
   const qc = useQueryClient();
-  const invalidate = () => qc.invalidateQueries({ queryKey: ["artist-members", artistId] });
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ["artist-members", artistId] });
+    qc.invalidateQueries({ queryKey: ["artist-team-roster", artistId] });
+  };
 
   const invite = useMutation({
     mutationFn: (input: InviteMemberInput) => inviteMember(input),

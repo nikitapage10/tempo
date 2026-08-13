@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   BarChart3,
+  CircleUser,
   Disc3,
   Download,
   ExternalLink,
@@ -13,12 +14,17 @@ import {
   Settings,
   Shield,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { useActiveArtist } from "@/components/active-artist-provider";
 import { ArtistMark } from "@/components/artists/artist-mark";
+import { SignedImage } from "@/components/ui/signed-image";
 import { useArtistProfile } from "@/hooks/use-artist-profile";
 import { usePlatformAdmin } from "@/hooks/use-admin";
 import { useActiveDesktopDevice } from "@/hooks/use-devices";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { useWorkspaceMode } from "@/hooks/use-workspace-mode";
+import { fetchMyMemberProfile } from "@/lib/api/member-profile";
+import { ROLE_LABELS } from "@/lib/team/roles";
 import {
   DESKTOP_WINDOWS_INSTALLER_URL,
   resolveDesktopHandoff,
@@ -27,7 +33,7 @@ import {
 import { detectOS, isDesktopApp } from "@/lib/platform";
 import { getSiteUrl } from "@/lib/site";
 import { createClient } from "@/lib/supabase/client";
-import { cn } from "@/lib/utils";
+import { cn, initials } from "@/lib/utils";
 
 function profileHandoffLabel(kind: DesktopHandoffKind): string {
   if (kind === "open-web") return "Open web app";
@@ -49,24 +55,37 @@ export function ProfileMenu() {
   const pathname = usePathname();
   const user = useCurrentUser();
   const { activeArtist } = useActiveArtist();
-  const { profile } = useArtistProfile(activeArtist?.id ?? null);
+  const { mode, role } = useWorkspaceMode();
+  const { profile } = useArtistProfile(mode === "artist" ? (activeArtist?.id ?? null) : null);
+  const memberProfileQuery = useQuery({
+    queryKey: ["my-member-profile"],
+    queryFn: fetchMyMemberProfile,
+    enabled: mode !== "artist",
+    staleTime: 30_000,
+  });
   const activeDevice = useActiveDesktopDevice();
   const platformAdmin = usePlatformAdmin();
-  // Keep detectOS warm for hydration parity with resolveDesktopHandoff.
   React.useMemo(() => detectOS(), []);
   React.useEffect(() => setMounted(true), []);
 
-  const displayName =
-    profile?.display_name?.trim() ||
-    activeArtist?.name?.trim() ||
-    "Artist";
-  const handle = profile?.handle?.trim() || null;
+  const asSelf = mode !== "artist";
+  const displayName = asSelf
+    ? memberProfileQuery.data?.displayName?.trim() ||
+      user?.email?.split("@")[0] ||
+      "You"
+    : profile?.display_name?.trim() ||
+      activeArtist?.name?.trim() ||
+      "Artist";
+  const handle = asSelf ? null : profile?.handle?.trim() || null;
   const email = user?.email ?? null;
-  // Artist page identity photo lives on the artist row; profile copy is fallback.
-  const emblemUrl =
-    activeArtist?.emblem_url?.trim() ||
-    profile?.emblem_url?.trim() ||
-    null;
+  const emblemUrl = asSelf
+    ? memberProfileQuery.data?.avatarUrl ?? null
+    : activeArtist?.emblem_url?.trim() || profile?.emblem_url?.trim() || null;
+  const subtitle = asSelf
+    ? role && activeArtist
+      ? `${ROLE_LABELS[role]} for ${activeArtist.name}`
+      : "Your account"
+    : null;
 
   React.useEffect(() => {
     if (!open) return;
@@ -122,15 +141,28 @@ export function ProfileMenu() {
           open && "ring-2 ring-ice"
         )}
       >
-        <ArtistMark
-          emblemUrl={emblemUrl}
-          paletteId={activeArtist?.palette_id}
-          iceColor={activeArtist?.ice_color}
-          amberColor={activeArtist?.amber_color}
-          name={displayName}
-          size={36}
-          className="size-full rounded-full border-0"
-        />
+        {asSelf ? (
+          <SignedImage
+            path={emblemUrl}
+            alt={displayName}
+            className="size-full object-cover"
+            fallback={
+              <div className="flex size-full items-center justify-center font-display text-[11px] text-text-hi">
+                {initials(displayName)}
+              </div>
+            }
+          />
+        ) : (
+          <ArtistMark
+            emblemUrl={emblemUrl}
+            paletteId={activeArtist?.palette_id}
+            iceColor={activeArtist?.ice_color}
+            amberColor={activeArtist?.amber_color}
+            name={displayName}
+            size={36}
+            className="size-full rounded-full border-0"
+          />
+        )}
       </button>
 
       {open ? (
@@ -140,19 +172,37 @@ export function ProfileMenu() {
           className="fixed inset-x-3 top-16 z-[70] overflow-hidden rounded-card border border-line bg-bg-1 shadow-e3 sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-1.5 sm:w-64 sm:max-w-[calc(100vw-1.5rem)]"
         >
           <div className="flex items-center gap-3 border-b border-line px-3 py-3">
-            <ArtistMark
-              emblemUrl={emblemUrl}
-              paletteId={activeArtist?.palette_id}
-              iceColor={activeArtist?.ice_color}
-              amberColor={activeArtist?.amber_color}
-              name={displayName}
-              size={40}
-              className="size-10 shrink-0 rounded-full"
-            />
+            {asSelf ? (
+              <div className="size-10 shrink-0 overflow-hidden rounded-full border border-line bg-bg-2">
+                <SignedImage
+                  path={emblemUrl}
+                  alt={displayName}
+                  className="size-full object-cover"
+                  fallback={
+                    <div className="flex size-full items-center justify-center font-display text-xs text-text-hi">
+                      {initials(displayName)}
+                    </div>
+                  }
+                />
+              </div>
+            ) : (
+              <ArtistMark
+                emblemUrl={emblemUrl}
+                paletteId={activeArtist?.palette_id}
+                iceColor={activeArtist?.ice_color}
+                amberColor={activeArtist?.amber_color}
+                name={displayName}
+                size={40}
+                className="size-10 shrink-0 rounded-full"
+              />
+            )}
             <div className="min-w-0">
               <p className="truncate font-display text-sm tracking-wide text-text-hi">
                 {displayName}
               </p>
+              {subtitle ? (
+                <p className="mt-0.5 truncate text-[11px] text-text-lo">{subtitle}</p>
+              ) : null}
               {handle ? (
                 <p className="mt-0.5 truncate font-mono text-[11px] text-text-lo">
                   @{handle}
@@ -165,24 +215,48 @@ export function ProfileMenu() {
           </div>
 
           <div className="py-1">
-            <Link
-              href="/artist"
-              role="menuitem"
-              onClick={() => setOpen(false)}
-              className={itemClass}
-            >
-              <Disc3 className="size-4 shrink-0" strokeWidth={1.75} />
-              Artist profile
-            </Link>
-            <Link
-              href="/stats"
-              role="menuitem"
-              onClick={() => setOpen(false)}
-              className={itemClass}
-            >
-              <BarChart3 className="size-4 shrink-0" strokeWidth={1.75} />
-              Stats
-            </Link>
+            {asSelf ? (
+              <Link
+                href="/profile"
+                role="menuitem"
+                onClick={() => setOpen(false)}
+                className={itemClass}
+              >
+                <CircleUser className="size-4 shrink-0" strokeWidth={1.75} />
+                Your profile
+              </Link>
+            ) : (
+              <Link
+                href="/artist"
+                role="menuitem"
+                onClick={() => setOpen(false)}
+                className={itemClass}
+              >
+                <Disc3 className="size-4 shrink-0" strokeWidth={1.75} />
+                Artist profile
+              </Link>
+            )}
+            {mode === "artist" ? (
+              <Link
+                href="/stats"
+                role="menuitem"
+                onClick={() => setOpen(false)}
+                className={itemClass}
+              >
+                <BarChart3 className="size-4 shrink-0" strokeWidth={1.75} />
+                Stats
+              </Link>
+            ) : mode === "entered" ? (
+              <Link
+                href="/artist"
+                role="menuitem"
+                onClick={() => setOpen(false)}
+                className={itemClass}
+              >
+                <Disc3 className="size-4 shrink-0" strokeWidth={1.75} />
+                Artist profile
+              </Link>
+            ) : null}
             <Link
               href="/settings"
               role="menuitem"

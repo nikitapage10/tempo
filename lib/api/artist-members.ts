@@ -68,7 +68,30 @@ export async function listArtistMembers(artistId: string): Promise<ArtistMember[
   return (data ?? []).map(fromRow);
 }
 
-/** Artists the signed-in user is an active member of (not owner). Used to widen the artist switcher for team accounts. */
+/** Active teammates of an artist — safe columns only (no invite token/email). */
+export async function listActiveTeamRoster(
+  artistId: string
+): Promise<Pick<ArtistMember, "id" | "artistId" | "userId" | "role" | "status">[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("artist_members")
+    .select("id, artist_id, user_id, role, status")
+    .eq("artist_id", artistId)
+    .eq("status", "active")
+    .order("created_at", { ascending: true });
+  if (error) {
+    if (isMissingArtistMembersSchema(error)) return [];
+    throw new Error(error.message);
+  }
+  return (data ?? []).map((r) => ({
+    id: r.id,
+    artistId: r.artist_id,
+    userId: r.user_id,
+    role: r.role as MemberRole,
+    status: r.status as ArtistMemberStatus,
+  }));
+}
+
 export async function listMemberOfArtists(): Promise<{ artistId: string; role: MemberRole; areas: AreaGrants }[]> {
   const supabase = createClient();
   const { data: userData } = await supabase.auth.getUser();

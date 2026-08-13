@@ -1,7 +1,31 @@
 import { createClient } from "@/lib/supabase/client";
 import { buildArtistAssetPath, deleteFile, uploadFile } from "@/lib/storage";
 import { DEFAULT_ARTIST_NAME } from "@/lib/constants";
-import type { Artist, ArtistUpdate } from "@/lib/types";
+import { fetchMyMemberProfile } from "@/lib/api/member-profile";
+import { artistWorkspaceKind } from "@/lib/workspace-mode";
+import type { Artist, ArtistUpdate, OriginStatus } from "@/lib/types";
+
+function mapArtist(row: Record<string, unknown>): Artist {
+  return {
+    ...(row as unknown as Artist),
+    emblem_url: (row.emblem_url as string | null) ?? null,
+    ice_color: (row.ice_color as string | null) ?? null,
+    amber_color: (row.amber_color as string | null) ?? null,
+    banner_color_end: (row.banner_color_end as string | null) ?? null,
+    spotify_artist_id: (row.spotify_artist_id as string | null) ?? null,
+    soundcloud_user_id: (row.soundcloud_user_id as string | null) ?? null,
+    apple_artist_id: (row.apple_artist_id as string | null) ?? null,
+    origin_status: (row.origin_status as Artist["origin_status"]) ?? null,
+    origin_completed_at: (row.origin_completed_at as string | null) ?? null,
+    origin_skipped_at: (row.origin_skipped_at as string | null) ?? null,
+    demo_kind: (row.demo_kind as string | null) ?? null,
+    workspace_kind: row.workspace_kind === "personal" ? "personal" : "artist",
+  };
+}
+
+function isMissingWorkspaceKind(error: { message?: string }): boolean {
+  return /workspace_kind|schema cache|does not exist/i.test(error?.message ?? "");
+}
 
 export async function fetchArtists(): Promise<Artist[]> {
   const supabase = createClient();
@@ -10,36 +34,46 @@ export async function fetchArtists(): Promise<Artist[]> {
     .select("*")
     .order("sort", { ascending: true });
   if (error) throw error;
-  return (data ?? []).map((row) => ({
-    ...row,
-    emblem_url: row.emblem_url ?? null,
-    ice_color: row.ice_color ?? null,
-    amber_color: row.amber_color ?? null,
-    banner_color_end: row.banner_color_end ?? null,
-    // Null until migration 024 adds these columns, so the platform modules
-    // simply read as "not linked" on a database that hasn't run it yet.
-    spotify_artist_id: row.spotify_artist_id ?? null,
-    soundcloud_user_id: row.soundcloud_user_id ?? null,
-    apple_artist_id: row.apple_artist_id ?? null,
-    // Null until migration 042 — treated as legacy-complete by the Origin
-    // guard, so an un-migrated database never forces anyone into onboarding.
-    origin_status: row.origin_status ?? null,
-    origin_completed_at: row.origin_completed_at ?? null,
-    origin_skipped_at: row.origin_skipped_at ?? null,
-    // Null until migration 073 — an un-migrated database simply has no demo.
-    demo_kind: row.demo_kind ?? null,
-  }));
+  return (data ?? []).map((row) => mapArtist(row as Record<string, unknown>));
 }
 
-export async function createArtist(name: string, sort: number): Promise<Artist> {
+export type CreateArtistOptions = {
+  workspaceKind?: "artist" | "personal";
+  originStatus?: OriginStatus;
+  originCompletedAt?: string | null;
+};
+
+export async function createArtist(
+  name: string,
+  sort: number,
+  options: CreateArtistOptions = {}
+): Promise<Artist> {
   const supabase = createClient();
-  const { data, error } = await supabase
-    .from("artists")
-    .insert({ name, sort })
-    .select()
-    .single();
-  if (error) throw error;
-  return data;
+  const row: Record<string, unknown> = { name, sort };
+  if (options.workspaceKind) row.workspace_kind = options.workspaceKind;
+  if (options.originStatus) row.origin_status = options.originStatus;
+  if (options.originCompletedAt) row.origin_completed_at = options.originCompletedAt;
+  const { data, error } = await supabase.from("artists").insert(row).select().single();
+  if (error) {
+    if (options.workspaceKind && isMissingWorkspaceKind(error)) {
+      return createArtist(name, sort);
+    }
+    throw error;
+  }
+  return mapArtist(data as Record<string, unknown>);
+}
+
+async function personalWorkspaceName(email: string | null | undefined): Promise<string> {
+  try {
+    const profile = await fetchMyMemberProfile();
+    const named = profile?.displayName?.trim();
+    if (named) return named.slice(0, 60);
+  } catch {
+    /* profile table may not exist yet */
+  }
+  const local = email?.split("@")[0]?.trim();
+  if (local) return local.slice(0, 60);
+  return "Your work";
 }
 
 export async function updateArtist(id: string, patch: ArtistUpdate): Promise<Artist> {
@@ -51,7 +85,7 @@ export async function updateArtist(id: string, patch: ArtistUpdate): Promise<Art
     .select()
     .single();
   if (error) throw error;
-  return data;
+  return mapArtist(data as Record<string, unknown>);
 }
 
 export async function renameArtist(id: string, name: string): Promise<Artist> {
@@ -199,13 +233,43 @@ export async function clearArtistEmblem(artist: Artist): Promise<Artist> {
 }
 
 /**
- * The artist list, seeding a default artist when the user has none (first
- * sign-in). Returns the list it already read instead of leaving the caller to
- * fetch it a second time — that pairing cost two identical round trips on
- * every page load.
+ * The artist list, seeding a default music artist when the user has none
+ * (first sign-in), and a personal workspace when they work on someone else's
+ * team but don't yet have a home of their own. Returns the list it already
+ * read instead of leaving the caller to fetch it a second time.
  */
 export async function ensureArtists(): Promise<Artist[]> {
   const existing = await fetchArtists();
-  if (existing.length > 0) return existing;
-  return [await createArtist(DEFAULT_ARTIST_NAME, 0)];
+  if (existing.length === 0) {
+    return [await createArtist(DEFAULT_ARTIST_NAME, 0)];
+  }
+
+  const supabase = createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  const userId = userData.user?.id;
+  if (!userId) return existing;
+
+  const owned = existing.filter((a) => a.user_id === userId);
+  const hasMembership = existing.some((a) => a.user_id !== userId);
+  const hasPersonal = owned.some((a) => artistWorkspaceKind(a) === "personal");
+  if (!hasMembership || hasPersonal) return existing;
+
+  try {
+    const name = await personalWorkspaceName(userData.user?.email);
+    const personal = await createArtist(name, owned.length, {
+      workspaceKind: "personal",
+      originStatus: "legacy_complete",
+      originCompletedAt: new Date().toISOString(),
+    });
+    try {
+      sessionStorage.setItem("tempo.preferPersonalHome", personal.id);
+    } catch {
+      /* ignore */
+    }
+    return [...existing, personal];
+  } catch {
+    // Migration 092 not applied yet — stay on the membership-visible list
+    // rather than failing the whole shell.
+    return existing;
+  }
 }

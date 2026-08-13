@@ -170,6 +170,14 @@ Roles (planned): **Owner** · **Editor** · **Uploader** · **Commenter** · **V
 ‡ Commenters: edit/delete **only their own unresolved** comments.  
 § Collaborators must not enumerate projects/tasks; if a track shows a project name, use a narrow RPC or denormalized label — decide in Prompt 10 approval.
 
+### Artist-level team (shipped)
+
+Separate from track collaborators. Roles: **manager**, **agent**, **tour_manager**, **label**, **assistant**, **custom**. Grants are per area (`catalog`, `calendar`, `stats`, `releases`, `performances`, `social`, `team`) at none / read / write. Managing other members is owner-only.
+
+Team members own a **personal workspace** (`artists.workspace_kind = personal`) for their own projects/tasks. They may `SELECT` other **active** teammates of the same artist (not pending invites or token hashes) and those people's name/photo. Calendar grants also allow listing that artist's spaces. Social people badges (`network_person_badges_for`) expose role + artist name only for humans with a published profile — never grants or emails.
+
+UI hiding (rail, Settings Account-only outside My artist, read-only Artist page in an entered workspace) is not security; RLS remains authoritative. Members never post as the managed artist.
+
 ### Guest allowlist (explicit)
 **May see:** track title, artwork (signed), version number/label/changelog, waveform for linked version, comments for that version (as configured), own posted guest name.  
 **Must not see:** notes, checklist, assets list (except artwork if shown), other versions, tasks, sessions, workflow fields, owner email, collaborator list, project internals, space data.

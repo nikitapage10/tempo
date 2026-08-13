@@ -4,6 +4,7 @@ import * as React from "react";
 import { Check, ChevronDown, Plus, Settings2 } from "lucide-react";
 import Link from "next/link";
 import { useActiveSpace } from "@/components/active-space-provider";
+import { useWorkspaceMode } from "@/hooks/use-workspace-mode";
 import { cn } from "@/lib/utils";
 
 function initials(name: string): string {
@@ -15,6 +16,8 @@ function initials(name: string): string {
 
 export function SpaceSwitcher() {
   const { spaces, activeSpace, setActiveSpaceId, isLoading } = useActiveSpace();
+  const { mode } = useWorkspaceMode();
+  const canManageSpaces = mode === "artist";
   const [open, setOpen] = React.useState(false);
   const ref = React.useRef<HTMLDivElement>(null);
   const label = activeSpace?.name ?? "No space";
@@ -96,6 +99,7 @@ export function SpaceSwitcher() {
               );
             })}
           </ul>
+          {canManageSpaces ? (
           <div className="border-t border-line">
             <Link
               href="/settings?tab=studio#spaces"
@@ -114,6 +118,7 @@ export function SpaceSwitcher() {
               New space
             </Link>
           </div>
+          ) : null}
         </div>
       ) : null}
     </div>

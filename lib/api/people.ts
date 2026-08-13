@@ -15,7 +15,7 @@ export type ActiveArtistProfile = Pick<
   | "country_code"
   | "genres"
   | "roles"
-> & { last_active_at: string };
+> & { last_active_at: string; owner_user_id?: string | null };
 
 const LEGACY_SYNTHETIC_HANDLES = new Set([
   "autotuneauntie",
@@ -158,7 +158,7 @@ export async function fetchRecentlyActiveProfiles(
 ): Promise<ActiveArtistProfile[]> {
   const supabase = createClient();
   const profileFields =
-    "id, handle, display_name, emblem_url, palette_id, ice_color, amber_color, tagline, location, country_code, genres, roles, updated_at, published_at";
+    "id, owner_user_id, handle, display_name, emblem_url, palette_id, ice_color, amber_color, tagline, location, country_code, genres, roles, updated_at, published_at";
 
   const [postsResult, profilesResult] = await Promise.all([
     supabase

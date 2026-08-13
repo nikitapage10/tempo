@@ -16,7 +16,10 @@ import {
   Orbit,
   BarChart3,
   Users2,
+  Users,
+  CircleUser,
   MoreHorizontal,
+  ArrowLeft,
 } from "lucide-react";
 import { AssistantRoot } from "@/components/assistant/assistant-root";
 import { ArtistFavicon } from "@/components/artist-favicon";
@@ -32,8 +35,15 @@ import { Wordmark } from "@/components/wordmark";
 import { LfWindow } from "@/components/lf-windows";
 import { useActiveArtist } from "@/components/active-artist-provider";
 import { useActiveSpace } from "@/components/active-space-provider";
-import { useArtistMembership } from "@/hooks/use-artist-membership";
+import { useWorkspaceMode } from "@/hooks/use-workspace-mode";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { canRead } from "@/lib/team/areas";
+import { ROLE_LABELS } from "@/lib/team/roles";
+import {
+  homePathForMode,
+  isPathAllowedForMode,
+  ownedPersonalWorkspace,
+} from "@/lib/workspace-mode";
 import { APP_VERSION } from "@/lib/version";
 import { cn } from "@/lib/utils";
 import { SlitDivider } from "@/components/ui/slit";
@@ -71,6 +81,7 @@ const MUSIC_MAIN_NAV = [
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/artist", label: "Artist", icon: Disc3 },
+  { href: "/team", label: "Team", icon: Users },
   { href: "/social", label: "Social", icon: Orbit },
   { href: "/scenes", label: "Scenes", icon: Users2 },
   { href: "/stats", label: "Stats", icon: BarChart3 },
@@ -83,20 +94,37 @@ const MUSIC_MOBILE_NAV = [
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
 ] as const;
 
-// Tasks-focused spaces have no board or stage pipeline, so Board/Tracks
-// drop out and Projects/Tasks take the front seat instead.
 const TASKS_MAIN_NAV = [
   { href: "/", label: "Today", icon: SunMedium },
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/artist", label: "Artist", icon: Disc3 },
+  { href: "/team", label: "Team", icon: Users },
   { href: "/social", label: "Social", icon: Orbit },
   { href: "/scenes", label: "Scenes", icon: Users2 },
   { href: "/stats", label: "Stats", icon: BarChart3 },
 ] as const;
 
 const TASKS_MOBILE_NAV = [
+  { href: "/", label: "Today", icon: SunMedium },
+  { href: "/projects", label: "Projects", icon: FolderKanban },
+  { href: "/calendar", label: "Calendar", icon: CalendarDays },
+  { href: "/tasks", label: "Tasks", icon: CheckSquare },
+] as const;
+
+const WORK_MAIN_NAV = [
+  { href: "/", label: "Today", icon: SunMedium },
+  { href: "/calendar", label: "Calendar", icon: CalendarDays },
+  { href: "/projects", label: "Projects", icon: FolderKanban },
+  { href: "/tasks", label: "Tasks", icon: CheckSquare },
+  { href: "/profile", label: "Profile", icon: CircleUser },
+  { href: "/team", label: "Artists", icon: Users },
+  { href: "/social", label: "Social", icon: Orbit },
+  { href: "/scenes", label: "Scenes", icon: Users2 },
+] as const;
+
+const WORK_MOBILE_NAV = [
   { href: "/", label: "Today", icon: SunMedium },
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
@@ -111,6 +139,8 @@ const NAV_DESCRIPTIONS: Record<string, string> = {
   "/projects": "Organize releases, campaigns, tracks, and milestones together.",
   "/tasks": "Capture and complete work that sits outside a single track.",
   "/artist": "Shape your artist identity, story, links, and visibility.",
+  "/team": "The people around this artist — or the artists you work with.",
+  "/profile": "Your name, photo, and the hats you wear.",
   "/social": "Follow artists and share updates with your network.",
   "/scenes": "Join focused communities with their own conversations and events.",
   "/stats": "Read catalog activity, momentum, output, and connected signals.",
@@ -135,37 +165,45 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { activeSpace } = useActiveSpace();
-  const { activeArtist } = useActiveArtist();
-  const { isOwner: ownsActiveArtist, areas: memberAreas } =
-    useArtistMembership(activeArtist);
+  const { artists, setActiveArtistId } = useActiveArtist();
+  const user = useCurrentUser();
+  const { mode, areas: memberAreas, role, isLoading: modeLoading, activeArtist } =
+    useWorkspaceMode();
   const tasksFocused = activeSpace?.focus === "tasks";
-  const fullNav = tasksFocused ? TASKS_MAIN_NAV : MUSIC_MAIN_NAV;
-  // A team member (stream 3) only sees rail items their grants actually
-  // cover — the owner path is untouched (ownsActiveArtist short-circuits to
-  // every item). This is UI hiding only; RLS is what actually enforces it.
   const NAV_AREA: Partial<Record<string, "catalog" | "calendar" | "stats" | "social">> = {
     "/board": "catalog",
     "/tracks": "catalog",
     "/projects": "catalog",
+    "/tasks": "catalog",
     "/calendar": "calendar",
     "/stats": "stats",
     "/social": "social",
   };
-  const mainNav = ownsActiveArtist
-    ? fullNav
-    : fullNav.filter((item) => {
-        const area = NAV_AREA[item.href];
-        return !area || canRead(memberAreas, area);
-      });
-  const mobileNav = tasksFocused ? TASKS_MOBILE_NAV : MUSIC_MOBILE_NAV;
+
+  const artistNav = tasksFocused ? TASKS_MAIN_NAV : MUSIC_MAIN_NAV;
+  const enteredNav = artistNav.filter((item) => {
+    const area = NAV_AREA[item.href];
+    return !area || canRead(memberAreas, area);
+  });
+  const mainNav =
+    mode === "work" ? WORK_MAIN_NAV : mode === "entered" ? enteredNav : artistNav;
+  const mobileNav =
+    mode === "work"
+      ? WORK_MOBILE_NAV
+      : (tasksFocused ? TASKS_MOBILE_NAV : MUSIC_MOBILE_NAV).filter((item) =>
+          mainNav.some((m) => m.href === item.href)
+        );
   const [moreOpen, setMoreOpen] = React.useState(false);
-  // Everything the rail can reach that the 4-slot mobile tab bar can't —
-  // otherwise Tracks, Projects, Artist, Social, Scenes, Stats, and Settings
-  // are unreachable on a phone.
   const moreNav = [
     ...mainNav.filter((item) => !mobileNav.some((m) => m.href === item.href)),
     { href: "/settings", label: "Settings", icon: Settings },
   ];
+
+  React.useEffect(() => {
+    if (modeLoading) return;
+    if (isPathAllowedForMode(pathname, mode, memberAreas)) return;
+    router.replace(homePathForMode(mode));
+  }, [modeLoading, pathname, mode, memberAreas, router]);
 
   if (FOCUS_ROUTE.test(pathname)) {
     // Focus sessions keep the persistent workspace backdrop but remain
@@ -362,6 +400,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {/* Above the page, not inside it: whether this catalog is real is
                 context for every screen, not a fact about any one of them. */}
             <DemoBanner />
+            {mode === "entered" && activeArtist ? (
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-card border border-ice/20 bg-ice/5 px-3 py-2 text-sm">
+                <p className="min-w-0 text-text-hi">
+                  Working on{" "}
+                  <span className="font-display">{activeArtist.name}</span>
+                  {role ? ` as ${ROLE_LABELS[role]}` : ""}
+                </p>
+                <button
+                  type="button"
+                  className="inline-flex shrink-0 items-center gap-1.5 text-xs text-ice hover:underline"
+                  onClick={() => {
+                    const home = ownedPersonalWorkspace(artists, user?.id);
+                    if (home) setActiveArtistId(home.id);
+                    router.push("/");
+                  }}
+                >
+                  <ArrowLeft className="size-3.5" />
+                  Back to my work
+                </button>
+              </div>
+            ) : null}
             <DesktopUpdateBanner />
             <OfflineBanner />
             <div className="pb-6 pt-0">{children}</div>
@@ -420,9 +479,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <button
           type="button"
           className="flex flex-1 flex-col items-center justify-center gap-1 py-2.5 text-xs text-text-lo focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ice"
-          aria-label={tasksFocused ? "Add task" : "Add track"}
+          aria-label={mode === "artist" && !tasksFocused ? "Add track" : "Add task"}
           onClick={() =>
-            router.push(tasksFocused ? "/tasks" : "/board?new=1")
+            router.push(
+              mode === "artist" && !tasksFocused ? "/board?new=1" : "/tasks"
+            )
           }
         >
           <span className="flex size-7 items-center justify-center rounded-full bg-ice/15 text-ice">

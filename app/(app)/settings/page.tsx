@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { APP_VERSION } from "@/lib/version";
 import { cn } from "@/lib/utils";
+import { useWorkspaceMode } from "@/hooks/use-workspace-mode";
 
 const TABS = [
   { id: "studio", label: "Studio", hint: "Artists & spaces" },
@@ -110,8 +111,21 @@ export default function SettingsPage() {
 function SettingsPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { mode, isLoading: modeLoading } = useWorkspaceMode();
+  const accountOnly = !modeLoading && mode !== "artist";
+  const visibleTabs = accountOnly ? TABS.filter((t) => t.id === "account") : TABS;
   const paramTab = searchParams.get("tab");
-  const active: TabId = isTabId(paramTab) ? paramTab : "studio";
+  const active: TabId = accountOnly
+    ? "account"
+    : isTabId(paramTab)
+      ? paramTab
+      : "studio";
+
+  React.useEffect(() => {
+    if (modeLoading || !accountOnly) return;
+    if (paramTab === "account") return;
+    router.replace("/settings?tab=account", { scroll: false });
+  }, [modeLoading, accountOnly, paramTab, router]);
 
   React.useEffect(() => {
     if (active !== "studio") return;
@@ -136,7 +150,11 @@ function SettingsPageInner() {
     <div className="w-full">
       <PageHeader
         title="Settings"
-        subtitle="Artists, spaces, notifications, catalog backups, and your account — stage editing still lives on the board."
+        subtitle={
+          accountOnly
+            ? "Sign-in, privacy, and this device."
+            : "Artists, spaces, notifications, catalog backups, and your account — stage editing still lives on the board."
+        }
       />
 
       <div className="lg:grid lg:grid-cols-[11rem_minmax(0,1fr)] lg:gap-8">
@@ -149,7 +167,7 @@ function SettingsPageInner() {
             aria-orientation="vertical"
             className="flex gap-1 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0"
           >
-            {TABS.map((item) => {
+            {visibleTabs.map((item) => {
               const selected = active === item.id;
               return (
                 <button
@@ -204,7 +222,7 @@ function SettingsPageInner() {
                     secondaryCta="Replay introduction"
                   />
                   <ActionTile
-                    href="/artist/team"
+                    href="/team"
                     icon={Users2}
                     title="Team"
                     body="Managers, agents, and anyone else who works with this artist — who has access, and to what."

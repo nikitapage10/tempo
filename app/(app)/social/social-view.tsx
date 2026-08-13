@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Lock, MessageSquare, Search, Users } from "lucide-react";
 import { useActiveArtist } from "@/components/active-artist-provider";
+import { useWorkspaceMode } from "@/hooks/use-workspace-mode";
 import { useArtistProfile } from "@/hooks/use-artist-profile";
 import { usePeople, useRecentlyActiveProfiles } from "@/hooks/use-people";
 import { useFollowers, useFollowing } from "@/hooks/use-follows";
@@ -29,6 +30,9 @@ import { resolveLocation } from "@/lib/geo";
 import type { Person } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { DemoSocialView } from "@/components/demo/demo-social-view";
+import { PersonBadges } from "@/components/social/person-badges";
+import { fetchNetworkPersonBadges } from "@/lib/api/network-badges";
+import { useQuery } from "@tanstack/react-query";
 
 type Tab = "top8" | "following" | "discover";
 
@@ -46,8 +50,10 @@ export default function SocialView() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const { activeArtist } = useActiveArtist();
+  const { socialArtistId, mode } = useWorkspaceMode();
+  const authorArtistId = socialArtistId ?? (mode === "artist" ? activeArtist?.id ?? null : null);
   const { profile, isLoading: profileLoading, publish, save } = useArtistProfile(
-    activeArtist?.id ?? null
+    authorArtistId
   );
   const myProfileId = profile?.id ?? null;
   const onNetwork =
@@ -74,6 +80,34 @@ export default function SocialView() {
   const { data: activeProfiles = [] } = useRecentlyActiveProfiles(
     onNetwork ? myProfileId : null
   );
+  const uniquePeople = React.useMemo(() => {
+    const seen = new Set<string>();
+    const out: typeof activeProfiles = [];
+    for (const person of activeProfiles) {
+      const key = person.owner_user_id || person.id;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(person);
+    }
+    return out;
+  }, [activeProfiles]);
+  const ownerIds = React.useMemo(() => {
+    const ids: string[] = [];
+    const seen = new Set<string>();
+    for (const person of uniquePeople) {
+      const id = person.owner_user_id;
+      if (!id || seen.has(id)) continue;
+      seen.add(id);
+      ids.push(id);
+    }
+    return ids;
+  }, [uniquePeople]);
+  const badgesQuery = useQuery({
+    queryKey: ["network-badges", ownerIds.slice().sort()],
+    queryFn: () => fetchNetworkPersonBadges(ownerIds),
+    enabled: ownerIds.length > 0 && onNetwork,
+    staleTime: 60_000,
+  });
   const { data: following = [] } = useFollowing(socialDataProfileId);
   const { data: followers = [] } = useFollowers(onNetwork ? myProfileId : null);
   const { data: timeline = [], isLoading: feedLoading } = useHomeTimeline(
@@ -557,7 +591,7 @@ export default function SocialView() {
                       </p>
                     ) : (
                       <ul className="grid gap-1.5 sm:grid-cols-2">
-                        {activeProfiles.slice(0, 12).map((p) => (
+                    {uniquePeople.slice(0, 12).map((p) => (
                           <li key={p.id}>
                             <Link
                               href={`/artist/${p.handle}`}
@@ -586,6 +620,13 @@ export default function SocialView() {
                                 <p className="truncate text-xs text-text-lo">
                                   @{p.handle} · {activityLabel(p.last_active_at)}
                                 </p>
+                                <PersonBadges
+                                  badges={
+                                    p.owner_user_id
+                                      ? badgesQuery.data?.get(p.owner_user_id)
+                                      : undefined
+                                  }
+                                />
                               </div>
                             </Link>
                           </li>

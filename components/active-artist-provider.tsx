@@ -18,6 +18,8 @@ import {
 } from "@/lib/api/artists";
 import { ACTIVE_ARTIST_KEY } from "@/lib/constants";
 import { resolveArtistHues, type ResolvedArtistHues } from "@/lib/artist-theme";
+import { pickDefaultArtistId } from "@/lib/workspace-mode";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import type { Artist } from "@/lib/types";
 
 type ActiveArtistContextValue = {
@@ -64,6 +66,7 @@ export function ActiveArtistProvider({
     null
   );
   const [hydrated, setHydrated] = React.useState(false);
+  const user = useCurrentUser();
 
   React.useEffect(() => {
     setActiveArtistIdState(readStoredArtistId());
@@ -83,14 +86,31 @@ export function ActiveArtistProvider({
 
   React.useEffect(() => {
     if (!artists.length) return;
+    let preferPersonal: string | null = null;
+    try {
+      preferPersonal = sessionStorage.getItem("tempo.preferPersonalHome");
+    } catch {
+      preferPersonal = null;
+    }
+    if (preferPersonal && artists.some((a) => a.id === preferPersonal)) {
+      try {
+        sessionStorage.removeItem("tempo.preferPersonalHome");
+      } catch {
+        /* ignore */
+      }
+      setActiveArtistIdState(preferPersonal);
+      writeStoredArtistId(preferPersonal);
+      return;
+    }
     const stillValid =
       activeArtistId && artists.some((a) => a.id === activeArtistId);
     if (!stillValid) {
-      const next = artists[0].id;
+      const next =
+        pickDefaultArtistId(artists, user?.id) ?? artists[0].id;
       setActiveArtistIdState(next);
       writeStoredArtistId(next);
     }
-  }, [artists, activeArtistId]);
+  }, [artists, activeArtistId, user?.id]);
 
   const setActiveArtistId = React.useCallback((id: string) => {
     setActiveArtistIdState(id);

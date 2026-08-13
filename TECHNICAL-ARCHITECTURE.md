@@ -173,7 +173,10 @@ Preserve: all `is_pinned` versions + two newest unpinned + never delete `is_curr
 | `/tracks`, `/track/[id]` | Yes | Catalog + workspace |
 | `/track/[id]/focus` | Yes | Focus session (planned) |
 | `/tasks`, `/projects`, `/projects/[id]` | Yes | Tasks / projects |
-| `/settings` | Yes | Spaces, sign-out, version |
+| `/settings` | Yes | Spaces, sign-out, version. Team members see Account only. |
+| `/artist` | Yes | Musician identity. Read-only when you have entered someone else's workspace. |
+| `/team` | Yes | Artist roster + invite tools, or (in My work) artists you work with. `/artist/team` redirects here. |
+| `/profile` | Yes | Signed-in person's name and photo. |
 | `/login`, `/register` | Public | Auth. `/register` from a team/track invite token skips the platform invite code and locks the email to the invite. |
 | `/review/[token]` | Public | Guest review (planned) |
 | `/invite/[token]`, `/team-invite/[token]` | Public→Auth | Collaborator / team invite accept |

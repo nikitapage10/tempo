@@ -39,6 +39,12 @@ export type Artist = {
    * hasn't run the migration, which reads correctly as "not a demo".
    */
   demo_kind: string | null;
+  /**
+   * Migration 092. `personal` is a team member's own home (projects/tasks),
+   * not a music artist. Null/missing on an un-migrated database reads as
+   * `artist` — every existing row is a music workspace.
+   */
+  workspace_kind: "artist" | "personal";
   created_at: string;
 };
 

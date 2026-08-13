@@ -86,10 +86,17 @@ export async function reorderSpaces(
   if (failed?.error) throw failed.error;
 }
 
-/** Seed Originals + Edits & Remixes with default stages when this artist has none. */
-export async function ensureDefaultSpaces(artistId: string): Promise<Space[]> {
+/** Seed default spaces when this artist has none. Personal workspaces get a single tasks-focused Work space instead of music catalog spaces. */
+export async function ensureDefaultSpaces(
+  artistId: string,
+  kind: "artist" | "personal" = "artist"
+): Promise<Space[]> {
   const existing = await fetchSpaces(artistId);
   if (existing.length > 0) return existing;
+
+  if (kind === "personal") {
+    return [await createSpace("Work", 0, artistId, "tasks")];
+  }
 
   const created: Space[] = [];
   for (let i = 0; i < DEFAULT_SPACE_NAMES.length; i++) {

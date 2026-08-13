@@ -13,6 +13,7 @@ import {
 import { ensureDefaultTemplates } from "@/lib/api/templates";
 import { useActiveArtist } from "@/components/active-artist-provider";
 import { ACTIVE_SPACE_KEY } from "@/lib/constants";
+import { artistWorkspaceKind } from "@/lib/workspace-mode";
 import type { Space, SpaceFocus } from "@/lib/types";
 
 type ActiveSpaceContextValue = {
@@ -46,9 +47,12 @@ function writeStoredSpaceId(id: string) {
   }
 }
 
-async function bootstrapSpacesForArtist(artistId: string): Promise<Space[]> {
+async function bootstrapSpacesForArtist(
+  artistId: string,
+  kind: "artist" | "personal"
+): Promise<Space[]> {
   const [spaces] = await Promise.all([
-    ensureDefaultSpaces(artistId),
+    ensureDefaultSpaces(artistId, kind),
     ensureDefaultTemplates(),
   ]);
   return spaces;
@@ -63,7 +67,7 @@ export function ActiveSpaceProvider({
     null
   );
   const [hydrated, setHydrated] = React.useState(false);
-  const { activeArtistId, isLoading: artistLoading } = useActiveArtist();
+  const { activeArtist, activeArtistId, isLoading: artistLoading } = useActiveArtist();
 
   React.useEffect(() => {
     setActiveSpaceIdState(readStoredSpaceId());
@@ -73,8 +77,12 @@ export function ActiveSpaceProvider({
   // Keyed by artist so switching artists refetches that artist's spaces; the
   // "still valid" effect below then re-resolves the active space for us.
   const spacesQuery = useQuery({
-    queryKey: ["spaces", activeArtistId],
-    queryFn: () => bootstrapSpacesForArtist(activeArtistId!),
+    queryKey: ["spaces", activeArtistId, artistWorkspaceKind(activeArtist)],
+    queryFn: () =>
+      bootstrapSpacesForArtist(
+        activeArtistId!,
+        artistWorkspaceKind(activeArtist)
+      ),
     enabled: hydrated && !artistLoading && !!activeArtistId,
   });
 

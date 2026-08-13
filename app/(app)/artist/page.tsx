@@ -30,6 +30,7 @@ import { ArtistProfileStoryView } from "@/components/artist/profile-story";
 import { useActiveArtist } from "@/components/active-artist-provider";
 import { useArtistProfile } from "@/hooks/use-artist-profile";
 import { useProfileReleasedTracks } from "@/hooks/use-profile-released-tracks";
+import { useWorkspaceMode } from "@/hooks/use-workspace-mode";
 import { checkHandleAvailable } from "@/lib/api/artist-profile";
 import type {
   ArtistProfileUpdate,
@@ -85,6 +86,8 @@ export default function ArtistProfilePage() {
     activeArtist?.id ?? null
   );
   const { toast } = useToast();
+  const { mode } = useWorkspaceMode();
+  const canEdit = mode === "artist";
 
   const [editing, setEditing] = React.useState(false);
   const [draft, setDraft] = React.useState<Draft | null>(null);
@@ -234,31 +237,35 @@ export default function ArtistProfilePage() {
 
             {!editing ? (
               <div className="flex flex-wrap justify-end gap-2">
-                <label className="sr-only" htmlFor="profile-visibility">
-                  Profile visibility
-                </label>
-                <div className="relative">
-                  {profile?.visibility === "public" ? (
-                    <Globe className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-ice" />
-                  ) : profile?.visibility === "members" ? (
-                    <Users className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-ice" />
-                  ) : (
-                    <Lock className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-text-lo" />
-                  )}
-                  <select
-                    id="profile-visibility"
-                    value={profile?.visibility ?? "private"}
-                    onChange={(event) =>
-                      void handleVisibilityChange(event.target.value as ProfileVisibility)
-                    }
-                    disabled={busy}
-                    className="h-9 appearance-none rounded-chip border border-line bg-bg-0/70 py-1 pl-8 pr-7 text-xs text-text-hi backdrop-blur focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice disabled:opacity-50"
-                  >
-                    <option value="private">Private</option>
-                    <option value="members">TEMPO members</option>
-                    <option value="public">Public</option>
-                  </select>
-                </div>
+                {canEdit ? (
+                  <>
+                    <label className="sr-only" htmlFor="profile-visibility">
+                      Profile visibility
+                    </label>
+                    <div className="relative">
+                      {profile?.visibility === "public" ? (
+                        <Globe className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-ice" />
+                      ) : profile?.visibility === "members" ? (
+                        <Users className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-ice" />
+                      ) : (
+                        <Lock className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-text-lo" />
+                      )}
+                      <select
+                        id="profile-visibility"
+                        value={profile?.visibility ?? "private"}
+                        onChange={(event) =>
+                          void handleVisibilityChange(event.target.value as ProfileVisibility)
+                        }
+                        disabled={busy}
+                        className="h-9 appearance-none rounded-chip border border-line bg-bg-0/70 py-1 pl-8 pr-7 text-xs text-text-hi backdrop-blur focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice disabled:opacity-50"
+                      >
+                        <option value="private">Private</option>
+                        <option value="members">TEMPO members</option>
+                        <option value="public">Public</option>
+                      </select>
+                    </div>
+                  </>
+                ) : null}
                 {profile?.handle ? (
                   <Button asChild type="button" size="sm" variant="secondary">
                     <Link
@@ -270,16 +277,12 @@ export default function ArtistProfilePage() {
                     </Link>
                   </Button>
                 ) : null}
-                <Button asChild type="button" size="sm" variant="secondary">
-                  <Link href="/artist/team">
-                    <Users className="size-3.5" />
-                    Team
-                  </Link>
-                </Button>
-                <Button type="button" size="sm" variant="secondary" onClick={startEditing}>
-                  <Pencil className="size-3.5" />
-                  Edit profile
-                </Button>
+                {canEdit ? (
+                  <Button type="button" size="sm" variant="secondary" onClick={startEditing}>
+                    <Pencil className="size-3.5" />
+                    Edit profile
+                  </Button>
+                ) : null}
               </div>
             ) : null}
           </div>
@@ -298,7 +301,7 @@ export default function ArtistProfilePage() {
         ) : null}
       </div>
 
-      {editing && draft ? (
+  {editing && draft && canEdit ? (
         <ProfileEditor
           draft={draft}
           setDraft={setDraft}

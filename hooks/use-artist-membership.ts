@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { listMemberOfArtists } from "@/lib/api/artist-members";
 import { AREA_KEYS, type AreaGrants } from "@/lib/team/areas";
+import type { MemberRole } from "@/lib/team/roles";
 import type { Artist } from "@/lib/types";
 
 const FULL_ACCESS: AreaGrants = Object.fromEntries(
@@ -20,6 +21,7 @@ const FULL_ACCESS: AreaGrants = Object.fromEntries(
 export function useArtistMembership(artist: Artist | null): {
   isOwner: boolean;
   areas: AreaGrants;
+  role: MemberRole | null;
   isLoading: boolean;
 } {
   const user = useCurrentUser();
@@ -33,16 +35,17 @@ export function useArtistMembership(artist: Artist | null): {
   });
 
   if (!artist || !user) {
-    return { isOwner: false, areas: {}, isLoading: user === undefined };
+    return { isOwner: false, areas: {}, role: null, isLoading: user === undefined };
   }
   if (isOwner) {
-    return { isOwner: true, areas: FULL_ACCESS, isLoading: false };
+    return { isOwner: true, areas: FULL_ACCESS, role: null, isLoading: false };
   }
 
   const membership = membershipsQuery.data?.find((m) => m.artistId === artist.id);
   return {
     isOwner: false,
     areas: membership?.areas ?? {},
+    role: membership?.role ?? null,
     isLoading: membershipsQuery.isLoading,
   };
 }
