@@ -116,7 +116,7 @@ export function PassageStoryScroll({
   staticMode,
   videoRef,
   onEnter,
-  onBackToSupport,
+  onBackToLook,
   busy,
   error,
 }: {
@@ -128,7 +128,7 @@ export function PassageStoryScroll({
   staticMode: boolean;
   videoRef: React.MutableRefObject<HTMLVideoElement | null>;
   onEnter: () => void;
-  onBackToSupport: () => void;
+  onBackToLook: () => void;
   busy: boolean;
   error: string | null;
 }) {
@@ -210,7 +210,7 @@ export function PassageStoryScroll({
 
     <div key="entry" className="flex flex-col gap-3">
       <p className="text-sm leading-7 text-text-lo">
-        {entryText || "You didn't add anything here — you can always fill it in later from Settings."}
+        {entryText || "You passed on this one — you can fill it in any time from Settings."}
       </p>
     </div>,
 
@@ -219,13 +219,13 @@ export function PassageStoryScroll({
         {displayRole || "Team member"}
       </p>
       <p className="text-sm leading-7 text-text-lo">
-        {supportsText || "You didn't add anything here — you can always fill it in later from Settings."}
+        {supportsText || "You passed on this one — you can fill it in any time from Settings."}
       </p>
     </div>,
 
     <div key="function" className="flex flex-col gap-3">
       <p className="text-sm leading-7 text-text-lo">
-        {functionText || "You didn't add anything here — you can always fill it in later from Settings."}
+        {functionText || "You passed on this one — you can fill it in any time from Settings."}
       </p>
     </div>,
 
@@ -257,7 +257,7 @@ export function PassageStoryScroll({
     return (
       <div className="relative z-10 mx-auto w-full max-w-4xl px-5 py-16">
         {sections.map((content, i) => (
-          <ChapterSection key={i} index={i} staticMode onBack={i === 0 ? undefined : onBackToSupport}>
+          <ChapterSection key={i} index={i} staticMode onBack={i === 0 ? undefined : onBackToLook}>
             {content}
           </ChapterSection>
         ))}

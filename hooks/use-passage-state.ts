@@ -5,6 +5,7 @@ import {
   completeMemberPassage,
   fetchMemberPassage,
   saveMemberPassageDraft,
+  skipMemberPassage,
 } from "@/lib/api/member-passage";
 import {
   INITIAL_PASSAGE_STATE,
@@ -27,6 +28,8 @@ export type PassageController = {
   dispatch: React.Dispatch<PassageAction>;
   hydrated: boolean;
   complete: () => Promise<boolean>;
+  /** "Skip for now" — always resolves, so leaving is never blocked. */
+  skip: () => Promise<void>;
 };
 
 export function usePassageState(): PassageController {
@@ -110,5 +113,27 @@ export function usePassageState(): PassageController {
     }
   }, []);
 
-  return { state, dispatch, hydrated, complete };
+  const skip = React.useCallback(async () => {
+    const s = stateRef.current;
+    // Written first so skipping loses nothing that was already typed.
+    try {
+      await saveMemberPassageDraft({
+        currentStep: s.savedStep,
+        roleTitle: s.roleTitle || null,
+        roleTitleOther: s.roleTitleOther || null,
+        entryText: s.entryText || null,
+        supportsText: s.supportsText || null,
+        functionText: s.functionText || null,
+      });
+    } catch {
+      /* skipping must not be blocked by a failed draft save */
+    }
+    try {
+      await skipMemberPassage();
+    } catch {
+      /* the redirect still happens; status can be set again later */
+    }
+  }, []);
+
+  return { state, dispatch, hydrated, complete, skip };
 }

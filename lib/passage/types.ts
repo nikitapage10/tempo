@@ -10,7 +10,14 @@ export type PassageStatus = "in_progress" | "complete" | "skipped";
  * machine: a transition is never a resume target, so a refresh mid-transition
  * lands on the loop the member was heading into.
  */
-export type PassageStep = "role" | "entry" | "support" | "function" | "story" | "complete";
+export type PassageStep =
+  | "role"
+  | "entry"
+  | "support"
+  | "function"
+  | "look"
+  | "story"
+  | "complete";
 
 export type MemberPassage = {
   status: PassageStatus;

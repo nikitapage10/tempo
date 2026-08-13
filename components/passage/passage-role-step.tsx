@@ -16,6 +16,8 @@ export function PassageRoleStep({
   onRoleOtherChange,
   onBack,
   onSubmit,
+  onSkipAll,
+  mediaReady = true,
   busy,
   active = true,
 }: {
@@ -25,6 +27,10 @@ export function PassageRoleStep({
   onRoleOtherChange: (v: string) => void;
   onBack: () => void;
   onSubmit: () => void;
+  /** Leaves the whole flow, not just this question. */
+  onSkipAll?: () => void;
+  /** False while the next clip is still buffering — see use-passage-media. */
+  mediaReady?: boolean;
   busy: boolean;
   active?: boolean;
 }) {
@@ -40,10 +46,19 @@ export function PassageRoleStep({
 
   const canSubmit = isOther ? roleTitleOther.trim().length > 0 : roleTitle.trim().length > 0;
 
+  /** Remembers the press and honours it once the next clip is ready. */
+  const [attempted, setAttempted] = React.useState(false);
+  const waiting = attempted && !mediaReady;
+
+  React.useEffect(() => {
+    if (attempted && mediaReady) onSubmit();
+  }, [attempted, mediaReady, onSubmit]);
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (busy || !canSubmit) return;
-    onSubmit();
+    setAttempted(true);
+    if (mediaReady) onSubmit();
   }
 
   return (
@@ -129,20 +144,32 @@ export function PassageRoleStep({
           </div>
         ) : null}
 
-        <div className="flex items-center justify-between gap-4">
-          <button
-            type="button"
-            onClick={onBack}
-            className="flex items-center gap-1 text-xs text-text-lo transition-colors hover:text-text-hi"
-          >
-            <ChevronLeft className="size-3.5" /> Back
-          </button>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={onBack}
+              className="flex items-center gap-1 text-xs text-text-lo transition-colors hover:text-text-hi"
+            >
+              <ChevronLeft className="size-3.5" /> Back
+            </button>
+            {onSkipAll ? (
+              <button
+                type="button"
+                onClick={onSkipAll}
+                disabled={busy}
+                className="text-xs text-text-lo transition-colors hover:text-text-hi disabled:opacity-60"
+              >
+                Skip for now
+              </button>
+            ) : null}
+          </div>
           <button
             type="submit"
             disabled={busy || !canSubmit}
             className="group flex items-center gap-3 rounded-full border border-line/80 bg-white/[0.035] py-1.5 pl-4 pr-1.5 text-sm text-text-hi transition-colors hover:border-ice/50 hover:bg-ice/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice disabled:cursor-not-allowed disabled:opacity-60"
           >
-            <span>Continue</span>
+            <span>{waiting ? "One moment…" : "Continue"}</span>
             <span className="flex size-9 items-center justify-center rounded-full bg-ice text-bg-0 transition-transform group-hover:translate-x-0.5">
               <ArrowRight className="size-4" />
             </span>

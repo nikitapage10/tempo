@@ -17,7 +17,7 @@ create table if not exists member_passages (
     check (status in ('in_progress', 'complete', 'skipped')),
   -- Stable state to resume on. Never a transition — see the reducer.
   current_step text not null default 'role'
-    check (current_step in ('role', 'entry', 'support', 'function', 'story', 'complete')),
+    check (current_step in ('role', 'entry', 'support', 'function', 'look', 'story', 'complete')),
 
   -- What they picked from the role chips (see lib/passage/roles.ts), or null
   -- while still on that step.

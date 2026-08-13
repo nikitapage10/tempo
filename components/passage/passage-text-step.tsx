@@ -21,8 +21,9 @@ export function PassageTextStep({
   onValueChange,
   onBack,
   onFinish,
+  onSkipAll,
+  mediaReady = true,
   continueLabel = "Continue",
-  minChars = 1,
   maxChars = 2000,
   busy,
 }: {
@@ -34,21 +35,37 @@ export function PassageTextStep({
   onValueChange: (v: string) => void;
   onBack: () => void;
   onFinish: () => void;
+  /** Leaves the whole flow, not just this question. */
+  onSkipAll?: () => void;
+  /** False while the next clip is still buffering — see use-passage-media. */
+  mediaReady?: boolean;
   continueLabel?: string;
-  minChars?: number;
   maxChars?: number;
   busy: boolean;
 }) {
-  const [error, setError] = React.useState<string | null>(null);
+  /**
+   * Nothing here is required. These are questions about a person, not a form
+   * that has to validate — someone who would rather get on with the work can
+   * pass any of them, and everything stays editable in Settings afterwards.
+   */
+  const answered = value.trim().length > 0;
+
+  /**
+   * Advancing waits on the destination clip rather than blocking the button:
+   * the member's press is remembered and honoured the moment the film is
+   * ready, so a slow connection reads as a beat rather than a dead control.
+   */
+  const [attempted, setAttempted] = React.useState(false);
+  const waiting = attempted && !mediaReady;
+
+  React.useEffect(() => {
+    if (attempted && mediaReady) onFinish();
+  }, [attempted, mediaReady, onFinish]);
 
   function handleContinue() {
     if (busy) return;
-    if (value.trim().length < minChars) {
-      setError("Say a little more before continuing.");
-      return;
-    }
-    setError(null);
-    onFinish();
+    setAttempted(true);
+    if (mediaReady) onFinish();
   }
 
   return (
@@ -83,10 +100,7 @@ export function PassageTextStep({
           <Textarea
             id={`passage-text-${kicker}`}
             value={value}
-            onChange={(e) => {
-              onValueChange(e.target.value);
-              if (error) setError(null);
-            }}
+            onChange={(e) => onValueChange(e.target.value)}
             rows={5}
             maxLength={maxChars}
             placeholder={placeholder}
@@ -94,21 +108,27 @@ export function PassageTextStep({
           />
         </div>
 
-        {error ? (
-          <p role="alert" className="text-xs text-warn">
-            {error}
-          </p>
-        ) : null}
-
-        <div className="flex items-center justify-end">
+        <div className="flex flex-wrap items-center gap-2">
+          {onSkipAll ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onSkipAll}
+              disabled={busy}
+              className="text-text-lo"
+            >
+              Skip for now
+            </Button>
+          ) : null}
           <Button
             type="button"
             variant="ghost"
             onClick={handleContinue}
             disabled={busy}
-            className="rounded-full border border-line/80 bg-white/[0.035] px-5 text-text-hi hover:border-ice/50 hover:bg-ice/[0.06] hover:text-text-hi"
+            className="ml-auto rounded-full border border-line/80 bg-white/[0.035] px-5 text-text-hi hover:border-ice/50 hover:bg-ice/[0.06] hover:text-text-hi"
           >
-            {continueLabel}
+            {waiting ? "One moment…" : answered ? continueLabel : "Pass on this one"}
           </Button>
         </div>
       </div>

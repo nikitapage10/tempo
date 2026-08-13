@@ -52,7 +52,10 @@ export default function TeamInvitePage() {
       const res = await fetch(`/api/team-invite/${token}`, { method: "POST" });
       const body = await res.json();
       if (!res.ok) throw new Error(body.error || "Couldn’t accept that invite.");
-      router.push("/team");
+      // Joining a team earns the Passage welcome, the same as an admin-issued
+      // team invite. Its own guard sends anyone who has already been through
+      // it (or isn't owed it) straight on to /team instead.
+      router.push("/passage");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn’t accept that invite.");
     } finally {

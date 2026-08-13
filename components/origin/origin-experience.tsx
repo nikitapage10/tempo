@@ -29,6 +29,7 @@ import {
   prepareFirstOpenPending,
 } from "@/components/origin/first-open-reveal";
 import { PHASE_GATES, useOriginMedia } from "@/hooks/use-origin-media";
+import { SOUNDTRACK_SRC, useOriginSoundtrack } from "@/hooks/use-origin-soundtrack";
 import { useOriginState } from "@/hooks/use-origin-state";
 import { useContentZoom } from "@/hooks/use-content-zoom";
 import { clipForPhase } from "@/lib/origin/reducer";
@@ -57,12 +58,6 @@ const OPENING_LINES = [
   { text: "Before it can be heard…", at: 0.04, until: 0.4 },
   { text: "give it a name.", at: 0.42, until: 0.72 },
 ];
-
-const SOUNDTRACK_SRC = "/onboarding/origin/tempo-theme.mp3";
-// Quiet bed under the film — loud enough to feel, soft enough to stay behind copy.
-const SOUNDTRACK_VOLUME = 0.19;
-const SOUNDTRACK_FADE_IN_MS = 1400;
-const SOUNDTRACK_FADE_OUT_MS = 1100;
 
 /**
  * How far through a transition its destination panel starts fading up. Early
@@ -112,87 +107,13 @@ export function OriginExperience({
   const [importUiActive, setImportUiActive] = React.useState(false);
   /** Set by the opening tap — the gesture browsers require for audible video. */
   const [soundOn, setSoundOn] = React.useState(false);
-  const soundtrackRef = React.useRef<HTMLAudioElement | null>(null);
-  const soundtrackFadeRef = React.useRef<number | null>(null);
-
-  React.useEffect(() => {
-    // Prime the file before the opening gesture so play() can begin immediately
-    // inside that gesture instead of waiting on its first network read.
-    soundtrackRef.current?.load();
-  }, []);
-
-  /** Starts inside the Tune in gesture, which keeps playback browser-safe. */
-  const startSoundtrack = React.useCallback(() => {
-    const soundtrack = soundtrackRef.current;
-    if (!soundtrack) return;
-    if (soundtrackFadeRef.current !== null) {
-      cancelAnimationFrame(soundtrackFadeRef.current);
-      soundtrackFadeRef.current = null;
-    }
-    soundtrack.loop = true;
-    soundtrack.volume = 0;
-    void soundtrack
-      .play()
-      .then(() => {
-        const startedAt = performance.now();
-        const fade = (now: number) => {
-          const progress = Math.min(1, (now - startedAt) / SOUNDTRACK_FADE_IN_MS);
-          soundtrack.volume = SOUNDTRACK_VOLUME * progress;
-          if (progress < 1) {
-            soundtrackFadeRef.current = requestAnimationFrame(fade);
-          } else {
-            soundtrackFadeRef.current = null;
-          }
-        };
-        soundtrackFadeRef.current = requestAnimationFrame(fade);
-      })
-      .catch(() => {
-        // If a browser still refuses playback, the visual flow remains usable.
-      });
-  }, []);
-
-  /** Lets the ambient bed leave with the film instead of stopping at navigation. */
-  const fadeSoundtrack = React.useCallback(() => {
-    const soundtrack = soundtrackRef.current;
-    if (!soundtrack || soundtrack.paused) return;
-    if (soundtrackFadeRef.current !== null) cancelAnimationFrame(soundtrackFadeRef.current);
-
-    const startedAt = performance.now();
-    const startVolume = soundtrack.volume;
-    const fade = (now: number) => {
-      const progress = Math.min(1, (now - startedAt) / SOUNDTRACK_FADE_OUT_MS);
-      soundtrack.volume = startVolume * (1 - progress);
-      if (progress < 1) {
-        soundtrackFadeRef.current = requestAnimationFrame(fade);
-      } else {
-        soundtrack.pause();
-        soundtrackFadeRef.current = null;
-      }
-    };
-    soundtrackFadeRef.current = requestAnimationFrame(fade);
-  }, []);
+  const soundtrack = useOriginSoundtrack();
+  const { start: startSoundtrack, fade: fadeSoundtrack, reset: resetBed } = soundtrack;
 
   const resetSoundtrack = React.useCallback(() => {
-    if (soundtrackFadeRef.current !== null) {
-      cancelAnimationFrame(soundtrackFadeRef.current);
-      soundtrackFadeRef.current = null;
-    }
-    const soundtrack = soundtrackRef.current;
-    if (soundtrack) {
-      soundtrack.pause();
-      soundtrack.currentTime = 0;
-      soundtrack.volume = 0;
-    }
+    resetBed();
     setSoundOn(false);
-  }, []);
-
-  React.useEffect(
-    () => () => {
-      if (soundtrackFadeRef.current !== null) cancelAnimationFrame(soundtrackFadeRef.current);
-      soundtrackRef.current?.pause();
-    },
-    []
-  );
+  }, [resetBed]);
   /**
    * Chosen in the import chapter. Defaults to importing when Import is still
    * owed, so an artist who scrolls straight past still lands somewhere useful.
@@ -504,7 +425,7 @@ export function OriginExperience({
       onError={handleMediaError}
       onActiveElement={handleActiveElement}
     >
-      <audio ref={soundtrackRef} src={SOUNDTRACK_SRC} preload="auto" loop aria-hidden="true" />
+      <audio ref={soundtrack.ref} src={SOUNDTRACK_SRC} preload="auto" loop aria-hidden="true" />
       {/* Desktop zoom control — bottom-left; scales the copy/panels, not the film. */}
       {isDesktopApp() ? <ZoomControl placement="corner" /> : null}
       <div

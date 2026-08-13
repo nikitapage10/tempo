@@ -7,14 +7,18 @@ import { cn } from "@/lib/utils";
 /**
  * The moment before PASSAGE begins. Same mechanics as OriginAwakenStep
  * (components/origin/origin-awaken-step.tsx) — a full-viewport tap target
- * that also doubles as the user gesture browsers require for audible video —
- * with copy written to a person joining a team, not an artist naming a signal.
+ * that also doubles as the user gesture browsers require for audible video.
+ *
+ * The copy deliberately avoids Origin's "signal" language. That metaphor is
+ * about making the music; the people arriving here manage it, book it, shoot
+ * it, design it and put it out, and telling them they *are* the signal would
+ * be describing somebody else's job.
  */
 
 const LINES = [
-  "Every team starts around one signal…",
-  "someone making the work,",
-  "and the people who carry it further.",
+  "No record gets made alone.",
+  "Behind every one of them…",
+  "are the people who carry it.",
 ];
 
 const OPENING_DELAY_MS = 850;

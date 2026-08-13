@@ -28,15 +28,25 @@ import { cn } from "@/lib/utils";
  * frequencies / story. Continue and Skip both advance; Spectra defaults stand
  * in for anything left blank. Palette writes are optimistic so Origin chrome
  * fades into the chosen Cool/Warm immediately.
+ *
+ * Shared with PASSAGE (components/passage/passage-experience.tsx): a team
+ * member customizes their own workspace with exactly the same controls, so
+ * only the words around them are overridable.
  */
 export function OriginLookStep({
   onBack,
   onFinish,
   busy,
+  kicker = "Look / 03",
+  heading = "Give the signal a look",
+  blurb = "Colors, mark, and banner — all optional. You can change any of this later in Settings.",
 }: {
   onBack: () => void;
   onFinish: () => void;
   busy: boolean;
+  kicker?: string;
+  heading?: string;
+  blurb?: string;
 }) {
   const { activeArtist } = useActiveArtist();
   const {
@@ -140,14 +150,13 @@ export function OriginLookStep({
 
         <div className="flex flex-col gap-2">
           <p className="text-[11px] uppercase tracking-[0.28em] text-text-lo/70">
-            Look / 03
+            {kicker}
           </p>
           <h1 className="font-display text-3xl leading-tight text-text-hi sm:text-4xl">
-            Give the signal a look
+            {heading}
           </h1>
           <p className="max-w-xl text-sm leading-relaxed text-text-hi/75">
-            Colors, mark, and banner — all optional. You can change any of this
-            later in Settings.
+            {blurb}
           </p>
         </div>
 
@@ -422,11 +431,21 @@ export function OriginLookStep({
   );
 }
 
+/**
+ * All three pieces of the look — banner, logo, profile mark — composed the way
+ * they actually sit on an artist page, so one glance shows the whole thing.
+ *
+ * `shrink-0` is load-bearing. This is a flex child of a scrolling column, and
+ * a flex item is allowed to shrink past its own `min-height`; with
+ * `overflow-hidden` on top of that the strip silently collapsed to a sliver,
+ * which is why only the banner was ever visible and the profile row was cut
+ * off the bottom entirely. Fixed heights rather than an aspect ratio keep it
+ * from swinging between a sliver and half the panel as the width changes.
+ */
 function LookPreview({ artist }: { artist: Artist }) {
   return (
-    <div className="overflow-hidden rounded-[12px] border border-line/70 bg-bg-2/25">
-      {/* Tall enough that wide logos stay fully inside the strip on desktop. */}
-      <div className="relative aspect-[2/1] min-h-[12rem] w-full overflow-hidden sm:min-h-[14rem] md:min-h-[15.5rem]">
+    <div className="shrink-0 overflow-hidden rounded-[12px] border border-line/70 bg-bg-2/25">
+      <div className="relative h-28 w-full overflow-hidden sm:h-32">
         {artist.banner_url || artist.banner_color ? (
           <ArtistBanner artist={artist} className="absolute inset-0 size-full" />
         ) : (
@@ -439,31 +458,36 @@ function LookPreview({ artist }: { artist: Artist }) {
           />
         )}
         {artist.logo_url ? (
-          <div className="pointer-events-none absolute bottom-5 right-4 top-5 z-[1] flex w-[min(52%,15rem)] items-center justify-end sm:bottom-6 sm:right-5 sm:top-6">
+          // Sits opposite the profile mark below, so the two never overlap.
+          <div className="pointer-events-none absolute right-4 top-3 z-[1] flex h-[calc(100%-1.5rem)] w-[min(44%,11rem)] items-start justify-end">
             <SignedImage
               path={artist.logo_url}
               alt=""
               className="h-auto max-h-full w-auto max-w-full object-contain object-right drop-shadow-[0_10px_28px_rgb(0_0_0/0.5)]"
             />
           </div>
-        ) : null}
+        ) : (
+          <span className="pointer-events-none absolute right-4 top-4 z-[1] rounded-full border border-dashed border-white/25 px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-white/45">
+            Logo
+          </span>
+        )}
       </div>
 
-      {/* Profile sits under the banner so the strip never crops the photo. */}
-      <div className="relative flex items-end gap-3 px-3 pb-3 pt-0">
-        <div className="-mt-8 shrink-0 sm:-mt-9">
+      {/* Profile overlaps the banner edge, exactly as it does on the real page. */}
+      <div className="relative flex items-end gap-3 px-3 pb-3">
+        <div className="-mt-7 shrink-0">
           <ArtistMark
             emblemUrl={artist.emblem_url}
             paletteId={artist.palette_id}
             iceColor={artist.ice_color}
             amberColor={artist.amber_color}
             name={artist.name}
-            size={64}
-            className="size-16 shadow-e2 ring-2 ring-bg-0/90 sm:size-[4.5rem]"
+            size={56}
+            className="size-14 shadow-e2 ring-2 ring-bg-0/90"
           />
         </div>
-        <div className="min-w-0 pb-1.5 pt-3">
-          <p className="truncate font-display text-base font-semibold text-text-hi sm:text-lg">
+        <div className="min-w-0 pb-0.5">
+          <p className="truncate font-display text-base font-semibold text-text-hi">
             {artist.name}
           </p>
           <p className="text-[11px] text-text-lo">Preview</p>

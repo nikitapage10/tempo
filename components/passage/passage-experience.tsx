@@ -4,11 +4,14 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { OriginMediaStage } from "@/components/origin/origin-media-stage";
 import { OriginOverlay, StepFade, TimedCopy } from "@/components/origin/origin-copy-layer";
+import { OriginLookStep } from "@/components/origin/origin-look-step";
 import { PassageAwakenStep } from "@/components/passage/passage-awaken-step";
 import { PassageRoleStep } from "@/components/passage/passage-role-step";
 import { PassageTextStep } from "@/components/passage/passage-text-step";
 import { PassageStoryScroll } from "@/components/passage/passage-story-scroll";
+import { PASSAGE_PHASE_GATES, usePassageMedia } from "@/hooks/use-passage-media";
 import { usePassageState } from "@/hooks/use-passage-state";
+import { SOUNDTRACK_SRC, useOriginSoundtrack } from "@/hooks/use-origin-soundtrack";
 import { clipForPassagePhase } from "@/lib/passage/reducer";
 import { originAsset, type OriginMediaKey } from "@/lib/origin/media";
 
@@ -22,13 +25,15 @@ import { originAsset, type OriginMediaKey } from "@/lib/origin/media";
 const HOME_ROUTE = "/";
 
 const OPENING_LINES = [
-  { text: "You're not building this alone.", at: 0.04, until: 0.4 },
-  { text: "Let's get you set up.", at: 0.42, until: 0.72 },
+  { text: "So — before you go in…", at: 0.04, until: 0.4 },
+  { text: "tell us who you are.", at: 0.42, until: 0.72 },
 ];
 
 export function PassageExperience() {
   const router = useRouter();
-  const { state, dispatch, hydrated, complete } = usePassageState();
+  const { state, dispatch, hydrated, complete, skip } = usePassageState();
+  const media = usePassageMedia(state.phase);
+  const soundtrack = useOriginSoundtrack();
 
   const [soundOn, setSoundOn] = React.useState(false);
   const activeVideoRef = React.useRef<HTMLVideoElement | null>(null);
@@ -85,12 +90,23 @@ export function PassageExperience() {
   async function handleEnter() {
     const ok = await complete();
     if (!ok) return;
+    soundtrack.fade();
+    router.replace(HOME_ROUTE);
+  }
+
+  /** Available from every question — nobody is held here by a form. */
+  async function handleSkip() {
+    soundtrack.fade();
+    await skip();
     router.replace(HOME_ROUTE);
   }
 
   if (!hydrated) {
     return <div className="fixed inset-0 bg-[var(--bg-0)]" />;
   }
+
+  const mediaReady = (phase: Parameters<typeof clipForPassagePhase>[0]) =>
+    media.gateOpen(PASSAGE_PHASE_GATES[phase] ?? []);
 
   const storyPhase =
     state.phase === "story_scroll" || state.phase === "saving" || state.phase === "complete";
@@ -105,6 +121,7 @@ export function PassageExperience() {
       onError={handleMediaError}
       onActiveElement={handleActiveElement}
     >
+      <audio ref={soundtrack.ref} src={SOUNDTRACK_SRC} preload="auto" loop aria-hidden="true" />
       {storyPhase ? (
         <div className="absolute inset-0">
           <PassageStoryScroll
@@ -116,7 +133,7 @@ export function PassageExperience() {
             staticMode={state.staticMode}
             videoRef={activeVideoRef}
             onEnter={handleEnter}
-            onBackToSupport={() => dispatch({ type: "back_to_support" })}
+            onBackToLook={() => dispatch({ type: "back_to_function" })}
             busy={state.busy}
             error={state.error}
           />
@@ -126,7 +143,12 @@ export function PassageExperience() {
           {state.phase === "awaiting_start" ? (
             <PassageAwakenStep
               staticMode={state.staticMode}
-              onTuneIn={() => setSoundOn(true)}
+              onTuneIn={() => {
+                // Order matters: sound is enabled in the same tick as the
+                // gesture, so the first play() call is already allowed audio.
+                setSoundOn(true);
+                soundtrack.start();
+              }}
               onBegin={() => dispatch({ type: "begin" })}
             />
           ) : null}
@@ -148,8 +170,14 @@ export function PassageExperience() {
                 roleTitleOther={state.roleTitleOther}
                 onRoleChange={(role) => dispatch({ type: "set_role", role })}
                 onRoleOtherChange={(text) => dispatch({ type: "set_role_other", text })}
-                onBack={() => dispatch({ type: "back_to_awaken" })}
+                onBack={() => {
+                  soundtrack.reset();
+                  setSoundOn(false);
+                  dispatch({ type: "back_to_awaken" });
+                }}
                 onSubmit={() => dispatch({ type: "submit_role" })}
+                onSkipAll={handleSkip}
+                mediaReady={mediaReady("recognizing")}
                 busy={state.busy}
               />
             </StepFade>
@@ -166,6 +194,8 @@ export function PassageExperience() {
                 onValueChange={(text) => dispatch({ type: "set_entry", text })}
                 onBack={() => dispatch({ type: "back_to_role" })}
                 onFinish={() => dispatch({ type: "finish_entry" })}
+                onSkipAll={handleSkip}
+                mediaReady={mediaReady("entry_transition")}
                 busy={state.busy}
               />
             </StepFade>
@@ -182,6 +212,8 @@ export function PassageExperience() {
                 onValueChange={(text) => dispatch({ type: "set_support", text })}
                 onBack={() => dispatch({ type: "back_to_entry" })}
                 onFinish={() => dispatch({ type: "finish_support" })}
+                onSkipAll={handleSkip}
+                mediaReady={mediaReady("support_transition")}
                 busy={state.busy}
               />
             </StepFade>
@@ -193,12 +225,26 @@ export function PassageExperience() {
                 kicker="Passage / what you do"
                 heading="What do you actually do, day to day?"
                 prompt="Skip the title — what does a normal week actually look like?"
-                placeholder="Booking, scheduling, catalog, the road, the inbox…"
+                placeholder="Booking, scheduling, edits, campaigns, the road, the inbox…"
                 value={state.functionText}
                 onValueChange={(text) => dispatch({ type: "set_function", text })}
                 onBack={() => dispatch({ type: "back_to_support" })}
                 onFinish={() => dispatch({ type: "finish_function" })}
+                onSkipAll={handleSkip}
                 continueLabel="Continue →"
+                busy={state.busy}
+              />
+            </StepFade>
+          ) : null}
+
+          {state.phase === "look_idle" ? (
+            <StepFade show className="w-full max-w-2xl">
+              <OriginLookStep
+                kicker="Passage / your space"
+                heading="Make the space yours"
+                blurb="Colors, mark, and banner for your own workspace — all optional, and all changeable later in Settings."
+                onBack={() => dispatch({ type: "back_to_function" })}
+                onFinish={() => dispatch({ type: "finish_look" })}
                 busy={state.busy}
               />
             </StepFade>

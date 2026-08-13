@@ -49,6 +49,24 @@ export async function saveMemberPassageDraft(patch: PassageDraftPatch): Promise<
   if (error) throw error;
 }
 
+/**
+ * "Skip for now" from anywhere in the flow. The draft is deliberately left
+ * intact, so skipping costs nothing and the answers are still there if they
+ * come back to it from Settings.
+ */
+export async function skipMemberPassage(): Promise<void> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Sign in first.");
+
+  const { error } = await supabase
+    .from("member_passages")
+    .upsert({ user_id: user.id, status: "skipped" }, { onConflict: "user_id" });
+  if (error) throw error;
+}
+
 export async function completeMemberPassage(input: {
   roleTitle: string;
   roleTitleOther: string;

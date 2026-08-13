@@ -21,6 +21,7 @@ export type PassagePhase =
   | "support_idle"
   | "support_transition"
   | "function_idle"
+  | "look_idle"
   | "chapter_opening"
   | "story_scroll"
   | "saving"
@@ -56,10 +57,12 @@ export type PassageAction =
   | { type: "finish_support" }
   | { type: "set_function"; text: string }
   | { type: "finish_function" }
+  | { type: "finish_look" }
   | { type: "back_to_awaken" }
   | { type: "back_to_role" }
   | { type: "back_to_entry" }
   | { type: "back_to_support" }
+  | { type: "back_to_function" }
   | { type: "transition_ended" }
   | { type: "chapter_ended" }
   | { type: "begin_save" }
@@ -88,6 +91,7 @@ const RESUME_PHASE: Record<PassageStep, PassagePhase> = {
   entry: "entry_idle",
   support: "support_idle",
   function: "function_idle",
+  look: "look_idle",
   story: "story_scroll",
   complete: "complete",
 };
@@ -97,6 +101,7 @@ export const PASSAGE_PHASE_LOOP: Partial<Record<PassagePhase, OriginMediaKey>> =
   entry_idle: "loop03",
   support_idle: "loop04",
   function_idle: "loop05",
+  look_idle: "loop05",
   story_scroll: "scroll06",
   saving: "scroll06",
   complete: "scroll06",
@@ -192,6 +197,12 @@ export function passageReducer(state: PassageState, action: PassageAction): Pass
 
     case "finish_function":
       if (state.busy || state.phase !== "function_idle") return state;
+      // Look shares loop05 with the question before it — the film has already
+      // arrived at that beat, so no transition plays between the two.
+      return { ...state, phase: "look_idle", savedStep: "look", error: null };
+
+    case "finish_look":
+      if (state.busy || state.phase !== "look_idle") return state;
       return {
         ...state,
         phase: state.staticMode ? "story_scroll" : "chapter_opening",
@@ -215,8 +226,13 @@ export function passageReducer(state: PassageState, action: PassageAction): Pass
         : state;
 
     case "back_to_support":
-      return state.phase === "function_idle" || state.phase === "story_scroll"
+      return state.phase === "function_idle"
         ? { ...state, phase: "support_idle", savedStep: "support", error: null, busy: false }
+        : state;
+
+    case "back_to_function":
+      return state.phase === "look_idle" || state.phase === "story_scroll"
+        ? { ...state, phase: "function_idle", savedStep: "function", error: null, busy: false }
         : state;
 
     case "transition_ended": {

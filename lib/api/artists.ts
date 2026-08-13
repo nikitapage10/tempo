@@ -342,21 +342,34 @@ async function userHasTeamOrCollabHome(
   supabase: ReturnType<typeof createClient>,
   userId: string
 ): Promise<boolean> {
-  const [{ data: membership }, { count: collabCount }] = await Promise.all([
-    supabase
-      .from("artist_members")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("status", "active")
-      .limit(1)
-      .maybeSingle(),
-    supabase
-      .from("track_collaborators")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", userId)
-      .eq("status", "active"),
-  ]);
-  return !!membership || (collabCount ?? 0) > 0;
+  const [{ data: membership }, { count: collabCount }, { data: onboarding }] =
+    await Promise.all([
+      supabase
+        .from("artist_members")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("status", "active")
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("track_collaborators")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .eq("status", "active"),
+      // Someone the admin invited straight to the platform as a team member
+      // has no artist_members row yet, and without this would be seeded a
+      // music artist — which is what put Tracks and Board in their rail.
+      supabase
+        .from("member_onboarding")
+        .select("member_role")
+        .eq("user_id", userId)
+        .maybeSingle(),
+    ]);
+  return (
+    !!membership ||
+    (collabCount ?? 0) > 0 ||
+    onboarding?.member_role === "team_member"
+  );
 }
 
 async function ensureArtistsOnce(): Promise<Artist[]> {
