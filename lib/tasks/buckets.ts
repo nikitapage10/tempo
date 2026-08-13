@@ -17,6 +17,14 @@ export const TASK_BUCKET_LABELS: Record<TaskBucket, string> = {
   later: "Later",
 };
 
+/** Shown on a column while a task is dragged over it. */
+export const TASK_BUCKET_MOVE_HINTS: Record<TaskBucket, string> = {
+  overdue: "Move to overdue",
+  today: "Move to today",
+  week: "Move to this week",
+  later: "Move to later",
+};
+
 export function isTaskBucket(value: string): value is TaskBucket {
   return (
     value === "overdue" ||

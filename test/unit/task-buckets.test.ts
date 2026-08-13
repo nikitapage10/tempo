@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  TASK_BUCKET_MOVE_HINTS,
   bucketDropId,
   bucketForDueDate,
   dropNeedsDatePrompt,
@@ -60,6 +61,13 @@ describe("task buckets", () => {
     expect(parseBucketDropId(bucketDropId("week"))).toBe("week");
     expect(parseBucketDropId("task:abc")).toBeNull();
     expect(parseBucketDropId(undefined)).toBeNull();
+  });
+
+  it("names the drop target in plain language", () => {
+    expect(TASK_BUCKET_MOVE_HINTS.week).toBe("Move to this week");
+    expect(TASK_BUCKET_MOVE_HINTS.today).toBe("Move to today");
+    expect(TASK_BUCKET_MOVE_HINTS.later).toBe("Move to later");
+    expect(TASK_BUCKET_MOVE_HINTS.overdue).toBe("Move to overdue");
   });
 
   it("labels a date with weekday and month", () => {

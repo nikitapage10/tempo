@@ -18,6 +18,7 @@ export function TaskDoneArchive({
   trackName,
   projectName,
   focusedId,
+  onBack,
   onToggle,
   onStatus,
   onDue,
@@ -27,6 +28,7 @@ export function TaskDoneArchive({
   trackName: (id: string | null) => string | undefined;
   projectName: (id: string | null) => string | undefined;
   focusedId?: string | null;
+  onBack?: () => void;
   onToggle: (task: Task) => Promise<void>;
   onStatus: (task: Task, next: TaskStatus) => Promise<void>;
   onDue: (task: Task, next: string) => Promise<void>;
@@ -40,7 +42,7 @@ export function TaskDoneArchive({
         <p className="font-display text-4xl font-semibold tabular-nums leading-none text-ok">
           {tasks.length}
         </p>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <h2 className="font-display text-lg font-semibold tracking-tight text-text-hi">
             Closed out
           </h2>
@@ -48,6 +50,15 @@ export function TaskDoneArchive({
             Everything you&apos;ve checked off in this space.
           </p>
         </div>
+        {onBack ? (
+          <button
+            type="button"
+            onClick={onBack}
+            className="shrink-0 text-xs text-ice hover:underline"
+          >
+            Back to the board
+          </button>
+        ) : null}
       </div>
       {sorted.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">

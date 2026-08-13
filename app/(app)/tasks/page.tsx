@@ -6,10 +6,13 @@ import {
   DragOverlay,
   PointerSensor,
   closestCorners,
+  pointerWithin,
   useDroppable,
   useSensor,
   useSensors,
+  type CollisionDetection,
   type DragEndEvent,
+  type DragOverEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { useSearchParams } from "next/navigation";
@@ -39,6 +42,7 @@ import { localDateString } from "@/lib/format";
 import {
   TASK_BUCKETS,
   TASK_BUCKET_LABELS,
+  TASK_BUCKET_MOVE_HINTS,
   bucketDropId,
   bucketForTask,
   dropNeedsDatePrompt,
@@ -48,6 +52,12 @@ import {
 } from "@/lib/tasks/buckets";
 import type { Task, TaskCategory, TaskStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
+
+const bucketCollision: CollisionDetection = (args) => {
+  const pointer = pointerWithin(args);
+  if (pointer.length > 0) return pointer;
+  return closestCorners(args);
+};
 
 export default function TasksPage() {
   return (
@@ -92,6 +102,7 @@ function TasksContent() {
   const [notes, setNotes] = React.useState("");
   const [showMore, setShowMore] = React.useState(false);
   const [activeTask, setActiveTask] = React.useState<Task | null>(null);
+  const [overBucket, setOverBucket] = React.useState<TaskBucket | null>(null);
   const [pendingMove, setPendingMove] = React.useState<{
     task: Task;
     target: TaskBucket;
@@ -222,10 +233,20 @@ function TasksContent() {
     if (task) setActiveTask(task as Task);
   }
 
+  function handleDragOver(event: DragOverEvent) {
+    const next = parseBucketDropId(event.over?.id);
+    setOverBucket((prev) => (prev === next ? prev : next));
+  }
+
+  function clearDrag() {
+    setActiveTask(null);
+    setOverBucket(null);
+  }
+
   function handleDragEnd(event: DragEndEvent) {
     const task = event.active.data.current?.task as Task | undefined;
     const target = parseBucketDropId(event.over?.id);
-    setActiveTask(null);
+    clearDrag();
     if (!task || !target) return;
     const current = bucketForTask(task, today);
     if (current === target) return;
@@ -237,6 +258,8 @@ function TasksContent() {
     }
     setPendingMove({ task, target });
   }
+
+  const sourceBucket = activeTask ? bucketForTask(activeTask, today) : null;
 
   function rowHandlers(task: Task) {
     return {
@@ -255,21 +278,6 @@ function TasksContent() {
       <PageHeader
         title="Tasks"
         subtitle="Actionable stuff outside a single track — pitching, social, admin."
-        actions={
-          <Button
-            type="button"
-            variant="secondary"
-            className={cn(
-              showingDone && "border-ok/40 text-ok hover:bg-ok/10"
-            )}
-            onClick={() => setStatusFilter(showingDone ? "all" : "done")}
-          >
-            Closed out
-            {doneCount > 0 ? (
-              <span className="font-data tabular-nums text-ok">{doneCount}</span>
-            ) : null}
-          </Button>
-        }
       />
 
       <form onSubmit={handleQuickAdd} className="panel p-5">
@@ -410,9 +418,19 @@ function TasksContent() {
               key={s.value}
               size="sm"
               active={statusFilter === s.value}
+              className={
+                s.value === "done" && statusFilter === "done"
+                  ? "border-ok/40 bg-ok/10 text-ok"
+                  : undefined
+              }
               onClick={() => setStatusFilter(s.value)}
             >
               {s.label === "Done" ? "Closed out" : s.label}
+              {s.value === "done" && doneCount > 0 ? (
+                <span className="ml-1 font-data tabular-nums text-ok">
+                  {doneCount}
+                </span>
+              ) : null}
             </Chip>
           ))}
           {categoryFilter !== "all" || statusFilter !== "all" ? (
@@ -441,6 +459,7 @@ function TasksContent() {
           trackName={trackName}
           projectName={projectName}
           focusedId={editTaskId}
+          onBack={() => setStatusFilter("all")}
           onToggle={(task) => rowHandlers(task).onToggle()}
           onStatus={(task, next) => rowHandlers(task).onStatus(next)}
           onDue={(task, next) => rowHandlers(task).onDue(next)}
@@ -449,9 +468,10 @@ function TasksContent() {
       ) : (
         <DndContext
           sensors={sensors}
-          collisionDetection={closestCorners}
+          collisionDetection={bucketCollision}
           onDragStart={handleDragStart}
-          onDragCancel={() => setActiveTask(null)}
+          onDragOver={handleDragOver}
+          onDragCancel={clearDrag}
           onDragEnd={handleDragEnd}
         >
           <div className="grid gap-3 sm:grid-cols-2 lg:min-h-[248px] lg:grid-cols-4">
@@ -464,13 +484,37 @@ function TasksContent() {
                 trackName={trackName}
                 projectName={projectName}
                 rowHandlers={rowHandlers}
+                isDragging={Boolean(activeTask)}
+                isDropTarget={
+                  overBucket === bucket && sourceBucket !== bucket
+                }
               />
             ))}
           </div>
+          <button
+            type="button"
+            onClick={() => setStatusFilter("done")}
+            className="well mt-3 flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors duration-hover hover:bg-bg-2/80"
+          >
+            <span>
+              <span className="text-sm text-text-hi">Closed out</span>
+              <span className="mt-0.5 block text-xs text-text-lo">
+                What you’ve checked off in this space.
+              </span>
+            </span>
+            <span className="font-display text-xl tabular-nums text-ok">
+              {doneCount}
+            </span>
+          </button>
           <DragOverlay dropAnimation={reducedMotion ? null : undefined}>
             {activeTask ? (
               <div className="cursor-grabbing rounded-card border border-ice/40 bg-bg-1 px-3 py-2.5 shadow-raise">
                 <p className="text-sm text-text-hi">{activeTask.title}</p>
+                {overBucket && overBucket !== sourceBucket ? (
+                  <p className="mt-1 text-xs text-ice">
+                    {TASK_BUCKET_MOVE_HINTS[overBucket]}
+                  </p>
+                ) : null}
               </div>
             ) : null}
           </DragOverlay>
@@ -511,6 +555,8 @@ function TaskBucketColumn({
   trackName,
   projectName,
   rowHandlers,
+  isDragging,
+  isDropTarget,
 }: {
   bucket: TaskBucket;
   list: Task[];
@@ -523,27 +569,30 @@ function TaskBucketColumn({
     onDue: (date: string) => Promise<void>;
     onDelete: () => Promise<void>;
   };
+  isDragging: boolean;
+  isDropTarget: boolean;
 }) {
-  const { setNodeRef, isOver } = useDroppable({
+  const { setNodeRef } = useDroppable({
     id: bucketDropId(bucket),
     data: { bucket },
   });
-  const urgent = bucket === "overdue" && list.length > 0;
+  const urgent = bucket === "overdue" && list.length > 0 && !isDropTarget;
 
   return (
     <section
       ref={setNodeRef}
       className={cn(
-        "flex min-h-[12rem] flex-col p-4",
+        "relative flex min-h-[12rem] flex-col p-4",
         urgent ? "panel border-warn/40" : "panel-quiet",
-        isOver && "border-ice/50 ring-1 ring-ice/35"
+        isDragging && !isDropTarget && "border-ice/25",
+        isDropTarget && "border-ice/55 bg-ice/10 ring-1 ring-ice/40"
       )}
     >
       <h2 className="mb-3 flex items-center gap-2">
         <span className={cn("label-mono", urgent && "text-warn")}>
           {TASK_BUCKET_LABELS[bucket]}
         </span>
-        {list.length > 0 ? (
+        {list.length > 0 && !isDropTarget ? (
           <span
             className={cn(
               "font-mono text-xs tabular-nums",
@@ -555,6 +604,11 @@ function TaskBucketColumn({
         ) : null}
         <SlitDivider className="flex-1" />
       </h2>
+      {isDropTarget ? (
+        <p className="mb-3 rounded-input border border-ice/40 bg-ice/15 px-3 py-2 text-center text-sm text-ice">
+          {TASK_BUCKET_MOVE_HINTS[bucket]}
+        </p>
+      ) : null}
       <ul className="space-y-2">
         {list.map((task) => (
           <DraggableTaskRow
@@ -568,7 +622,9 @@ function TaskBucketColumn({
           />
         ))}
       </ul>
-      {list.length === 0 ? <BucketEmpty bucket={bucket} /> : null}
+      {list.length === 0 && !isDropTarget ? (
+        <BucketEmpty bucket={bucket} />
+      ) : null}
     </section>
   );
 }
