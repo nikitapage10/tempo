@@ -9,10 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Wordmark } from "@/components/wordmark";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { OAuthButtons } from "@/components/auth/oauth-buttons";
-
-function isSafeRedirect(path: string | null): path is string {
-  return !!path && path.startsWith("/") && !path.startsWith("//");
-}
+import { isSafeRedirect } from "@/lib/auth/invite-signup";
 
 export default function LoginPage() {
   return (
@@ -27,7 +24,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect");
   const authError = searchParams.get("error") === "auth";
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(() => searchParams.get("email")?.trim() ?? "");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");

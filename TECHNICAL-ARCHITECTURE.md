@@ -174,9 +174,9 @@ Preserve: all `is_pinned` versions + two newest unpinned + never delete `is_curr
 | `/track/[id]/focus` | Yes | Focus session (planned) |
 | `/tasks`, `/projects`, `/projects/[id]` | Yes | Tasks / projects |
 | `/settings` | Yes | Spaces, sign-out, version |
-| `/login`, `/register` | Public | Auth |
+| `/login`, `/register` | Public | Auth. `/register` from a team/track invite token skips the platform invite code and locks the email to the invite. |
 | `/review/[token]` | Public | Guest review (planned) |
-| `/invite/[token]` | Public→Auth | Collaborator invite accept (planned) |
+| `/invite/[token]`, `/team-invite/[token]` | Public→Auth | Collaborator / team invite accept |
 | `/api/review/*` | Public + server validation | Guest APIs (planned) |
 
 ---

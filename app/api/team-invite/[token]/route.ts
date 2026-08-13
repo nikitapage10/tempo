@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { authAccountExistsForEmail } from "@/lib/auth/account-exists";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import {
@@ -10,8 +11,10 @@ import {
 export const dynamic = "force-dynamic";
 
 /**
- * GET /api/team-invite/[token] — public preview: artist name + role only,
- * mirroring GET /api/invite/[token]. Never leaks the inviter's identity.
+ * GET /api/team-invite/[token] — public preview: artist name + role + whether
+ * the invited email already has a TEMPO account (so the landing CTA can say
+ * Sign in vs Create an account). Never leaks the inviter's identity, and
+ * account_exists is only for this invite's bound email.
  */
 export async function GET(
   _req: NextRequest,
@@ -36,11 +39,13 @@ export async function GET(
       { status: 404, headers: noStoreHeaders() }
     );
   }
+  const accountExists = await authAccountExistsForEmail(ctx.member.invited_email);
   return NextResponse.json(
     {
       artist: { name: ctx.artist.name },
       role: ctx.member.role,
       invited_email: ctx.member.invited_email,
+      account_exists: accountExists,
     },
     { headers: noStoreHeaders() }
   );

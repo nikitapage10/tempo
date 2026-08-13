@@ -1,14 +1,17 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { Eye, EyeOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Wordmark } from "@/components/wordmark";
 import { AuthShell } from "@/components/auth/auth-shell";
+import { isSafeRedirect, parseInviteRedirect } from "@/lib/auth/invite-signup";
 import { LEGAL_VERSION } from "@/lib/legal";
+import { ROLE_LABELS, type MemberRole } from "@/lib/team/roles";
 
 const INVITE_MAILTO =
   "mailto:connect@nikita.page?subject=" +
@@ -16,8 +19,42 @@ const INVITE_MAILTO =
   "&body=" +
   encodeURIComponent("Hi, I'd like an invite code to try TEMPO.\n\n");
 
-function isSafeRedirect(path: string | null): path is string {
-  return !!path && path.startsWith("/") && !path.startsWith("//");
+type TeamSignupPreview = {
+  kind: "team";
+  artist: { name: string };
+  role: MemberRole;
+  invited_email: string;
+};
+
+type TrackSignupPreview = {
+  kind: "track";
+  track: { title: string };
+  invited_email: string;
+};
+
+type SignupInvitePreview = TeamSignupPreview | TrackSignupPreview;
+
+async function fetchSignupInvitePreview(
+  kind: "team" | "track",
+  token: string
+): Promise<SignupInvitePreview> {
+  const path = kind === "team" ? `/api/team-invite/${token}` : `/api/invite/${token}`;
+  const res = await fetch(path, { cache: "no-store" });
+  const body = await res.json();
+  if (!res.ok) throw new Error(body.error || "This invite isn’t available.");
+  if (kind === "team") {
+    return {
+      kind: "team",
+      artist: { name: body.artist?.name ?? "" },
+      role: body.role,
+      invited_email: body.invited_email,
+    };
+  }
+  return {
+    kind: "track",
+    track: { title: body.track?.title ?? "" },
+    invited_email: body.invited_email,
+  };
 }
 
 export default function RegisterPage() {
@@ -32,6 +69,7 @@ function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect");
+  const inviteRef = parseInviteRedirect(redirectTo);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -40,6 +78,18 @@ function RegisterForm() {
   const [acceptedLegal, setAcceptedLegal] = useState(false);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
+
+  const previewQuery = useQuery({
+    queryKey: ["signup-invite-preview", inviteRef?.kind, inviteRef?.token],
+    queryFn: () => fetchSignupInvitePreview(inviteRef!.kind, inviteRef!.token),
+    enabled: !!inviteRef,
+    retry: false,
+  });
+
+  useEffect(() => {
+    const invited = previewQuery.data?.invited_email;
+    if (invited) setEmail(invited);
+  }, [previewQuery.data?.invited_email]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -60,15 +110,21 @@ function RegisterForm() {
 
     setStatus("loading");
 
+    const verifyBody = inviteRef
+      ? inviteRef.kind === "team"
+        ? { email, teamInviteToken: inviteRef.token }
+        : { email, trackInviteToken: inviteRef.token }
+      : { code: inviteCode, email };
+
     const inviteRes = await fetch("/api/auth/verify-invite", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code: inviteCode, email }),
+      body: JSON.stringify(verifyBody),
     });
     if (!inviteRes.ok) {
       setStatus("error");
       const body = await inviteRes.json().catch(() => null);
-      setError(body?.error ?? "That invite code isn’t valid.");
+      setError(body?.error ?? "That invite isn’t valid.");
       return;
     }
     const verifiedInvite = await inviteRes.json().catch(() => ({ inviteId: null }));
@@ -120,12 +176,47 @@ function RegisterForm() {
       }
     }
 
+    if (inviteRef?.kind === "team") {
+      const acceptRes = await fetch(`/api/team-invite/${inviteRef.token}`, { method: "POST" });
+      if (!acceptRes.ok) {
+        router.replace(`/team-invite/${inviteRef.token}`);
+        router.refresh();
+        return;
+      }
+      router.replace("/");
+      router.refresh();
+      return;
+    }
+
     // ORIGIN comes before Import for a brand-new account; Origin itself hands
     // off to /import when it finishes or is skipped. Fresh invite signups land
     // on /welcome first so the artist can choose browser vs desktop.
+    // Team-invite signups skip that — they join an existing artist.
     router.replace(isSafeRedirect(redirectTo) ? redirectTo : "/welcome");
     router.refresh();
   }
+
+  const preview = previewQuery.data;
+  const lockedToInvite = !!inviteRef;
+  const subtitle = (() => {
+    if (preview?.kind === "team") {
+      const roleLabel = ROLE_LABELS[preview.role] ?? preview.role;
+      return `Create an account to work with ${preview.artist.name} as a ${roleLabel}.`;
+    }
+    if (preview?.kind === "track") {
+      return `Create an account to join ${preview.track.title}.`;
+    }
+    if (inviteRef && previewQuery.isError) {
+      return previewQuery.error instanceof Error
+        ? previewQuery.error.message
+        : "This invite isn’t available.";
+    }
+    if (inviteRef) return "Create an account to accept this invite.";
+    return "Create your account.";
+  })();
+
+  const membershipReady = !inviteRef || (!!preview && !previewQuery.isError);
+  const needsCode = !inviteRef;
 
   return (
     <AuthShell>
@@ -134,7 +225,7 @@ function RegisterForm() {
           <h1>
             <Wordmark size={32} />
           </h1>
-          <p className="mt-4 text-sm text-text-lo">Create your account.</p>
+          <p className="mt-4 text-sm text-text-lo">{subtitle}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -150,11 +241,19 @@ function RegisterForm() {
               type="email"
               required
               autoComplete="email"
+              readOnly={lockedToInvite}
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                if (!lockedToInvite) setEmail(e.target.value);
+              }}
               placeholder="you@studio.com"
-              className="h-10 w-full rounded-input border border-line bg-bg-2 px-3 text-sm text-text-hi placeholder:text-text-lo/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+              className="h-10 w-full rounded-input border border-line bg-bg-2 px-3 text-sm text-text-hi placeholder:text-text-lo/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice read-only:text-text-lo"
             />
+            {lockedToInvite ? (
+              <p className="mt-1.5 text-xs text-text-lo">
+                This invite is for this address — sign in instead if you already have an account.
+              </p>
+            ) : null}
           </div>
 
           <div>
@@ -209,34 +308,36 @@ function RegisterForm() {
             />
           </div>
 
-          <div>
-            <label
-              htmlFor="invite"
-              className="mb-1.5 block font-mono text-xs uppercase tracking-[0.08em] text-text-lo"
-            >
-              Invite code
-            </label>
-            <input
-              id="invite"
-              type="text"
-              required
-              autoComplete="off"
-              autoCapitalize="off"
-              autoCorrect="off"
-              spellCheck={false}
-              value={inviteCode}
-              onChange={(e) => setInviteCode(e.target.value)}
-              placeholder="Enter your invite code"
-              className="h-10 w-full rounded-input border border-line bg-bg-2 px-3 text-sm text-text-hi placeholder:text-text-lo/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
-            />
-            <p className="mt-1.5 text-xs text-text-lo">
-              Don’t have one?{" "}
-              <a href={INVITE_MAILTO} className="text-ice hover:underline">
-                Request an invite
-              </a>
-              .
-            </p>
-          </div>
+          {needsCode ? (
+            <div>
+              <label
+                htmlFor="invite"
+                className="mb-1.5 block font-mono text-xs uppercase tracking-[0.08em] text-text-lo"
+              >
+                Invite code
+              </label>
+              <input
+                id="invite"
+                type="text"
+                required
+                autoComplete="off"
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck={false}
+                value={inviteCode}
+                onChange={(e) => setInviteCode(e.target.value)}
+                placeholder="Enter your invite code"
+                className="h-10 w-full rounded-input border border-line bg-bg-2 px-3 text-sm text-text-hi placeholder:text-text-lo/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+              />
+              <p className="mt-1.5 text-xs text-text-lo">
+                Don’t have one?{" "}
+                <a href={INVITE_MAILTO} className="text-ice hover:underline">
+                  Request an invite
+                </a>
+                .
+              </p>
+            </div>
+          ) : null}
 
           <label className="flex cursor-pointer items-start gap-3 rounded-input border border-line bg-bg-2/70 p-3 text-xs leading-5 text-text-lo transition-colors hover:border-ice/35">
             <input
@@ -283,8 +384,9 @@ function RegisterForm() {
               !email.trim() ||
               password.length < 1 ||
               confirm.length < 1 ||
-              !inviteCode.trim() ||
-              !acceptedLegal
+              (needsCode && !inviteCode.trim()) ||
+              !acceptedLegal ||
+              !membershipReady
             }
           >
             {status === "loading" ? "Creating…" : "Create account"}
@@ -295,7 +397,9 @@ function RegisterForm() {
             <Link
               href={
                 isSafeRedirect(redirectTo)
-                  ? `/login?redirect=${encodeURIComponent(redirectTo)}`
+                  ? `/login?redirect=${encodeURIComponent(redirectTo)}${
+                      email.trim() ? `&email=${encodeURIComponent(email.trim())}` : ""
+                    }`
                   : "/login"
               }
               className="text-ice hover:underline"

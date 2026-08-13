@@ -183,8 +183,8 @@ Roles (planned): **Owner** · **Editor** · **Uploader** · **Commenter** · **V
 | `/login`, `/register`, `/auth/*` | Yes | Existing |
 | `/review`, `/review/[token]` | Yes | Prompt 4 |
 | `/api/review/*` | Yes + server validation | Exact paths only |
-| `/invite/[token]` | Landing may be public; accept requires auth | Prompt 10 |
-| `/api/auth/verify-invite`, `/api/auth/redeem-invite` | Yes; redemption still requires an authenticated signup session | Registration gate |
+| `/invite/[token]`, `/team-invite/[token]` | Landing may be public; accept requires auth + matching email | Prompt 10 / team |
+| `/api/auth/verify-invite`, `/api/auth/redeem-invite` | Yes; redemption still requires an authenticated signup session. A pending team or track invite token bound to the same email may stand in for a platform invite code — it does not open signup for other addresses. | Registration gate |
 | `/admin/*`, `/api/admin/*` | No | Session required; server guard additionally requires `platform_admins` membership |
 | All `app/(app)/*` | No | Redirect login |
 

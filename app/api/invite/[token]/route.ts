@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { authAccountExistsForEmail } from "@/lib/auth/account-exists";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import {
@@ -10,9 +11,10 @@ import {
 export const dynamic = "force-dynamic";
 
 /**
- * GET /api/invite/[token] — public preview: track title + role only, so the
- * landing page can say "You've been invited to <track> as <role>" before
- * the visitor signs in. Never leaks the inviter's identity or other data.
+ * GET /api/invite/[token] — public preview: track title + role + whether the
+ * invited email already has a TEMPO account (so the landing CTA can say Sign
+ * in vs Create an account). Never leaks the inviter's identity or other data,
+ * and account_exists is only for this invite's bound email.
  */
 export async function GET(
   _req: NextRequest,
@@ -37,11 +39,13 @@ export async function GET(
       { status: 404, headers: noStoreHeaders() }
     );
   }
+  const accountExists = await authAccountExistsForEmail(ctx.collaborator.invited_email);
   return NextResponse.json(
     {
       track: { title: ctx.track.title },
       role: ctx.collaborator.role,
       invited_email: ctx.collaborator.invited_email,
+      account_exists: accountExists,
     },
     { headers: noStoreHeaders() }
   );

@@ -4,6 +4,7 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-12
 
+- Fixed (v0.143.0): Inviting someone to your team who doesn’t have a TEMPO account yet no longer dead-ends on “Sign in to accept.” The invite page now says **Create an account** when that email is new (and **Sign in to accept** when they already have one), and they can set a password without an invite code — the team invite *is* the invite. After they create the account they’re on the team, not sent through Origin.
 - Changed (v0.142.0): Team moved out of Settings and into its own page —
   reach it from Artist → **Team**, or the artist switcher. It opens on a
   visual of your team: your artist at the center, everyone who works with

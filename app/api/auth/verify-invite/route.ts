@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { INVITE_COLUMNS } from "@/lib/admin/select";
+import { resolveInvite } from "@/lib/invite-server";
+import { resolveTeamInvite } from "@/lib/team-invite-server";
 
 export const dynamic = "force-dynamic";
 
@@ -8,19 +10,57 @@ function noStoreHeaders(): HeadersInit {
   return { "Cache-Control": "no-store" };
 }
 
+function emailsMatch(a: string, b: string): boolean {
+  return a.trim().toLowerCase() === b.trim().toLowerCase();
+}
+
 /**
  * POST /api/auth/verify-invite — checked before account creation on
- * /register. The code lives only in the server-only INVITE_CODE env var so
- * it never reaches the client bundle; compare case-insensitively since it's
- * typed by hand. If INVITE_CODE isn't set, every code fails closed rather
- * than opening signups to anyone.
+ * /register. Three gates, all fail closed:
  *
- * Body: { code: string }
+ * 1. A pending team-invite token bound to this email (managers etc.)
+ * 2. A pending track-invite token bound to this email (collaborators)
+ * 3. A platform invite code (legacy INVITE_CODE env, or a row in `invites`)
+ *
+ * Body: { email: string, code?: string, teamInviteToken?: string, trackInviteToken?: string }
  */
 export async function POST(req: NextRequest) {
   const payload = await req.json().catch(() => null);
   const code = typeof payload?.code === "string" ? payload.code.trim() : "";
   const email = typeof payload?.email === "string" ? payload.email.trim().toLowerCase() : "";
+  const teamInviteToken =
+    typeof payload?.teamInviteToken === "string" ? payload.teamInviteToken.trim() : "";
+  const trackInviteToken =
+    typeof payload?.trackInviteToken === "string" ? payload.trackInviteToken.trim() : "";
+
+  if (teamInviteToken && trackInviteToken) {
+    return NextResponse.json(
+      { ok: false, error: "That invite isn’t valid." },
+      { status: 400, headers: noStoreHeaders() }
+    );
+  }
+
+  if (teamInviteToken) {
+    const ctx = await resolveTeamInvite(teamInviteToken);
+    if (!ctx || !email || !emailsMatch(email, ctx.member.invited_email)) {
+      return NextResponse.json(
+        { ok: false, error: "That invite isn’t valid for this email." },
+        { status: 403, headers: noStoreHeaders() }
+      );
+    }
+    return NextResponse.json({ ok: true, inviteId: null }, { headers: noStoreHeaders() });
+  }
+
+  if (trackInviteToken) {
+    const ctx = await resolveInvite(trackInviteToken);
+    if (!ctx || !email || !emailsMatch(email, ctx.collaborator.invited_email)) {
+      return NextResponse.json(
+        { ok: false, error: "That invite isn’t valid for this email." },
+        { status: 403, headers: noStoreHeaders() }
+      );
+    }
+    return NextResponse.json({ ok: true, inviteId: null }, { headers: noStoreHeaders() });
+  }
 
   if (!code) {
     return NextResponse.json(

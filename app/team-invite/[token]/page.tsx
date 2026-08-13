@@ -1,10 +1,10 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { InviteAuthCta } from "@/components/auth/invite-auth-cta";
 import { createClient } from "@/lib/supabase/client";
 import { ROLE_LABELS, type MemberRole } from "@/lib/team/roles";
 
@@ -12,6 +12,7 @@ type TeamInvitePreview = {
   artist: { name: string };
   role: MemberRole;
   invited_email: string;
+  account_exists: boolean | null;
 };
 
 async function fetchPreview(token: string): Promise<TeamInvitePreview> {
@@ -98,25 +99,11 @@ export default function TeamInvitePage() {
               {user === undefined ? (
                 <div className="h-9 animate-pulse rounded-input bg-bg-2" />
               ) : !user ? (
-                <>
-                  <Button
-                    type="button"
-                    className="w-full"
-                    onClick={() =>
-                      router.push(
-                        `/login?redirect=${encodeURIComponent(`/team-invite/${token}`)}`
-                      )
-                    }
-                  >
-                    Sign in to accept
-                  </Button>
-                  <Link
-                    href={`/register?redirect=${encodeURIComponent(`/team-invite/${token}`)}`}
-                    className="block text-xs text-text-lo hover:text-ice"
-                  >
-                    New to TEMPO? Create an account
-                  </Link>
-                </>
+                <InviteAuthCta
+                  redirectPath={`/team-invite/${token}`}
+                  invitedEmail={previewQuery.data.invited_email}
+                  accountExists={previewQuery.data.account_exists ?? null}
+                />
               ) : emailMismatch ? (
                 <p className="text-sm text-warn">
                   You’re signed in as {user.email}, but this invite was sent to{" "}

@@ -1,10 +1,10 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { InviteAuthCta } from "@/components/auth/invite-auth-cta";
 import { createClient } from "@/lib/supabase/client";
 import { COLLABORATOR_ROLES } from "@/lib/constants";
 
@@ -12,6 +12,7 @@ type InvitePreview = {
   track: { title: string };
   role: string;
   invited_email: string;
+  account_exists: boolean | null;
 };
 
 async function fetchPreview(token: string): Promise<InvitePreview> {
@@ -101,23 +102,11 @@ export default function InvitePage() {
               {user === undefined ? (
                 <div className="h-9 animate-pulse rounded-input bg-bg-2" />
               ) : !user ? (
-                <>
-                  <Button
-                    type="button"
-                    className="w-full"
-                    onClick={() =>
-                      router.push(`/login?redirect=${encodeURIComponent(`/invite/${token}`)}`)
-                    }
-                  >
-                    Sign in to accept
-                  </Button>
-                  <Link
-                    href={`/register?redirect=${encodeURIComponent(`/invite/${token}`)}`}
-                    className="block text-xs text-text-lo hover:text-ice"
-                  >
-                    New to TEMPO? Create an account
-                  </Link>
-                </>
+                <InviteAuthCta
+                  redirectPath={`/invite/${token}`}
+                  invitedEmail={previewQuery.data.invited_email}
+                  accountExists={previewQuery.data.account_exists ?? null}
+                />
               ) : emailMismatch ? (
                 <p className="text-sm text-warn">
                   You’re signed in as {user.email}, but this invite was sent to{" "}
