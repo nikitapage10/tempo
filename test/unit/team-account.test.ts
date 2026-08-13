@@ -37,6 +37,7 @@ describe("team member accounts", () => {
     expect(artists).toContain("tempo.preferPersonalHome");
     expect(artists).toContain("repairTeammateHomes");
     expect(artists).toContain("userHasTeamOrCollabHome");
+    expect(artists).toContain("isPlaceholderPersonName");
     expect(artists).toContain('return "Home"');
     expect(read("lib/api/spaces.ts")).toContain('createSpace("Home"');
   });

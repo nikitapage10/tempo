@@ -22,6 +22,9 @@ describe("membership invite signup", () => {
     expect(page).toContain("trackInviteToken");
     expect(page).toContain("needsCode");
     expect(page).toContain("Create an account to work with");
+    expect(page).toContain("Your name");
+    expect(page).toContain("updateMyMemberProfile");
+    expect(page).toContain("normalizePersonDisplayName");
     expect(page).not.toContain("function isSafeRedirect");
   });
 
@@ -38,6 +41,8 @@ describe("membership invite signup", () => {
     const track = read("app/api/invite/[token]/route.ts");
     expect(team).toContain("authAccountExistsForEmail");
     expect(team).toContain("account_exists");
+    expect(team).toContain("artist_member_profiles");
+    expect(team).toContain("accepted your team invite");
     expect(track).toContain("authAccountExistsForEmail");
     expect(track).toContain("account_exists");
   });

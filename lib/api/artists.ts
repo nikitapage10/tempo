@@ -7,6 +7,7 @@ import {
   ownedPersonalHomes,
   ownedPersonalWorkspace,
 } from "@/lib/workspace-mode";
+import { isPlaceholderPersonName } from "@/lib/auth/person-name";
 import type { Artist, ArtistUpdate, OriginStatus } from "@/lib/types";
 
 function mapArtist(row: Record<string, unknown>): Artist {
@@ -73,11 +74,6 @@ async function personalWorkspaceName(): Promise<string> {
   return "Home";
 }
 
-function looksLikeEmailLocalName(name: string, email: string | null | undefined): boolean {
-  const local = email?.split("@")[0]?.trim().toLowerCase();
-  return !!local && name.trim().toLowerCase() === local;
-}
-
 async function markWorkspacePersonal(
   id: string,
   name?: string
@@ -131,12 +127,7 @@ async function repairTeammateHomes(
     homes.find((a) => a.emblem_url || a.logo_url) ??
     homes[0];
   let next = existing;
-  const rename =
-    looksLikeEmailLocalName(keeper.name, email) ||
-    keeper.name === DEFAULT_ARTIST_NAME ||
-    keeper.name === "Your work"
-      ? preferredName
-      : undefined;
+  const rename = isPlaceholderPersonName(keeper.name, email) ? preferredName : undefined;
 
   if (keeper.workspace_kind !== "personal" || rename) {
     const updated = await markWorkspacePersonal(keeper.id, rename);

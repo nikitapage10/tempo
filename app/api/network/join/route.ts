@@ -3,6 +3,7 @@ import { provisionStarterCommunity } from "@/lib/onboarding-starter-community";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { connectTeamNetworkFollows } from "@/lib/social/connect-team-follows";
+import { isPlaceholderPersonName } from "@/lib/auth/person-name";
 
 export const dynamic = "force-dynamic";
 
@@ -85,9 +86,17 @@ export async function POST(request: NextRequest) {
       .select("display_name, avatar_url")
       .eq("user_id", user.id)
       .maybeSingle();
+    const fromProfile =
+      typeof memberProfile?.display_name === "string"
+        ? memberProfile.display_name.trim()
+        : "";
+    const fromArtist =
+      artist.name && !isPlaceholderPersonName(artist.name, user.email)
+        ? artist.name.trim()
+        : "";
     const displayName =
-      (typeof memberProfile?.display_name === "string" && memberProfile.display_name.trim()) ||
-      artist.name ||
+      fromProfile ||
+      fromArtist ||
       user.email?.split("@")[0] ||
       "Member";
     const { data: created, error: createError } = await supabase

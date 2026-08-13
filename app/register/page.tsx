@@ -11,6 +11,8 @@ import { Wordmark } from "@/components/wordmark";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { isSafeRedirect, parseInviteRedirect, platformInviteLoginHref } from "@/lib/auth/invite-signup";
 import { completePlatformInvite } from "@/lib/auth/complete-platform-invite";
+import { normalizePersonDisplayName } from "@/lib/auth/person-name";
+import { updateMyMemberProfile } from "@/lib/api/member-profile";
 import { LEGAL_VERSION } from "@/lib/legal";
 import { ROLE_LABELS, type MemberRole } from "@/lib/team/roles";
 
@@ -72,6 +74,7 @@ function RegisterForm() {
   const redirectTo = searchParams.get("redirect");
   const inviteRef = parseInviteRedirect(redirectTo);
   const [email, setEmail] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [inviteCode, setInviteCode] = useState(() => searchParams.get("invite") ?? "");
@@ -130,6 +133,10 @@ function RegisterForm() {
     e.preventDefault();
     setError(null);
 
+    if (!normalizePersonDisplayName(displayName)) {
+      setError("Enter the name you want people to see.");
+      return;
+    }
     if (password.length < 6) {
       setError("Password must be at least 6 characters.");
       return;
@@ -170,6 +177,7 @@ function RegisterForm() {
       password,
       options: {
         data: {
+          display_name: normalizePersonDisplayName(displayName),
           legal_terms_version: LEGAL_VERSION,
           legal_terms_accepted_at: new Date().toISOString(),
         },
@@ -202,6 +210,15 @@ function RegisterForm() {
         "Account created, but email confirmation is still required. In Supabase → Authentication → Providers → Email, turn off “Confirm email”, then sign in."
       );
       return;
+    }
+
+    const named = normalizePersonDisplayName(displayName);
+    if (named) {
+      try {
+        await updateMyMemberProfile({ displayName: named });
+      } catch {
+        /* home still falls back to Home until they set a name on Profile */
+      }
     }
 
     if (inviteCode.trim() && verifiedInvite.inviteId) {
@@ -286,6 +303,29 @@ function RegisterForm() {
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div>
+            <label
+              htmlFor="display-name"
+              className="mb-1.5 block font-mono text-xs uppercase tracking-[0.08em] text-text-lo"
+            >
+              Your name
+            </label>
+            <input
+              id="display-name"
+              type="text"
+              required
+              autoComplete="name"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder="How you show up"
+              maxLength={60}
+              className="h-10 w-full rounded-input border border-line bg-bg-2 px-3 text-sm text-text-hi placeholder:text-text-lo/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+            />
+            <p className="mt-1.5 text-xs text-text-lo">
+              Artists you work with, and people on Social, see this name.
+            </p>
+          </div>
+
           <div>
             <label
               htmlFor="email"
@@ -439,6 +479,7 @@ function RegisterForm() {
             disabled={
               status === "loading" ||
               !email.trim() ||
+              !normalizePersonDisplayName(displayName) ||
               password.length < 1 ||
               confirm.length < 1 ||
               (needsCode && !inviteCode.trim()) ||

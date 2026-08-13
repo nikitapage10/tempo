@@ -113,13 +113,22 @@ export async function POST(
     );
   }
 
+  const { data: memberProfile } = await admin
+    .from("artist_member_profiles")
+    .select("display_name")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  const actorName =
+    (typeof memberProfile?.display_name === "string" && memberProfile.display_name.trim()) ||
+    user.email;
+
   // Best-effort notification — never block acceptance on this.
   void admin
     .from("notifications")
     .insert({
       user_id: updated.invited_by,
       type: "team_invite_accepted",
-      title: `${user.email} accepted your team invite`,
+      title: `${actorName} accepted your team invite`,
       body: `They can now access "${ctx.artist.name}" as ${updated.role}.`,
     })
     .then(

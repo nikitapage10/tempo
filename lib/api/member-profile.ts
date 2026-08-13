@@ -1,5 +1,9 @@
 import { createClient } from "@/lib/supabase/client";
 import { buildMemberAvatarPath, deleteFile, uploadFile } from "@/lib/storage";
+import {
+  isPlaceholderPersonName,
+  normalizePersonDisplayName,
+} from "@/lib/auth/person-name";
 
 export type MemberProfile = {
   userId: string;
@@ -52,6 +56,37 @@ export async function fetchMemberProfiles(userIds: string[]): Promise<Map<string
   return map;
 }
 
+/** Replace leftover Home / email labels on the personal workspace and Social identity. */
+async function syncPersonNameToPersonalIdentity(
+  userId: string,
+  displayName: string,
+  email: string | null | undefined
+): Promise<void> {
+  const supabase = createClient();
+  const { data: owned } = await supabase
+    .from("artists")
+    .select("id, name, workspace_kind")
+    .eq("user_id", userId);
+  const personal = (owned ?? []).filter((row) => row.workspace_kind === "personal");
+  for (const artist of personal) {
+    if (isPlaceholderPersonName(artist.name, email)) {
+      await supabase.from("artists").update({ name: displayName }).eq("id", artist.id);
+    }
+    const { data: profile } = await supabase
+      .from("artist_profiles")
+      .select("id, display_name")
+      .eq("artist_id", artist.id)
+      .eq("owner_user_id", userId)
+      .maybeSingle();
+    if (profile && isPlaceholderPersonName(profile.display_name, email)) {
+      await supabase
+        .from("artist_profiles")
+        .update({ display_name: displayName })
+        .eq("id", profile.id);
+    }
+  }
+}
+
 export async function updateMyMemberProfile(patch: {
   displayName?: string | null;
 }): Promise<MemberProfile> {
@@ -59,15 +94,27 @@ export async function updateMyMemberProfile(patch: {
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) throw new Error("You’re signed out — sign in again, then retry.");
 
+  const displayName = normalizePersonDisplayName(patch.displayName ?? "");
+  if (patch.displayName !== undefined && !displayName) {
+    throw new Error("Enter the name you want people to see.");
+  }
+
   const { data, error } = await supabase
     .from("artist_member_profiles")
     .upsert(
-      { user_id: userData.user.id, display_name: patch.displayName ?? null },
+      { user_id: userData.user.id, display_name: displayName },
       { onConflict: "user_id" }
     )
     .select("user_id, display_name, avatar_url")
     .single();
   if (error) throw new Error(error.message);
+  if (displayName) {
+    await syncPersonNameToPersonalIdentity(
+      userData.user.id,
+      displayName,
+      userData.user.email
+    );
+  }
   return { userId: data.user_id, displayName: data.display_name, avatarUrl: data.avatar_url };
 }
 
