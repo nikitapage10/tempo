@@ -14,8 +14,10 @@ import {
 } from "lucide-react";
 import { Wordmark } from "@/components/wordmark";
 import { FlareLine } from "@/components/flare-line";
+import { ZoomControl } from "@/components/desktop/zoom-control";
 import { SlitDivider } from "@/components/ui/slit";
 import { useAdminOverview } from "@/hooks/use-admin";
+import { useContentZoom } from "@/hooks/use-content-zoom";
 import { useRealtimeInbox } from "@/hooks/use-realtime-inbox";
 import { APP_VERSION } from "@/lib/version";
 import { cn } from "@/lib/utils";
@@ -32,6 +34,7 @@ const items = [
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
   useRealtimeInbox(true);
+  const { factor: contentZoom } = useContentZoom();
   const pathname = usePathname();
   const overview = useAdminOverview();
   const attentionCount = (attention?: "support" | "reports") =>
@@ -43,7 +46,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-bg-0 md:grid md:grid-cols-[15rem_minmax(0,1fr)]">
       <aside className="hidden min-h-screen border-r border-line bg-bg-1 md:flex md:flex-col">
-        <div className="px-5 pb-4 pt-6">
+        <div className="px-5 pb-4 pt-12">
           <div className="flex items-center justify-between gap-3">
             <Wordmark size={25} />
             <span className="label-mono rounded-chip border border-amber/35 bg-amber/10 px-2 py-1 text-[10px] text-amber">
@@ -96,7 +99,12 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           Private operations · v{APP_VERSION}
         </div>
       </aside>
-      <main className="min-w-0 px-4 pb-24 pt-5 sm:px-6 md:px-8 md:pb-8">
+      {/* Extra top padding clears desktop window chrome (and reads the same on web).
+          Content zoom scales this column only — the Admin rail stays put. */}
+      <main
+        className="min-w-0 px-4 pb-24 pt-12 sm:px-6 md:px-8 md:pb-8"
+        style={contentZoom !== 1 ? { zoom: contentZoom } : undefined}
+      >
         <div className="mb-4 md:hidden">
           <Link
             href="/"
@@ -140,6 +148,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           );
         })}
       </nav>
+      <ZoomControl placement="admin" />
     </div>
   );
 }
