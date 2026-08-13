@@ -4,6 +4,7 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-13
 
+- Fixed (v0.153.3): Hovering Artist for Stats (or Social for Scenes) still keeps that menu if you cut across the tab underneath — but switching Artist → Social is instant again. The old pause before the other menu could open is gone.
 - Fixed (v0.153.2 / Desktop v0.100.24): On TEMPO Desktop, **Open web app** opens your normal browser at the same page — it no longer opens a second TEMPO window. Launching the app again (Start menu, Dock, or installer) focuses the one that’s already running. Windows and Mac get this together; update after Desktop Release publishes both installers.
 - Fixed (v0.153.1): Asking TEMPO to also invite a collaborator as a full artist no longer claims you don’t own the track when you do.
 - Added (v0.153.0): On a track’s People tab you can **include a TEMPO artist** — someone you follow, or anyone you find by handle — or still **invite by email**. Included artists are on that track right away; email invites still use the one-time link.

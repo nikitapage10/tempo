@@ -43,14 +43,43 @@ export function flattenRailItems(items: readonly RailItem[]): RailLeaf[] {
 /** Grace to travel from the rail label into its own submenu. */
 export const RAIL_FLYOUT_CLOSE_MS = 180;
 /**
- * Pause before a neighboring submenu (Artist → Social) can take over.
- * Instant on first open; the delay only applies while another flyout is already up.
+ * Only used when a neighbor was blocked because the pointer was aiming at the
+ * open menu, then stopped. Intentional switches (down the rail) are instant.
  */
-export const RAIL_FLYOUT_SWITCH_MS = 650;
+export const RAIL_FLYOUT_SETTLE_MS = 90;
 
-export function flyoutOpenDelayMs(openId: string | null, nextId: string): number {
-  if (openId == null || openId === nextId) return 0;
-  return RAIL_FLYOUT_SWITCH_MS;
+export type FlyoutPoint = { x: number; y: number };
+export type FlyoutRect = { left: number; top: number; right: number; bottom: number };
+
+export function distanceToRect(p: FlyoutPoint, r: FlyoutRect): number {
+  const x = p.x < r.left ? r.left : p.x > r.right ? r.right : p.x;
+  const y = p.y < r.top ? r.top : p.y > r.bottom ? r.bottom : p.y;
+  return Math.hypot(p.x - x, p.y - y);
+}
+
+/**
+ * Keep the open submenu while the pointer is traveling into it (down-right
+ * toward Stats). Straight down the rail onto Social is not aim — switch now.
+ */
+export function isPointerAimingAtFlyout(
+  from: FlyoutPoint,
+  to: FlyoutPoint,
+  flyout: FlyoutRect
+): boolean {
+  if (
+    to.x >= flyout.left &&
+    to.x <= flyout.right &&
+    to.y >= flyout.top &&
+    to.y <= flyout.bottom
+  ) {
+    return true;
+  }
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  if (dx * dx + dy * dy < 4) return false;
+  // Panels open to the right of the rail. Vertical / leftward motion is a switch.
+  if (dx <= 1) return false;
+  return distanceToRect(to, flyout) < distanceToRect(from, flyout);
 }
 
 type RailFlyoutApi = {
@@ -58,6 +87,7 @@ type RailFlyoutApi = {
   enter: (id: string, opts?: { immediate?: boolean }) => void;
   leave: () => void;
   dismiss: () => void;
+  registerPanel: (id: string, el: HTMLElement | null) => void;
 };
 
 const RailFlyoutContext = React.createContext<RailFlyoutApi | null>(null);
@@ -69,39 +99,72 @@ function clearTimer(ref: React.MutableRefObject<number | null>) {
   }
 }
 
-/** One flyout at a time, with a switch pause so a diagonal to Stats does not open Social. */
+/** One flyout at a time. A diagonal toward Stats keeps Artist; Social is instant. */
 export function RailFlyoutScope({ children }: { children: React.ReactNode }) {
   const [openId, setOpenId] = React.useState<string | null>(null);
   const openIdRef = React.useRef<string | null>(null);
   openIdRef.current = openId;
-  const openTimer = React.useRef<number | null>(null);
+  const settleTimer = React.useRef<number | null>(null);
   const closeTimer = React.useRef<number | null>(null);
   const pendingId = React.useRef<string | null>(null);
+  const prevPoint = React.useRef<FlyoutPoint | null>(null);
+  const lastPoint = React.useRef<FlyoutPoint | null>(null);
+  const panels = React.useRef(new Map<string, HTMLElement>());
 
-  const enter = React.useCallback((id: string, opts?: { immediate?: boolean }) => {
-    clearTimer(closeTimer);
-    if (openIdRef.current === id) {
-      clearTimer(openTimer);
-      pendingId.current = null;
-      return;
-    }
-    const delay = opts?.immediate ? 0 : flyoutOpenDelayMs(openIdRef.current, id);
-    clearTimer(openTimer);
-    if (delay === 0) {
-      pendingId.current = null;
-      setOpenId(id);
-      return;
-    }
-    pendingId.current = id;
-    openTimer.current = window.setTimeout(() => {
-      pendingId.current = null;
-      openTimer.current = null;
-      setOpenId(id);
-    }, delay);
+  const openFlyoutRect = React.useCallback((): FlyoutRect | null => {
+    const id = openIdRef.current;
+    if (!id) return null;
+    const el = panels.current.get(id);
+    if (!el) return null;
+    const box = el.getBoundingClientRect();
+    return { left: box.left, top: box.top, right: box.right, bottom: box.bottom };
   }, []);
 
+  const isAimingAtOpen = React.useCallback(() => {
+    const from = prevPoint.current;
+    const to = lastPoint.current;
+    const rect = openFlyoutRect();
+    if (!from || !to || !rect) return false;
+    return isPointerAimingAtFlyout(from, to, rect);
+  }, [openFlyoutRect]);
+
+  const commit = React.useCallback((id: string) => {
+    clearTimer(settleTimer);
+    pendingId.current = null;
+    setOpenId(id);
+  }, []);
+
+  const waitForAimToClear = React.useCallback(
+    (id: string) => {
+      pendingId.current = id;
+      clearTimer(settleTimer);
+      settleTimer.current = window.setTimeout(() => {
+        settleTimer.current = null;
+        if (pendingId.current) commit(pendingId.current);
+      }, RAIL_FLYOUT_SETTLE_MS);
+    },
+    [commit]
+  );
+
+  const enter = React.useCallback(
+    (id: string, opts?: { immediate?: boolean }) => {
+      clearTimer(closeTimer);
+      if (openIdRef.current === id) {
+        clearTimer(settleTimer);
+        pendingId.current = null;
+        return;
+      }
+      if (opts?.immediate || !openIdRef.current || !isAimingAtOpen()) {
+        commit(id);
+        return;
+      }
+      waitForAimToClear(id);
+    },
+    [commit, isAimingAtOpen, waitForAimToClear]
+  );
+
   const leave = React.useCallback(() => {
-    clearTimer(openTimer);
+    clearTimer(settleTimer);
     pendingId.current = null;
     clearTimer(closeTimer);
     closeTimer.current = window.setTimeout(() => {
@@ -111,23 +174,44 @@ export function RailFlyoutScope({ children }: { children: React.ReactNode }) {
   }, []);
 
   const dismiss = React.useCallback(() => {
-    clearTimer(openTimer);
+    clearTimer(settleTimer);
     clearTimer(closeTimer);
     pendingId.current = null;
     setOpenId(null);
   }, []);
 
+  const registerPanel = React.useCallback((id: string, el: HTMLElement | null) => {
+    if (el) panels.current.set(id, el);
+    else panels.current.delete(id);
+  }, []);
+
+  React.useEffect(() => {
+    const onMove = (event: PointerEvent) => {
+      prevPoint.current = lastPoint.current;
+      lastPoint.current = { x: event.clientX, y: event.clientY };
+      const pending = pendingId.current;
+      if (!pending) return;
+      if (isAimingAtOpen()) {
+        waitForAimToClear(pending);
+        return;
+      }
+      commit(pending);
+    };
+    window.addEventListener("pointermove", onMove);
+    return () => window.removeEventListener("pointermove", onMove);
+  }, [commit, isAimingAtOpen, waitForAimToClear]);
+
   React.useEffect(
     () => () => {
-      clearTimer(openTimer);
+      clearTimer(settleTimer);
       clearTimer(closeTimer);
     },
     []
   );
 
   const api = React.useMemo(
-    () => ({ openId, enter, leave, dismiss }),
-    [openId, enter, leave, dismiss]
+    () => ({ openId, enter, leave, dismiss, registerPanel }),
+    [openId, enter, leave, dismiss, registerPanel]
   );
   return <RailFlyoutContext.Provider value={api}>{children}</RailFlyoutContext.Provider>;
 }
@@ -151,6 +235,13 @@ export function RailNavItem({
   const open = flyout ? flyout.openId === id : localOpen;
   const active = isRailItemActive(pathname, item);
   const Icon = item.icon;
+
+  const registerPanel = React.useCallback(
+    (el: HTMLElement | null) => {
+      flyout?.registerPanel(id, el);
+    },
+    [flyout, id]
+  );
 
   const cancelClose = React.useCallback(() => {
     if (closeTimer.current != null) {
@@ -253,6 +344,7 @@ export function RailNavItem({
       <AnimatePresence>
         {hasFlyout && open ? (
           <motion.div
+            ref={registerPanel}
             role="menu"
             aria-label={item.label}
             initial={reduceMotion ? false : { opacity: 0, x: -10, filter: "blur(6px)" }}
@@ -260,7 +352,7 @@ export function RailNavItem({
             exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: -8, filter: "blur(4px)" }}
             transition={{ duration: reduceMotion ? 0.12 : 0.22, ease: [0.22, 1, 0.36, 1] }}
             className="absolute left-full top-0 z-[90] pl-1.5"
-            onMouseEnter={() => openFlyout(false)}
+            onMouseEnter={() => openFlyout(true)}
             onMouseLeave={scheduleClose}
           >
             <div className="w-48 overflow-hidden rounded-card border border-line bg-bg-1 py-1 shadow-raise">
