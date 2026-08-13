@@ -186,7 +186,7 @@ export function ReleaseWorkspace({ project, tracks, tasks, onUpdateTask }: Relea
     <div className="space-y-4">
       <section className="rounded-card border border-line bg-bg-1 p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+          <h2 className="flex items-center gap-1.5 font-mono text-xs uppercase tracking-[0.08em] text-text-lo">
             <Rocket className="size-3.5 text-amber" />
             Release
           </h2>
@@ -243,7 +243,7 @@ export function ReleaseWorkspace({ project, tracks, tasks, onUpdateTask }: Relea
 
       <section className="rounded-card border border-line bg-bg-1 p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+          <h2 className="flex items-center gap-1.5 font-mono text-xs uppercase tracking-[0.08em] text-text-lo">
             <ListChecks className="size-3.5" />
             Readiness
             <span className="text-text-lo/70">
@@ -272,7 +272,7 @@ export function ReleaseWorkspace({ project, tracks, tasks, onUpdateTask }: Relea
 
       <section className="rounded-card border border-line bg-bg-1 p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+          <h2 className="font-mono text-xs uppercase tracking-[0.08em] text-text-lo">
             Track order &amp; status
           </h2>
           <Button type="button" size="sm" variant="ghost" onClick={exportCsv}>
@@ -301,7 +301,7 @@ export function ReleaseWorkspace({ project, tracks, tasks, onUpdateTask }: Relea
       </section>
 
       <section className="rounded-card border border-line bg-bg-1 p-4">
-        <h2 className="mb-3 font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+        <h2 className="mb-3 font-mono text-xs uppercase tracking-[0.08em] text-text-lo">
           Distribution
         </h2>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -357,14 +357,14 @@ export function ReleaseWorkspace({ project, tracks, tasks, onUpdateTask }: Relea
 
       {upcomingTasks.length > 0 ? (
         <section className="rounded-card border border-line bg-bg-1 p-4">
-          <h2 className="mb-3 font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+          <h2 className="mb-3 font-mono text-xs uppercase tracking-[0.08em] text-text-lo">
             Upcoming tasks
           </h2>
           <ul className="space-y-1.5">
             {upcomingTasks.map((t) => (
               <li key={t.id} className="flex items-center justify-between gap-2 text-sm">
                 <span className="text-text-hi">{t.title}</span>
-                <span className="font-mono text-[11px] text-text-lo">
+                <span className="font-mono text-xs text-text-lo">
                   {formatShortDate(t.due_date! + "T12:00:00")}
                 </span>
               </li>
@@ -374,7 +374,7 @@ export function ReleaseWorkspace({ project, tracks, tasks, onUpdateTask }: Relea
       ) : null}
 
       <section className="rounded-card border border-line bg-bg-1 p-4">
-        <h2 className="mb-3 flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+        <h2 className="mb-3 flex items-center gap-1.5 font-mono text-xs uppercase tracking-[0.08em] text-text-lo">
           <CalendarDays className="size-3.5" />
           Timeline
         </h2>
@@ -400,7 +400,7 @@ export function ReleaseWorkspace({ project, tracks, tasks, onUpdateTask }: Relea
                 <p className={cn("text-sm", ev.done ? "text-text-lo line-through" : "text-text-hi")}>
                   {ev.label}
                 </p>
-                <p className="font-mono text-[11px] text-text-lo">
+                <p className="font-mono text-xs text-text-lo">
                   {formatShortDate(ev.date.length > 10 ? ev.date : `${ev.date}T12:00:00`)} · {ev.kind}
                 </p>
               </li>
@@ -411,7 +411,7 @@ export function ReleaseWorkspace({ project, tracks, tasks, onUpdateTask }: Relea
 
       {postRelease ? (
         <section className="rounded-card border border-ok/30 bg-ok/5 p-4">
-          <h2 className="mb-2 flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.08em] text-ok">
+          <h2 className="mb-2 flex items-center gap-1.5 font-mono text-xs uppercase tracking-[0.08em] text-ok">
             Released
           </h2>
           <p className="text-sm text-text-hi">
@@ -499,7 +499,7 @@ function DateShiftDialog({
                   />
                   {task.title}
                 </span>
-                <span className="font-mono text-[11px] text-text-lo">
+                <span className="font-mono text-xs text-text-lo">
                   {task.due_date} → {newDueDate}
                 </span>
               </label>

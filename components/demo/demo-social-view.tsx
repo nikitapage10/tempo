@@ -67,7 +67,7 @@ export function DemoSocialView() {
             <p className="label-mono flex items-center gap-1.5">
               <Users className="size-3" /> Connected artists
             </p>
-            <span className="text-[11px] text-text-lo">
+            <span className="text-xs text-text-lo">
               {DEMO_SOCIAL_ARTISTS.length} examples
             </span>
           </div>
@@ -95,7 +95,7 @@ export function DemoSocialView() {
                   {artist.genres.map((genre) => (
                     <span
                       key={genre}
-                      className="rounded-chip border border-line px-2 py-1 text-[11px] text-text-lo"
+                      className="rounded-chip border border-line px-2 py-1 text-xs text-text-lo"
                     >
                       {genre}
                     </span>
@@ -109,7 +109,7 @@ export function DemoSocialView() {
         <aside className="panel min-w-0 overflow-hidden lg:sticky lg:top-4 lg:self-start">
           <div className="flex items-center justify-between gap-2 px-4 pt-4">
             <p className="label-mono">Feed preview</p>
-            <span className="text-[10px] uppercase tracking-[0.12em] text-amber">
+            <span className="text-[11px] uppercase tracking-[0.12em] text-amber">
               Demo only
             </span>
           </div>
@@ -129,7 +129,7 @@ export function DemoSocialView() {
                     <p className="truncate text-sm font-medium text-text-hi">
                       {post.author}
                     </p>
-                    <p className="text-[10px] uppercase tracking-[0.1em] text-text-lo">
+                    <p className="text-[11px] uppercase tracking-[0.1em] text-text-lo">
                       Sample feed card
                     </p>
                   </div>
@@ -139,7 +139,7 @@ export function DemoSocialView() {
                 </p>
                 {post.reply ? (
                   <div className="mt-3 border-l-2 border-ice/25 pl-3">
-                    <p className="text-[11px] font-medium text-ice">{post.reply.author}</p>
+                    <p className="text-xs font-medium text-ice">{post.reply.author}</p>
                     <p className="mt-1 text-xs leading-5 text-text-lo">{post.reply.body}</p>
                   </div>
                 ) : null}

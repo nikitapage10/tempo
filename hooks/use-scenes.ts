@@ -20,6 +20,7 @@ import {
   type UpdateSceneInput,
 } from "@/lib/api/scenes";
 import type { Scene } from "@/lib/types";
+import { resolveStorageImageUrl } from "@/lib/media/resolve-image-url";
 
 export function useScenesSchemaReady() {
   return useQuery({
@@ -32,7 +33,15 @@ export function useScenesSchemaReady() {
 export function useMyScenes() {
   return useQuery({
     queryKey: ["scenes", "mine"],
-    queryFn: fetchMyScenes,
+    queryFn: async () => {
+      const scenes = await fetchMyScenes();
+      const paths = scenes
+        .flatMap((s) => [s.banner_url, s.emblem_url])
+        .filter((url): url is string => !!url)
+        .slice(0, 40);
+      void Promise.allSettled(paths.map((path) => resolveStorageImageUrl(path)));
+      return scenes;
+    },
     staleTime: 15_000,
   });
 }

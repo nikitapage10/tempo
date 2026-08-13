@@ -65,5 +65,5 @@ export function DemoScenesView() {
 }
 
 function DemoEvent({ title, date, copy }: { title: string; date: string; copy: string }) {
-  return <article className="well rounded-card p-4"><span className="flex size-8 items-center justify-center rounded-input border border-line bg-bg-2 text-amber"><CalendarDays className="size-4" /></span><h2 className="mt-4 font-display text-lg font-semibold text-text-hi">{title}</h2><p className="mt-1 font-mono text-[11px] text-ice">{date}</p><p className="mt-3 text-sm leading-6 text-text-lo">{copy}</p><div className="mt-4 flex items-center gap-1.5 text-xs text-text-lo"><MessageCircle className="size-3.5" /><Music2 className="size-3.5" /> Demo gathering</div></article>;
+  return <article className="well rounded-card p-4"><span className="flex size-8 items-center justify-center rounded-input border border-line bg-bg-2 text-amber"><CalendarDays className="size-4" /></span><h2 className="mt-4 font-display text-lg font-semibold text-text-hi">{title}</h2><p className="mt-1 font-mono text-xs text-ice">{date}</p><p className="mt-3 text-sm leading-6 text-text-lo">{copy}</p><div className="mt-4 flex items-center gap-1.5 text-xs text-text-lo"><MessageCircle className="size-3.5" /><Music2 className="size-3.5" /> Demo gathering</div></article>;
 }

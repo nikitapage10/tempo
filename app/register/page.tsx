@@ -121,8 +121,9 @@ function RegisterForm() {
     }
 
     // ORIGIN comes before Import for a brand-new account; Origin itself hands
-    // off to /import when it finishes or is skipped.
-    router.replace(isSafeRedirect(redirectTo) ? redirectTo : "/origin");
+    // off to /import when it finishes or is skipped. Fresh invite signups land
+    // on /welcome first so the artist can choose browser vs desktop.
+    router.replace(isSafeRedirect(redirectTo) ? redirectTo : "/welcome");
     router.refresh();
   }
 
@@ -140,7 +141,7 @@ function RegisterForm() {
           <div>
             <label
               htmlFor="email"
-              className="mb-1.5 block font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo"
+              className="mb-1.5 block font-mono text-xs uppercase tracking-[0.08em] text-text-lo"
             >
               Email
             </label>
@@ -159,7 +160,7 @@ function RegisterForm() {
           <div>
             <label
               htmlFor="password"
-              className="mb-1.5 block font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo"
+              className="mb-1.5 block font-mono text-xs uppercase tracking-[0.08em] text-text-lo"
             >
               Password
             </label>
@@ -192,7 +193,7 @@ function RegisterForm() {
           <div>
             <label
               htmlFor="confirm"
-              className="mb-1.5 block font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo"
+              className="mb-1.5 block font-mono text-xs uppercase tracking-[0.08em] text-text-lo"
             >
               Confirm password
             </label>
@@ -211,7 +212,7 @@ function RegisterForm() {
           <div>
             <label
               htmlFor="invite"
-              className="mb-1.5 block font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo"
+              className="mb-1.5 block font-mono text-xs uppercase tracking-[0.08em] text-text-lo"
             >
               Invite code
             </label>

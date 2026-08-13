@@ -133,7 +133,7 @@ function ReadyView({ token, info }: { token: string; info: ReviewInfo }) {
             {info.track.artist_alias ? (
               <p className="text-sm text-text-lo">{info.track.artist_alias}</p>
             ) : null}
-            <p className="mt-1 font-mono text-[11px] text-amber">
+            <p className="mt-1 font-mono text-xs text-amber">
               v{info.version.version_no}
               {info.version.label ? ` — ${info.version.label}` : ""}
             </p>
@@ -160,7 +160,7 @@ function ReadyView({ token, info }: { token: string; info: ReviewInfo }) {
       </section>
 
       <section className="mt-4 rounded-card border border-line bg-bg-1 p-5">
-        <h2 className="mb-3 font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+        <h2 className="mb-3 font-mono text-xs uppercase tracking-[0.08em] text-text-lo">
           Comments
         </h2>
         <GuestComments
@@ -171,7 +171,7 @@ function ReadyView({ token, info }: { token: string; info: ReviewInfo }) {
         />
       </section>
 
-      <footer className="mt-8 text-center text-[11px] text-text-lo">
+      <footer className="mt-8 text-center text-xs text-text-lo">
         Shared via TEMPO — a private, time-limited review link.
       </footer>
     </div>
@@ -335,7 +335,7 @@ function DownloadButton({ token }: { token: string }) {
         <Download className="size-3.5" />
         {busy ? "Preparing…" : "Download"}
       </Button>
-      {error ? <p className="mt-1 text-[11px] text-warn">{error}</p> : null}
+      {error ? <p className="mt-1 text-xs text-warn">{error}</p> : null}
     </div>
   );
 }
@@ -397,7 +397,7 @@ function GuestComments({
             .filter((c) => !c.parent_id)
             .map((c) => (
               <li key={c.id} className="rounded-card border border-line bg-bg-2/40 p-3 text-sm">
-                <div className="flex flex-wrap items-center gap-2 font-mono text-[11px] text-text-lo">
+                <div className="flex flex-wrap items-center gap-2 font-mono text-xs text-text-lo">
                   {c.timestamp_sec != null ? (
                     <span className="rounded-chip bg-ice/15 px-1.5 py-0.5 text-ice">
                       {formatDuration(c.timestamp_sec)}

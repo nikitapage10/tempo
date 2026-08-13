@@ -2,13 +2,220 @@
 
 Plain-English history of what changed in TEMPO, newest first.
 
+## 2026-08-12
+
+- Fixed (v0.135.5): release checks now prepare their isolated test data before
+  running, catch new duplicate migration numbers before a change lands, and
+  run again after changes reach main. Two older shared numbers (080 and 058)
+  stay as they are — no database action needed.
+- Changed (v0.135.4): on Calendar’s day panel, **New event** sits right under the date instead of at the bottom of the panel.
+- Fixed (v0.135.3): Admin gets more space at the top of the page so header controls (like the analytics day toggle) sit clear of the window edge — same on the web and in TEMPO Desktop.
+- Added (v0.135.3): on TEMPO Desktop, Admin shows the same bottom zoom control as the studio, so ops pages can enlarge without leaving Admin.
+- Fixed (v0.135.2 / Desktop v0.100.22): Google and Microsoft sign-in on TEMPO Desktop hand back into the app again — the sign-in code is finished inside the desktop window (where it was started), Windows keeps the `tempo://` return link, and long Google URLs aren’t blocked from opening your browser. Re-download after Desktop Release publishes. Confirm Supabase allow-lists `https://mytempo.dev/auth/desktop-bridge`.
+- Fixed (v0.135.2): sign-in Tempo Theme plays every visit again on TEMPO Desktop (logout / reopen — it isn’t once-a-day; that’s only the boot film after you’re in), starts as soon as the track is ready in the shell, and on the web warms sooner so you’re not waiting ~6–7s while it fights the intro preload.
+- Fixed (v0.135.2): Origin’s Look preview keeps the banner logo fully visible (especially on desktop), and the Logo / Profile rows show a live thumbnail on the left.
+- Fixed (v0.135.2): Shape the Workspace during Origin import scrolls all the way down again — you can reach **Review what gets built** / continue instead of getting stuck mid-list.
+- Added (v0.135.2): on TEMPO Desktop, Origin shows the same bottom-left zoom control as the studio, so onboarding type can be enlarged without leaving the film.
+- Changed (v0.135.2): Bring your music in stops after the basics instead of endless follow-ups — once TEMPO has enough to draft a workspace, it tells you to hit **That’s everything** or keep adding detail only if you want.
+- Changed (v0.135.1): desktop work stays Mac and Windows together — same shell version, same capabilities; releases must publish both installers before we call them done.
+- Added (v0.135.0): Admin has a clear **Back to TEMPO** path back to your normal studio (Today).
+- Changed (v0.135.0 / Desktop v0.100.21): the live address is **https://mytempo.dev** — auth redirects, invites, PWA, and TEMPO Desktop now use that domain (the old Vercel address still works as a spare allowlist entry on desktop while installs update). Set `NEXT_PUBLIC_SITE_URL=https://mytempo.dev` in Vercel if it isn’t already. Re-download after Desktop Release publishes.
+- Changed (v0.134.2): the profile menu’s desktop link matches where you are — **Open web app** inside TEMPO Desktop, **Open TEMPO** in the browser when desktop is already installed, otherwise **Download TEMPO**. Platform admins also get an **Admin portal** item there.
+- Fixed (v0.134.2): artist banner photos on Today, Artist, and Stats read clearly again — they were washed almost black by a too-heavy glass overlay.
+- Fixed (v0.134.2): Calendar month days no longer grow tiny scrollbars inside the cell — titles clip cleanly, and extra items stay behind **+N more**.
+- Fixed (v0.134.1): the toolbar profile button is your artist photo (the same emblem as on Artist), filling the circle — not a blank icon chip.
+- Added (v0.134.0): a profile button next to Messages — open your artist profile, Stats, Settings, or Download TEMPO, or sign out, without digging through the rail.
+- Fixed (v0.133.1): desktop zoom no longer leaves a black strip beside the left rail, and menu text only grows with zoom when the wide labeled rail has room (the narrow icon rail stays put).
+- Changed (v0.133.0 / Desktop v0.100.20): the left rail stays usable when you shrink the window or zoom — below a wide breakpoint it collapses to icons (with initials for artist/space), and on TEMPO Desktop the zoom control / Ctrl± only scales the main workspace so nav buttons don’t shrink with the page. Re-download after Desktop Release publishes.
+- Changed (v0.132.0): search understands tempo more clearly — try `bpm 140`, `140 bpm`, or a range like `140-150` / `bpm 140 through 150` to list tracks in that speed, without every song that merely mentions “BPM” in a note crowding the results.
+- Fixed (v0.131.0 / Desktop v0.100.19): Google and Microsoft sign-in on TEMPO Desktop open in your normal browser again (so those providers stop blocking Electron as “not secure”), then hand you back into the app. Update the desktop app after Desktop Release publishes, and add `/auth/desktop-bridge` to the Supabase redirect allow-list (see OAuth setup notes).
+- Changed (v0.130.0): covers, logos, and scene banners show up faster in the browser — TEMPO keeps a Spectra / tint placeholder while art finishes loading, signs many track covers in one go instead of one-by-one, and quietly warms pictures after you sign in so the next page feels less empty. Scenes and Social art also skip a wasted failed sign before the working link.
+- Fixed (v0.129.1 / Desktop v0.100.18): on Mac, the new-message glass toast still shows when another app (or TEMPO) is in fullscreen. Re-download after Desktop Release publishes.
+- Fixed (v0.129.1): Calendar month view keeps the whole month on screen — day cells shrink to fit the window instead of pushing the last weeks off the bottom (especially in the Mac app).
+- Added (v0.129.0): on Tracks, Select is no longer delete-only — tick a few tracks and Group them (move into an existing album/EP bucket, ungroup, or make a new group from the selection), move them to a Stage, add them to a Project (or pull them off one), or still Delete with the same confirmation. Select all / Clear are right there in the bar.
+- Fixed (v0.128.2 / Desktop v0.100.17): the Mac app opens again — the last DMG left out a small helper file the shell needs to start. Re-download after Desktop Release publishes.
+- Fixed (v0.128.1 / Desktop v0.100.16): Blind A/B on TEMPO Desktop keeps your scrub position when you hit play — seeking a bounce no longer jumps back to the start. Update the desktop app after Desktop Release publishes.
+- Added (v0.128.0): on TEMPO Desktop, track covers, album/EP covers, scene banners/emblems, and artist logos quietly save into the local vault after you sign in — so the next time you open those screens they load from this computer instead of re-downloading every picture. (Web is unchanged.)
+- Fixed (v0.127.1): the quiet Tempo Theme bed on sign-in actually plays again — the soundtrack file was being blocked for people who weren’t signed in yet, so the page stayed silent. Click or type once on login / create-account to start it.
+
 ## 2026-08-11
 
-- Fixed (v0.112.1): release checks now prepare their isolated test data before
-  running, catch duplicate migration numbers reliably on every computer, and
-  run again after changes reach main. The unanswered-welcome migration is now
-  numbered 084 instead of sharing 080; no database action is needed if it was
-  already run.
+- Fixed (v0.127.0 / Desktop v0.100.15): Google and Microsoft sign-in complete inside TEMPO Desktop again (they were bouncing out to a browser tab, so the desktop app never got the session). The stuck Redirecting… lock on the login buttons is cleared if you cancel or come back. Re-download / update the desktop app after Desktop Release publishes.
+- Changed (v0.127.0): on TEMPO Desktop, wav/aiff bounces stay in their original format in the local vault; TEMPO only converts to mp3 when syncing the newest cloud copies (the cloud itself never stores wav). The browser upload path is unchanged — it still converts before upload.
+- Added (v0.127.0): sign-in carries a quiet Tempo Theme bed (starts on your first click or key), and the once-a-day boot film plays the same soft soundtrack underneath. New-message glass toasts follow your active artist's Cool / Warm colours. On Messages itself they stay quiet — the thread just updates (and jumps to the conversation when needed) instead of stacking another popup over the chat. On TEMPO Desktop, Social's globe shows about two-thirds of the sphere instead of nearly the whole ball. Scene banners, scene photos, and artist profile images keep a stable signed link for the session (and mirror into the desktop vault after the first open), so revisiting Social or Scenes doesn't re-download every picture from scratch.
+- Fixed (v0.126.1): Origin's Look preview gives the banner, logo, and profile room again - taller banner strip, logo contained inside it, profile sitting below so nothing looks cropped on desktop.
+- Fixed (v0.126.0 / Desktop v0.100.14): the Windows install wizard side panel and header now say TEMPO only - the leftover Desktop label in the artwork is gone. Re-download after Desktop Release finishes.
+- Fixed (v0.125.1): Download page glass reads more clearly over Spectra, and the Windows / Mac buttons no longer overlap.
+- Changed (v0.125.0): Download (Windows and Mac) always follows the newest public installer as soon as Desktop Release publishes it - no waiting on a separate web bump. The page shows that live version next to the buttons.
+- Changed (v0.124.0): the public Download page and invite email match TEMPO's glass look more closely. Invites now lead with **Download TEMPO**, with **Use the web app** as the quieter option, and still include the copy-paste links if a button fails. Download buttons also point at the fixed Windows installer (v0.100.13) without a browser quirk that could leave you on the broken build.
+- Fixed (v0.123.0 / Desktop v0.100.13): the Windows app opens again - the last installer left out a small helper file the app needs to start. Download and the install wizard now just say TEMPO (not TEMPO Desktop).
+- Added (v0.122.0): desktop installers stay current without a manual publish dance - when a native shell change lands on main, Desktop Release builds Windows and Mac for the public download channel; a daily catch-up fills in anything that was missed. Opening TEMPO Desktop still checks for the newest build on first launch (and every few hours after). Download links on the web prefer that newest public installer, with the older Windows beta as a backup if the channel is empty. The Download page works from an invite link without signing in first.
+- Fixed (v0.121.0): production build succeeds again - a glass message toast
+  helper was named like a React Hook and tripped the Vercel typecheck.
+- Changed (v0.121.0 / Desktop v0.100.12): the Windows desktop download now opens
+  a proper install wizard — welcome screen, choose the folder, optional
+  shortcuts, then Finish — with TEMPO’s dark Spectra look on the side panel.
+  Run **Desktop Release** to publish the new installer.
+- Fixed (v0.120.1): the browser now shows the same glass **new message**
+  popup as desktop (bottom-right, above Get help). The mistaken “TEMPO update
+  is available” card on the web was removed — updates stay a desktop-only
+  prompt.
+- Added (v0.120.0): **Download for Mac** is wired up — Desktop Release now
+  builds an unsigned universal Mac app on GitHub Actions (no Mac on your desk
+  required). Gatekeeper will warn the first time; right-click → Open. Run the
+  Desktop Release workflow once so the DMG is actually on the download channel.
+- Changed (v0.119.6): Social’s globe sits higher, and after the first spin it
+  gently tips so Australia and southern South America come into view before
+  settling back. The “Scroll to zoom · drag to spin” line is readable again.
+- Fixed (v0.119.5): Social only keeps the center **Join as TEMPO member**
+  button when you’re off the network — the header and Feed duplicates are
+  gone.
+- Added (v0.119.5): *(superseded by v0.120.1)* an earlier web “update available”
+  card was a misread of the request; message alerts are what belong on the web.
+- Fixed (v0.119.5): Download / Update TEMPO Desktop works again — the
+  GitHub release channel wasn’t published yet, so the link 404’d; it now
+  serves the working Windows installer from TEMPO itself.
+- Fixed (v0.119.4): Origin’s **The Story** chapter scrolls with the page —
+  you no longer have to hunt for a scroll box inside the window, and the odd
+  black bar under Edit is gone.
+- Fixed (v0.119.4): **Report a problem** opens again on web and desktop — the
+  dialog was stuck behind the workspace chrome.
+- Changed (v0.119.4): Origin’s Look preview is taller so banner, logo, and
+  profile image aren’t clipped in that little strip.
+- Fixed (v0.119.4): “The signal has a history now” keeps history and now on
+  one line instead of wrapping awkwardly.
+- Changed (v0.119.4): Origin’s Tempo Theme bed sits a little louder so it reads
+  under the film without taking over.
+- Changed (v0.119.4): invitation emails offer **Create your TEMPO account** or
+  **Download TEMPO** (no Windows-only wording), since you can create the
+  account in the desktop app too.
+- Fixed (v0.119.4): if TEMPO Desktop is registered on your account, the web
+  rail says **Open in desktop** instead of keeping you on Update when the
+  stored version is a little behind.
+- Fixed (v0.119.3): the web rail no longer keeps saying **Update TEMPO Desktop**
+  after you’ve already updated — it prefers a desktop install that can open
+  from the browser, and Update downloads the current public installer instead
+  of the old 0.100.6 copy.
+- Fixed (v0.119.2): Scene cards keep rounded corners while hovering — the lift
+  no longer flashes square edges, and the hover rim stays clipped to the card.
+- Fixed (v0.119.1): Board stage columns clip their glass blur to the rounded
+  corners again — no more little square jaggies around the edges.
+- Added (v0.119.0): Origin now has an optional **Look** step after direction —
+  pick a color scheme, logo, profile image, and banner before the story
+  appears. Continue or **Skip for now** both move on; picking a palette gently
+  fades Origin’s accents into those colors. The quiet bed under Origin is now
+  Tempo Theme.
+- Under the hood (v0.119.0): run migration **084** in the Supabase SQL editor
+  before relying on Origin look-step resume (`artist_origins.current_step`
+  gains `'look'`).
+- Fixed (v0.118.1): Origin’s story panels sit middle-left instead of the top
+  corner, and The Story is wider with its own scroll so long chapters aren’t
+  cut off.
+- Changed (v0.118.0): Scene cards keep the frosted footer, but the banner
+  now runs behind it to the bottom of the card — no hard cutoff between
+  artwork and glass.
+- Fixed (v0.118.0; Desktop v0.100.11): dictation on TEMPO Desktop shows your
+  words in the field while you’re still talking — it no longer waits until you
+  hit Stop to transcribe everything at once.
+- Fixed (v0.118.0): Board track cards light the same cursor-edge glow as
+  Tracks again — the column’s overflow clip had been killing that hover
+  animation.
+- Fixed (v0.118.0): Calendar month and day titles use Inter again, so years
+  like 2026 no longer show Jura’s dotted zeros.
+- Changed (v0.118.0): Today’s Needs attention list shows four tracks at a
+  time (was five), so the cover strip peeks in below without scrolling.
+- Fixed (v0.118.0; Desktop v0.100.11): the Windows Start / taskbar app icon
+  is the equalizer mark again — the previous icon file was corrupted and
+  could look like a broken cube instead of the light bars.
+- Changed (v0.118.0): Spotify players sit in a darker, more rounded frame so
+  light corners stop peeking around the embed. The Social globe sits a little
+  higher, and Scene cards use a frosted glass footer for the title and member
+  count.
+- Changed (v0.118.0; Desktop v0.100.11): desktop message toasts are larger,
+  use your artist Cool/Warm colours, and keep the Spectra side edge inside
+  the rounded corners.
+- Changed (v0.118.0): Board track cards no longer carry a permanent side
+  line — hover still lights the Spectra edge the same way as Tracks.
+- Changed (v0.118.0): the amber-to-ice side line is only on page heroes and
+  Board columns now — not on every glass tile or every track card — and it
+  stops short of rounded corners so it no longer sticks out past the curve.
+- Fixed (v0.118.0): glass widgets across the app share one soft drop shadow
+  instead of mixing a heavy panel shadow next to a nearly flat quiet tile —
+  Today’s Needs attention / Tasks due pair (and the same pattern elsewhere)
+  now sit at the same height.
+- Fixed (v0.118.0; Desktop v0.100.11): when TEMPO Desktop is in the tray or
+  behind other windows, a new message shows a glass toast in the bottom-right
+  with the preview text and a soft chime — including on Windows 11, where the
+  old popup could sit there invisibly.
+- Added (v0.118.0): after you accept an invite and create your account, TEMPO
+  asks whether you want to continue in the browser or download the Windows
+  desktop app — your call before Origin starts.
+- Changed (v0.118.0): major glass panels across the workspace pick up Origin’s
+  thin amber-to-ice side edge, so the regular app shares that prism edge light.
+- Fixed (v0.118.0): a long Origin story no longer runs off the bottom of the
+  screen — The Story scrolls inside its panel, and Edit stays reachable.
+- Fixed (v0.118.0; Desktop v0.100.11): dictation in Origin on TEMPO Desktop no
+  longer dies with “stopped unexpectedly” at the start — desktop uses the same
+  solid mic recording path as Messages instead of the browser speech shortcut
+  that fails inside Electron.
+- Fixed (v0.118.0; Desktop v0.100.11): the desktop tray / Start icon shows the
+  TEMPO emblem instead of a blank slot, and opening TEMPO again focuses the
+  window you already have instead of starting a second copy.
+- Changed (v0.118.0): if Desktop is already on your account, Download for
+  Windows becomes Open in desktop (or Update when the install is too old), on
+  both the rail and the Download page.
+
+- Changed (v0.117.0): everyday UI type sits a step larger — body copy, rail
+  links, buttons, labels, and the dense meta text under cards and counts —
+  so smaller lines are easier to read without changing the big titles.
+- Fixed (v0.116.2): dotted zeros are cleared across the rest of the app —
+  project stats, board counts, calendar figures, scene metrics, and other
+  number runs now use the same clean numeral face as the Today counts.
+- Changed (v0.116.1): Today’s banner lets more of the moving wash show
+  through, and Spectra behind it stays a little sharper so it reads as lines
+  again instead of smoke. Headers, rail links, and search sit a step heavier.
+  The dotted zeros on homepage counts were Jura’s — those numbers are back on
+  Inter so zeros stay clean.
+- Changed (v0.116.0): the whole workspace now uses one typeface — Jura —
+  including the rail, menus, body copy, and numbers. Hierarchy comes from
+  weight (lighter wordmark, regular UI, medium titles and labels, heavier
+  stats) instead of mixing families.
+- Fixed (v0.115.1): the Today / Artist / Stats heroes show Spectra moving
+  behind the glass again, without the stray bright line under the banner.
+  Custom banner photos stay more translucent so the frost and light still
+  read through.
+- Changed (v0.115.0): search and the notification buttons sit a little lower
+  under clearer top padding, stay clickable again, and sit closer to the page
+  content. Thin shader lines under page titles and along the rail return while
+  the soft video wash keeps running behind everything else. Custom banner
+  photos on Today, Artist, and Stats keep a frosted glass feel instead of
+  sealing the panel shut. The Social globe dissolves into the wash without a
+  hard black frame around it, and type stays on the two-family system — Jura
+  for titles, Inter for everything else.
+- Fixed (v0.114.2): the populated Tracks catalog now sits inside the same
+  darker glass depth as Calendar instead of placing its faint rows directly
+  over the moving wash. Group colours, cursor lighting, and row interactions
+  remain visible above the new surface.
+- Changed (v0.114.1): the persistent workspace background is one restrained
+  step darker, keeping its softened motion visible while letting content and
+  glass surfaces hold the foreground more firmly.
+- Changed (v0.114.0): Jura now gives titles and the TEMPO wordmark a lighter,
+  more elongated geometric voice in the Eurostile vein. Primary page titles
+  use a restrained medium weight and slightly more breathing room, while
+  Inter remains the workhorse for controls, body copy, and data.
+- Changed (v0.113.0): the softly moving background now stays mounted across
+  the whole signed-in workspace, so changing pages does not restart it. The
+  bright top-edge strip is gone, and the app's panels, quieter sections,
+  dialogs, Board columns, and shader-backed feature areas now share the
+  Calendar's translucent glass depth while retaining their own colour washes
+  and animated accents. The background is also a tiny bit darker, and the
+  legacy third font load has been removed so TEMPO's current two-font system
+  resolves consistently.
+- Changed (v0.112.2): the Calendar's moving background is a little clearer
+  and brighter, while staying soft enough to sit behind dates and controls.
+- Changed (v0.112.1): the Calendar's moving background is a touch brighter,
+  and it now continues cleanly behind the global search controls instead of
+  being covered by a dark rectangular strip.
 - Fixed (v0.112.0): the Calendar's video background is actually visible now.
   As shipped it was effectively invisible — the clip's brightness sat in a
   small hot spot dead centre, hidden behind the calendar panels, while the

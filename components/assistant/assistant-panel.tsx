@@ -251,7 +251,7 @@ export function AssistantPanel({
               {attachments.map((att, i) => (
                 <span
                   key={`${att.name}-${i}`}
-                  className="inline-flex max-w-full items-center gap-1 rounded-chip border border-line bg-bg-1 px-2 py-0.5 text-[11px] text-text-lo"
+                  className="inline-flex max-w-full items-center gap-1 rounded-chip border border-line bg-bg-1 px-2 py-0.5 text-xs text-text-lo"
                 >
                   <FileText className="size-3 shrink-0" />
                   <span className="truncate">{att.name}</span>
@@ -337,11 +337,11 @@ export function AssistantPanel({
             </button>
           </div>
           <div className="mt-2 flex items-start justify-between gap-2">
-            <p className="text-[11px] leading-relaxed text-text-lo">
+            <p className="text-xs leading-relaxed text-text-lo">
               What you type or attach here is sent to an AI service.
             </p>
             {showCounter ? (
-              <span className="shrink-0 font-mono text-[11px] text-text-lo">
+              <span className="shrink-0 font-mono text-xs text-text-lo">
                 {text.length}/{MAX_MESSAGE_CHARS}
               </span>
             ) : null}

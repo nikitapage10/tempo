@@ -270,7 +270,7 @@ function SortableSpaceRow({
           className="h-8 border-transparent bg-transparent px-1 focus-visible:border-line focus-visible:bg-bg-0"
         />
         {isActive ? (
-          <span className="shrink-0 font-mono text-[10px] uppercase tracking-wider text-amber">
+          <span className="shrink-0 font-mono text-[11px] uppercase tracking-wider text-amber">
             Active
           </span>
         ) : null}
@@ -293,7 +293,7 @@ function SortableSpaceRow({
             type="button"
             onClick={() => onFocusChange(space.id, opt.value)}
             className={cn(
-              "rounded-chip border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide transition-colors duration-hover",
+              "rounded-chip border px-2 py-0.5 font-mono text-[11px] uppercase tracking-wide transition-colors duration-hover",
               space.focus === opt.value
                 ? "border-ice/35 bg-ice/10 text-ice"
                 : "border-transparent text-text-lo hover:text-text-hi"

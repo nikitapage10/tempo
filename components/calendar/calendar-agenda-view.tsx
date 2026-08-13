@@ -58,7 +58,7 @@ export function CalendarAgendaView({
       <aside className="glass-quiet h-fit p-4 xl:sticky xl:top-24">
         <div className="mb-3 flex items-baseline justify-between gap-2">
           <h2 className="label-mono text-warn">Overdue</h2>
-          <span className="font-mono text-[11px] text-text-lo">{overdue.length}</span>
+          <span className="font-mono text-xs text-text-lo">{overdue.length}</span>
         </div>
         {overdue.length ? (
           <div className="space-y-2">
@@ -93,7 +93,7 @@ export function CalendarAgendaView({
               }}
             >
               <div className="mb-2 flex items-center gap-3">
-                <h2 className={cn("label-mono", date === today ? "text-ice" : "text-text-lo")}>{shortDateLabel(date, today)}</h2>
+                <h2 className={cn("font-data text-xs font-semibold uppercase tracking-[0.12em]", date === today ? "text-ice" : "text-text-lo")}>{shortDateLabel(date, today)}</h2>
                 <div className="h-px flex-1 bg-line" />
               </div>
               <div className="space-y-2">

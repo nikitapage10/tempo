@@ -284,7 +284,7 @@ export function CatalogBackupPanel() {
                       {snap.source === "manual" ? "manual" : "nightly"}
                     </span>
                   </p>
-                  <p className="mt-0.5 text-[11px] tabular-nums text-text-lo">
+                  <p className="mt-0.5 text-xs tabular-nums text-text-lo">
                     {snap.trackCount} tracks · {snap.projectCount} projects ·{" "}
                     {formatBytes(snap.bytes)}
                   </p>

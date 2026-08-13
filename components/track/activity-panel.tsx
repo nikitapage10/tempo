@@ -62,7 +62,7 @@ export function ActivityPanel({ trackId }: ActivityPanelProps) {
   return (
     <section className="rounded-card border border-line bg-bg-1 p-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+        <h2 className="font-mono text-xs uppercase tracking-[0.08em] text-text-lo">
           Activity
         </h2>
         <div className="flex flex-wrap gap-1">
@@ -72,7 +72,7 @@ export function ActivityPanel({ trackId }: ActivityPanelProps) {
               type="button"
               onClick={() => setFilter(f.value)}
               className={cn(
-                "rounded-chip px-2 py-1 text-[11px] transition-colors duration-hover",
+                "rounded-chip px-2 py-1 text-xs transition-colors duration-hover",
                 filter === f.value
                   ? "bg-ice/15 text-ice"
                   : "text-text-lo hover:bg-bg-2 hover:text-text-hi"
@@ -113,7 +113,7 @@ function ActivityRow({ event }: { event: ActivityEvent }) {
       <Icon className="mt-0.5 size-3.5 shrink-0 text-text-lo" />
       <div className="min-w-0 flex-1">
         <p className="text-sm text-text-hi">{event.summary}</p>
-        <p className="mt-0.5 font-mono text-[10px] text-text-lo">
+        <p className="mt-0.5 font-mono text-[11px] text-text-lo">
           {timeAgo(event.created_at)}
         </p>
       </div>

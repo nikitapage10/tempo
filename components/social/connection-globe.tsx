@@ -4,6 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import createGlobe from "cobe";
 import { ArtistMark } from "@/components/artists/artist-mark";
+import { isDesktopApp } from "@/lib/desktop/bridge";
 import { resolveLocation, scatter } from "@/lib/geo";
 import type { LatLon } from "@/lib/geo";
 import { cn } from "@/lib/utils";
@@ -49,15 +50,23 @@ type ConnectionGlobeProps = {
 const SPHERE_R = 0.8;
 /** Where the avatar floats, as a multiple of the sphere radius. */
 const PIN_R = 1.02;
-const THETA = 0.3;
+/** Resting tilt — northern mid-latitudes facing the viewer. */
+const BASE_THETA = 0.3;
+/** How far past BASE_THETA the auto-tilt leans toward the southern hemisphere. */
+const SOUTH_TIP = 0.72;
 /** Slow, ambient drift — about one rotation every ~3.5 minutes. */
 const BASE_SPEED = 0.0008;
-/** Fraction of the (square) canvas kept visible — a bit more than half, so
- *  the lower latitudes still read before the horizon fade takes over. */
-const VISIBLE = 0.58;
+/** Fraction of the (square) canvas kept visible on web. */
+const VISIBLE_WEB = 0.8;
+/** Desktop crops tighter — about two-thirds of the sphere, not a near-full ball. */
+const VISIBLE_DESKTOP = 0.66;
 /** Room above the sphere crest for the atmosphere glow — without this the
  *  halo clips against the container and reads as a flat square top. */
-const GLOW_PAD = 52;
+const GLOW_PAD = 28;
+/** Shift the square globe up within its crop so more of the planet reads
+ *  above the page fold (web). Desktop lifts less so the tighter crop holds. */
+const GLOBE_LIFT_WEB_PX = 56;
+const GLOBE_LIFT_DESKTOP_PX = 18;
 const ZOOM_MIN = 1;
 const ZOOM_MAX = 2.55;
 /** At zoom 1, pins closer than this (degrees) hide behind each other;
@@ -134,6 +143,19 @@ function cullDense(markers: GlobeMarker[], zoom: number): GlobeMarker[] {
     }
   }
   return shown;
+}
+
+/**
+ * After the first full horizontal lap, gently tip the axis toward the
+ * southern hemisphere (Australia, southern South America) and ease back
+ * to the resting tilt — one tip cycle every ~1.5 revolutions.
+ */
+function autoTiltTheta(phi: number): number {
+  const revolutions = phi / (Math.PI * 2);
+  if (revolutions < 1) return BASE_THETA;
+  const cycle = ((revolutions - 1) % 1.5) / 1.5;
+  const envelope = Math.sin(cycle * Math.PI);
+  return BASE_THETA + envelope * SOUTH_TIP;
 }
 
 function clampZoom(z: number) {
@@ -299,7 +321,7 @@ export function ConnectionGlobe({
       width: size * 2,
       height: size * 2,
       phi: 0,
-      theta: THETA,
+      theta: BASE_THETA,
       dark: 1,
       // diffuse 0 = no lambert shading on the sphere body, so the "water"
       // between dots renders flat black instead of a lit blue-gray ball.
@@ -348,10 +370,11 @@ export function ConnectionGlobe({
         phiRef.current = phi;
       }
 
+      const restTheta = reduce ? BASE_THETA : autoTiltTheta(phi);
       const effPhi = phi + dragPhiOffset.current + dragLive.current.phi;
       const effTheta = Math.max(
         -1.4,
-        Math.min(1.4, THETA + dragThetaOffset.current + dragLive.current.theta)
+        Math.min(1.4, restTheta + dragThetaOffset.current + dragLive.current.theta)
       );
 
       globe.update({ phi: effPhi, theta: effTheta });
@@ -404,43 +427,50 @@ export function ConnectionGlobe({
     });
   }, [allMarkers]);
 
+  const desktopShell = isDesktopApp();
+  const visibleFraction = desktopShell ? VISIBLE_DESKTOP : VISIBLE_WEB;
+  const globeLiftPx = desktopShell ? GLOBE_LIFT_DESKTOP_PX : GLOBE_LIFT_WEB_PX;
+
   function open(m: GlobeMarker) {
     if (m.handle) router.push(`/artist/${m.handle}`);
     else if (m.personId) onOpenPerson?.(m.personId);
   }
 
-  const height = GLOW_PAD + Math.round(size * VISIBLE);
+  const height = GLOW_PAD + Math.round(size * visibleFraction);
 
   return (
     <div
       ref={rootRef}
-      className={cn("relative w-full overflow-hidden touch-none select-none", className)}
-      style={{
-        height: height || undefined,
-        // Gentle falloff toward the crop — keeps most of the visible disc
-        // solid, then softens only near the bottom edge.
-        WebkitMaskImage:
-          "linear-gradient(to bottom, #000 0%, #000 58%, rgba(0,0,0,0.75) 82%, transparent 100%)",
-        maskImage:
-          "linear-gradient(to bottom, #000 0%, #000 58%, rgba(0,0,0,0.75) 82%, transparent 100%)",
-      }}
+      className={cn("relative w-full touch-none select-none", className)}
+      style={{ height: height || undefined }}
       onMouseLeave={() => setHoverId(null)}
       onPointerMove={onPointerMoveDrag}
       onPointerDown={onPointerDown}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
     >
+      {/* Mask only the globe wash — the scroll/drag caption stays outside so
+          the soft dissolve can't wipe its contrast into the page background. */}
       <div
-        className="absolute left-1/2"
+        className="absolute inset-0 overflow-hidden"
         style={{
-          width: size,
-          height: size,
-          top: GLOW_PAD,
-          cursor: dragging ? "grabbing" : "grab",
-          transform: `translateX(-50%) scale(${zoom})`,
-          transformOrigin: "50% 42%",
+          WebkitMaskImage:
+            "radial-gradient(ellipse 92% 88% at 50% 22%, #000 42%, rgba(0,0,0,0.85) 58%, rgba(0,0,0,0.35) 72%, transparent 82%)",
+          maskImage:
+            "radial-gradient(ellipse 92% 88% at 50% 22%, #000 42%, rgba(0,0,0,0.85) 58%, rgba(0,0,0,0.35) 72%, transparent 82%)",
         }}
       >
+        <div
+          className="absolute left-1/2"
+          style={{
+            width: size,
+            height: size,
+            top: GLOW_PAD,
+            cursor: dragging ? "grabbing" : "grab",
+            transform: `translateX(-50%) translateY(-${globeLiftPx}px) scale(${zoom})`,
+            transformOrigin: "50% 36%",
+          }}
+        >
         {/* Atmosphere — soft outer glow only. Box-shadow on a circle that
             matches the sphere disc, sitting BEHIND the clipped globe so
             nothing additive lands on the planet face and there's no rim
@@ -496,13 +526,12 @@ export function ConnectionGlobe({
             aria-hidden
           />
 
-          {/* Stable inner edge. The WebGL canvas can otherwise expose a dark
-              antialias pixel at different longitudes.
-              Divide by zoom so this cap stays visually one pixel wide. */}
+          {/* Soften the limb without a hard inset ring — a dark hairline was
+              reading as a rectangular frame once the page wash went translucent. */}
           <div
             className="pointer-events-none absolute inset-0 rounded-full"
             style={{
-              boxShadow: `inset 0 0 0 ${1.25 / zoom}px rgb(27 30 42)`,
+              boxShadow: `inset 0 0 ${14 / zoom}px ${2 / zoom}px rgb(14 15 21 / 0.55)`,
             }}
             aria-hidden
           />
@@ -564,29 +593,31 @@ export function ConnectionGlobe({
                       rendered fully transparent. */}
                   <div className="rounded-card border border-line bg-bg-1 p-2.5 text-left shadow-e3">
                     <p className="truncate text-sm font-medium text-text-hi">{m.name}</p>
-                    <p className="truncate text-[11px] text-text-lo">{m.detail}</p>
-                    <p className="mt-1 truncate text-[11px] text-ice">{m.label}</p>
+                    <p className="truncate text-xs text-text-lo">{m.detail}</p>
+                    <p className="mt-1 truncate text-xs text-ice">{m.label}</p>
                   </div>
                 </div>
               ) : null}
             </div>
           );
         })}
+        </div>
+
+        {/* Horizon scrim — soft alpha only, so it blends into the video wash
+            instead of painting an opaque black rectangle under the globe. */}
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%]"
+          style={{
+            background:
+              "linear-gradient(to top, rgb(10 10 12 / 0.35) 0%, rgb(10 10 12 / 0.12) 45%, transparent 100%)",
+          }}
+          aria-hidden
+        />
       </div>
 
-      {/* Horizon scrim — light dissolve near the crop, not a heavy wipe. */}
-      <div
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%]"
-        style={{
-          background:
-            "linear-gradient(to top, var(--bg-0) 0%, transparent 100%)",
-        }}
-        aria-hidden
-      />
-
       {allMarkers.length > 0 ? (
-        <div className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center gap-3 px-3">
-          <p className="text-[10px] text-text-lo">
+        <div className="pointer-events-none absolute inset-x-0 bottom-1 z-10 flex justify-center gap-3 px-3">
+          <p className="rounded-full bg-bg-0/55 px-2.5 py-0.5 text-[11px] text-text-hi/80 backdrop-blur-sm">
             {culled
               ? "Scroll to zoom — denser areas open up as you get closer"
               : zoom > 1.04
@@ -596,7 +627,7 @@ export function ConnectionGlobe({
           {zoom > 1.04 ? (
             <button
               type="button"
-              className="pointer-events-auto text-[10px] text-ice hover:underline"
+              className="pointer-events-auto rounded-full bg-bg-0/55 px-2.5 py-0.5 text-[11px] text-ice backdrop-blur-sm hover:underline"
               onClick={() => {
                 zoomRef.current = ZOOM_MIN;
                 setZoom(ZOOM_MIN);

@@ -131,7 +131,7 @@ export default function SceneSettingsPage() {
             {scene.banner_url ? (
               <SignedImage path={scene.banner_url} alt="" className="size-full object-cover" />
             ) : (
-              <div className="flex size-full items-center justify-center text-[11px] text-text-lo">
+              <div className="flex size-full items-center justify-center text-xs text-text-lo">
                 No banner
               </div>
             )}

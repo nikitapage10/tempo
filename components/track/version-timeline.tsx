@@ -201,13 +201,13 @@ export function VersionTimeline({
   return (
     <section className="panel p-5">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+        <h2 className="font-mono text-xs uppercase tracking-[0.08em] text-text-lo">
           Versions
         </h2>
         {versions.length >= 2 ? (
           <button
             type="button"
-            className="flex items-center gap-1 text-[11px] text-ice hover:underline"
+            className="flex items-center gap-1 text-xs text-ice hover:underline"
             onClick={() => setCompareIds([])}
           >
             <GitCompare className="size-3.5" />
@@ -444,7 +444,7 @@ function VaultBadge({ version }: { version: Version }) {
   if (desktop) {
     if (hasLocal) {
       return (
-        <span className="inline-flex items-center gap-1 rounded-chip border border-ok/30 bg-ok/10 px-1.5 py-0.5 font-mono text-[10px] text-ok">
+        <span className="inline-flex items-center gap-1 rounded-chip border border-ok/30 bg-ok/10 px-1.5 py-0.5 font-mono text-[11px] text-ok">
           <HardDrive className="size-2.5" />
           On this computer
         </span>
@@ -452,7 +452,7 @@ function VaultBadge({ version }: { version: Version }) {
     }
     if (version.cloud_state === "local_only") {
       return (
-        <span className="inline-flex items-center gap-1 rounded-chip border border-line bg-bg-2 px-1.5 py-0.5 font-mono text-[10px] text-text-lo">
+        <span className="inline-flex items-center gap-1 rounded-chip border border-line bg-bg-2 px-1.5 py-0.5 font-mono text-[11px] text-text-lo">
           <MonitorSmartphone className="size-2.5" />
           On another computer
         </span>
@@ -464,7 +464,7 @@ function VaultBadge({ version }: { version: Version }) {
   if (version.cloud_state === "local_only") {
     return (
       <span
-        className="inline-flex items-center gap-1 rounded-chip border border-line bg-bg-2 px-1.5 py-0.5 font-mono text-[10px] text-text-lo"
+        className="inline-flex items-center gap-1 rounded-chip border border-line bg-bg-2 px-1.5 py-0.5 font-mono text-[11px] text-text-lo"
         title="This bounce is only on a desktop computer's local vault — open TEMPO Desktop on that device to play it."
       >
         <MonitorSmartphone className="size-2.5" />
@@ -560,12 +560,12 @@ function VersionRow({
                 </span>
               ) : null}
               {v.is_current ? (
-                <span className="font-mono text-[10px] uppercase tracking-wider text-amber">
+                <span className="font-mono text-[11px] uppercase tracking-wider text-amber">
                   current
                 </span>
               ) : null}
               {v.is_pinned ? (
-                <span className="inline-flex items-center gap-1 rounded-chip border border-ice/30 bg-ice/10 px-1.5 py-0.5 font-mono text-[10px] text-ice">
+                <span className="inline-flex items-center gap-1 rounded-chip border border-ice/30 bg-ice/10 px-1.5 py-0.5 font-mono text-[11px] text-ice">
                   <Pin className="size-2.5" />
                   {milestoneLabel || "Milestone"}
                 </span>
@@ -580,7 +580,7 @@ function VersionRow({
             {v.changelog ? (
               <p className="mt-0.5 text-xs text-text-lo">{v.changelog}</p>
             ) : null}
-            <p className="mt-1 flex flex-wrap items-center gap-x-1.5 font-mono text-[11px] text-text-lo">
+            <p className="mt-1 flex flex-wrap items-center gap-x-1.5 font-mono text-xs text-text-lo">
               <span>{formatShortDate(v.created_at)}</span>
               <span>·</span>
               <span>{formatFileSize(v.file_size)}</span>
@@ -631,7 +631,7 @@ function VersionRow({
           </div>
           <div className="flex flex-wrap items-center gap-1">
             <label
-              className="mr-1 flex items-center gap-1 text-[10px] text-text-lo"
+              className="mr-1 flex items-center gap-1 text-[11px] text-text-lo"
               title="Select for blind A/B"
             >
               <input
@@ -649,7 +649,7 @@ function VersionRow({
             {!v.is_current && canManage ? (
               <button
                 type="button"
-                className="rounded-input px-2 py-1 text-[11px] text-ice hover:bg-ice/10"
+                className="rounded-input px-2 py-1 text-xs text-ice hover:bg-ice/10"
                 onClick={onSetCurrent}
               >
                 Set current
@@ -672,7 +672,7 @@ function VersionRow({
             {canManage ? (
               <button
                 type="button"
-                className="rounded-input px-2 py-1 text-[11px] text-text-lo hover:bg-bg-1 hover:text-ice"
+                className="rounded-input px-2 py-1 text-xs text-text-lo hover:bg-bg-1 hover:text-ice"
                 onClick={onDecide}
               >
                 Decide
@@ -714,7 +714,7 @@ function DecisionChip({
         <span className="truncate text-text-lo">— {decision.note}</span>
       ) : null}
       {showDate ? (
-        <span className="font-mono text-[10px] text-text-lo">
+        <span className="font-mono text-[11px] text-text-lo">
           {formatShortDate(decision.created_at)}
         </span>
       ) : null}
@@ -953,7 +953,7 @@ function DecisionDialog({
 
           {log.length > 0 ? (
             <div className="mt-4 border-t border-line pt-3">
-              <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+              <p className="mb-2 font-mono text-xs uppercase tracking-[0.08em] text-text-lo">
                 Decision log for v{version.version_no}
               </p>
               <ul className="space-y-1.5">

@@ -72,12 +72,17 @@ const config: Config = {
         panel: "var(--radius-panel)",
       },
       fontFamily: {
-        // Two-typeface system: Space Grotesk gives titles distinctness,
-        // Inter carries everything else (body copy and data alike — the
-        // former JetBrains Mono role folded into Inter to keep it to two).
-        display: ["var(--font-space-grotesk)", "sans-serif"],
-        sans: ["var(--font-inter)", "sans-serif"],
+        // Jura for UI; Inter remains available for clean numerals via
+        // .stat-value / .font-data (Jura's zero has a centre dot).
+        display: ["var(--font-jura)", "sans-serif"],
+        sans: ["var(--font-jura)", "sans-serif"],
         mono: ["var(--font-inter)", "sans-serif"],
+      },
+      // Readability pass — lift the dense UI sizes one step. Titles stay on
+      // the existing text-xl / text-2xl / text-3xl scale.
+      fontSize: {
+        xs: ["0.8125rem", { lineHeight: "1.15rem" }], // 13px (was 12)
+        sm: ["0.9375rem", { lineHeight: "1.375rem" }], // 15px (was 14)
       },
       boxShadow: {
         raise: "0 8px 24px rgba(0, 0, 0, 0.4)",

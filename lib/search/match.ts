@@ -8,6 +8,7 @@ import type {
   SearchTask,
   SearchTrack,
 } from "@/lib/api/search-catalog";
+import { parseSearchQuery, type ParsedSearchQuery } from "@/lib/search/parse-query";
 import type { Person } from "@/lib/types";
 
 export type SearchCategory =
@@ -274,60 +275,67 @@ function scoreTokens(
   return { score: score * (hits / tokens.length), matched };
 }
 
-function parseBpmQuery(raw: string): number | null {
-  const n = normalize(raw);
-  const bpmSuffix = n.match(/^(\d+(?:\.\d+)?)\s*bpm$/);
-  if (bpmSuffix) return Number(bpmSuffix[1]);
-  if (/^\d{2,3}(?:\.\d)?$/.test(n)) return Number(n);
-  return null;
-}
-
-function trackHit(t: SearchTrack, q: string, tokens: string[]): SearchHit | null {
-  const bpmQ = parseBpmQuery(q);
+function trackHit(t: SearchTrack, parsed: ParsedSearchQuery): SearchHit | null {
   let score = 0;
   const reasons: string[] = [];
 
-  if (bpmQ != null && t.bpm != null) {
-    const diff = Math.abs(t.bpm - bpmQ);
-    if (diff < 0.05) {
+  if (parsed.bpm) {
+    if (t.bpm == null) return null;
+    if (parsed.bpm.kind === "exact") {
+      const diff = Math.abs(t.bpm - parsed.bpm.bpm);
+      if (diff < 0.05) {
+        score += 120;
+        reasons.push(`${t.bpm} BPM`);
+      } else if (diff <= 2) {
+        score += 70;
+        reasons.push(`~${t.bpm} BPM`);
+      } else {
+        return null;
+      }
+    } else if (t.bpm >= parsed.bpm.min && t.bpm <= parsed.bpm.max) {
       score += 120;
       reasons.push(`${t.bpm} BPM`);
-    } else if (diff <= 2) {
-      score += 70;
-      reasons.push(`${t.bpm} BPM`);
+    } else {
+      return null;
     }
   }
 
-  const { score: fieldScore } = scoreTokens(
-    [
-      { value: t.title, weight: 40 },
-      { value: t.artist_alias, weight: 28 },
-      { value: t.genre, weight: 18 },
-      { value: t.musical_key, weight: 22 },
-      { value: t.destination, weight: 14 },
-      { value: t.type, weight: 12 },
-      { value: t.momentum, weight: 10 },
-      { value: t.next_action, weight: 16 },
-      { value: t.waiting_on, weight: 16 },
-      { value: t.blocked_reason, weight: 14 },
-      { value: t.notes, weight: 10 },
-      { value: t.space_name, weight: 8 },
-      { value: t.tags.join(" "), weight: 16 },
-      {
-        value: t.bpm != null ? `${t.bpm} bpm ${t.bpm}` : null,
-        weight: 24,
-      },
-    ],
-    tokens
-  );
-  score += fieldScore;
+  const tokens = parsed.textTokens;
+  if (tokens.length > 0) {
+    const { score: fieldScore } = scoreTokens(
+      [
+        { value: t.title, weight: 40 },
+        { value: t.artist_alias, weight: 28 },
+        { value: t.genre, weight: 18 },
+        { value: t.musical_key, weight: 22 },
+        { value: t.destination, weight: 14 },
+        { value: t.type, weight: 12 },
+        { value: t.momentum, weight: 10 },
+        { value: t.next_action, weight: 16 },
+        { value: t.waiting_on, weight: 16 },
+        { value: t.blocked_reason, weight: 14 },
+        { value: t.notes, weight: 10 },
+        { value: t.space_name, weight: 8 },
+        { value: t.tags.join(" "), weight: 16 },
+        // Number only — never the word "bpm", so lone "bpm" can't match every
+        // timed track. Structured BPM queries use parsed.bpm above.
+        { value: t.bpm != null ? String(t.bpm) : null, weight: 24 },
+      ],
+      tokens
+    );
+    if (fieldScore <= 0) return null;
+    score += fieldScore;
 
-  // Tag exact token hits
-  for (const tag of t.tags) {
-    if (tokens.some((tok) => normalize(tag) === tok || includes(tag, tok))) {
-      score += 18;
-      if (!reasons.includes(`#${tag}`)) reasons.push(`#${tag}`);
+    for (const tag of t.tags) {
+      if (
+        tokens.some((tok) => normalize(tag) === tok || includes(tag, tok))
+      ) {
+        score += 18;
+        if (!reasons.includes(`#${tag}`)) reasons.push(`#${tag}`);
+      }
     }
+  } else if (!parsed.bpm) {
+    return null;
   }
 
   if (score <= 0) return null;
@@ -342,7 +350,9 @@ function trackHit(t: SearchTrack, q: string, tokens: string[]): SearchHit | null
 
   const subtitle =
     reasons.length > 0
-      ? [...reasons.slice(0, 2), ...meta.filter((m) => !reasons.includes(m))].slice(0, 4).join(" · ")
+      ? [...reasons.slice(0, 2), ...meta.filter((m) => !reasons.includes(m))]
+          .slice(0, 4)
+          .join(" · ")
       : meta.join(" · ") || t.type;
 
   return {
@@ -635,11 +645,12 @@ export function matchSearchCatalog(
   query: string,
   opts: MatchOptions = {}
 ): SearchHit[] {
-  const q = normalize(query);
-  if (q.length < 1) return [];
+  const parsed = parseSearchQuery(query);
+  if (!parsed.normalized) return [];
 
-  const tokens = q.split(" ").filter(Boolean);
-  if (!tokens.length) return [];
+  const tokens = parsed.textTokens;
+  // BPM-only queries still search tracks; other categories need text tokens.
+  if (!tokens.length && !parsed.bpm) return [];
 
   const category = opts.category ?? "all";
   const hits: SearchHit[] = [];
@@ -648,68 +659,70 @@ export function matchSearchCatalog(
 
   if (allow("tracks")) {
     for (const t of catalog.tracks) {
-      const hit = trackHit(t, q, tokens);
+      const hit = trackHit(t, parsed);
       if (hit) hits.push(hit);
     }
   }
-  if (allow("projects")) {
-    for (const p of catalog.projects) {
-      const hit = projectHit(p, tokens);
-      if (hit) hits.push(hit);
+  if (tokens.length > 0) {
+    if (allow("projects")) {
+      for (const p of catalog.projects) {
+        const hit = projectHit(p, tokens);
+        if (hit) hits.push(hit);
+      }
     }
-  }
-  if (allow("tasks")) {
-    for (const t of catalog.tasks) {
-      const hit = taskHit(t, tokens);
-      if (hit) hits.push(hit);
+    if (allow("tasks")) {
+      for (const t of catalog.tasks) {
+        const hit = taskHit(t, tokens);
+        if (hit) hits.push(hit);
+      }
     }
-  }
-  if (allow("people")) {
-    for (const p of catalog.people) {
-      const hit = personHit(p, tokens);
-      if (hit) hits.push(hit);
+    if (allow("people")) {
+      for (const p of catalog.people) {
+        const hit = personHit(p, tokens);
+        if (hit) hits.push(hit);
+      }
     }
-  }
-  if (allow("messages")) {
-    for (const thread of catalog.messages ?? []) {
-      const hit = messageHit(thread, tokens);
-      if (hit) hits.push(hit);
+    if (allow("messages")) {
+      for (const thread of catalog.messages ?? []) {
+        const hit = messageHit(thread, tokens);
+        if (hit) hits.push(hit);
+      }
     }
-  }
-  if (allow("posts")) {
-    for (const p of catalog.posts) {
-      const hit = postHit(p, tokens);
-      if (hit) hits.push(hit);
+    if (allow("posts")) {
+      for (const p of catalog.posts) {
+        const hit = postHit(p, tokens);
+        if (hit) hits.push(hit);
+      }
     }
-  }
-  if (allow("scenes")) {
-    for (const sc of catalog.scenes ?? []) {
-      const hit = sceneHit(sc, tokens);
-      if (hit) hits.push(hit);
+    if (allow("scenes")) {
+      for (const sc of catalog.scenes ?? []) {
+        const hit = sceneHit(sc, tokens);
+        if (hit) hits.push(hit);
+      }
     }
-  }
-  if (allow("notes")) {
-    for (const n of catalog.notes) {
-      const hit = noteHit(n, tokens);
-      if (hit) hits.push(hit);
+    if (allow("notes")) {
+      for (const n of catalog.notes) {
+        const hit = noteHit(n, tokens);
+        if (hit) hits.push(hit);
+      }
     }
-  }
-  if (allow("stages")) {
-    for (const s of catalog.stages) {
-      const hit = stageHit(s, tokens);
-      if (hit) hits.push(hit);
+    if (allow("stages")) {
+      for (const s of catalog.stages) {
+        const hit = stageHit(s, tokens);
+        if (hit) hits.push(hit);
+      }
     }
-  }
-  if (allow("spaces")) {
-    for (const sp of catalog.spaces) {
-      const hit = spaceHit(sp, tokens);
-      if (hit) hits.push(hit);
+    if (allow("spaces")) {
+      for (const sp of catalog.spaces) {
+        const hit = spaceHit(sp, tokens);
+        if (hit) hits.push(hit);
+      }
     }
-  }
-  if (allow("pages")) {
-    for (const page of SEARCH_PAGES) {
-      const hit = pageHit(page, tokens);
-      if (hit) hits.push(hit);
+    if (allow("pages")) {
+      for (const page of SEARCH_PAGES) {
+        const hit = pageHit(page, tokens);
+        if (hit) hits.push(hit);
+      }
     }
   }
 

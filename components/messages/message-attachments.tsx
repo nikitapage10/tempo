@@ -40,7 +40,7 @@ function VoiceAttachment({ attachment, url }: { attachment: MessageAttachment; u
     if (audioRef.current) audioRef.current.playbackRate = next;
   }
   return <div className="rounded-input border border-line bg-bg-0/30 p-2">
-    <div className="mb-1 flex items-center gap-2"><p className="min-w-0 flex-1 truncate text-[10px] text-text-lo">{attachment.name}</p>{attachment.duration_ms ? <span className="text-[10px] tabular-nums text-text-lo">{Math.floor(attachment.duration_ms / 60000)}:{String(Math.floor((attachment.duration_ms % 60000) / 1000)).padStart(2, "0")}</span> : null}<button type="button" onClick={cycleRate} className="rounded-chip border border-line px-1.5 py-0.5 text-[10px] text-ice">{rate}x</button></div>
+    <div className="mb-1 flex items-center gap-2"><p className="min-w-0 flex-1 truncate text-[11px] text-text-lo">{attachment.name}</p>{attachment.duration_ms ? <span className="text-[11px] tabular-nums text-text-lo">{Math.floor(attachment.duration_ms / 60000)}:{String(Math.floor((attachment.duration_ms % 60000) / 1000)).padStart(2, "0")}</span> : null}<button type="button" onClick={cycleRate} className="rounded-chip border border-line px-1.5 py-0.5 text-[11px] text-ice">{rate}x</button></div>
     {attachment.waveform?.length ? <div aria-hidden className="mb-1 flex h-4 items-center gap-px overflow-hidden">{attachment.waveform.map((peak, index) => <span key={index} className="w-0.5 rounded-full bg-ice/50" style={{ height: `${Math.max(2, peak * 16)}px` }}/>)}</div> : null}
     <audio ref={audioRef} controls preload="none" src={url} className="h-8 w-full"/>
   </div>;

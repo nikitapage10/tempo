@@ -28,11 +28,17 @@ export type DesktopBridge = {
     setEnabled: (next: boolean) => Promise<void>;
     getEnabled: () => Promise<boolean>;
   };
+  /** Optional until every pre–system-browser-OAuth install has updated. */
+  openExternal?: (url: string) => Promise<boolean>;
   zoom: {
     in: () => Promise<number>;
     out: () => Promise<number>;
     reset: () => Promise<number>;
     get: () => Promise<number>;
+    /** Optional: shell Ctrl/Cmd +/- nudges content zoom (CSS on main). */
+    onNudge?: (callback: (delta: number) => void) => () => void;
+    /** Force Chromium page zoom back to 1 so only content CSS zoom applies. */
+    resetNative?: () => Promise<number>;
   };
   /** Optional until every pre-banner desktop install has updated. */
   updates?: {
@@ -47,6 +53,8 @@ export type DesktopBridge = {
       title: string;
       body?: string | null;
       url?: string | null;
+      ice?: string | null;
+      amber?: string | null;
     }) => Promise<boolean>;
     onOpen: (callback: (url: string) => void) => () => void;
   };
@@ -195,6 +203,9 @@ export async function showDesktopNotification(input: {
   title: string;
   body?: string | null;
   url?: string | null;
+  /** Active artist Cool/Warm — matches profile palette in the toast. */
+  ice?: string | null;
+  amber?: string | null;
 }): Promise<boolean> {
   const notifications = bridge()?.notifications;
   if (!notifications) return false;
@@ -205,6 +216,42 @@ export async function showDesktopNotification(input: {
   }
 }
 
+/** Normalize CSS / artist accent values into #RRGGBB for glass alerts. */
+export function normalizeAccentHex(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const v = raw.trim();
+  if (/^#[0-9A-Fa-f]{6}$/.test(v)) return `#${v.slice(1).toUpperCase()}`;
+  if (/^#[0-9A-Fa-f]{3}$/.test(v)) {
+    const a = v[1];
+    const b = v[2];
+    const c = v[3];
+    return `#${a}${a}${b}${b}${c}${c}`.toUpperCase();
+  }
+  if (/^[0-9A-Fa-f]{6}$/.test(v)) return `#${v.toUpperCase()}`;
+  const rgb = v.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+  if (rgb) {
+    const h = (n: string) =>
+      Math.max(0, Math.min(255, Number(n)))
+        .toString(16)
+        .padStart(2, "0")
+        .toUpperCase();
+    return `#${h(rgb[1])}${h(rgb[2])}${h(rgb[3])}`;
+  }
+  return null;
+}
+
+/** Read the live artist palette from the document (ArtistThemeProvider). */
+export function readDesktopAlertAccents(): { ice: string; amber: string } {
+  if (typeof document === "undefined") {
+    return { ice: "#7FB4FF", amber: "#FFB56B" };
+  }
+  const styles = getComputedStyle(document.documentElement);
+  return {
+    ice: normalizeAccentHex(styles.getPropertyValue("--ice")) ?? "#7FB4FF",
+    amber: normalizeAccentHex(styles.getPropertyValue("--amber")) ?? "#FFB56B",
+  };
+}
+
 export function onDesktopNotificationOpen(callback: (url: string) => void): () => void {
   const notifications = bridge()?.notifications;
   if (!notifications) return () => {};
@@ -212,36 +259,78 @@ export function onDesktopNotificationOpen(callback: (url: string) => void): () =
 }
 
 /**
- * Desktop-only interface zoom — there's no visible menu bar to hang the
- * usual Ctrl+=/-/0 accelerators off (see electron/main.js), so this backs
- * both a keyboard shortcut and a visible on-screen control
- * (components/desktop/zoom-control.tsx). All resolve to the new zoom factor
- * (1.0 = 100%) so the control can stay in sync; no-ops to 1.0 outside desktop.
+ * Desktop interface zoom. The left rail stays at 100% — only the main
+ * workspace scales (see hooks/use-content-zoom.ts). Older shells that still
+ * call setZoomFactor are cleared via resetNativePageZoom on mount.
  */
 export async function zoomIn(): Promise<number> {
-  const b = bridge();
-  if (!b) return 1;
-  return b.zoom.in();
+  if (!isDesktopApp()) return 1;
+  const { nudgeContentZoom } = await import("@/lib/desktop/content-zoom");
+  await resetNativePageZoom();
+  return nudgeContentZoom(0.1);
 }
 
 export async function zoomOut(): Promise<number> {
-  const b = bridge();
-  if (!b) return 1;
-  return b.zoom.out();
+  if (!isDesktopApp()) return 1;
+  const { nudgeContentZoom } = await import("@/lib/desktop/content-zoom");
+  await resetNativePageZoom();
+  return nudgeContentZoom(-0.1);
 }
 
 export async function zoomReset(): Promise<number> {
-  const b = bridge();
-  if (!b) return 1;
-  return b.zoom.reset();
+  if (!isDesktopApp()) return 1;
+  const { writeContentZoom } = await import("@/lib/desktop/content-zoom");
+  await resetNativePageZoom();
+  return writeContentZoom(1);
 }
 
 export async function getZoomFactor(): Promise<number> {
+  if (!isDesktopApp()) return 1;
+  const { readContentZoom } = await import("@/lib/desktop/content-zoom");
+  return readContentZoom();
+}
+
+export async function resetNativePageZoom(): Promise<void> {
   const b = bridge();
-  if (!b) return 1;
+  if (b?.zoom.resetNative) {
+    try {
+      await b.zoom.resetNative();
+    } catch {
+      /* ignore */
+    }
+    return;
+  }
+  // Older shell: clear leftover Chromium page zoom once via reset IPC.
   try {
-    return await b.zoom.get();
+    await b?.zoom.reset();
   } catch {
-    return 1;
+    /* ignore */
+  }
+}
+
+/** Shell keyboard shortcuts → content zoom (delta 0 = reset). */
+export function onDesktopZoomNudge(
+  callback: (delta: number) => void
+): () => void {
+  const b = bridge();
+  if (!b?.zoom.onNudge) return () => {};
+  return b.zoom.onNudge(callback);
+}
+
+/**
+ * Open an https URL in the system browser (desktop OAuth). Capability-detect
+ * so older shells fall back to in-app navigation.
+ */
+export function canOpenExternal(): boolean {
+  return typeof bridge()?.openExternal === "function";
+}
+
+export async function openExternal(url: string): Promise<boolean> {
+  const b = bridge();
+  if (!b?.openExternal) return false;
+  try {
+    return await b.openExternal(url);
+  } catch {
+    return false;
   }
 }

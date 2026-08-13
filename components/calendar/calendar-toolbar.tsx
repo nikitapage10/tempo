@@ -93,14 +93,14 @@ export function CalendarToolbar({
                 animate={{ opacity: 1, y: 0 }}
                 exit={reduceMotion ? undefined : { opacity: 0, y: 4 }}
                 transition={{ duration: 0.16 }}
-                className="block truncate font-display text-base font-semibold text-text-hi sm:text-lg"
+                className="block truncate font-data text-base font-semibold tracking-tight text-text-hi sm:text-lg"
               >
                 {title}
               </motion.span>
             </AnimatePresence>
           </h2>
           {displayTimezone !== browserTimezone ? (
-            <span className="glass-chip hidden shrink-0 px-2 py-0.5 font-mono text-[10px] text-text-lo sm:inline-flex" title={`Calendar is showing times in ${displayTimezone}`}>
+            <span className="glass-chip hidden shrink-0 px-2 py-0.5 font-mono text-[11px] text-text-lo sm:inline-flex" title={`Calendar is showing times in ${displayTimezone}`}>
               {utcOffsetLabel(displayTimezone)} · {displayTimezone.split("/").pop()?.replaceAll("_", " ")}
             </span>
           ) : null}

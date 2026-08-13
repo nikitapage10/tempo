@@ -122,7 +122,7 @@ export function ReferencesPanel({ trackId }: ReferencesPanelProps) {
   return (
     <section className="rounded-card border border-line bg-bg-1 p-4">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <h2 className="font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+        <h2 className="font-mono text-xs uppercase tracking-[0.08em] text-text-lo">
           References
         </h2>
         <Button type="button" size="sm" variant="secondary" onClick={() => setAddOpen(true)}>
@@ -132,7 +132,7 @@ export function ReferencesPanel({ trackId }: ReferencesPanelProps) {
       </div>
 
       {references.length > 0 ? (
-        <p className="mb-2 text-[11px] text-text-lo">
+        <p className="mb-2 text-xs text-text-lo">
           Star a reference to bring it into your next focus session.
         </p>
       ) : null}
@@ -347,7 +347,7 @@ function SortableReferenceRow({
             {ref.title}
           </button>
           {ref.kind === "audio" && (ref.start_sec != null || ref.end_sec != null) ? (
-            <span className="font-mono text-[10px] text-text-lo">
+            <span className="font-mono text-[11px] text-text-lo">
               {formatDuration(ref.start_sec ?? 0)}
               {ref.end_sec != null ? `–${formatDuration(ref.end_sec)}` : ""}
             </span>
@@ -561,7 +561,7 @@ function ReferenceFormDialog({
                   type="button"
                   onClick={() => setSource("url")}
                   className={cn(
-                    "rounded-chip border px-2.5 py-1 text-[11px]",
+                    "rounded-chip border px-2.5 py-1 text-xs",
                     source === "url"
                       ? "border-ice/50 bg-ice/15 text-ice"
                       : "border-line bg-bg-2 text-text-lo"
@@ -574,7 +574,7 @@ function ReferenceFormDialog({
                   onClick={() => setSource("asset")}
                   disabled={relevantAssets.length === 0}
                   className={cn(
-                    "rounded-chip border px-2.5 py-1 text-[11px] disabled:cursor-not-allowed disabled:opacity-50",
+                    "rounded-chip border px-2.5 py-1 text-xs disabled:cursor-not-allowed disabled:opacity-50",
                     source === "asset"
                       ? "border-ice/50 bg-ice/15 text-ice"
                       : "border-line bg-bg-2 text-text-lo"

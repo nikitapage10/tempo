@@ -49,7 +49,7 @@ export function TrackDetails({ track, onPatch, readOnly }: TrackDetailsProps) {
 
   return (
     <section className="rounded-card border border-line bg-bg-1 p-4">
-      <h2 className="mb-3 font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+      <h2 className="mb-3 font-mono text-xs uppercase tracking-[0.08em] text-text-lo">
         Details
       </h2>
       <div className="space-y-3">

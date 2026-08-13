@@ -45,7 +45,7 @@ without asking" — the README's binding decisions are that ask.
   read/write, sync status, device registration, tray/login-item settings.
   `contextIsolation: true`, `nodeIntegration: false`, no `remote` module.
 - **Renderer** — loads the production origin over HTTPS
-  (`tempo-ten-sigma.vercel.app`), not a `file://` bundle of the whole app;
+  (`mytempo.dev`), not a `file://` bundle of the whole app;
   navigation is allowlisted to that origin plus the auth/OAuth redirect
   targets, so the renderer can't be pointed elsewhere. What makes this "not a
   wrapper" is that most of what the renderer needs — the shell's static

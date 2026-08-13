@@ -29,7 +29,7 @@ function authorize(req: NextRequest): boolean {
 }
 
 function siteUrl() {
-  return (process.env.NEXT_PUBLIC_SITE_URL ?? "https://tempo-ten-sigma.vercel.app").replace(/\/$/, "");
+  return (process.env.NEXT_PUBLIC_SITE_URL ?? "https://mytempo.dev").replace(/\/$/, "");
 }
 
 /**

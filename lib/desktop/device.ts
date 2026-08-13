@@ -3,6 +3,7 @@
 import { desktopAppVersion, desktopPlatform, isDesktopApp } from "@/lib/desktop/bridge";
 
 const DEVICE_ID_KEY = "tempo:desktop-device-id";
+const DEVICE_VERSION_KEY = "tempo:desktop-device-version";
 
 // Re-registering (refreshing last_seen_at) more than once per interval is
 // pointless network traffic; a device is treated as "still installed" by
@@ -21,18 +22,37 @@ function cacheDeviceId(id: string): void {
   localStorage.setItem(DEVICE_ID_KEY, id);
 }
 
+function cachedRegisteredVersion(): string | null {
+  if (typeof localStorage === "undefined") return null;
+  return localStorage.getItem(DEVICE_VERSION_KEY);
+}
+
+function cacheRegisteredVersion(version: string): void {
+  if (typeof localStorage === "undefined") return;
+  localStorage.setItem(DEVICE_VERSION_KEY, version);
+}
+
 /**
  * Registers this desktop install with the signed-in account (or refreshes
  * its last_seen_at if already registered) — see migrations/080_desktop_devices.sql
  * and hooks/use-devices.ts, which is what flips the web app's download
  * button to "Open in desktop." Safe to call often; internally throttled.
  * No-ops entirely outside the desktop app.
+ *
+ * Version changes always re-POST, even inside the refresh window, so an
+ * updated install doesn't leave the web rail stuck on "Update TEMPO Desktop."
  */
 export async function ensureDeviceRegistered(): Promise<string | null> {
   if (!isDesktopApp()) return null;
 
+  const appVersion = desktopAppVersion()?.trim() || "0.0.0";
   const existing = cachedDeviceId();
-  if (existing && Date.now() - lastRefreshAt < REFRESH_INTERVAL_MS) {
+  const versionUnchanged = cachedRegisteredVersion() === appVersion;
+  if (
+    existing &&
+    versionUnchanged &&
+    Date.now() - lastRefreshAt < REFRESH_INTERVAL_MS
+  ) {
     return existing;
   }
   if (pending) return pending;
@@ -46,7 +66,7 @@ export async function ensureDeviceRegistered(): Promise<string | null> {
           deviceId: existing || undefined,
           platform: desktopPlatform(),
           name: `${desktopPlatform() === "mac" ? "Mac" : "Windows"} desktop`,
-          appVersion: desktopAppVersion(),
+          appVersion,
         }),
       });
       if (!res.ok) return existing;
@@ -54,6 +74,7 @@ export async function ensureDeviceRegistered(): Promise<string | null> {
       const id = typeof data?.deviceId === "string" ? data.deviceId : existing;
       if (id) {
         cacheDeviceId(id);
+        cacheRegisteredVersion(appVersion);
         lastRefreshAt = Date.now();
       }
       return id;

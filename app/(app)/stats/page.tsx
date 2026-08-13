@@ -127,10 +127,10 @@ export default function ArtistStatsPage() {
 
   return (
     <div className="space-y-5">
-      {/* Identity hero — the one fixed part of the page. */}
-      <LfWindow className="relative overflow-hidden rounded-panel border border-line shadow-e3">
+      {/* Identity hero — glass shell; inner field window restores Spectra. */}
+      <div className="glass-hero prism-edge relative overflow-hidden">
         <div className="absolute inset-0">
-          <div className="scrim-reveal absolute inset-0" aria-hidden />
+          <LfWindow field className="absolute inset-0" aria-hidden />
           {activeArtist ? (
             <ArtistBanner
               artist={activeArtist}
@@ -138,6 +138,7 @@ export default function ArtistStatsPage() {
               className="absolute inset-0"
             />
           ) : null}
+          <div className="scrim-reveal absolute inset-0" aria-hidden />
         </div>
         {activeArtist?.logo_url ? (
           <div className="pointer-events-none absolute inset-y-0 right-0 z-[1] flex w-[min(46%,22rem)] items-end justify-end p-2 sm:p-3">
@@ -180,7 +181,7 @@ export default function ArtistStatsPage() {
         <div className="relative z-[1] flex flex-col gap-6 px-6 py-7 sm:px-8 sm:py-9">
           <div className="min-w-0">
             <p className="label-mono mb-2">Stats</p>
-            <h1 className="font-display text-3xl font-semibold tracking-tight text-text-hi sm:text-[40px] sm:leading-[1.05]">
+            <h1 className="font-display text-3xl font-medium tracking-[0.025em] text-text-hi sm:text-[40px] sm:leading-[1.05]">
               {activeArtist?.name ?? "No artist"}
             </h1>
             <p className="mt-1.5 text-sm text-text-lo">
@@ -219,7 +220,7 @@ export default function ArtistStatsPage() {
 
           <FlareLine className="max-w-[420px] opacity-60" />
         </div>
-      </LfWindow>
+      </div>
 
       {isError ? (
         <section className="panel p-5">
@@ -333,7 +334,7 @@ function useArtistModules(
             label="Your sound"
             aside={
               data.medianBpm ? (
-                <span className="text-[11px] text-text-lo">
+                <span className="text-xs text-text-lo">
                   median{" "}
                   <span className="tabular-nums text-text-hi">
                     {data.medianBpm}
@@ -343,16 +344,16 @@ function useArtistModules(
               ) : null
             }
           />
-          <p className="mb-3 text-[11px] text-text-lo">Tracks by tempo</p>
+          <p className="mb-3 text-xs text-text-lo">Tracks by tempo</p>
           <BpmHistogram buckets={data.bpm} medianBpm={data.medianBpm} />
 
           <div className="mt-6 grid gap-6 sm:grid-cols-2">
             <div>
-              <p className="mb-3 text-[11px] text-text-lo">Keys you write in</p>
+              <p className="mb-3 text-xs text-text-lo">Keys you write in</p>
               <RankedBars items={data.keys} emptyCopy="No keys recorded yet." />
             </div>
             <div>
-              <p className="mb-3 text-[11px] text-text-lo">Genres</p>
+              <p className="mb-3 text-xs text-text-lo">Genres</p>
               <RankedBars
                 items={data.genres}
                 emptyCopy="No genres recorded yet."
@@ -361,7 +362,7 @@ function useArtistModules(
           </div>
 
           <div className="mt-6">
-            <p className="mb-3 text-[11px] text-text-lo">Track types</p>
+            <p className="mb-3 text-xs text-text-lo">Track types</p>
             <RankedBars items={data.types} emptyCopy="No tracks yet." />
           </div>
         </section>
@@ -403,10 +404,10 @@ function useArtistModules(
                         <span className="min-w-0 flex-1 truncate text-sm text-text-hi">
                           {release.name}
                         </span>
-                        <span className="shrink-0 text-[11px] text-text-lo">
+                        <span className="shrink-0 text-xs text-text-lo">
                           {release.date}
                         </span>
-                        <span className="shrink-0 text-[11px] tabular-nums text-amber">
+                        <span className="shrink-0 text-xs tabular-nums text-amber">
                           {release.daysUntil <= 0
                             ? "today"
                             : `${release.daysUntil}d`}
@@ -585,7 +586,7 @@ function ArtistTemplatePicker({
           </button>
         ))}
       </div>
-      <p className="mt-2 text-[11px] text-text-lo">
+      <p className="mt-2 text-xs text-text-lo">
         Drag sections between columns, drop one onto another to combine them,
         or send them to Hidden. This layout is yours only — collaborators
         keep their own.
@@ -626,7 +627,7 @@ function ArtistTemplatePicker({
             New custom module
           </button>
         )}
-        <p className="mt-2 text-[11px] text-text-lo">
+        <p className="mt-2 text-xs text-text-lo">
           A blank module for whatever isn’t covered above — sync placements,
           merch sold, radio spins. It lands in the right column here; add and
           log stats from the card itself once you’re done editing.

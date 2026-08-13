@@ -1,13 +1,14 @@
 // CI check: migration filenames must be numbered, and any NEW duplicate
-// number must be caught before merge. The 058_* pair (member onboarding
-// refinements / scenes slug reuse) is a pre-existing, already-applied-to-
-// production collision — grandfathered here rather than treated as an error,
-// since migrations are never renamed once applied (see CLAUDE.md).
+// number must be caught before merge. Two pairs are already applied to
+// production and must not be renamed (see CLAUDE.md): 058_* (member
+// onboarding refinements / scenes slug reuse) and 080_* (desktop devices /
+// hide unanswered Nikita welcomes). Grandfather those rather than treat
+// them as errors.
 import fs from "node:fs";
 import path from "node:path";
 
 const MIGRATIONS_DIR = path.resolve(process.cwd(), "migrations");
-const GRANDFATHERED_DUPLICATE_NUMBERS = new Set([58]);
+const GRANDFATHERED_DUPLICATE_NUMBERS = new Set([58, 80]);
 
 const files = fs
   .readdirSync(MIGRATIONS_DIR)

@@ -18,6 +18,18 @@ export function needsMp3Conversion(file: File): boolean {
   );
 }
 
+/** Cloud path → local vault candidates that may hold the original bounce. */
+export function losslessVaultSiblings(cloudPath: string): string[] {
+  if (!/\.mp3$/i.test(cloudPath)) return [];
+  return LOSSLESS_EXT.map((ext) => cloudPath.replace(/\.mp3$/i, ext));
+}
+
+/** Filename for the cloud mp3 twin of a wav/aiff bounce. */
+export function mp3FilenameForOriginal(originalName: string): string {
+  const base = originalName.replace(/\.[^.]+$/, "").trim() || "bounce";
+  return `${base}.mp3`;
+}
+
 export type ConvertProgress = (percent: number) => void;
 
 async function loadFfmpeg(ffmpeg: {

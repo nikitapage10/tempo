@@ -17,7 +17,10 @@ export async function updateSession(request: NextRequest) {
       !path.startsWith("/register") &&
       !path.startsWith("/forgot-password") &&
       !path.startsWith("/terms") &&
-      !path.startsWith("/privacy")
+      !path.startsWith("/privacy") &&
+      path !== "/download" &&
+      !path.startsWith("/download/") &&
+      !path.startsWith("/api/desktop")
     ) {
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = "/login";
@@ -115,6 +118,15 @@ export async function updateSession(request: NextRequest) {
   // disable optional email — it cannot read or change anything else.
   const isEmailUnsubscribeRoute = path.startsWith("/api/email/unsubscribe/");
 
+  // Desktop download page + installer redirects — invite email and shared
+  // Download links must work before sign-in. Installer probes only redirect
+  // to the public release channel or the bundled Windows beta.
+  const isDesktopDownloadRoute =
+    path === "/download" ||
+    path.startsWith("/download/") ||
+    path === "/api/desktop" ||
+    path.startsWith("/api/desktop/");
+
   // Server-to-server routes that authorize themselves (CRON_SECRET header
   // or a provider webhook signature) rather than a member session — a
   // scheduled invoker or a webhook provider never has a TEMPO cookie, so
@@ -142,6 +154,7 @@ export async function updateSession(request: NextRequest) {
     !isPublicProfileRoute &&
     !isPublicSceneRoute &&
     !isEmailUnsubscribeRoute &&
+    !isDesktopDownloadRoute &&
     !isServerAuthorizedRoute &&
     !isDevSessionRoute
   ) {
@@ -176,7 +189,8 @@ export async function updateSession(request: NextRequest) {
     isGuestReviewRoute ||
     isInviteRoute ||
     isPublicProfileRoute ||
-    isPublicSceneRoute;
+    isPublicSceneRoute ||
+    isDesktopDownloadRoute;
 
   if (
     user &&

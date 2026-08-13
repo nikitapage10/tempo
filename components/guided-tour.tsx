@@ -335,7 +335,7 @@ export function GuidedTour() {
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="label-mono text-ice">{step.kicker}</p>
-            <p className="mt-2 font-mono text-[11px] tabular-nums text-text-lo">
+            <p className="mt-2 font-mono text-xs tabular-nums text-text-lo">
               {String(stepIndex + 1).padStart(2, "0")} / {String(TOUR_STEPS.length).padStart(2, "0")}
             </p>
           </div>

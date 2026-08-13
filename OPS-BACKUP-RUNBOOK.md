@@ -20,7 +20,7 @@ artists keep those in their own DAW / archives.
    calls `GET /api/cron/catalog-snapshots` daily at 07:00 UTC (`vercel.json`).
 3. Confirm `SUPABASE_SERVICE_ROLE_KEY` is set (already required for admin/guest).
 4. Optional: hit the cron once manually after deploy:
-   `curl -H "Authorization: Bearer $CRON_SECRET" https://tempo-ten-sigma.vercel.app/api/cron/catalog-snapshots`
+   `curl -H "Authorization: Bearer $CRON_SECRET" https://mytempo.dev/api/cron/catalog-snapshots`
 
 ## If a bad migration / code change corrupts data
 

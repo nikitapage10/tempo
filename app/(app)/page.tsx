@@ -109,7 +109,7 @@ export default function TodayPage() {
   );
   const visibleAttention = attentionExpanded
     ? prioritized
-    : prioritized.slice(0, 5);
+    : prioritized.slice(0, 4);
   const waiting = prioritized.filter((x) =>
     deriveAttentionSignals(x).some((s) => s.id === "waiting" || s.id === "blocked")
   );
@@ -153,11 +153,11 @@ export default function TodayPage() {
     <div className="space-y-5">
       <ActiveSessionBanner />
 
-      {/* Today hero — one tall surface carrying greeting, stats and actions.
-          Scrim clears toward the right so the lightfield is actually visible. */}
-      <LfWindow data-tour="today" className="relative overflow-hidden rounded-panel border border-line shadow-e3">
+      {/* Today hero — glass shell holds the card; an inner field window lets
+          Spectra wash the background without fringing a hole under the border. */}
+      <div data-tour="today" className="glass-hero prism-edge relative overflow-hidden">
         <div className="absolute inset-0">
-          <div className="scrim-reveal absolute inset-0" aria-hidden />
+          <LfWindow field className="absolute inset-0" aria-hidden />
           {activeArtist ? (
             <ArtistBanner
               artist={activeArtist}
@@ -165,6 +165,7 @@ export default function TodayPage() {
               className="absolute inset-0"
             />
           ) : null}
+          <div className="scrim-reveal absolute inset-0" aria-hidden />
         </div>
         {activeArtist?.logo_url ? (
           <div className="pointer-events-none absolute inset-y-0 right-0 z-[1] flex w-[min(48%,24rem)] items-end justify-end p-2 sm:p-3">
@@ -177,7 +178,7 @@ export default function TodayPage() {
         ) : null}
         <div className="relative z-[1] flex flex-col gap-6 px-6 py-7 sm:px-8 sm:py-9">
           <div className="min-w-0">
-            <h1 className="font-display text-3xl font-semibold tracking-tight text-text-hi sm:text-[40px] sm:leading-[1.05]">
+            <h1 className="font-display text-3xl font-semibold tracking-[0.02em] text-text-hi sm:text-[40px] sm:leading-[1.05]">
               {greetingForHour(now.getHours())}
             </h1>
             <p className="mt-1.5 text-sm text-text-lo">{dateLabel}</p>
@@ -276,7 +277,7 @@ export default function TodayPage() {
             </div>
           </div>
         </div>
-      </LfWindow>
+      </div>
 
       {!empty && !tasksFocused && activeArtist && currentUser ? (
         <>
@@ -370,7 +371,7 @@ export default function TodayPage() {
                 })}
               </ul>
             )}
-            {prioritized.length > 5 ? (
+            {prioritized.length > 4 ? (
               <button
                 type="button"
                 onClick={() => setAttentionExpanded((value) => !value)}
@@ -379,11 +380,11 @@ export default function TodayPage() {
               >
                 {attentionExpanded ? (
                   <>
-                    <ChevronUp className="size-3.5" /> Show five
+                    <ChevronUp className="size-3.5" /> Show four
                   </>
                 ) : (
                   <>
-                    <ChevronDown className="size-3.5" /> Show {prioritized.length - 5} more
+                    <ChevronDown className="size-3.5" /> Show {prioritized.length - 4} more
                   </>
                 )}
               </button>
@@ -678,7 +679,7 @@ function SectionHeader({ label, count }: { label: string; count?: number }) {
     <div className="mb-4 flex items-center gap-3">
       <h2 className="label-mono">{label}</h2>
       {count !== undefined && count > 0 ? (
-        <span className="font-mono text-[11px] tabular-nums text-text-lo/70">
+        <span className="font-mono text-xs tabular-nums text-text-lo/70">
           {count}
         </span>
       ) : null}
@@ -764,7 +765,7 @@ function TasksFocusPanels({
                   <span className="min-w-0 flex-1 truncate text-sm text-text-hi">
                     {project.name}
                   </span>
-                  <span className="shrink-0 font-mono text-[11px] text-text-lo">
+                  <span className="shrink-0 font-mono text-xs text-text-lo">
                     {project.checklist_pct != null
                       ? `${project.checklist_pct}%`
                       : `${project.task_count} task${project.task_count === 1 ? "" : "s"}`}
@@ -805,13 +806,13 @@ function TodayTaskRow({
           {task.title}
         </p>
         <div className="mt-1 flex flex-wrap gap-1.5">
-          <span className="rounded-chip bg-bg-2 px-2 py-0.5 text-[10px] text-text-lo">
+          <span className="rounded-chip bg-bg-2 px-2 py-0.5 text-[11px] text-text-lo">
             {cat}
           </span>
           {task.due_date ? (
             <span
               className={cn(
-                "font-mono text-[10px]",
+                "font-mono text-[11px]",
                 overdue ? "text-warn" : "text-text-lo"
               )}
             >
@@ -821,7 +822,7 @@ function TodayTaskRow({
           {task.track_id ? (
             <Link
               href={`/track/${task.track_id}`}
-              className="text-[10px] text-ice hover:underline"
+              className="text-[11px] text-ice hover:underline"
             >
               Track
             </Link>
@@ -886,7 +887,7 @@ function InMotionRow({
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm text-text-hi">{track.title}</p>
-            <p className="font-mono text-[10px] text-text-lo">
+            <p className="font-mono text-[11px] text-text-lo">
               {stageName ?? "No stage"}
               {" · "}
               {lastSessionQuery.data
@@ -894,14 +895,14 @@ function InMotionRow({
                 : "No sessions yet"}
             </p>
             {reason ? (
-              <p className="mt-0.5 text-[11px] text-amber">{reason}</p>
+              <p className="mt-0.5 text-xs text-amber">{reason}</p>
             ) : null}
           </div>
         </Link>
         {actionLabel ? (
           <Link
             href={actionHref ?? `/track/${track.id}`}
-            className="shrink-0 text-[11px] text-ice hover:underline"
+            className="shrink-0 text-xs text-ice hover:underline"
           >
             {actionLabel}
           </Link>

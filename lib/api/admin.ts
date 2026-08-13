@@ -27,6 +27,12 @@ export async function adminFetch<T>(path: string, init?: RequestInit): Promise<T
   return body as T;
 }
 
+/** True when the signed-in user can open /admin (platform_admins / ADMIN_EMAILS). */
+export async function checkPlatformAdminAccess(): Promise<boolean> {
+  const response = await fetch("/api/admin/access", { cache: "no-store" });
+  return response.ok;
+}
+
 export const getAdminOverview = () => adminFetch<AdminOverview>("/api/admin/overview");
 export const getAdminAnalytics = () => adminFetch<AdminAnalytics>("/api/admin/analytics");
 export const getAdminActivationPulse = () => adminFetch<AdminActivationPulse>("/api/admin/activation-pulse");

@@ -148,7 +148,7 @@ export function CalendarWeekView({
                 selected && "bg-bg-2/45"
               )}
             >
-              <span className="font-mono text-[9px] uppercase tracking-[0.08em] text-text-lo">{formatShortWeekday(date)}</span>
+              <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-text-lo">{formatShortWeekday(date)}</span>
               <span className={cn("flex size-6 items-center justify-center rounded-input font-mono text-xs", isToday ? "bg-ice/15 text-ice" : "text-text-hi")}>
                 {parseDateKey(date).getDate()}
               </span>
@@ -161,7 +161,7 @@ export function CalendarWeekView({
       {/* All-day row — task due dates, deadlines, releases, and all-day events have no clock time and never sit on the hour axis. */}
       <div className="grid grid-cols-[52px_repeat(7,minmax(112px,1fr))] border-b border-line/70 bg-bg-2/20">
         <div className="flex items-center justify-end border-r border-line/70 px-1.5 py-1.5">
-          <span className="font-mono text-[8px] uppercase text-text-lo/60">All day</span>
+          <span className="font-mono text-[9px] uppercase text-text-lo/60">All day</span>
         </div>
         {dates.map((date) => (
           <div
@@ -192,7 +192,7 @@ export function CalendarWeekView({
         <button
           type="button"
           onClick={() => setShowEarlyHours(true)}
-          className="w-full border-b border-line/70 py-1 text-center text-[10px] text-text-lo hover:text-ice focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+          className="w-full border-b border-line/70 py-1 text-center text-[11px] text-text-lo hover:text-ice focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
         >
           Show earlier hours
         </button>
@@ -204,7 +204,7 @@ export function CalendarWeekView({
           <div className="relative border-r border-line/70">
             {hours.map((hour) => (
               <div key={hour} style={{ height: HOUR_HEIGHT }} className="border-b border-line/40 pr-1.5 text-right">
-                <span className="relative -top-2 font-mono text-[9px] text-text-lo/70">
+                <span className="relative -top-2 font-mono text-[10px] text-text-lo/70">
                   {hour === 0 ? "12a" : hour < 12 ? `${hour}a` : hour === 12 ? "12p" : `${hour - 12}p`}
                 </span>
               </div>

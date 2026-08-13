@@ -183,7 +183,7 @@ export function RankedBars({
               }}
             />
           </span>
-          <span className="w-10 shrink-0 text-right text-[11px] tabular-nums text-text-lo">
+          <span className="w-10 shrink-0 text-right text-xs tabular-nums text-text-lo">
             {item.count}
             {unit ? <span className="text-text-lo/70"> {unit}</span> : null}
           </span>

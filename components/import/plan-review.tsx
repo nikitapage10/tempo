@@ -63,7 +63,7 @@ function Provenance({
 }) {
   if (!reason) return null;
   return (
-    <p className="font-data mt-1 text-[11px] text-text-lo">
+    <p className="font-data mt-1 text-xs text-text-lo">
       <span className={CONFIDENCE_TONE[confidence]}>{CONFIDENCE_LABEL[confidence]}</span>
       {" · "}
       {reason}
@@ -141,7 +141,7 @@ function TrackCard({
           />
 
           {track.possibleDuplicateOf ? (
-            <p className="mt-1.5 flex items-start gap-1.5 text-[11px] text-amber">
+            <p className="mt-1.5 flex items-start gap-1.5 text-xs text-amber">
               <Copy className="mt-0.5 size-3 shrink-0" />
               You already have a track called &ldquo;{track.possibleDuplicateOf}&rdquo;.
               Untick this if it&rsquo;s the same song.
@@ -192,7 +192,7 @@ function TrackCard({
             <button
               type="button"
               onClick={() => setExpanded((v) => !v)}
-              className="inline-flex items-center gap-1 rounded-input px-2 py-1 text-[11px] text-text-lo transition-colors duration-hover hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+              className="inline-flex items-center gap-1 rounded-input px-2 py-1 text-xs text-text-lo transition-colors duration-hover hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
             >
               <ChevronDown
                 className={cn("size-3 transition-transform duration-hover", expanded && "rotate-180")}
@@ -276,7 +276,7 @@ function TrackCard({
                       <Chip key={name}>{name}</Chip>
                     ))}
                   </div>
-                  <p className="mt-1.5 text-[11px] text-text-lo">
+                  <p className="mt-1.5 text-xs text-text-lo">
                     Saved as a note. Invite people properly from the track later.
                   </p>
                 </div>
@@ -535,7 +535,7 @@ export function PlanReview({
                             </option>
                           ))}
                         </select>
-                        <span className="font-data text-[11px] text-text-lo">
+                        <span className="font-data text-xs text-text-lo">
                           {trackCount} track{trackCount === 1 ? "" : "s"}
                         </span>
                       </div>
@@ -614,7 +614,7 @@ export function PlanReview({
                         ))}
                       </select>
                       {task.dueDate.value ? (
-                        <span className="font-data text-[11px] text-text-lo">
+                        <span className="font-data text-xs text-text-lo">
                           due {task.dueDate.value}
                         </span>
                       ) : null}

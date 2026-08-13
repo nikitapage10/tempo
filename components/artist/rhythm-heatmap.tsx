@@ -135,7 +135,7 @@ export function RhythmHeatmap({
 
       {/* Scale legend — a continuous ramp always ships one. */}
       <div className="mt-3 flex items-center gap-2">
-        <span className="text-[11px] text-text-lo">Fewer</span>
+        <span className="text-xs text-text-lo">Fewer</span>
         <span className="flex gap-[2px]">
           {palette.sequential.map((step) => (
             <span
@@ -146,7 +146,7 @@ export function RhythmHeatmap({
             />
           ))}
         </span>
-        <span className="text-[11px] text-text-lo">
+        <span className="text-xs text-text-lo">
           More · up to <span className="tabular-nums text-text-hi">{max}</span>{" "}
           per hour
         </span>

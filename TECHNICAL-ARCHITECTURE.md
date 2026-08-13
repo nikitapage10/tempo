@@ -189,7 +189,7 @@ Preserve: all `is_pinned` versions + two newest unpinned + never delete `is_curr
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Anon key (RLS applies) |
 | `SUPABASE_SERVICE_ROLE_KEY` | **Server only** | Guest validation / privileged writes (planned) |
 
-Production URL for shipped absolute links: `https://tempo-ten-sigma.vercel.app`.
+Production URL for shipped absolute links: `https://mytempo.dev`.
 
 ---
 

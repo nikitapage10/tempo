@@ -161,7 +161,7 @@ export function NotificationsPanel() {
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                           <p className="text-sm text-text-hi">{n.title}</p>
-                          <span className="label-mono text-[10px] text-text-lo/70">
+                          <span className="label-mono text-[11px] text-text-lo/70">
                             {NOTIFICATION_BREADTH_LABELS[notificationBreadth(n)]}
                           </span>
                         </div>
@@ -170,7 +170,7 @@ export function NotificationsPanel() {
                             {n.body}
                           </p>
                         ) : null}
-                        <p className="mt-1 font-data text-[11px] tabular-nums text-text-lo/70">
+                        <p className="mt-1 font-data text-xs tabular-nums text-text-lo/70">
                           {formatShortDate(n.created_at)}
                         </p>
                       </div>

@@ -179,7 +179,7 @@ export default function FocusSessionPage() {
         <p className="font-mono text-3xl tabular-nums text-ice">
           {formatDuration(elapsed)}
         </p>
-        <p className="mt-1 text-[11px] text-text-lo">elapsed this session</p>
+        <p className="mt-1 text-xs text-text-lo">elapsed this session</p>
       </div>
 
       <div className="mb-6">
@@ -196,7 +196,7 @@ export default function FocusSessionPage() {
 
       {visibleItems.length > 0 ? (
         <section className="mb-6 rounded-card border border-line bg-bg-1 p-4">
-          <h2 className="mb-3 font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+          <h2 className="mb-3 font-mono text-xs uppercase tracking-[0.08em] text-text-lo">
             {focusItemIds && focusItemIds.length > 0
               ? "Checklist for this session"
               : "Open checklist items"}
@@ -228,7 +228,7 @@ export default function FocusSessionPage() {
 
       {visibleReferences.length > 0 ? (
         <section className="mb-6 rounded-card border border-line bg-bg-1 p-4">
-          <h2 className="mb-3 font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+          <h2 className="mb-3 font-mono text-xs uppercase tracking-[0.08em] text-text-lo">
             References for this session
           </h2>
           <ul className="space-y-2">
@@ -257,7 +257,7 @@ export default function FocusSessionPage() {
       ) : null}
 
       <section className="mb-6 flex-1 rounded-card border border-line bg-bg-1 p-4">
-        <h2 className="mb-2 font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+        <h2 className="mb-2 font-mono text-xs uppercase tracking-[0.08em] text-text-lo">
           Scratch notes
         </h2>
         <Textarea
@@ -269,7 +269,7 @@ export default function FocusSessionPage() {
           placeholder="Jot anything down — this is just for you during the session."
           rows={6}
         />
-        <p className="mt-1.5 text-[11px] text-text-lo">
+        <p className="mt-1.5 text-xs text-text-lo">
           Not saved anywhere — carry anything important into the end summary.
         </p>
       </section>

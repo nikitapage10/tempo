@@ -97,7 +97,7 @@ export function TrackWorkflowStrip({
       className={cn("panel p-5", autoEdit && "ring-2 ring-ice/60")}
     >
       <div className="mb-3 flex items-center justify-between gap-2">
-        <h2 className="font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+        <h2 className="font-mono text-xs uppercase tracking-[0.08em] text-text-lo">
           Workflow
         </h2>
         {sessionHere ? (
@@ -181,7 +181,7 @@ export function TrackWorkflowStrip({
             <button
               type="button"
               onClick={() => setExpanded((v) => !v)}
-              className="flex items-center gap-1 text-[11px] text-ice hover:underline"
+              className="flex items-center gap-1 text-xs text-ice hover:underline"
             >
               <ChevronDown
                 className={cn(
@@ -248,14 +248,14 @@ function RecentRuns({ trackId, runs }: { trackId: string; runs: StageRecipeRun[]
     <SlitDivider className="mt-3" />
     <div className="pt-3">
       <div className="mb-1.5 flex items-center justify-between">
-        <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-text-lo">
+        <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
           Recent automations
         </p>
         {runs.length > 2 ? (
           <button
             type="button"
             onClick={() => setExpanded((v) => !v)}
-            className="flex items-center gap-1 text-[11px] text-ice hover:underline"
+            className="flex items-center gap-1 text-xs text-ice hover:underline"
           >
             <ChevronDown
               className={cn(
@@ -283,14 +283,14 @@ function RecentRuns({ trackId, runs }: { trackId: string; runs: StageRecipeRun[]
                     .map((r) => describeRecipeAction(r.action, templates))
                     .join(" · ") || "No actions configured"}
                 </p>
-                <p className="font-mono text-[10px] text-text-lo/70">
+                <p className="font-mono text-[11px] text-text-lo/70">
                   {formatShortDate(run.created_at)}
                 </p>
               </div>
               {canRetry ? (
                 <button
                   type="button"
-                  className="flex shrink-0 items-center gap-1 rounded-input px-1.5 py-0.5 text-[11px] text-ice hover:bg-ice/10"
+                  className="flex shrink-0 items-center gap-1 rounded-input px-1.5 py-0.5 text-xs text-ice hover:bg-ice/10"
                   disabled={retry.isPending}
                   onClick={async () => {
                     try {
@@ -325,7 +325,7 @@ function StripCell({
 }) {
   return (
     <div className="rounded-input border border-line bg-bg-2/50 p-2.5">
-      <p className="mb-1 font-mono text-[10px] uppercase tracking-[0.08em] text-text-lo">
+      <p className="mb-1 font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
         {label}
       </p>
       {children}
@@ -464,7 +464,7 @@ function InlineDateField({
           if (next !== value) void onCommit(next);
         }}
         aria-label={ariaLabel}
-        className="mt-1 w-full rounded-input border border-line bg-bg-1 px-1.5 py-1 font-mono text-[11px] text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+        className="mt-1 w-full rounded-input border border-line bg-bg-1 px-1.5 py-1 font-mono text-xs text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
       />
     );
   }
@@ -474,7 +474,7 @@ function InlineDateField({
       type="button"
       onClick={() => setEditing(true)}
       className={cn(
-        "mt-1 block w-full truncate rounded-input px-1.5 py-0.5 text-left font-mono text-[11px] transition-colors duration-hover hover:bg-bg-1",
+        "mt-1 block w-full truncate rounded-input px-1.5 py-0.5 text-left font-mono text-xs transition-colors duration-hover hover:bg-bg-1",
         value ? "text-amber" : "text-text-lo"
       )}
       aria-label={ariaLabel}

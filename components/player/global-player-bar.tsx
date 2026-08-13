@@ -13,13 +13,14 @@ export function GlobalPlayerBar() {
   if (!current) return null;
 
   return (
-    <div className="px-3 pb-3">
+    <div className="px-1.5 pb-3 xl:px-3">
       <SlitDivider className="mb-2.5" />
       <Link
         href={`/track/${current.id}`}
+        title={current.title}
         className="flex flex-col items-center gap-1.5 rounded-input px-1 py-1 text-center transition-colors duration-hover hover:bg-bg-2/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
       >
-        <span className="relative size-28 shrink-0 overflow-hidden rounded-input border border-line shadow-e1">
+        <span className="relative size-11 shrink-0 overflow-hidden rounded-input border border-line shadow-e1 xl:size-28">
           <SpectraCoverArt
             trackId={current.id}
             title={current.title}
@@ -27,18 +28,18 @@ export function GlobalPlayerBar() {
             animate={false}
           />
         </span>
-        <div className="min-w-0 w-full">
+        <div className="hidden min-w-0 w-full xl:block">
           <p className="truncate text-xs font-medium text-text-hi">{current.title}</p>
-          <p className="truncate text-[11px] text-text-lo">{current.artist ?? "—"}</p>
+          <p className="truncate text-xs text-text-lo">{current.artist ?? "—"}</p>
         </div>
       </Link>
 
-      <div className="mt-2.5 flex items-center justify-center gap-4">
+      <div className="mt-2 flex flex-col items-center gap-2 xl:mt-2.5 xl:flex-row xl:justify-center xl:gap-4">
         <button
           type="button"
           aria-label="Previous track"
           onClick={prev}
-          className="text-text-lo transition-colors duration-hover hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+          className="hidden text-text-lo transition-colors duration-hover hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice xl:inline-flex"
         >
           <SkipBack className="size-4" fill="currentColor" />
         </button>
@@ -47,7 +48,7 @@ export function GlobalPlayerBar() {
           aria-label={playing ? "Pause" : "Play"}
           onClick={toggle}
           disabled={loading}
-          className="flex size-8 items-center justify-center rounded-full bg-ice text-bg-0 transition-opacity duration-hover hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+          className="flex size-9 items-center justify-center rounded-full bg-ice text-bg-0 transition-opacity duration-hover hover:opacity-90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice xl:size-8"
         >
           {playing ? (
             <Pause className="size-4" fill="currentColor" />
@@ -59,7 +60,7 @@ export function GlobalPlayerBar() {
           type="button"
           aria-label="Next track"
           onClick={next}
-          className="text-text-lo transition-colors duration-hover hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+          className="hidden text-text-lo transition-colors duration-hover hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice xl:inline-flex"
         >
           <SkipForward className="size-4" fill="currentColor" />
         </button>

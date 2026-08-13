@@ -17,7 +17,7 @@ export function SectionHeader({
     <div className="mb-4 flex items-center gap-3">
       <h2 className="label-mono">{label}</h2>
       {count !== undefined && count > 0 ? (
-        <span className="font-mono text-[11px] tabular-nums text-text-lo/70">
+        <span className="font-mono text-xs tabular-nums text-text-lo/70">
           {count}
         </span>
       ) : null}

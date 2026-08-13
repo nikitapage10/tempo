@@ -61,19 +61,19 @@ export function CalendarMonthView({
   }, [dates, items]);
 
   return (
-    <section className="glass overflow-hidden" aria-label={formatMonthTitle(selectedDate)}>
-      <div className="grid grid-cols-7 border-b border-line/70 bg-bg-2/20">
+    <section className="glass flex h-full min-h-[22rem] flex-col overflow-hidden" aria-label={formatMonthTitle(selectedDate)}>
+      <div className="grid shrink-0 grid-cols-7 border-b border-line/70 bg-bg-2/20">
         {Array.from({ length: 7 }, (_, index) => {
           const labels = weekStartsMonday ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
           const label = labels[index];
           return (
-            <div key={label} className="px-1 py-2 text-center font-mono text-[9px] uppercase tracking-[0.08em] text-text-lo sm:text-[10px]">
+            <div key={label} className="px-1 py-2 text-center font-mono text-[10px] uppercase tracking-[0.08em] text-text-lo sm:text-[11px]">
               {label}
             </div>
           );
         })}
       </div>
-      <div className="grid grid-cols-7" role="grid">
+      <div className="grid min-h-0 flex-1 grid-cols-7 grid-rows-6" role="grid">
         {dates.map((date, index) => {
           const dateItems = byDate.get(date) ?? [];
           const day = parseDateKey(date);
@@ -98,7 +98,7 @@ export function CalendarMonthView({
                 if (pending) onSchedule(pending, date);
               }}
               className={cn(
-                "group relative min-h-[94px] min-w-0 border-line/70 p-1 sm:min-h-[124px] sm:p-1.5 lg:min-h-[142px]",
+                "group relative min-h-0 min-w-0 overflow-hidden border-line/70 p-1 sm:p-1.5",
                 index % 7 !== 6 && "border-r",
                 index < 35 && "border-b",
                 selected && "bg-bg-2/45",
@@ -111,7 +111,7 @@ export function CalendarMonthView({
                   onClick={() => onSelectDate(date)}
                   aria-label={formatDayHeading(date)}
                   className={cn(
-                    "relative flex size-6 items-center justify-center rounded-input font-mono text-[10px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice sm:text-[11px]",
+                    "relative flex size-6 items-center justify-center rounded-input font-mono text-[11px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice sm:text-xs",
                     outside ? "text-text-lo/45" : "text-text-lo",
                     isToday && "text-ice",
                     selected && "bg-bg-2 text-text-hi"
@@ -133,7 +133,7 @@ export function CalendarMonthView({
                   <Plus className="size-3" />
                 </button>
               </div>
-              <div className="space-y-1">
+              <div className="min-h-0 min-w-0 space-y-1 overflow-hidden">
                 {visible.map((item) => (
                   <CalendarItemSurface
                     key={`${date}:${item.id}`}
@@ -152,7 +152,7 @@ export function CalendarMonthView({
                   <button
                     type="button"
                     onClick={() => onMore(date)}
-                    className="block w-full truncate px-1 text-left text-[10px] text-text-lo hover:text-ice focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+                    className="block w-full truncate px-1 text-left text-[11px] text-text-lo hover:text-ice focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
                   >
                     +{dateItems.length - visible.length} more
                   </button>

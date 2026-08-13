@@ -39,9 +39,17 @@ const STAGE_PLAN: Partial<
     high: ["transition04To05", "loop05"],
     low: ["transition05To06", "scroll06"],
   },
-  processing: {
-    high: ["transition04To05", "loop05"],
+  looking_transition: {
+    high: ["loop05"],
     low: ["transition05To06", "scroll06"],
+  },
+  look_idle: {
+    high: ["transition05To06", "scroll06"],
+    low: [],
+  },
+  processing: {
+    high: ["transition05To06", "scroll06"],
+    low: [],
   },
   resolving: { high: ["transition05To06", "scroll06"], low: [] },
 };
@@ -124,6 +132,6 @@ export function useOriginMedia(phase: OriginPhase): OriginMediaControl {
 export const PHASE_GATES: Partial<Record<OriginPhase, OriginMediaKey[]>> = {
   recognizing: ["transition02To03", "loop03"],
   interpreting_transition: ["transition03To04", "loop04"],
-  resolving: ["transition04To05", "loop05"],
+  looking_transition: ["transition04To05", "loop05"],
   chapter_opening: ["transition05To06", "scroll06"],
 };

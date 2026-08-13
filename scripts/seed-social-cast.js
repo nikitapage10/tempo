@@ -365,7 +365,7 @@ async function main() {
         accepts_dms: "anyone",
         pronouns: null,
         links: [
-          { label: "Somewhere on the internet", url: "https://tempo-ten-sigma.vercel.app" },
+          { label: "Somewhere on the internet", url: "https://mytempo.dev" },
         ],
       };
       if (existing) {

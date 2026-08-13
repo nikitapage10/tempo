@@ -26,11 +26,16 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect");
+  const authError = searchParams.get("error") === "auth";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    authError
+      ? "That sign-in didn’t finish — try again, or use email and password."
+      : null
+  );
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -77,7 +82,7 @@ function LoginForm() {
           <div>
             <label
               htmlFor="email"
-              className="mb-1.5 block font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo"
+              className="mb-1.5 block font-mono text-xs uppercase tracking-[0.08em] text-text-lo"
             >
               Email
             </label>
@@ -96,7 +101,7 @@ function LoginForm() {
           <div>
             <label
               htmlFor="password"
-              className="mb-1.5 block font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo"
+              className="mb-1.5 block font-mono text-xs uppercase tracking-[0.08em] text-text-lo"
             >
               Password
             </label>
@@ -163,7 +168,7 @@ function LoginForm() {
 
         <OAuthButtons next={isSafeRedirect(redirectTo) ? redirectTo : "/"} />
 
-        <p className="text-center text-[11px] text-text-lo">
+        <p className="text-center text-xs text-text-lo">
           <Link href="/terms" className="hover:text-text-hi hover:underline">
             Terms
           </Link>

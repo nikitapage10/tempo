@@ -1,10 +1,21 @@
 name: Desktop Release
 
-# Manual by design: web-only changes already reach the Electron renderer through
-# Vercel and must not create an unnecessary 80 MB installer. Run this only when
-# electron/ changed and the packaged build has been smoke-tested.
+# Publishes TEMPO Desktop binaries to the public tempo-desktop-releases channel.
+# Web-only pushes do NOT run this — the Electron shell already loads the live
+# web app, so ordinary product updates reach desktop without a new installer.
+# Native shell changes on main, a daily catch-up, or a manual run do.
 on:
   workflow_dispatch: {}
+  schedule:
+    # Daily catch-up so the public download never sits on a forgotten build.
+    # Skips when this desktop version is already published (see should-publish).
+    - cron: "0 14 * * *"
+  push:
+    branches: [main]
+    paths:
+      - "electron/**"
+      - "scripts/check-desktop-release.mjs"
+      - ".github/workflows/desktop-release.yml"
 
 permissions:
   contents: read
@@ -14,7 +25,40 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  should-publish:
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.guard.outputs.run }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Decide whether to build
+        id: guard
+        env:
+          GH_TOKEN: ${{ secrets.DESKTOP_RELEASE_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" != "schedule" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "Publishing (event: ${{ github.event_name }})."
+            exit 0
+          fi
+          VERSION="$(node -p "require('./electron/package.json').version")"
+          CODE="$(curl -s -o /dev/null -w '%{http_code}' \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/nikitapage10/tempo-desktop-releases/releases/tags/v${VERSION}")"
+          if [ "$CODE" = "200" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "v${VERSION} already on the public channel — skipping scheduled rebuild."
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "v${VERSION} not published yet (HTTP ${CODE}) — building."
+          fi
+
   windows-release:
+    needs: should-publish
+    if: needs.should-publish.outputs.run == 'true'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,7 +76,7 @@ jobs:
         run: npm ci --prefix electron
 
       - name: Build and publish Windows update
-        run: npm --prefix electron run build -- --publish always
+        run: npm --prefix electron run build -- --win --publish always
         env:
           GH_TOKEN: ${{ secrets.DESKTOP_RELEASE_TOKEN }}
 
@@ -44,5 +88,45 @@ jobs:
             dist-desktop/TEMPO-Setup.exe
             dist-desktop/TEMPO-Setup.exe.blockmap
             dist-desktop/latest.yml
+          if-no-files-found: error
+          retention-days: 14
+
+  # Runs after Windows so both platforms land on the same GitHub release tag
+  # without racing the publisher. Unsigned on purpose — Gatekeeper will warn;
+  # artists open it via right-click → Open (same class of unsigned Mac beta).
+  mac-release:
+    needs: [should-publish, windows-release]
+    if: needs.should-publish.outputs.run == 'true'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: electron/package-lock.json
+
+      - name: Validate release contract
+        run: node scripts/check-desktop-release.mjs
+
+      - name: Install desktop dependencies
+        run: npm ci --prefix electron
+
+      - name: Build and publish unsigned Mac DMG
+        run: npm --prefix electron run build -- --mac --publish always
+        env:
+          GH_TOKEN: ${{ secrets.DESKTOP_RELEASE_TOKEN }}
+          # Skip ad-hoc keychain lookup — we ship unsigned on purpose.
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - name: Keep a workflow copy of the Mac release files
+        uses: actions/upload-artifact@v4
+        with:
+          name: tempo-desktop-mac-${{ github.run_number }}
+          path: |
+            dist-desktop/TEMPO-Mac.dmg
+            dist-desktop/TEMPO-Mac.dmg.blockmap
+            dist-desktop/latest-mac.yml
           if-no-files-found: error
           retention-days: 14

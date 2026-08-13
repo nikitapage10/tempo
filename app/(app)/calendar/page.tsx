@@ -17,7 +17,6 @@ import { CalendarToolbar } from "@/components/calendar/calendar-toolbar";
 import { CalendarFiltersPopover } from "@/components/calendar/calendar-filters-popover";
 import { CalendarOverflowMenu } from "@/components/calendar/calendar-overflow-menu";
 import { CalendarTimeline } from "@/components/calendar/calendar-planning-panels";
-import { CalendarVideoBackdrop } from "@/components/calendar-video-backdrop";
 import { useCalendarViewState } from "@/components/calendar/use-calendar-view-state";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
@@ -247,17 +246,7 @@ function CalendarContent() {
 
   return (
     <CalendarCategoryProvider categories={categoriesQuery.data?.categories ?? DEFAULT_CALENDAR_CATEGORIES}>
-      {/* A short blurred loop, held behind an 85% scrim so the dates stay
-          the brightest thing on the page. Fixed rather than absolute so it
-          backs the whole content area and stays put as the page scrolls, and
-          inset to clear the chrome it must not cover: the left rail
-          (w-[220px] in components/app-shell.tsx) and the top and bottom edge
-          strips, all of which are in normal flow and would otherwise lose to
-          a positioned element. Falls back to a still poster frame under
-          reduced motion, or if autoplay is refused. */}
-      <CalendarVideoBackdrop className="fixed inset-x-0 bottom-0 top-[var(--edge-strip-h)] z-0 md:bottom-[6px] md:left-[220px]" />
-
-      <div className="relative z-[1] space-y-4">
+      <div className="relative z-[1] flex h-[calc(100dvh-11rem)] flex-col gap-4 md:h-[calc(100dvh-7.25rem)]">
         <PageHeader title="Calendar" subtitle="Deadlines, releases, and scheduled work." />
 
         <CalendarAiScheduler today={today} timezone={vs.displayTimezone} onSchedule={scheduleFromParsed} />
@@ -355,8 +344,8 @@ function CalendarContent() {
             </Button>
           </div>
         ) : (
-          <div className="flex items-start gap-4">
-            <div className="min-w-0 flex-1">
+          <div className="flex min-h-0 flex-1 items-stretch gap-4">
+            <div className="min-h-0 min-w-0 flex-1">
               {vs.view === "timeline" ? (
                 <CalendarTimeline
                   items={filteredItems}

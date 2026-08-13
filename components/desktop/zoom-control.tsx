@@ -1,49 +1,56 @@
 "use client";
 
-import * as React from "react";
+import type { CSSProperties } from "react";
 import { Minus, Plus } from "lucide-react";
-import { getZoomFactor, isDesktopApp, zoomIn, zoomOut, zoomReset } from "@/lib/desktop/bridge";
+import { useContentZoom } from "@/hooks/use-content-zoom";
+import { useLabeledRail } from "@/hooks/use-labeled-rail";
+import { isDesktopApp } from "@/lib/desktop/bridge";
+import { railLayoutWidthPx } from "@/lib/desktop/content-zoom";
 import { cn } from "@/lib/utils";
 
 /**
- * Desktop-only interface zoom — floats bottom-left, mirroring the floating
- * assistant launcher's bottom-right position/offsets
- * (components/assistant/assistant-launcher.tsx: `fixed bottom-20 right-4
- * z-[90] ... md:bottom-5 md:right-5`) so the two read as a matched pair of
- * persistent utility controls. There's no visible menu bar to carry this as
- * a "View" menu item instead (see electron/main.js); Ctrl+=/-/0 still work
- * as shortcuts alongside it.
- *
- * The left edge of the *window* is the 220px rail (components/app-shell.tsx),
- * not open page background, so anchoring to left-4/left-5 the way the
- * assistant anchors to right-4/right-5 sat the control on top of the nav.
- * md:left-[236px] clears the rail (220px + a 16px gutter) once it's showing;
- * below that breakpoint the rail is hidden in favor of the bottom tab bar,
- * so plain left-4 is correct there.
+ * Desktop-only interface zoom. In the studio it sits past the rail; on
+ * full-bleed surfaces (Origin) it pins to the bottom-left corner; Admin
+ * sits past its fixed 15rem ops rail.
  */
-export function ZoomControl() {
-  const [mounted, setMounted] = React.useState(false);
-  const [factor, setFactor] = React.useState(1);
+export function ZoomControl({
+  placement = "rail",
+}: {
+  placement?: "rail" | "corner" | "admin";
+}) {
+  const { factor, zoomIn, zoomOut, zoomReset } = useContentZoom();
+  const labeledRail = useLabeledRail();
+  const railWidth = railLayoutWidthPx(factor, labeledRail);
 
-  React.useEffect(() => {
-    setMounted(true);
-    if (!isDesktopApp()) return;
-    void getZoomFactor().then(setFactor);
-  }, []);
-
-  if (!mounted || !isDesktopApp()) return null;
+  if (!isDesktopApp()) return null;
 
   const percent = Math.round(factor * 100);
+  const corner = placement === "corner";
+  const admin = placement === "admin";
+  // 16px gutter past the live rail width (compact or zoom-grown labeled).
+  const leftPx = railWidth + 16;
 
   return (
     <div
       className={cn(
-        "fixed bottom-20 left-4 z-[90] flex h-9 items-center gap-0.5 rounded-full border border-line bg-bg-2 px-1 text-text-lo shadow-e3 [-webkit-app-region:no-drag] md:bottom-5 md:left-[236px]"
+        "fixed z-[90] flex h-9 items-center gap-0.5 rounded-full border border-line bg-bg-2 px-1 text-text-lo shadow-e3 [-webkit-app-region:no-drag]",
+        corner
+          ? "bottom-5 left-4"
+          : admin
+            ? "bottom-20 left-4 md:bottom-5 md:left-[calc(15rem+1rem)]"
+            : "bottom-20 left-4 md:bottom-5 md:left-[var(--tempo-zoom-left)]"
       )}
+      style={
+        corner || admin
+          ? undefined
+          : ({
+              ["--tempo-zoom-left"]: `${leftPx}px`,
+            } as CSSProperties)
+      }
     >
       <button
         type="button"
-        onClick={() => void zoomOut().then(setFactor)}
+        onClick={() => zoomOut()}
         aria-label="Zoom out"
         className="flex size-7 items-center justify-center rounded-full transition-colors hover:bg-bg-3 hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
       >
@@ -51,16 +58,16 @@ export function ZoomControl() {
       </button>
       <button
         type="button"
-        onClick={() => void zoomReset().then(setFactor)}
+        onClick={() => zoomReset()}
         aria-label="Reset zoom to 100%"
         title="Reset zoom"
-        className="min-w-[2.75rem] rounded-full px-1 text-center font-mono text-[10px] transition-colors hover:bg-bg-3 hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+        className="min-w-[2.75rem] rounded-full px-1 text-center font-mono text-[11px] transition-colors hover:bg-bg-3 hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
       >
         {percent}%
       </button>
       <button
         type="button"
-        onClick={() => void zoomIn().then(setFactor)}
+        onClick={() => zoomIn()}
         aria-label="Zoom in"
         className="flex size-7 items-center justify-center rounded-full transition-colors hover:bg-bg-3 hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
       >

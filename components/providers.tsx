@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { ToastProvider } from "@/components/ui/toast";
+import { WebGlassAlertHost } from "@/components/notifications/web-glass-alert";
 import { isDesktopApp } from "@/lib/desktop/bridge";
 import { hydrateOfflineCache, installOfflinePersistence } from "@/lib/offline/query-persistence";
 import { flushOutbox } from "@/lib/offline/outbox";
@@ -71,7 +72,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ToastProvider>{hydrated ? children : null}</ToastProvider>
+      <ToastProvider>
+        {hydrated ? children : null}
+        <WebGlassAlertHost />
+      </ToastProvider>
     </QueryClientProvider>
   );
 }

@@ -56,7 +56,7 @@ function StatAreaChart({
   if (points.length === 0) {
     return (
       <div className="flex h-[108px] items-center justify-center">
-        <p className="text-[11px] text-text-lo">
+        <p className="text-xs text-text-lo">
           No readings yet — log one below to start the chart.
         </p>
       </div>
@@ -69,7 +69,7 @@ function StatAreaChart({
         <p className="text-xl tabular-nums text-text-hi">
           {formatValue(points[0].value, unit)}
         </p>
-        <p className="text-[11px] text-text-lo">
+        <p className="text-xs text-text-lo">
           One reading recorded — the chart draws in from the second.
         </p>
       </div>
@@ -178,7 +178,7 @@ function RecentEntries({
       {recent.map((e) => (
         <li
           key={e.id}
-          className="flex items-center justify-between gap-2 text-[11px] text-text-lo"
+          className="flex items-center justify-between gap-2 text-xs text-text-lo"
         >
           <span className="tabular-nums">{e.recorded_on}</span>
           <span className="flex items-center gap-1.5">

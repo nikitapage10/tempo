@@ -41,4 +41,11 @@ describe("Social discovery", () => {
     expect(globe).toContain('mixBlendMode: "screen"');
     expect(globe).toContain("dark antialiased limb");
   });
+
+  it("crops the desktop Social globe to about two-thirds of the sphere", () => {
+    const globe = read("components/social/connection-globe.tsx");
+    expect(globe).toContain("VISIBLE_DESKTOP = 0.66");
+    expect(globe).toContain("isDesktopApp()");
+    expect(globe).toContain("GLOBE_LIFT_DESKTOP_PX");
+  });
 });

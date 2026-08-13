@@ -139,7 +139,7 @@ export function LayoutToolbar({
             )
           )}
         </div>
-        <p className="mt-2 text-[11px] text-text-lo">
+        <p className="mt-2 text-xs text-text-lo">
           Each preset shows a focused set and groups the rest into tabs.
           Anything left out stays in “Hidden” below. Drop one module onto
           another to combine them into tabs. This layout is yours only —
@@ -154,7 +154,7 @@ export function LayoutToolbar({
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <p className="label-mono">Your templates</p>
             {templates.length === 0 && !naming ? (
-              <span className="text-[11px] text-text-lo/70">
+              <span className="text-xs text-text-lo/70">
                 None saved yet
               </span>
             ) : null}

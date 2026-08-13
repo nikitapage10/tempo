@@ -73,7 +73,7 @@ export function OriginNameStep({
         onSubmit={handleSubmit}
         className="relative flex flex-col gap-8 px-7 py-8 sm:px-9 sm:py-10"
       >
-        <div className="flex items-center justify-between gap-4 text-[10px] uppercase tracking-[0.28em] text-text-lo/70">
+        <div className="flex items-center justify-between gap-4 text-[11px] uppercase tracking-[0.28em] text-text-lo/70">
           <span>Signal / 01</span>
           <span className="h-px flex-1 bg-[linear-gradient(90deg,var(--line),transparent)]" />
           <span>In your words</span>

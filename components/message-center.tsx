@@ -68,7 +68,7 @@ export function MessageCenter() {
     <div className="relative" ref={ref}>
       <button type="button" onClick={() => { if (open) closeMenu(); else setOpen(true); }} aria-expanded={open} aria-label={unread ? `Messages (${unread} unread)` : "Messages"} className="relative flex size-9 items-center justify-center rounded-input text-text-lo transition-colors hover:bg-bg-2 hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice">
         <MessageCircle className="size-[18px]" strokeWidth={1.75}/>
-        {unread ? <span className="absolute right-0 top-0 flex size-4 items-center justify-center rounded-full bg-amber font-mono text-[9px] font-bold text-bg-0">{unread > 9 ? "9+" : unread}</span> : null}
+        {unread ? <span className="absolute right-0 top-0 flex size-4 items-center justify-center rounded-full bg-amber font-mono text-[10px] font-bold text-bg-0">{unread > 9 ? "9+" : unread}</span> : null}
       </button>
       {open ? (
         <div className="fixed inset-x-3 top-16 z-[70] max-h-[75vh] overflow-hidden rounded-card border border-line bg-bg-1 shadow-e3 sm:absolute sm:inset-x-auto sm:top-auto sm:right-0 sm:mt-2 sm:w-[min(26rem,calc(100vw-1.5rem))] sm:max-h-none">
@@ -76,7 +76,7 @@ export function MessageCenter() {
             {selected || composing ? (
               <button type="button" onClick={() => { setSelected(null); setComposing(false); }} className="flex items-center gap-1.5 text-xs text-text-lo hover:text-ice"><ArrowLeft className="size-3.5"/>Inbox</button>
             ) : (
-              <div><p className="label-mono">Messages</p>{unread ? <p className="mt-1 text-[10px] text-amber">{unread} unread</p> : null}</div>
+              <div><p className="label-mono">Messages</p>{unread ? <p className="mt-1 text-[11px] text-amber">{unread} unread</p> : null}</div>
             )}
             <div className="flex items-center gap-3">
               {onNetwork && !composing && !selected ? (
@@ -105,12 +105,12 @@ export function MessageCenter() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-text-hi">{activeItem.kind === "support" ? `TEMPO Support · ${activeItem.title}` : activeItem.title}</p>
                     <p className="mt-2 max-h-36 overflow-y-auto whitespace-pre-wrap text-xs leading-relaxed text-text-lo">{activeItem.preview}</p>
-                    <p className="mt-2 text-[10px] text-ice">Open full conversation</p>
+                    <p className="mt-2 text-[11px] text-ice">Open full conversation</p>
                   </div>
                 </div>
               </Link>
               <div className="bg-bg-0/35 p-3">
-                <p className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-text-lo">Quick reply {selected.kind === "support" ? <Headphones className="size-3 text-amber"/> : null}</p>
+                <p className="mb-2 flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-text-lo">Quick reply {selected.kind === "support" ? <Headphones className="size-3 text-amber"/> : null}</p>
                 <MessageComposer
                   compact
                   scope={selected.kind}
@@ -124,7 +124,7 @@ export function MessageCenter() {
                     }
                   }}
                 />
-                <Link href={selected.kind === "support" ? `/messages?support=${selected.id}` : `/messages?c=${selected.id}`} onClick={closeMenu} className="mt-2 flex items-center justify-center gap-1.5 text-[11px] text-text-lo hover:text-ice"><MessagesSquare className="size-3"/>View full conversation</Link>
+                <Link href={selected.kind === "support" ? `/messages?support=${selected.id}` : `/messages?c=${selected.id}`} onClick={closeMenu} className="mt-2 flex items-center justify-center gap-1.5 text-xs text-text-lo hover:text-ice"><MessagesSquare className="size-3"/>View full conversation</Link>
               </div>
             </div>
           ) : selected ? (
@@ -134,7 +134,7 @@ export function MessageCenter() {
               {items.map((item) => (
                 <button key={`${item.kind}-${item.id}`} type="button" onClick={() => chooseThread(item.kind, item.id)} className="flex w-full items-start gap-3 border-b border-line/70 px-3 py-3 text-left transition-colors hover:bg-bg-2">
                   {item.kind === "support" ? <span className="flex size-7 shrink-0 items-center justify-center rounded-full border border-amber/20 bg-amber/10"><Headphones className="size-3.5 text-amber"/></span> : <ArtistMark emblemUrl={item.thread?.peer?.emblem_url ?? null} paletteId={item.thread?.peer?.palette_id} iceColor={item.thread?.peer?.ice_color} amberColor={item.thread?.peer?.amber_color} name={item.title} size={18} className="size-7"/>}
-                  <div className="min-w-0 flex-1"><div className="flex items-center gap-2"><p className="truncate text-xs font-medium text-text-hi">{item.kind === "support" ? `TEMPO Support · ${item.title}` : item.title}</p>{item.unread ? <span className="ml-auto mt-1 size-1.5 shrink-0 rounded-full bg-amber"/> : null}</div><p className="mt-1 line-clamp-3 whitespace-normal text-[11px] leading-relaxed text-text-lo">{item.preview}</p></div>
+                  <div className="min-w-0 flex-1"><div className="flex items-center gap-2"><p className="truncate text-xs font-medium text-text-hi">{item.kind === "support" ? `TEMPO Support · ${item.title}` : item.title}</p>{item.unread ? <span className="ml-auto mt-1 size-1.5 shrink-0 rounded-full bg-amber"/> : null}</div><p className="mt-1 line-clamp-3 whitespace-normal text-xs leading-relaxed text-text-lo">{item.preview}</p></div>
                 </button>
               ))}
             </div>

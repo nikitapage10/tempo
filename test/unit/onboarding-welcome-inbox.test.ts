@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 describe("Nikita welcome inbox visibility", () => {
   const migration = readFileSync(
-    join(process.cwd(), "migrations/084_hide_unanswered_nikita_welcomes.sql"),
+    join(process.cwd(), "migrations/080_hide_unanswered_nikita_welcomes.sql"),
     "utf8"
   );
   const messagesApi = readFileSync(

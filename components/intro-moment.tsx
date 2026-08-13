@@ -18,6 +18,12 @@ import {
   introDayKey,
   introWillPlay,
 } from "@/lib/intro";
+import {
+  TEMPO_THEME_SRC,
+  TEMPO_THEME_VOLUME,
+  startTempoThemeBed,
+  stopTempoThemeBed,
+} from "@/lib/audio/tempo-theme-bed";
 import { LfWindow } from "@/components/lf-windows";
 import { cn } from "@/lib/utils";
 
@@ -81,11 +87,13 @@ export function IntroMoment({
   const [showSkipHint, setShowSkipHint] = React.useState(false);
 
   const videoRef = React.useRef<HTMLVideoElement>(null);
+  const audioRef = React.useRef<HTMLAudioElement>(null);
   const containerRef = React.useRef<HTMLDivElement>(null);
   const glRef = React.useRef<GL | null>(null);
   const phaseRef = React.useRef(phase);
   phaseRef.current = phase;
   const gateRanRef = React.useRef(false);
+  const cancelBedFadeRef = React.useRef<(() => void) | null>(null);
 
   /** Stable across playing→melting so the melt context survives the switch. */
   const glActive = phase === "playing" || phase === "melting";
@@ -135,6 +143,27 @@ export function IntroMoment({
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [phase, skipToMelt]);
+
+  // Soft Tempo Theme under the film — same bed as login / Origin.
+  React.useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (phase === "playing") {
+      cancelBedFadeRef.current?.();
+      cancelBedFadeRef.current = startTempoThemeBed(audio, TEMPO_THEME_VOLUME) ?? null;
+      return () => {
+        cancelBedFadeRef.current?.();
+        cancelBedFadeRef.current = null;
+      };
+    }
+
+    if (phase === "melting" || phase === "done") {
+      cancelBedFadeRef.current?.();
+      cancelBedFadeRef.current = null;
+      void stopTempoThemeBed(audio);
+    }
+  }, [phase]);
 
   // Chrome punch-through, and pause the field so the video gets the GPU.
   // Both release on "melting" — the field has to be live again by the time
@@ -408,6 +437,15 @@ export function IntroMoment({
       role="presentation"
       onClick={skipToMelt}
     >
+      {/* Soft soundtrack — same Tempo Theme as login / Origin. */}
+      <audio
+        ref={audioRef}
+        src={TEMPO_THEME_SRC}
+        preload="auto"
+        loop
+        aria-hidden
+      />
+
       {/* Plain composited playback — no per-frame GPU upload. */}
       <video
         ref={videoRef}

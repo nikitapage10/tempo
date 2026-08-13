@@ -12,11 +12,22 @@ import {
   updateTrack,
 } from "@/lib/api/tracks";
 import type { Track, TrackInsert, TrackUpdate } from "@/lib/types";
+import { warmSignedUrls } from "@/lib/storage";
 
 export function useTracks(spaceId: string | null) {
   return useQuery({
     queryKey: ["tracks", spaceId],
-    queryFn: () => fetchTracks(spaceId!),
+    queryFn: async () => {
+      const tracks = await fetchTracks(spaceId!);
+      // Batch-sign covers as soon as the list lands so tiles don't wait
+      // one-by-one on createSignedUrl.
+      void warmSignedUrls(
+        tracks
+          .map((t) => t.artwork_url)
+          .filter((url): url is string => !!url)
+      );
+      return tracks;
+    },
     enabled: !!spaceId,
   });
 }

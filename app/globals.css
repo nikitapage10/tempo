@@ -47,8 +47,9 @@
     --ok-rgb: 111 217 154;
     --warn-rgb: 255 122 107;
 
-    /* Top Spectra lightfield strip — visible animated sliver */
-    --edge-strip-h: 6px;
+    /* The app shell no longer reserves a top lightfield strip. Individual
+     * shader moments still use the root field where explicitly requested. */
+    --edge-strip-h: 0px;
 
     /* --- Depth layer (v0.13) ---------------------------------------------
      * Spectra shipped with flat fills and no elevation, which read as an
@@ -63,9 +64,11 @@
     --edge-hi-strong: rgb(255 255 255 / 0.09);
 
     /* Elevation */
-    --shadow-1: 0 1px 2px rgb(0 0 0 / 0.4);
-    --shadow-2: 0 4px 16px -2px rgb(0 0 0 / 0.5), 0 2px 6px -2px rgb(0 0 0 / 0.4);
-    --shadow-3: 0 16px 48px -12px rgb(0 0 0 / 0.7), 0 4px 12px -4px rgb(0 0 0 / 0.5);
+    /* Elevation ramp — shared cast shadow for peer modules. Quiet surfaces
+     * differentiate via fill/blur, not by looking flat next to a deep drop. */
+    --shadow-1: 0 1px 2px rgb(0 0 0 / 0.32);
+    --shadow-2: 0 8px 24px -8px rgb(0 0 0 / 0.48), 0 2px 8px -4px rgb(0 0 0 / 0.32);
+    --shadow-3: 0 14px 36px -10px rgb(0 0 0 / 0.55), 0 4px 12px -4px rgb(0 0 0 / 0.36);
 
     /* Larger radius for major surfaces; card/input/chip stay as spec'd */
     --radius-panel: 16px;
@@ -103,7 +106,9 @@
 
   body {
     @apply bg-bg-0 text-text-hi font-sans antialiased;
-    font-size: 14px;
+    font-family: var(--font-jura), sans-serif;
+    font-size: 15px;
+    font-weight: 500;
     line-height: 1.5;
   }
 
@@ -511,8 +516,24 @@
   }
 
   .font-data {
-    /* TEMP one-font preview — was var(--font-jetbrains-mono), ui-monospace, monospace; */
+    /* Inter for numerals — Jura's zero carries a centre dot. */
     font-family: var(--font-inter), sans-serif;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Any tabular figure run uses Inter — catches counts that only opted into
+   * tabular-nums without font-mono / font-data. */
+  .tabular-nums {
+    font-family: var(--font-inter), sans-serif;
+  }
+
+  input[type="number"],
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"] {
+    font-family: var(--font-inter), sans-serif;
+    font-variant-numeric: tabular-nums;
   }
 
   /* ---------------------------------------------------------------------
@@ -524,9 +545,12 @@
   .panel {
     position: relative;
     border-radius: var(--radius-panel);
-    background: linear-gradient(180deg, #16161d 0%, var(--bg-1) 100%);
-    border: 1px solid var(--line);
+    background-color: rgb(var(--bg-0-rgb) / 0.46);
+    border: 1px solid rgb(var(--line-rgb) / 0.7);
+    /* Same cast as panel-quiet — peers must match; quiet is quieter fill. */
     box-shadow: var(--shadow-2);
+    backdrop-filter: blur(20px) saturate(1.1);
+    -webkit-backdrop-filter: blur(20px) saturate(1.1);
   }
 
   /* Lit top edge. Inset so it hugs the radius. */
@@ -546,20 +570,24 @@
     pointer-events: none;
   }
 
-  /* Quieter sibling — for secondary regions that shouldn't compete. */
+  /* Quieter sibling — for secondary regions that shouldn't compete.
+   * Same elevation as .panel so a quiet tile beside a primary tile doesn't
+   * look like a sticker; softer fill + lighter blur carry the hierarchy. */
   .panel-quiet {
     position: relative;
     border-radius: var(--radius-panel);
-    background: rgb(18 18 22 / 0.6);
-    border: 1px solid rgb(38 38 46 / 0.7);
-    box-shadow: var(--shadow-1);
+    background-color: rgb(var(--bg-1-rgb) / 0.42);
+    border: 1px solid rgb(var(--line-rgb) / 0.62);
+    box-shadow: var(--shadow-2);
+    backdrop-filter: blur(14px) saturate(1.05);
+    -webkit-backdrop-filter: blur(14px) saturate(1.05);
   }
 
   /* Inset well — for lists/rows sitting inside a panel. */
   .well {
     border-radius: 12px;
-    background: rgb(10 10 12 / 0.45);
-    border: 1px solid rgb(38 38 46 / 0.6);
+    background-color: rgb(var(--bg-0-rgb) / 0.38);
+    border: 1px solid rgb(var(--line-rgb) / 0.56);
   }
 
   /* ---------------------------------------------------------------------
@@ -574,11 +602,39 @@
   .glass {
     position: relative;
     border-radius: var(--radius-panel);
-    background: rgb(var(--bg-0-rgb) / 0.42);
-    border: 1px solid rgb(var(--line-rgb) / 0.7);
-    box-shadow: var(--shadow-3);
-    backdrop-filter: blur(20px) saturate(1.1);
-    -webkit-backdrop-filter: blur(20px) saturate(1.1);
+    background: rgb(var(--bg-0-rgb) / 0.32);
+    border: 1px solid rgb(var(--line-rgb) / 0.55);
+    box-shadow: var(--shadow-2);
+    backdrop-filter: blur(22px) saturate(1.15);
+    -webkit-backdrop-filter: blur(22px) saturate(1.15);
+  }
+
+  /* Heroes over Spectra / video — lighter frost so prismatic lines stay
+   * readable instead of dissolving into smoke, and the wash shows through. */
+  .glass-hero {
+    position: relative;
+    border-radius: var(--radius-panel);
+    background: rgb(var(--bg-0-rgb) / 0.16);
+    border: 1px solid rgb(var(--line-rgb) / 0.48);
+    box-shadow: var(--shadow-2);
+    backdrop-filter: blur(7px) saturate(1.08);
+    -webkit-backdrop-filter: blur(7px) saturate(1.08);
+  }
+
+  .glass-hero::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    border-radius: var(--radius-panel) var(--radius-panel) 0 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      var(--edge-hi-strong) 25%,
+      var(--edge-hi-strong) 75%,
+      transparent 100%
+    );
+    pointer-events: none;
   }
 
   .glass::before {
@@ -619,12 +675,52 @@
     color: var(--ice);
   }
 
+  /* Vertical Spectra edge — Origin motif, opt-in only.
+   * Put `.prism-edge` on major shells (heroes, board columns) — never on
+   * every `.panel` / `.glass`, or dense screens like Calendar drown in lines.
+   * The stroke is inset top/bottom past the corner radius. Board columns also
+   * use overflow:hidden so backdrop-blur clips cleanly to the radius; Spotlight
+   * cards track local --spot-x/y and still light under that clip. */
+  .prism-edge {
+    position: relative;
+  }
+
+  .prism-edge::after {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    left: 0;
+    /* Inset past the corner radius so the bright mid-line doesn't poke out of
+       the rounded square; ends stay soft via the gradient. */
+    top: 10px;
+    bottom: 10px;
+    width: 1px;
+    background: linear-gradient(
+      to bottom,
+      transparent 0%,
+      var(--amber) 32%,
+      var(--ice) 68%,
+      transparent 100%
+    );
+    opacity: 0.72;
+    box-shadow: 0 0 12px rgb(var(--ice-rgb) / 0.22);
+    z-index: 1;
+  }
+
+  .prism-edge-sm::after {
+    top: 6px;
+    bottom: 6px;
+  }
+
   /* backdrop-filter unsupported (very old browsers / some in-app webviews):
      fall back to a solid enough fill that text stays legible. */
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    .glass {
+    .panel,
+    .glass,
+    .glass-hero {
       background: var(--bg-1);
     }
+    .panel-quiet,
     .glass-quiet,
     .glass-chip {
       background: var(--bg-2);
@@ -640,7 +736,7 @@
   }
 
   .lift:hover {
-    background-color: var(--bg-2);
+    background-color: rgb(var(--bg-2-rgb) / 0.72);
     border-color: rgb(127 180 255 / 0.22);
     box-shadow: var(--shadow-2);
   }
@@ -666,37 +762,37 @@
       0 0 32px -8px rgb(255 181 107 / 0.3);
   }
 
-  /* Section label — mono, uppercase, tracked. Replaces ad-hoc h2 styling. */
+  /* Section label — compact, uppercase, tracked. Replaces ad-hoc h2 styling. */
   .label-mono {
-    font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
-    font-size: 11px;
+    font-family: var(--font-jura), sans-serif;
+    font-size: 12px;
+    font-weight: 600;
     line-height: 1;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.12em;
     color: var(--text-lo);
   }
 
-  /* Big glanceable numerals. Mono per spec — data is always mono. */
+  /* Big glanceable numerals — Inter so zeros stay clean (no centre dot). */
   .stat-value {
-    font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+    font-family: var(--font-inter), sans-serif;
     font-size: 34px;
     line-height: 1;
-    font-weight: 500;
+    font-weight: 600;
     letter-spacing: -0.02em;
     font-variant-numeric: tabular-nums;
   }
 
-  /* Hero scrim: opaque where copy sits, clearing to the right so the
-   * lightfield is actually visible. Left band stays ≥85% black per the
-   * legibility rule in .cursorrules. */
+  /* Hero scrim: readable where copy sits, clearing harder to the right so
+   * Spectra and the video wash can show through the glass. */
   .scrim-reveal {
     background: linear-gradient(
       100deg,
-      rgb(10 10 12 / 0.96) 0%,
-      rgb(10 10 12 / 0.93) 38%,
-      rgb(10 10 12 / 0.72) 58%,
-      rgb(10 10 12 / 0.42) 78%,
-      rgb(10 10 12 / 0.3) 100%
+      rgb(10 10 12 / 0.48) 0%,
+      rgb(10 10 12 / 0.28) 36%,
+      rgb(10 10 12 / 0.12) 58%,
+      rgb(10 10 12 / 0.04) 78%,
+      rgb(10 10 12 / 0.01) 100%
     );
   }
 
@@ -764,8 +860,8 @@
     inset: calc(var(--border-size) * -1);
     border: var(--border-size) solid transparent;
     border-radius: calc(var(--spot-radius) * 1px);
-    /* fixed attachment is what lets viewport pointer coords line up */
-    background-attachment: fixed;
+    /* Local coords (--spot-x/y from SpotlightCard) — not background-attachment
+       fixed — so Board stage transforms / overflow don't kill the edge glow. */
     background-size:
       calc(100% + (2 * var(--border-size))) calc(100% + (2 * var(--border-size)));
     background-repeat: no-repeat;
@@ -788,7 +884,8 @@
   .spotlight::before {
     background-image: radial-gradient(
       calc(var(--spotlight-size) * 0.75) calc(var(--spotlight-size) * 0.75) at
-        calc(var(--pointer-x, 0) * 1px) calc(var(--pointer-y, 0) * 1px),
+        calc(var(--spot-x, 50%) + var(--border-size))
+        calc(var(--spot-y, 50%) + var(--border-size)),
       var(--spot-color, var(--ice)),
       transparent 100%
     );
@@ -799,7 +896,8 @@
   .spotlight::after {
     background-image: radial-gradient(
       calc(var(--spotlight-size) * 0.4) calc(var(--spotlight-size) * 0.4) at
-        calc(var(--pointer-x, 0) * 1px) calc(var(--pointer-y, 0) * 1px),
+        calc(var(--spot-x, 50%) + var(--border-size))
+        calc(var(--spot-y, 50%) + var(--border-size)),
       rgb(255 255 255 / 0.9),
       transparent 100%
     );
@@ -809,22 +907,23 @@
   .spotlight:hover::before,
   .spotlight:focus-within::before {
     opacity: 1;
+    z-index: 2;
   }
 
   .spotlight:hover::after,
   .spotlight:focus-within::after {
     opacity: 0.75;
+    z-index: 2;
   }
 
   /* Faint interior wash so the card itself reacts, not just its edge. */
   .spotlight-fill {
     background-image: radial-gradient(
       calc(var(--spotlight-size) * 1.1) calc(var(--spotlight-size) * 1.1) at
-        calc(var(--pointer-x, 0) * 1px) calc(var(--pointer-y, 0) * 1px),
+        var(--spot-x, 50%) var(--spot-y, 50%),
       var(--spot-color, var(--ice)),
       transparent 70%
     );
-    background-attachment: fixed;
     background-repeat: no-repeat;
     opacity: 0;
     transition: opacity 200ms ease;
@@ -860,9 +959,9 @@
     .scrim-reveal {
       background: linear-gradient(
         170deg,
-        rgb(10 10 12 / 0.95) 0%,
-        rgb(10 10 12 / 0.9) 55%,
-        rgb(10 10 12 / 0.55) 100%
+        rgb(10 10 12 / 0.48) 0%,
+        rgb(10 10 12 / 0.22) 55%,
+        rgb(10 10 12 / 0.06) 100%
       );
     }
   }
@@ -1123,6 +1222,29 @@
   .origin-first-open__shader {
     animation: none;
     opacity: 0;
+  }
+}
+
+/* Origin palette picks ease ice/amber instead of snapping. */
+@property --ice {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #7fb4ff;
+}
+
+@property --amber {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #ffb56b;
+}
+
+html {
+  transition: --ice 700ms ease, --amber 700ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    transition: none;
   }
 }
 

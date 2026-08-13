@@ -145,7 +145,7 @@ export function ReleasePlanDialog({
                       <span className="block text-text-hi">
                         {s.kind === "checklist" ? s.text : s.title}
                       </span>
-                      <span className="mt-0.5 block font-mono text-[10px] uppercase tracking-wide text-text-lo">
+                      <span className="mt-0.5 block font-mono text-[11px] uppercase tracking-wide text-text-lo">
                         {s.kind === "checklist"
                           ? `Checklist · ${s.trackTitle}`
                           : `Task · ${s.category}`}

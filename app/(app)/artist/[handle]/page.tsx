@@ -66,16 +66,24 @@ export default function ArtistProfileByHandlePage() {
 
   return (
     <div className="space-y-5">
-      <LfWindow className="relative overflow-hidden rounded-panel border border-line shadow-e3">
+      <div className="glass-hero prism-edge relative overflow-hidden">
         <div className="absolute inset-0">
-          <div className="scrim-reveal absolute inset-0" aria-hidden />
+          <LfWindow field className="absolute inset-0" aria-hidden />
           {profile.banner_url || profile.banner_color ? (
-            <div className="absolute inset-0">
+            <div
+              className="absolute inset-0"
+              style={{
+                maskImage:
+                  "linear-gradient(100deg, #000 0%, #000 42%, rgb(0 0 0 / 0.55) 58%, transparent 82%)",
+                WebkitMaskImage:
+                  "linear-gradient(100deg, #000 0%, #000 42%, rgb(0 0 0 / 0.55) 58%, transparent 82%)",
+              }}
+            >
               {profile.banner_url ? (
                 <SignedImage
                   path={profile.banner_url}
                   alt=""
-                  className="absolute inset-0 size-full object-cover"
+                  className="absolute inset-0 size-full object-cover opacity-[0.72]"
                 />
               ) : (
                 <div
@@ -83,8 +91,8 @@ export default function ArtistProfileByHandlePage() {
                   className="absolute inset-0"
                   style={{
                     background: profile.banner_color_end
-                      ? `linear-gradient(125deg, ${profile.banner_color} 0%, ${profile.banner_color_end} 42%, var(--bg-0) 100%)`
-                      : `linear-gradient(180deg, ${profile.banner_color} 0%, var(--bg-0) 100%)`,
+                      ? `linear-gradient(125deg, color-mix(in oklab, ${profile.banner_color} 55%, transparent) 0%, color-mix(in oklab, ${profile.banner_color_end} 38%, transparent) 42%, transparent 100%)`
+                      : `linear-gradient(180deg, color-mix(in oklab, ${profile.banner_color} 48%, transparent) 0%, transparent 100%)`,
                   }}
                 />
               )}
@@ -93,11 +101,12 @@ export default function ArtistProfileByHandlePage() {
                 className="absolute inset-0"
                 style={{
                   background:
-                    "linear-gradient(180deg, rgb(10 10 12 / 0.55) 0%, rgb(10 10 12 / 0.8) 70%, var(--bg-0) 100%)",
+                    "linear-gradient(100deg, rgb(10 10 12 / 0.28) 0%, rgb(10 10 12 / 0.12) 40%, transparent 70%)",
                 }}
               />
             </div>
           ) : null}
+          <div className="scrim-reveal absolute inset-0" aria-hidden />
         </div>
 
         {profile.emblem_url ? (
@@ -114,7 +123,7 @@ export default function ArtistProfileByHandlePage() {
         <div className="relative z-[2] flex items-start justify-between gap-3 px-6 py-8 sm:px-8 sm:py-10">
           <div className="min-w-0">
             <p className="label-mono mb-1.5">Artist profile</p>
-            <h1 className="min-w-0 font-display text-3xl font-semibold tracking-tight text-text-hi sm:text-[40px] sm:leading-[1.05]">
+            <h1 className="min-w-0 font-display text-3xl font-medium tracking-[0.025em] text-text-hi sm:text-[40px] sm:leading-[1.05]">
               {profile.display_name}
             </h1>
             {profile.handle ? (
@@ -181,7 +190,7 @@ export default function ArtistProfileByHandlePage() {
         </div>
 
         <FlareLine className="relative z-[1] mx-6 mb-6 max-w-[420px] opacity-60 sm:mx-8" />
-      </LfWindow>
+      </div>
 
       <ArtistProfileStoryView profile={profile} releasedTracks={releasedTracks} />
     </div>

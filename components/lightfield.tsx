@@ -226,7 +226,7 @@ function DebugPanel() {
     max: number,
     step: number
   ) => (
-    <label key={key} className="flex flex-col gap-1 font-mono text-[10px] text-text-lo">
+    <label key={key} className="flex flex-col gap-1 font-mono text-[11px] text-text-lo">
       <span className="flex justify-between uppercase tracking-[0.08em]">
         <span>{key}</span>
         <span className="text-text-hi">{vals[key].toFixed(4)}</span>
@@ -250,12 +250,12 @@ function DebugPanel() {
   return (
     <div className="pointer-events-auto fixed bottom-4 right-4 z-[200] w-64 rounded-card border border-line bg-bg-1/95 p-3 shadow-raise backdrop-blur-sm">
       <div className="mb-2 flex items-center justify-between">
-        <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-amber">
+        <p className="font-mono text-xs uppercase tracking-[0.08em] text-amber">
           lf debug
         </p>
         <button
           type="button"
-          className="font-mono text-[10px] uppercase tracking-[0.08em] text-text-lo hover:text-text-hi"
+          className="font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo hover:text-text-hi"
           onClick={() => {
             setDebugOverride(null);
             setVals(getLightfieldUniforms());

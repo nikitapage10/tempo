@@ -218,7 +218,7 @@ function CoverTile({
         className="absolute inset-x-0 bottom-14 top-0 z-10 flex items-center justify-center focus-visible:outline-none disabled:cursor-default"
       >
         {source === "spotify" ? (
-          <span className="absolute right-2 top-2 rounded-full bg-[#1DB954] px-2 py-1 font-mono text-[9px] uppercase tracking-[0.08em] text-black shadow-e1">
+          <span className="absolute right-2 top-2 rounded-full bg-[#1DB954] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.08em] text-black shadow-e1">
             Spotify
           </span>
         ) : null}
@@ -245,7 +245,7 @@ function CoverTile({
         aria-label={`Open ${track.title}`}
       >
         <span className="truncate text-xs font-medium">{track.title}</span>
-        <span className="truncate text-[10px] text-white/65">
+        <span className="truncate text-[11px] text-white/65">
           {track.artist_alias || "Open track"}
         </span>
       </Link>

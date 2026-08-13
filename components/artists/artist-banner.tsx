@@ -5,13 +5,9 @@ import type { Artist } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 /**
- * An artist's banner, as a background layer inside existing chrome.
- *
- * Two rules keep this feeling like TEMPO rather than a photo with text on it:
- * images always get a scrim that fades to --bg-0, and flat colours render as
- * a wash toward --bg-0 rather than a flat fill (surfaces here are lit, not
- * painted). With neither set the component renders nothing at all, so the
- * default account is visually untouched.
+ * An artist's banner over glass. The photo should read as the hero image;
+ * Spectra still peeks through via fadeRight and a light veil — not by crushing
+ * the picture to ~20% opacity.
  */
 export function ArtistBanner({
   artist,
@@ -37,13 +33,13 @@ export function ArtistBanner({
   if (!hasBanner) return children ? <>{children}</> : null;
 
   const fadeMask = fadeRight
-    ? "linear-gradient(100deg, #000 0%, #000 42%, rgb(0 0 0 / 0.55) 62%, transparent 82%)"
+    ? "linear-gradient(100deg, #000 0%, #000 42%, rgb(0 0 0 / 0.55) 58%, transparent 82%)"
     : undefined;
 
   const colorWash =
     artist.banner_color && artist.banner_color_end
-      ? `linear-gradient(125deg, ${artist.banner_color} 0%, ${artist.banner_color_end} 42%, rgb(10 10 12 / 0.65) 72%, var(--bg-0) 100%)`
-      : `linear-gradient(180deg, ${artist.banner_color} 0%, rgb(10 10 12 / 0.65) 70%, var(--bg-0) 100%)`;
+      ? `linear-gradient(125deg, color-mix(in oklab, ${artist.banner_color} 55%, transparent) 0%, color-mix(in oklab, ${artist.banner_color_end} 38%, transparent) 42%, transparent 100%)`
+      : `linear-gradient(180deg, color-mix(in oklab, ${artist.banner_color} 48%, transparent) 0%, transparent 100%)`;
 
   return (
     <div
@@ -59,15 +55,15 @@ export function ArtistBanner({
           <SignedImage
             path={artist.banner_url}
             alt=""
-            className="absolute inset-0 size-full object-cover"
+            className="absolute inset-0 size-full object-cover opacity-[0.72]"
           />
-          {/* Scrim — keeps overlaid text at the same contrast as an unbannered panel. */}
+          {/* Soft left-biased veil for type — keep the photo visible. */}
           <div
             aria-hidden
             className="absolute inset-0"
             style={{
               background:
-                "linear-gradient(180deg, rgb(10 10 12 / 0.55) 0%, rgb(10 10 12 / 0.75) 60%, var(--bg-0) 100%)",
+                "linear-gradient(100deg, rgb(10 10 12 / 0.28) 0%, rgb(10 10 12 / 0.12) 40%, transparent 70%)",
             }}
           />
         </>

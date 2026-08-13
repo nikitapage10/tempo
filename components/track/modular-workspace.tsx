@@ -527,7 +527,7 @@ function LayoutEditor({
                 <button
                   type="button"
                   onClick={() => add(id, "left")}
-                  className="border-l border-line px-2 py-1 text-[11px] text-ice transition-colors duration-hover hover:bg-ice/10"
+                  className="border-l border-line px-2 py-1 text-xs text-ice transition-colors duration-hover hover:bg-ice/10"
                   aria-label={`Add ${label(id)} to the left column`}
                 >
                   <Plus className="mr-0.5 inline size-3" />L
@@ -535,7 +535,7 @@ function LayoutEditor({
                 <button
                   type="button"
                   onClick={() => add(id, "right")}
-                  className="border-l border-line px-2 py-1 text-[11px] text-ice transition-colors duration-hover hover:bg-ice/10"
+                  className="border-l border-line px-2 py-1 text-xs text-ice transition-colors duration-hover hover:bg-ice/10"
                   aria-label={`Add ${label(id)} to the right column`}
                 >
                   <Plus className="mr-0.5 inline size-3" />R
@@ -615,7 +615,7 @@ function EditColumn({
           ))}
         </SortableContext>
         {visible.length === 0 ? (
-          <p className="py-6 text-center text-[11px] text-text-lo/60">
+          <p className="py-6 text-center text-xs text-text-lo/60">
             Drag a module here
           </p>
         ) : null}
@@ -741,7 +741,7 @@ function Tile({
         <ul className="space-y-1 border-t border-line/70 px-2.5 py-2">
           {slot.map((id) => (
             <li key={id} className="flex items-center gap-1.5">
-              <span className="min-w-0 flex-1 truncate text-[11px] text-text-lo">
+              <span className="min-w-0 flex-1 truncate text-xs text-text-lo">
                 {label(id)}
               </span>
               {onUngroup ? (
@@ -775,7 +775,7 @@ function Tile({
       ) : null}
 
       {combining ? (
-        <p className="border-t border-ice/30 px-2.5 py-1.5 text-[11px] text-ice">
+        <p className="border-t border-ice/30 px-2.5 py-1.5 text-xs text-ice">
           Drop to combine into tabs
         </p>
       ) : null}

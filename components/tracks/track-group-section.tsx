@@ -200,7 +200,7 @@ export function TrackGroupSection({
             <h2 className="truncate font-display text-sm font-medium tracking-tight text-text-hi">
               {title}
             </h2>
-            <span className="font-data shrink-0 text-[10px] text-text-lo/70">
+            <span className="font-data shrink-0 text-[11px] text-text-lo/70">
               {count}
             </span>
           </div>
@@ -264,11 +264,11 @@ export function TrackGroupSection({
       >
         {count === 0 ? (
           canDrag ? (
-            <li className="px-3 py-4 text-center text-[11px] text-text-lo/60">
+            <li className="px-3 py-4 text-center text-xs text-text-lo/60">
               Drop tracks here
             </li>
           ) : title ? (
-            <li className="px-3 py-3 text-center text-[11px] text-text-lo/50">
+            <li className="px-3 py-3 text-center text-xs text-text-lo/50">
               No tracks in this group
             </li>
           ) : null

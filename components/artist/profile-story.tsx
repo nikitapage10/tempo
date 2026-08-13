@@ -141,7 +141,7 @@ export function ArtistProfileStoryView({
                 key={`${marker.label}-${index}`}
                 className="relative overflow-hidden rounded-card border border-line/70 bg-white/[0.022] p-4"
               >
-                <span className="absolute right-3 top-2 text-[10px] text-ice/50">
+                <span className="absolute right-3 top-2 text-[11px] text-ice/50">
                   {String(index + 1).padStart(2, "0")}
                 </span>
                 <h3 className="pr-8 font-display text-base text-text-hi">{marker.label}</h3>
@@ -184,7 +184,7 @@ export function ArtistProfileStoryView({
                 key={`${section.title}-${index}`}
                 className="relative overflow-hidden rounded-card border border-line/70 bg-white/[0.022] p-5"
               >
-                <span className="absolute right-4 top-3 font-mono text-[10px] text-ice/45">
+                <span className="absolute right-4 top-3 font-mono text-[11px] text-ice/45">
                   {String(index + 1).padStart(2, "0")}
                 </span>
                 {section.title ? (
@@ -230,7 +230,7 @@ function ReleasedTracksPanel({ tracks }: { tracks: ProfileReleasedTrack[] }) {
 
       {tracks.length > 1 ? (
         <div className="mt-3 border-t border-line/60 pt-3">
-          <label htmlFor="released-track-picker" className="mb-1.5 block text-[11px] text-text-lo">
+          <label htmlFor="released-track-picker" className="mb-1.5 block text-xs text-text-lo">
             Choose another release
           </label>
           <select

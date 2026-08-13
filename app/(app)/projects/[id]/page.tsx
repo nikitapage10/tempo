@@ -217,7 +217,7 @@ export default function ProjectDetailPage() {
       ) : null}
 
       <section className="rounded-card border border-line bg-bg-1 p-4">
-        <h2 className="mb-3 font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+        <h2 className="mb-3 font-mono text-xs uppercase tracking-[0.08em] text-text-lo">
           Tracks
           <span className="ml-2 text-text-lo/70">{tracks.length}</span>
         </h2>
@@ -287,7 +287,7 @@ export default function ProjectDetailPage() {
                 </Link>
                 <button
                   type="button"
-                  className="text-[11px] text-text-lo hover:text-warn"
+                  className="text-xs text-text-lo hover:text-warn"
                   onClick={async () => {
                     try {
                       await attachTrack.mutateAsync({
@@ -312,7 +312,7 @@ export default function ProjectDetailPage() {
       </section>
 
       <section className="rounded-card border border-line bg-bg-1 p-4">
-        <h2 className="mb-3 font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+        <h2 className="mb-3 font-mono text-xs uppercase tracking-[0.08em] text-text-lo">
           Tasks
           <span className="ml-2 text-text-lo/70">{tasks.length}</span>
         </h2>
@@ -373,7 +373,7 @@ export default function ProjectDetailPage() {
                   >
                     {t.title}
                   </Link>
-                  <span className="font-mono text-[10px] text-text-lo">
+                  <span className="font-mono text-[11px] text-text-lo">
                     {cat}
                     {t.due_date
                       ? ` · ${formatShortDate(t.due_date + "T12:00:00")}`
@@ -381,7 +381,7 @@ export default function ProjectDetailPage() {
                   </span>
                   <button
                     type="button"
-                    className="text-[11px] text-text-lo hover:text-warn"
+                    className="text-xs text-text-lo hover:text-warn"
                     onClick={async () => {
                       try {
                         await attachTask.mutateAsync({

@@ -12,6 +12,9 @@ import { INTRO_SOURCES, introWillPlay } from "@/lib/intro";
  * real preload destination, and only a media element actually fills the
  * media cache. Skipped when the intro wouldn't play anyway, so nobody pays
  * for bytes they'll never see.
+ *
+ * Starts only after the Tempo Theme bed is ready (or a short timeout), so the
+ * ~2.7MB soundtrack isn't competing with the intro film on first paint.
  */
 export function IntroPreload() {
   const elRef = React.useRef<HTMLVideoElement | null>(null);
@@ -21,9 +24,10 @@ export function IntroPreload() {
 
     let cancelled = false;
     let idleHandle: number | null = null;
+    let fallbackTimer: number | null = null;
 
     const warm = () => {
-      if (cancelled) return;
+      if (cancelled || elRef.current) return;
       const v = document.createElement("video");
       v.preload = "auto";
       v.muted = true;
@@ -39,23 +43,44 @@ export function IntroPreload() {
       v.load();
     };
 
-    // Let the sign-in screen finish its own work first.
-    const ric = (
-      window as Window & {
-        requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number;
+    const scheduleWarm = () => {
+      if (cancelled || elRef.current) return;
+      const ric = (
+        window as Window & {
+          requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number;
+        }
+      ).requestIdleCallback;
+      if (typeof ric === "function") {
+        idleHandle = ric(warm, { timeout: 1500 });
+      } else {
+        idleHandle = window.setTimeout(warm, 200);
       }
-    ).requestIdleCallback;
-    if (typeof ric === "function") {
-      idleHandle = ric(warm, { timeout: 2000 });
-    } else {
-      idleHandle = window.setTimeout(warm, 300);
-    }
+    };
+
+    const onThemeReady = () => {
+      if (fallbackTimer != null) {
+        window.clearTimeout(fallbackTimer);
+        fallbackTimer = null;
+      }
+      scheduleWarm();
+    };
+
+    window.addEventListener("tempo-theme-ready", onThemeReady);
+    // Don't block intro forever if the bed is muted / blocked.
+    fallbackTimer = window.setTimeout(onThemeReady, 2500);
 
     return () => {
       cancelled = true;
+      window.removeEventListener("tempo-theme-ready", onThemeReady);
+      if (fallbackTimer != null) window.clearTimeout(fallbackTimer);
       const cic = (
         window as Window & { cancelIdleCallback?: (h: number) => void }
       ).cancelIdleCallback;
+      const ric = (
+        window as Window & {
+          requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number;
+        }
+      ).requestIdleCallback;
       if (idleHandle != null) {
         if (typeof ric === "function" && typeof cic === "function") {
           cic(idleHandle);

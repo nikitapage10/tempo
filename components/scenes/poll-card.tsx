@@ -91,7 +91,7 @@ export function PollCard({
             type="button"
             size="sm"
             variant="ghost"
-            className="h-6 px-2 text-[11px]"
+            className="h-6 px-2 text-xs"
             disabled={close.isPending}
             onClick={() => close.mutate(poll.id)}
           >

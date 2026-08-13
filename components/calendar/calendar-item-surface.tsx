@@ -153,7 +153,14 @@ export function CalendarItemSurface({
 
   if (compact) {
     return (
-      <SpotlightCard tone={tone} accent={color} radius={7} borderWidth={1} size={110}>
+      <SpotlightCard
+        tone={tone}
+        accent={color}
+        radius={7}
+        borderWidth={1}
+        size={110}
+        className="min-w-0 max-w-full overflow-hidden"
+      >
         <button
           type="button"
           draggable={!!onDragStart}
@@ -172,14 +179,14 @@ export function CalendarItemSurface({
         >
           <Icon className="size-3 shrink-0" style={{ color }} aria-hidden />
           {time ? (
-            <span className="inline-flex shrink-0 items-center gap-0.5 font-mono text-[9px] text-text-lo">
+            <span className="inline-flex shrink-0 items-center gap-0.5 font-mono text-[10px] text-text-lo">
               {time}
               {crossZone ? <Globe2 className="size-2.5" aria-hidden /> : null}
             </span>
           ) : null}
           <span
             className={cn(
-              "min-w-0 flex-1 truncate text-[10px] text-text-hi",
+              "min-w-0 flex-1 truncate text-[11px] text-text-hi",
               item.state === "completed" && "line-through"
             )}
           >
@@ -226,14 +233,14 @@ export function CalendarItemSurface({
               {item.title}
             </span>
             {time ? (
-              <span className="inline-flex items-center gap-1 font-mono text-[10px] text-text-lo" title={crossZone ? `Originally scheduled in ${item.timezone}` : undefined}>
+              <span className="inline-flex items-center gap-1 font-mono text-[11px] text-text-lo" title={crossZone ? `Originally scheduled in ${item.timezone}` : undefined}>
                 <Clock className="size-3" />
                 {time}
                 {crossZone ? <Globe2 className="size-3 text-violet" aria-hidden /> : null}
               </span>
             ) : null}
           </span>
-          <span className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-text-lo">
+          <span className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-text-lo">
             <span
               className="rounded-chip border px-1.5 py-0.5 font-mono uppercase tracking-wide"
               style={color ? { color, borderColor: `color-mix(in srgb, ${color} 35%, transparent)`, backgroundColor: `color-mix(in srgb, ${color} 10%, transparent)` } : undefined}
@@ -303,7 +310,7 @@ export function CalendarTimedItemSurface({
       <span className="flex items-center gap-1">
         <Icon className="size-3 shrink-0" style={{ color }} aria-hidden />
         {time ? (
-          <span className="inline-flex shrink-0 items-center gap-0.5 truncate font-mono text-[9px] text-text-lo">
+          <span className="inline-flex shrink-0 items-center gap-0.5 truncate font-mono text-[10px] text-text-lo">
             {time}
             {crossZone ? <Globe2 className="size-2.5" aria-hidden /> : null}
           </span>
@@ -312,7 +319,7 @@ export function CalendarTimedItemSurface({
       {!dense ? (
         <span
           className={cn(
-            "block truncate text-[11px] font-medium text-text-hi",
+            "block truncate text-xs font-medium text-text-hi",
             item.state === "completed" && "line-through"
           )}
         >

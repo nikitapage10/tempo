@@ -64,22 +64,27 @@ export function CalendarDayPanel({
 
   const content = (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between gap-2 border-b border-line/60 px-4 py-3">
-        <div className="min-w-0">
-          <p className="label-mono text-text-lo">{shortDateLabel(date, today)}</p>
-          <h2 className="truncate font-display text-base font-semibold text-text-hi">{formatDayHeading(date)}</h2>
+      <div className="border-b border-line/60 px-4 py-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <p className="font-data text-[11px] font-semibold uppercase tracking-[0.12em] text-text-lo">{shortDateLabel(date, today)}</p>
+            <h2 className="truncate font-data text-base font-semibold tracking-tight text-text-hi">{formatDayHeading(date)}</h2>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="font-data text-xs tabular-nums text-text-lo">{dayItems.length}</span>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close day panel"
+              className="rounded-input p-1 text-text-lo hover:bg-bg-2 hover:text-text-hi xl:hidden"
+            >
+              <X className="size-4" />
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-1.5">
-          <span className="font-mono text-[11px] text-text-lo">{dayItems.length}</span>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close day panel"
-            className="rounded-input p-1 text-text-lo hover:bg-bg-2 hover:text-text-hi xl:hidden"
-          >
-            <X className="size-4" />
-          </button>
-        </div>
+        <Button type="button" size="sm" className="mt-3 w-full" onClick={() => onCreate(date)}>
+          <Plus className="size-3.5" /> New event on {shortDateLabel(date, today)}
+        </Button>
       </div>
 
       <div
@@ -110,7 +115,7 @@ export function CalendarDayPanel({
             />
           ))
         ) : (
-          <p className="px-1 py-6 text-center text-sm text-text-lo">Nothing scheduled. Drop something here, or add an event below.</p>
+          <p className="px-1 py-6 text-center text-sm text-text-lo">Nothing scheduled. Drop something here, or add an event above.</p>
         )}
 
         <div className="glass-quiet mt-1">
@@ -137,7 +142,7 @@ export function CalendarDayPanel({
                       <GripVertical className="mt-0.5 size-3.5 shrink-0 text-text-lo" />
                       <button type="button" onClick={() => onOpenUnscheduled(item.destinationHref)} className="min-w-0 flex-1 text-left">
                         <span className="block truncate text-xs text-text-hi">{item.title}</span>
-                        <span className="text-[10px] text-text-lo">{item.subtitle}</span>
+                        <span className="text-[11px] text-text-lo">{item.subtitle}</span>
                       </button>
                     </div>
                     <div className="mt-2 flex gap-1.5">
@@ -146,7 +151,7 @@ export function CalendarDayPanel({
                         value={scheduleDates[item.id] ?? ""}
                         onChange={(event) => setScheduleDates((current) => ({ ...current, [item.id]: event.target.value }))}
                         aria-label={`Schedule ${item.title}`}
-                        className="h-7 min-w-0 flex-1 rounded-input border border-line bg-bg-2 px-1.5 font-mono text-[10px] text-text-hi"
+                        className="h-7 min-w-0 flex-1 rounded-input border border-line bg-bg-2 px-1.5 font-mono text-[11px] text-text-hi"
                       />
                       <Button type="button" size="sm" variant="ghost" onClick={() => setScheduleDates((current) => ({ ...current, [item.id]: date }))}>
                         Today
@@ -170,19 +175,13 @@ export function CalendarDayPanel({
           ) : null}
         </div>
       </div>
-
-      <div className="border-t border-line/60 p-3">
-        <Button type="button" size="sm" className="w-full" onClick={() => onCreate(date)}>
-          <Plus className="size-3.5" /> New event on {shortDateLabel(date, today)}
-        </Button>
-      </div>
     </div>
   );
 
   return (
     <>
       {/* Persistent inspector on wide screens */}
-      <aside className={cn("glass hidden max-h-[calc(100vh-160px)] w-[320px] shrink-0 xl:flex", className)} aria-label={`${formatDayHeading(date)} detail`}>
+      <aside className={cn("glass hidden h-full min-h-0 w-[320px] shrink-0 flex-col overflow-hidden xl:flex", className)} aria-label={`${formatDayHeading(date)} detail`}>
         {content}
       </aside>
 

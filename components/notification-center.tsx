@@ -42,7 +42,7 @@ export function NotificationCenter() {
       >
         <Bell className="size-4" strokeWidth={1.75} />
         {unreadCount > 0 ? (
-          <span className="absolute right-0.5 top-0.5 flex size-3.5 items-center justify-center rounded-full bg-amber font-mono text-[9px] font-bold text-bg-0">
+          <span className="absolute right-0.5 top-0.5 flex size-3.5 items-center justify-center rounded-full bg-amber font-mono text-[10px] font-bold text-bg-0">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         ) : null}
@@ -51,13 +51,13 @@ export function NotificationCenter() {
       {open ? (
         <div className="fixed inset-x-3 top-16 z-[60] max-h-[75vh] overflow-hidden rounded-card border border-line bg-bg-1 shadow-e3 sm:absolute sm:inset-x-auto sm:top-auto sm:right-0 sm:mt-1.5 sm:w-80 sm:max-w-[calc(100vw-1.5rem)] sm:max-h-none">
           <div className="flex items-center justify-between border-b border-line px-3 py-2">
-            <h2 className="font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+            <h2 className="font-mono text-xs uppercase tracking-[0.08em] text-text-lo">
               Notifications
             </h2>
             {unreadCount > 0 ? (
               <button
                 type="button"
-                className="flex items-center gap-1 text-[11px] text-ice hover:underline"
+                className="flex items-center gap-1 text-xs text-ice hover:underline"
                 onClick={() => readAll.mutate()}
               >
                 <Check className="size-3" />
@@ -102,7 +102,7 @@ export function NotificationCenter() {
                           {n.body ? (
                             <p className="mt-0.5 truncate text-xs text-text-lo">{n.body}</p>
                           ) : null}
-                          <p className="mt-1 font-mono text-[10px] text-text-lo/70">
+                          <p className="mt-1 font-mono text-[11px] text-text-lo/70">
                             {formatShortDate(n.created_at)}
                           </p>
                         </div>
@@ -118,7 +118,7 @@ export function NotificationCenter() {
             <Link
               href="/settings?tab=notifications"
               onClick={() => setOpen(false)}
-              className="block text-center text-[11px] text-ice hover:underline"
+              className="block text-center text-xs text-ice hover:underline"
             >
               View all notifications
             </Link>

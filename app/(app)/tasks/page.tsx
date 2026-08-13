@@ -332,7 +332,7 @@ function TasksContent() {
                 setCategoryFilter("all");
                 setStatusFilter("all");
               }}
-              className="ml-1 text-[11px] text-ice hover:underline"
+              className="ml-1 text-xs text-ice hover:underline"
             >
               Clear
             </button>
@@ -370,7 +370,7 @@ function TasksContent() {
                     {list.length > 0 ? (
                       <span
                         className={cn(
-                          "font-mono text-[11px] tabular-nums",
+                          "font-mono text-xs tabular-nums",
                           urgent ? "text-warn" : "text-text-lo/70"
                         )}
                       >
@@ -451,7 +451,7 @@ function TasksContent() {
         <div>
           {grouped.done.length > 0 && statusFilter !== "todo" ? (
             <section>
-              <h2 className="mb-2 font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+              <h2 className="mb-2 font-mono text-xs uppercase tracking-[0.08em] text-text-lo">
                 Done
                 <span className="ml-2 text-text-lo/70">
                   {grouped.done.length}
@@ -521,14 +521,14 @@ function BucketEmpty({ bucket }: { bucket: Bucket }) {
     <div className="flex flex-1 flex-col items-center justify-center gap-2 py-6 text-center">
       {/* A tick of the lightfield instead of dead space above the copy. */}
       <FlareLine variant="tick" className="mb-1 !w-10 opacity-70" />
-      <p className="text-[11px] leading-relaxed text-text-lo/70">
+      <p className="text-xs leading-relaxed text-text-lo/70">
         {copy[bucket]}
       </p>
       {bucket === "today" ? (
         <button
           type="button"
           onClick={() => document.getElementById("task-title")?.focus()}
-          className="text-[11px] text-ice transition-colors duration-hover hover:underline"
+          className="text-xs text-ice transition-colors duration-hover hover:underline"
         >
           Add a task
         </button>
@@ -596,11 +596,11 @@ function TaskRow({
           {task.title}
         </p>
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-          <span className="rounded-chip bg-bg-2 px-2 py-0.5 text-[11px] text-text-lo">
+          <span className="rounded-chip bg-bg-2 px-2 py-0.5 text-xs text-text-lo">
             {cat}
           </span>
           <select
-            className="h-6 rounded-chip border border-line bg-bg-2 px-2 font-mono text-[10px] text-text-lo"
+            className="h-6 rounded-chip border border-line bg-bg-2 px-2 font-mono text-[11px] text-text-lo"
             value={task.status}
             onChange={(e) => void onStatus(e.target.value as TaskStatus)}
           >
@@ -617,7 +617,7 @@ function TaskRow({
               onChange={(e) => void onDue(e.target.value)}
               aria-label={`Due date for ${task.title}`}
               className={cn(
-                "h-6 rounded-chip border border-line bg-bg-2 px-2 font-mono text-[10px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
+                "h-6 rounded-chip border border-line bg-bg-2 px-2 font-mono text-[11px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
                 overdue ? "text-warn" : "text-text-lo"
               )}
             />
@@ -625,7 +625,7 @@ function TaskRow({
           {task.track_id && trackTitle ? (
             <Link
               href={`/track/${task.track_id}`}
-              className="rounded-chip bg-ice/10 px-2 py-0.5 text-[11px] text-ice hover:underline"
+              className="rounded-chip bg-ice/10 px-2 py-0.5 text-xs text-ice hover:underline"
             >
               {trackTitle}
             </Link>
@@ -633,7 +633,7 @@ function TaskRow({
           {task.project_id && projectTitle ? (
             <Link
               href={`/projects/${task.project_id}`}
-              className="rounded-chip bg-amber/10 px-2 py-0.5 text-[11px] text-amber hover:underline"
+              className="rounded-chip bg-amber/10 px-2 py-0.5 text-xs text-amber hover:underline"
             >
               {projectTitle}
             </Link>
@@ -644,7 +644,7 @@ function TaskRow({
         ) : null}
       </div>
       {confirm ? (
-        <span className="flex shrink-0 items-center gap-1 text-[11px]">
+        <span className="flex shrink-0 items-center gap-1 text-xs">
           <button
             type="button"
             className="text-warn hover:underline"
@@ -663,7 +663,7 @@ function TaskRow({
       ) : (
         <button
           type="button"
-          className="shrink-0 text-[11px] text-text-lo hover:text-warn"
+          className="shrink-0 text-xs text-text-lo hover:text-warn"
           onClick={() => setConfirm(true)}
         >
           Delete

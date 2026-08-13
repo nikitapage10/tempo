@@ -39,6 +39,7 @@ const RESUME_STEPS = new Set<OriginStep>([
   "introduction",
   "processing",
   "review",
+  "look",
   "story",
   "complete",
 ]);

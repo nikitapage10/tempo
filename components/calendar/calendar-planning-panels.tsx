@@ -76,7 +76,7 @@ export function CalendarTimeline({
               <div className="space-y-2">
                 {stageItems.map((item) => (
                   <div key={item.id}>
-                    <p className="mb-1 font-mono text-[9px] text-text-lo">{formatDayHeading(item.date)}</p>
+                    <p className="mb-1 font-mono text-[10px] text-text-lo">{formatDayHeading(item.date)}</p>
                     <CalendarItemSurface item={item} showSpace={showSpace} onActivate={onActivate} displayTimezone={displayTimezone} />
                   </div>
                 ))}

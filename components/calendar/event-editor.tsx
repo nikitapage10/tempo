@@ -495,7 +495,7 @@ export function CalendarEventEditor({
               <div className="mt-2 flex gap-2"><Input value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Add a comment…" /><Button type="button" size="sm" disabled={!comment.trim() || commentMutation.isPending} onClick={async () => { await commentMutation.mutateAsync(comment); setComment(""); }}>Post</Button></div>
               <div className="mt-3 max-h-36 space-y-2 overflow-y-auto text-xs">
                 {(discussion.data?.comments ?? []).map((item) => <p key={item.id} className="rounded-input bg-bg-1 px-2 py-1.5 text-text-hi">{item.body}</p>)}
-                {(discussion.data?.activity ?? []).slice(0, 5).map((item) => <p key={item.id} className="font-mono text-[10px] text-text-lo">{item.summary}</p>)}
+                {(discussion.data?.activity ?? []).slice(0, 5).map((item) => <p key={item.id} className="font-mono text-[11px] text-text-lo">{item.summary}</p>)}
               </div>
             </section>
           ) : null}

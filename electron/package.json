@@ -1,8 +1,8 @@
 {
   "name": "tempo-desktop",
-  "version": "0.100.10",
+  "version": "0.100.22",
   "private": true,
-  "description": "TEMPO Desktop — Electron shell. Deliberately its own package, separate from the root TEMPO package.json, so Vercel's web deploy never installs Electron's Chromium binary. Run `npm install` inside this folder before desktop:dev / desktop:build from the repo root.",
+  "description": "TEMPO — Electron shell. Deliberately its own package, separate from the root TEMPO package.json, so Vercel's web deploy never installs Electron's Chromium binary. Run `npm install` inside this folder before desktop:dev / desktop:build from the repo root.",
   "repository": {
     "type": "git",
     "url": "https://github.com/nikitapage10/tempo.git"
@@ -23,22 +23,38 @@
     "appId": "com.tempo.desktop",
     "productName": "TEMPO",
     "directories": {
-      "output": "../dist-desktop"
+      "output": "../dist-desktop",
+      "buildResources": "build"
     },
     "files": [
       "main.js",
+      "media-permissions.js",
+      "oauth-navigation.js",
       "preload.js",
       "vault.js",
+      "vault-media-response.js",
       "package.json"
     ],
     "extraResources": [
       {
         "from": "../public/tempo-emblem.png",
         "to": "assets/tempo-icon.png"
+      },
+      {
+        "from": "../public/tempo-icon.ico",
+        "to": "assets/tempo-icon.ico"
+      },
+      {
+        "from": "../public/tempo-tray-16.png",
+        "to": "assets/tempo-tray-16.png"
+      },
+      {
+        "from": "../public/tempo-tray-32.png",
+        "to": "assets/tempo-tray-32.png"
       }
     ],
     "extraMetadata": {
-      "version": "0.100.10"
+      "version": "0.100.22"
     },
     "protocols": [
       {
@@ -50,13 +66,42 @@
     ],
     "win": {
       "target": "nsis",
-      "icon": "../public/tempo-emblem.png",
+      "icon": "../public/tempo-icon.ico",
       "artifactName": "TEMPO-Setup.${ext}"
     },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "../public/tempo-icon.ico",
+      "uninstallerIcon": "../public/tempo-icon.ico",
+      "installerHeaderIcon": "../public/tempo-icon.ico",
+      "installerHeader": "installerHeader.bmp",
+      "installerSidebar": "installerSidebar.bmp",
+      "uninstallerSidebar": "uninstallerSidebar.bmp",
+      "include": "installer.nsh",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "TEMPO",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false,
+      "menuCategory": false,
+      "warningsAsErrors": false
+    },
     "mac": {
-      "target": "dmg",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["universal"]
+        }
+      ],
+      "artifactName": "TEMPO-Mac.${ext}",
       "icon": "../public/tempo-emblem.png",
       "category": "public.app-category.music",
+      "identity": null,
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
       "extendInfo": {
         "NSMicrophoneUsageDescription": "TEMPO uses your microphone for dictation and voice notes when you choose to record."
       }

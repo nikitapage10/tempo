@@ -25,7 +25,8 @@ import { GlobalSearch } from "@/components/global-search";
 import { SpaceSwitcher } from "@/components/space-switcher";
 import { NotificationCenter } from "@/components/notification-center";
 import { MessageCenter } from "@/components/message-center";
-import { EdgeStrip, IntroMoment } from "@/components/intro-moment";
+import { ProfileMenu } from "@/components/profile-menu";
+import { IntroMoment } from "@/components/intro-moment";
 import { FlareLine } from "@/components/flare-line";
 import { Wordmark } from "@/components/wordmark";
 import { LfWindow } from "@/components/lf-windows";
@@ -36,6 +37,8 @@ import { SlitDivider } from "@/components/ui/slit";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { SupportReportDialog } from "@/components/support/support-report-dialog";
 import { useRealtimeInbox } from "@/hooks/use-realtime-inbox";
+import { useDesktopMediaWarm } from "@/hooks/use-desktop-media-warm";
+import { useBrowserMediaWarm } from "@/hooks/use-browser-media-warm";
 import { GlobalPlayerBar } from "@/components/player/global-player-bar";
 import { GuidedTour } from "@/components/guided-tour";
 import { StarterChecklist } from "@/components/onboarding/starter-checklist";
@@ -45,6 +48,15 @@ import { DownloadButton } from "@/components/desktop/download-button";
 import { ZoomControl } from "@/components/desktop/zoom-control";
 import { OfflineBanner } from "@/components/offline-banner";
 import { DesktopUpdateBanner } from "@/components/desktop/update-banner";
+import { AppVideoBackdrop } from "@/components/app-video-backdrop";
+import { useContentZoom } from "@/hooks/use-content-zoom";
+import { useLabeledRail } from "@/hooks/use-labeled-rail";
+import {
+  RAIL_COMPACT_WIDTH_PX,
+  RAIL_LABELED_WIDTH_PX,
+  railLayoutWidthPx,
+  railTypeZoom,
+} from "@/lib/desktop/content-zoom";
 
 // Artist sits above the space-scoped screens: it rolls up every space the
 // artist owns, so it stays in the rail whatever the active space's focus is.
@@ -111,6 +123,12 @@ const FOCUS_ROUTE = /^\/track\/[^/]+\/focus(\/|$)/;
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   useRealtimeInbox();
+  useDesktopMediaWarm();
+  useBrowserMediaWarm();
+  const { factor: contentZoom } = useContentZoom();
+  const labeledRail = useLabeledRail();
+  const railZoom = railTypeZoom(contentZoom, labeledRail);
+  const railWidth = railLayoutWidthPx(contentZoom, labeledRail);
   const pathname = usePathname();
   const router = useRouter();
   const { activeSpace } = useActiveSpace();
@@ -127,62 +145,82 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   ];
 
   if (FOCUS_ROUTE.test(pathname)) {
-    // Focus sessions get a distraction-free, full-bleed shell — no rail, no tab bar (FEATURE-SPECS §10).
-    return <main className="min-h-screen">{children}</main>;
+    // Focus sessions keep the persistent workspace backdrop but remain
+    // distraction-free: no rail, toolbar, tab bar, or edge treatment.
+    return (
+      <main className="relative isolate min-h-screen">
+        <AppVideoBackdrop className="fixed inset-0 z-0" />
+        <div className="relative z-[1]">{children}</div>
+      </main>
+    );
   }
 
   return (
-    <div className="flex min-h-screen flex-col" data-lf-chrome>
+    <div className="flex min-h-screen flex-col md:h-screen md:max-h-screen md:overflow-hidden" data-lf-chrome>
       <ArtistFavicon />
       <IntroMoment />
-      <EdgeStrip />
 
-      {/* Desktop-app window-drag handle, full viewport width — EdgeStrip and
-          the toolbar row (below) are only draggable within their own
-          layout bounds (EdgeStrip is thin; the toolbar sits inside a
-          centered max-w-[1440px] column), which left the gutters on a wide
-          window, and the whole left rail, with no way to drag the window
-          at all. This sits behind both (lower z-index) so every real
-          clickable element still wins the hit test; only the genuinely
-          empty space around them becomes draggable. No-op outside Electron. */}
+      {/* Desktop-app window-drag handle for empty top gutters. Kept below the
+          rail and main stacking contexts (z-10) so it can never eat clicks on
+          search / notifications — those live in main at z-30. No-op outside
+          Electron. */}
       <div
         aria-hidden
-        className="pointer-events-auto fixed inset-x-0 top-0 z-20 h-10 [-webkit-app-region:drag]"
+        className="pointer-events-auto fixed inset-x-0 top-0 z-10 h-12 [-webkit-app-region:drag]"
       />
 
-      <div className="flex flex-1">
-        {/* Left 2px gutter stays transparent so active-nav windows can punch through */}
+      <div className="flex min-h-0 flex-1">
+        {/* Compact icon rail from md→xl; full labels from xl up. Width grows
+            with content zoom only while labeled (so type can scale when there
+            is room). Left 2px gutter stays transparent for active-nav windows. */}
         <aside
-          className="sticky top-[var(--edge-strip-h)] z-30 hidden h-[calc(100vh-var(--edge-strip-h))] w-[220px] shrink-0 flex-col border-r border-line md:flex"
+          className="sticky top-0 z-30 hidden h-screen shrink-0 flex-col overflow-hidden border-r border-line md:flex"
           style={{
+            width: railWidth,
             background:
               "linear-gradient(to right, transparent 2px, var(--bg-1) 2px)",
           }}
         >
+          {/* Inner column is designed at compact/labeled widths; zoom scales
+              type when labeled. Layout width above matches so no black gap. */}
+          <div
+            className="relative flex h-full min-h-0 flex-col"
+            style={
+              railZoom !== 1
+                ? {
+                    width: RAIL_LABELED_WIDTH_PX,
+                    zoom: railZoom,
+                  }
+                : labeledRail
+                  ? { width: RAIL_LABELED_WIDTH_PX }
+                  : { width: RAIL_COMPACT_WIDTH_PX }
+            }
+          >
           {/* The rail's right border is a full-height slit onto the field, so
               the light is quietly present the whole time you're in the app. */}
           <LfWindow
             className="pointer-events-none absolute inset-y-0 right-[-1px] w-px"
             aria-hidden
           />
-          <div className="px-5 pt-6 pb-4">
-            <div className="flex items-center gap-2">
+          <div className="px-2 pt-6 pb-4 xl:px-5">
+            <div className="flex items-center justify-center gap-2 xl:justify-start">
               <Link
                 href="/"
                 className="rounded-input focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
               >
-                <Wordmark size={26} />
+                <Wordmark size={22} markOnly className="xl:hidden" />
+                <Wordmark size={26} className="hidden xl:inline-flex" />
               </Link>
             </div>
             <FlareLine className="mt-3" />
           </div>
 
-          <div className="flex flex-col gap-1.5 px-3 pb-4">
+          <div className="flex flex-col gap-1.5 px-1.5 pb-4 xl:px-3">
             <ArtistSwitcher />
             <SpaceSwitcher />
           </div>
 
-          <nav data-tour="workspace-nav" className="flex flex-1 flex-col gap-0.5 px-3">
+          <nav data-tour="workspace-nav" className="flex flex-1 flex-col gap-0.5 px-1.5 xl:px-3">
             {mainNav.map(({ href, label, icon: Icon }) => {
               const active = isActive(pathname, href);
               return (
@@ -191,25 +229,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   href={href}
                   data-context-tour={href.slice(1) || "today"}
                   title={NAV_DESCRIPTIONS[href]}
+                  aria-label={label}
                   className={cn(
-                    "group relative flex items-center gap-2.5 rounded-input px-3 py-2 text-sm transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
+                    "group relative flex items-center justify-center gap-2.5 rounded-input px-2 py-2 text-sm transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice xl:justify-start xl:px-3",
                     active
-                      ? "text-text-hi"
-                      : "text-text-lo hover:bg-bg-2/60 hover:text-text-hi"
+                      ? "font-semibold text-text-hi"
+                      : "font-medium text-text-lo hover:bg-bg-2/60 hover:text-text-hi"
                   )}
                 >
                   {active ? (
                     <LfWindow
-                      className="absolute left-[-12px] top-1.5 bottom-1.5 w-[2px]"
+                      className="absolute left-[-6px] top-1.5 bottom-1.5 w-[2px] xl:left-[-12px]"
                       aria-hidden
                     />
                   ) : null}
                   <Icon
-                    className={cn("size-4", active ? "text-ice" : "text-text-lo")}
+                    className={cn("size-4 shrink-0", active ? "text-ice" : "text-text-lo")}
                     strokeWidth={1.75}
                   />
-                  {label}
-                  <span className="pointer-events-none absolute left-[calc(100%+12px)] top-1/2 z-[90] w-60 -translate-y-1/2 rounded-input border border-line bg-bg-1 px-3 py-2 text-xs leading-relaxed text-text-lo opacity-0 shadow-e3 transition-opacity delay-150 group-hover:opacity-100 group-focus-visible:opacity-100">
+                  <span className="hidden xl:inline">{label}</span>
+                  <span className="pointer-events-none absolute left-[calc(100%+12px)] top-1/2 z-[90] hidden w-60 -translate-y-1/2 rounded-input border border-line bg-bg-1 px-3 py-2 text-xs leading-relaxed text-text-lo opacity-0 shadow-e3 transition-opacity delay-150 group-hover:opacity-100 group-focus-visible:opacity-100 xl:block">
                     {NAV_DESCRIPTIONS[href]}
                   </span>
                 </Link>
@@ -220,61 +259,79 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <GlobalPlayerBar />
 
           <SlitDivider />
-          <div className="px-3 py-4">
+          <div className="px-1.5 py-4 xl:px-3">
             <DownloadButton />
             <Link
               href="/settings"
               data-context-tour="settings"
               title={NAV_DESCRIPTIONS["/settings"]}
+              aria-label="Settings"
               className={cn(
-                "group relative flex items-center gap-2.5 rounded-input px-3 py-2 text-sm transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
+                "group relative flex items-center justify-center gap-2.5 rounded-input px-2 py-2 text-sm transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice xl:justify-start xl:px-3",
                 isActive(pathname, "/settings")
-                  ? "text-text-hi"
-                  : "text-text-lo hover:bg-bg-2/60 hover:text-text-hi"
+                  ? "font-semibold text-text-hi"
+                  : "font-medium text-text-lo hover:bg-bg-2/60 hover:text-text-hi"
               )}
             >
               {isActive(pathname, "/settings") ? (
                 <LfWindow
-                  className="absolute left-[-12px] top-1.5 bottom-1.5 w-[2px]"
+                  className="absolute left-[-6px] top-1.5 bottom-1.5 w-[2px] xl:left-[-12px]"
                   aria-hidden
                 />
               ) : null}
               <Settings
                 className={cn(
-                  "size-4",
+                  "size-4 shrink-0",
                   isActive(pathname, "/settings") ? "text-ice" : "text-text-lo"
                 )}
                 strokeWidth={1.75}
               />
-              Settings
-              <span className="pointer-events-none absolute left-[calc(100%+12px)] top-1/2 z-[90] w-60 -translate-y-1/2 rounded-input border border-line bg-bg-1 px-3 py-2 text-xs leading-relaxed text-text-lo opacity-0 shadow-e3 transition-opacity delay-150 group-hover:opacity-100 group-focus-visible:opacity-100">
+              <span className="hidden xl:inline">Settings</span>
+              <span className="pointer-events-none absolute left-[calc(100%+12px)] top-1/2 z-[90] hidden w-60 -translate-y-1/2 rounded-input border border-line bg-bg-1 px-3 py-2 text-xs leading-relaxed text-text-lo opacity-0 shadow-e3 transition-opacity delay-150 group-hover:opacity-100 group-focus-visible:opacity-100 xl:block">
                 {NAV_DESCRIPTIONS["/settings"]}
               </span>
             </Link>
             <SupportReportDialog />
-            <Link href="/beta" className="mt-3 block rounded-input px-3 py-1 font-mono text-[11px] text-text-lo/70 transition-colors hover:bg-bg-2 hover:text-ice">
+            <Link
+              href="/beta"
+              title={`v${APP_VERSION}`}
+              className="mt-3 hidden rounded-input px-3 py-1 font-mono text-xs text-text-lo/70 transition-colors hover:bg-bg-2 hover:text-ice xl:block"
+            >
               v{APP_VERSION}
             </Link>
           </div>
+          </div>
         </aside>
 
-        <main className="flex-1 overflow-x-hidden pb-20 md:pb-0">
-          <div className="mx-auto w-full max-w-[1440px] px-4 md:px-8">
+        {/* Unzoomed flex column fills the remaining width (no black gap).
+            Backdrop paints the full column; only the scrollable inner zooms. */}
+        <main className="relative z-30 isolate min-h-0 min-w-0 flex-1 overflow-hidden">
+          <AppVideoBackdrop className="pointer-events-none absolute inset-0 z-0" />
+          <div
+            className="relative z-[1] h-full min-h-0 overflow-x-hidden overflow-y-auto pb-20 md:pb-0"
+            style={contentZoom !== 1 ? { zoom: contentZoom } : undefined}
+          >
+          <div className="relative z-[1] mx-auto w-full max-w-[1440px] px-4 md:px-8">
             {/* [-webkit-app-region:drag] makes this row double as the desktop
                 app's window-drag handle (a no-op outside Electron, so it's
                 safe unconditionally) — each interactive child below is
                 explicitly carved out with the matching no-drag utility so
-                clicks still reach them instead of moving the window. */}
-            <div className="sticky top-[var(--edge-strip-h)] z-40 mb-2 flex items-center justify-end gap-1.5 bg-bg-0/85 pb-4 pt-1.5 backdrop-blur-md [-webkit-app-region:drag]">
+                clicks still reach them instead of moving the window.
+                Extra top padding clears the window edge; tighter bottom
+                padding pulls the chrome closer to page content. */}
+            <div className="sticky top-0 z-40 mb-1 flex items-center justify-end gap-1.5 pb-2 pt-5 [-webkit-app-region:drag]">
               <div className="[-webkit-app-region:no-drag]">
                 <NotificationCenter />
               </div>
               <div className="[-webkit-app-region:no-drag]">
                 <MessageCenter />
               </div>
+              <div className="[-webkit-app-region:no-drag]">
+                <ProfileMenu />
+              </div>
               <div
                 data-tour="global-search"
-                className="w-full max-w-[280px] [-webkit-app-region:no-drag]"
+                className="relative z-50 w-full max-w-[280px] [-webkit-app-region:no-drag]"
               >
                 <GlobalSearch className="ml-1" />
               </div>
@@ -284,13 +341,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <DemoBanner />
             <DesktopUpdateBanner />
             <OfflineBanner />
-            <div className="pb-6 pt-1">{children}</div>
+            <div className="pb-6 pt-0">{children}</div>
+          </div>
           </div>
         </main>
       </div>
 
-      {/* Bottom edge — bookends the top strip so the field frames the app
-          rather than only capping it. Thinner, so it reads as an echo. */}
+      {/* A restrained bottom-edge echo; the former top shader strip is gone. */}
       <LfWindow
         className="hidden h-[6px] w-full shrink-0 md:block"
         aria-hidden
@@ -306,7 +363,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               href={href}
               data-context-tour={href.slice(1) || "today"}
               className={cn(
-                "relative flex flex-1 flex-col items-center justify-center gap-1 py-2.5 text-[11px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ice",
+                "relative flex flex-1 flex-col items-center justify-center gap-1 py-2.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ice",
                 active ? "text-ice" : "text-text-lo"
               )}
             >
@@ -324,7 +381,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <button
           type="button"
           className={cn(
-            "relative flex flex-1 flex-col items-center justify-center gap-1 py-2.5 text-[11px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ice",
+            "relative flex flex-1 flex-col items-center justify-center gap-1 py-2.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ice",
             moreOpen || moreNav.some((item) => isActive(pathname, item.href))
               ? "text-ice"
               : "text-text-lo"
@@ -339,7 +396,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </button>
         <button
           type="button"
-          className="flex flex-1 flex-col items-center justify-center gap-1 py-2.5 text-[11px] text-text-lo focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ice"
+          className="flex flex-1 flex-col items-center justify-center gap-1 py-2.5 text-xs text-text-lo focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ice"
           aria-label={tasksFocused ? "Add task" : "Add track"}
           onClick={() =>
             router.push(tasksFocused ? "/tasks" : "/board?new=1")

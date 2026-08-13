@@ -417,7 +417,7 @@ function SortableArtistRow({
             className="h-8 border-transparent bg-transparent px-1 focus-visible:border-line focus-visible:bg-bg-0"
           />
           {isActive ? (
-            <span className="shrink-0 font-mono text-[10px] uppercase tracking-wider text-amber">
+            <span className="shrink-0 font-mono text-[11px] uppercase tracking-wider text-amber">
               Active
             </span>
           ) : null}
@@ -435,7 +435,7 @@ function SortableArtistRow({
         </div>
 
         <div className="mt-2 flex flex-wrap items-center gap-1 pl-7">
-          <span className="mr-1 font-mono text-[10px] uppercase tracking-wider text-text-lo">
+          <span className="mr-1 font-mono text-[11px] uppercase tracking-wider text-text-lo">
             Color
           </span>
           {ARTIST_PALETTES.map((palette) => {
@@ -471,10 +471,10 @@ function SortableArtistRow({
         <div className="mt-2 flex flex-col gap-2 pl-7">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <div className="flex items-center gap-1.5">
-              <span className="font-mono text-[10px] uppercase tracking-wider text-text-lo">
+              <span className="font-mono text-[11px] uppercase tracking-wider text-text-lo">
                 Logo
               </span>
-              <span className="hidden text-[11px] text-text-lo sm:inline">
+              <span className="hidden text-xs text-text-lo sm:inline">
                 (wide — Today)
               </span>
               <input
@@ -538,10 +538,10 @@ function SortableArtistRow({
             </div>
 
             <div className="flex items-center gap-1.5">
-              <span className="font-mono text-[10px] uppercase tracking-wider text-text-lo">
+              <span className="font-mono text-[11px] uppercase tracking-wider text-text-lo">
                 Profile image
               </span>
-              <span className="hidden text-[11px] text-text-lo sm:inline">
+              <span className="hidden text-xs text-text-lo sm:inline">
                 (photo or emblem)
               </span>
               <input
@@ -606,7 +606,7 @@ function SortableArtistRow({
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="font-mono text-[10px] uppercase tracking-wider text-text-lo">
+            <span className="font-mono text-[11px] uppercase tracking-wider text-text-lo">
               Banner
             </span>
             <input

@@ -8,7 +8,7 @@ function StatTile({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="well rounded-input px-4 py-3">
       <p className="label-mono">{label}</p>
-      <p className="mt-1.5 font-display text-2xl font-semibold tracking-tight text-text-hi">
+      <p className="mt-1.5 text-2xl font-semibold tracking-tight tabular-nums text-text-hi">
         {value}
       </p>
     </div>

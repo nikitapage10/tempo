@@ -1,28 +1,22 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono, Space_Grotesk } from "next/font/google";
+import { Inter, Jura } from "next/font/google";
 import { LightfieldRoot } from "@/components/lightfield";
 import { FirstOpenReveal } from "@/components/origin/first-open-reveal";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
-const spaceGrotesk = Space_Grotesk({
+/* Jura carries the UI; Inter is kept only for numerals (Jura's dotted zero). */
+const jura = Jura({
   subsets: ["latin"],
-  variable: "--font-space-grotesk",
-  weight: ["500", "600", "700"],
+  variable: "--font-jura",
+  weight: "variable",
   display: "swap",
 });
 
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
-  weight: ["400", "500"],
-  display: "swap",
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-jetbrains-mono",
-  weight: ["400", "500"],
+  weight: ["400", "500", "600"],
   display: "swap",
 });
 
@@ -50,11 +44,18 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
   return (
-    <html
-      lang="en"
-      className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable}`}
-    >
+    <html lang="en" className={`${jura.variable} ${inter.variable}`}>
+      <head>
+        {supabaseUrl ? (
+          <>
+            <link rel="preconnect" href={supabaseUrl} crossOrigin="anonymous" />
+            <link rel="dns-prefetch" href={supabaseUrl} />
+          </>
+        ) : null}
+      </head>
       <body>
         <Providers>
           <LightfieldRoot>{children}</LightfieldRoot>

@@ -26,11 +26,14 @@ export function OriginProcessingStep({
   }, [voiceActive]);
 
   return (
-    <OriginScrim tone="veil" className="pointer-events-none max-w-md text-center">
+    <OriginScrim tone="veil" className="pointer-events-none max-w-lg text-center">
       {voiceStarted ? (
         <MorphingText
           as="h1"
-          texts={["The signal has a history now.", "Letting its frequencies come through…"]}
+          texts={[
+            "The signal has a history\u00A0now.",
+            "Letting its frequencies come through…",
+          ]}
           loop={false}
           holdSeconds={2.8}
           morphSeconds={1.8}

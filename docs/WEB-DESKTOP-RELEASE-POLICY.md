@@ -68,24 +68,54 @@ as well and is recorded in `CHANGELOG.md`.
 ## Desktop update channel
 
 Packaged desktop builds use `electron-updater`. They check the public
-`tempo-desktop-releases` repository on launch and every six hours while the
-app remains open. When a newer release exists, the update is downloaded in
-the background. Once it is ready, TEMPO shows the same desktop-only in-app
-banner used for a newly deployed web version: **Update now** applies it, while
-**After this session** dismisses the prompt for the current app session. The
-copy never asks the artist to distinguish between web and native delivery.
-TEMPO does not restart or interrupt active work automatically; a downloaded
-native update can still install on a normal full quit.
+`tempo-desktop-releases` repository **on first launch** and every six hours
+while the app remains open. When a newer release exists, the update is
+downloaded in the background. Once it is ready, TEMPO shows the same
+desktop-only in-app banner used for a newly deployed web version: **Update now**
+applies it, while **After this session** dismisses the prompt for the current
+app session. The copy never asks the artist to distinguish between web and
+native delivery. TEMPO does not restart or interrupt active work automatically;
+a downloaded native update can still install on a normal full quit.
+
+**Important split:** ordinary product/UI changes on `main` update desktop
+through the live web app — no new installer. A new installer is published only
+when the native shell under `electron/` changes (or via the daily catch-up /
+manual Desktop Release run).
+
+### When Desktop Release publishes
+
+The `Desktop Release` GitHub Actions workflow publishes Windows + Mac to the
+public channel when:
+
+1. Someone pushes to `main` and the diff touches `electron/**`, the desktop
+   release check script, or the workflow file itself (not every web-only push).
+2. A daily scheduled catch-up runs (`14:00 UTC`) and the current desktop
+   version is not already tagged on `tempo-desktop-releases`.
+3. Someone runs the workflow manually (`workflow_dispatch`).
+
+Web Download / Update links use `/api/desktop/windows` and `/api/desktop/mac`.
+Those routes ask GitHub which release is currently `latest` and redirect to that
+exact Windows or Mac asset — so a newly published Desktop Release shows up on
+the Download page **immediately**, without waiting for a web redeploy. If the
+channel is empty, Windows falls back to the bundled beta under `/downloads`;
+Mac returns 404 until a DMG exists. A small `/api/desktop/latest` probe powers
+the version label on the Download page.
 
 The public release repository contains binaries and update metadata only, not
 TEMPO source code. A Windows release must contain at least:
 
-- `TEMPO-Setup.exe`
+- `TEMPO-Setup.exe` (assisted wizard: welcome, install folder, shortcuts)
 - `TEMPO-Setup.exe.blockmap`
 - `latest.yml`
 
-`latest.yml` is the map the installed app reads to learn the newest version
-and verify the downloaded file.
+A Mac release (same tag) must contain at least:
+
+- `TEMPO-Mac.dmg`
+- `TEMPO-Mac.dmg.blockmap`
+- `latest-mac.yml`
+
+`latest.yml` / `latest-mac.yml` are the maps the installed app reads to learn
+the newest version and verify the downloaded file.
 
 ## One-time update-channel setup
 
@@ -101,10 +131,13 @@ and verify the downloaded file.
    updater metadata to the public release repository.
 5. Confirm the release assets are publicly downloadable in a signed-out
    browser.
-6. In Vercel, set `NEXT_PUBLIC_DESKTOP_WINDOWS_URL` to
-   `https://github.com/nikitapage10/tempo-desktop-releases/releases/latest/download/TEMPO-Setup.exe`
-   and redeploy. The web Download page retains the bundled `0.100.6` installer
-   as a fallback until this variable is set.
+6. Confirm the release assets are publicly downloadable in a signed-out
+   browser. The web app’s `/api/desktop/windows` and `/api/desktop/mac`
+   redirects prefer those `latest` assets automatically (Windows falls back to
+   the bundled `/downloads/TEMPO-Setup-0.100.6.exe` if the channel is empty).
+   Optional: set `NEXT_PUBLIC_DESKTOP_WINDOWS_URL` /
+   `NEXT_PUBLIC_DESKTOP_MAC_URL` in Vercel only if you need to pin a specific
+   asset instead of `latest`.
 7. In Vercel project settings, keep **Automatically expose System Environment
    Variables** enabled. The unified desktop banner uses
    `VERCEL_GIT_COMMIT_SHA` to notice every newly deployed build, with the
@@ -124,16 +157,52 @@ later releases can update automatically.
 4. Run `npm run check:desktop-release`.
 5. Build and install locally with `npm run desktop:build`; verify sign-in,
    window/tray behavior, external links, vault playback, quit, and relaunch.
-6. Merge the tested commit to `main`.
-7. Run GitHub Actions -> `Desktop Release` -> `Run workflow`.
-8. Verify the public release has the installer, blockmap, and `latest.yml`.
-9. From the previous installed version, check that the update downloads and
+6. Merge the tested commit to `main`. If the commit touches `electron/**`
+   (or the desktop release workflow/check), Desktop Release runs
+   automatically; otherwise run GitHub Actions → `Desktop Release` →
+   `Run workflow` when you still need a new public installer (or wait for
+   the daily catch-up if that version was never published).
+7. Verify the public release has the Windows installer, blockmap, and
+   `latest.yml`, plus the Mac `TEMPO-Mac.dmg` and `latest-mac.yml`.
+8. From the previous installed version, check that the update downloads and
    installs after a full quit/relaunch.
 
 For a broad public launch, code-sign the Windows installer before publishing.
-Unsigned beta releases trigger SmartScreen and reduce trust. macOS publishing
-must not be enabled until Apple signing and notarization are configured; an
-unsigned Mac build is not a reliable production update path.
+Unsigned beta releases trigger SmartScreen and reduce trust. Mac ships the
+same way for now: an **unsigned** universal DMG from GitHub Actions
+(`macos-latest`), opened the first time via right-click → **Open**. Apple
+signing and notarization can replace that path later; until then Gatekeeper
+warnings are expected, not a broken build.
+
+The Desktop Release workflow builds Windows first, then Mac, so both assets
+land on the same public release (`TEMPO-Setup.exe`, `latest.yml`,
+`TEMPO-Mac.dmg`, `latest-mac.yml`).
+
+## Mac ↔ Windows shell parity — REQUIRED
+
+TEMPO Desktop is one product on two OS installers. Keep them aligned:
+
+1. **One shared shell.** Put native behavior in shared `electron/` modules
+   (`main.js`, preload, vault, OAuth navigation, updater). Prefer
+   `process.platform` branches inside shared code over separate Mac/Windows
+   feature forks.
+2. **Same version, same capabilities.** A desktop version bump that changes
+   customer behavior (production URL, auth bridge, vault, updates, window
+   chrome) must be available on **both** Windows and Mac for that version.
+   Do not publish a “Windows-only” or “Mac-only” customer fix as the latest
+   channel tip.
+3. **Release gate.** After Desktop Release finishes, confirm the public
+   `vX.Y.Z` tag includes Windows (`TEMPO-Setup.exe`, `latest.yml`) **and**
+   Mac (`TEMPO-Mac.dmg`, `latest-mac.yml`). If Mac failed, fix and republish
+   a higher version — never leave `latest` pointing at a one-platform cut.
+4. **Test both when native.** For desktop-native or cross-boundary work,
+   smoke the flow on Windows and Mac (or the matching CI artifacts) before
+   calling the release done. Platform-specific UI affordances (traffic
+   lights, tray quirks) are fine; missing features on one OS are not.
+5. **Web stays shared.** Product UI still ships once via Vercel and loads in
+   both shells — Mac/Windows parity for studio features is automatic unless
+   you branch on `platform` in the web app. Avoid web `platform === "mac"` /
+   `"windows"` gates unless the OS truly requires different behavior.
 
 ## Rollback
 

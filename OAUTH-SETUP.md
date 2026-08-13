@@ -8,8 +8,18 @@ Those buttons call Supabase OAuth. Until each provider is turned on in Supabase
 Apple Sign In is not offered in the UI right now; the Apple section below is
 kept only as a reference if you add it later.
 
-Production site: `https://tempo-ten-sigma.vercel.app`  
-Auth callback TEMPO uses: `https://tempo-ten-sigma.vercel.app/auth/callback`
+Production site: `https://mytempo.dev`  
+Auth callback TEMPO uses: `https://mytempo.dev/auth/callback`
+
+**TEMPO Desktop:** Google / Microsoft sign-in opens in your **system browser**
+(so providers don’t flag Electron as an insecure embedded app). After you
+finish, the browser hits `/auth/desktop-bridge`, which hands the one-time
+code back to the app via `tempo://auth/callback`. The code is exchanged
+**inside** Electron so session cookies land in TEMPO, not Chrome/Edge.
+
+Add this redirect URL in Supabase as well as `/auth/callback`:
+- `https://mytempo.dev/auth/desktop-bridge`
+- `https://mytempo.dev/auth/desktop-bridge?**` (if wildcards work)
 
 Do this once per provider. Localhost testing needs the same redirect URLs with
 `http://localhost:3000` instead of the production host.
@@ -19,12 +29,15 @@ Do this once per provider. Localhost testing needs the same redirect URLs with
 ## 0. Supabase redirect allow-list (do this first)
 
 1. Open **Supabase → Authentication → URL Configuration**.
-2. **Site URL:** `https://tempo-ten-sigma.vercel.app`
+2. **Site URL:** `https://mytempo.dev`
 3. **Redirect URLs** — add at least:
-   - `https://tempo-ten-sigma.vercel.app/auth/callback`
-   - `https://tempo-ten-sigma.vercel.app/auth/callback?**` (if your project
+   - `https://mytempo.dev/auth/callback`
+   - `https://mytempo.dev/auth/callback?**` (if your project
      allows wildcards; otherwise add exact URLs you use with `?next=…`)
-   - For local: `http://localhost:3000/auth/callback`
+   - `https://mytempo.dev/auth/desktop-bridge`
+   - `https://mytempo.dev/auth/desktop-bridge?**`
+   - For local: `http://localhost:3000/auth/callback` and
+     `http://localhost:3000/auth/desktop-bridge`
 4. Save.
 
 Password-reset emails also land on `/auth/callback?next=/reset-password`, so
@@ -42,7 +55,7 @@ that callback host must be allowed too.
 3. **APIs & Services → Credentials → Create credentials → OAuth client ID**.
 4. Application type: **Web application**.
 5. Authorized JavaScript origins:
-   - `https://tempo-ten-sigma.vercel.app`
+   - `https://mytempo.dev`
    - `http://localhost:3000` (dev)
 6. Authorized redirect URIs — **must be the Supabase callback**, not TEMPO’s:
    - `https://<YOUR-PROJECT-REF>.supabase.co/auth/v1/callback`
@@ -128,10 +141,11 @@ is harder than Google — prefer production/preview HTTPS URLs when debugging.
 
 ## 4. Quick verify checklist
 
-- [ ] Supabase redirect allow-list includes TEMPO `/auth/callback`
+- [ ] Supabase redirect allow-list includes TEMPO `/auth/callback` and
+      `/auth/desktop-bridge` (desktop system-browser return)
 - [ ] Provider enabled in Supabase with correct secrets
 - [ ] Vendor console redirect URI is **Supabase** `/auth/v1/callback`, not
-      `tempo-ten-sigma.vercel.app/auth/callback`
+      `mytempo.dev/auth/callback`
 - [ ] Button on `/login` redirects to the provider and returns to TEMPO signed in
 - [ ] A brand-new OAuth user still respects your invite/register rules if you
       gate sign-ups — today OAuth is on the login screen; if you need

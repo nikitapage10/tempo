@@ -129,10 +129,10 @@ export function TrackChecklist({ trackId }: TrackChecklistProps) {
     <section className="overflow-hidden rounded-card border border-line">
       <div className="bg-bg-1 p-4 pb-3">
         <div className="mb-3 flex items-center justify-between gap-2">
-          <h2 className="font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+          <h2 className="font-mono text-xs uppercase tracking-[0.08em] text-text-lo">
             Checklist
           </h2>
-          <span className="font-mono text-[11px] text-text-lo">
+          <span className="font-mono text-xs text-text-lo">
             {total === 0 ? "—" : `${pct}%`}
           </span>
         </div>

@@ -13,11 +13,19 @@ import Link from "next/link";
 import { useActiveArtist } from "@/components/active-artist-provider";
 import { cn } from "@/lib/utils";
 
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase();
+}
+
 export function ArtistSwitcher() {
   const { artists, activeArtist, setActiveArtistId, isLoading } =
     useActiveArtist();
   const [open, setOpen] = React.useState(false);
   const ref = React.useRef<HTMLDivElement>(null);
+  const label = activeArtist?.name ?? "No artist";
 
   React.useEffect(() => {
     if (!open) return;
@@ -32,28 +40,34 @@ export function ArtistSwitcher() {
 
   if (isLoading) {
     return (
-      <div className="h-9 animate-pulse rounded-input border border-line bg-bg-2" />
+      <div className="mx-auto h-9 w-9 animate-pulse rounded-input border border-line bg-bg-2 xl:mx-0 xl:w-full" />
     );
   }
 
-  // Name always stays in the rail — the emblem lives on the browser tab and
-  // the assistant avatar instead. Dropdown still opens with one artist so
-  // Manage / New artist are a click away.
+  // Name always stays in the rail at xl+ — the emblem lives on the browser
+  // tab and the assistant avatar instead. Below xl the trigger shows
+  // initials so the compact icon rail stays usable. Dropdown still opens
+  // with one artist so Manage / New artist are a click away.
   return (
     <div className="relative" ref={ref}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2.5 rounded-input px-2 py-1.5 text-left text-sm text-text-hi transition-colors duration-hover hover:bg-bg-2/60"
+        title={label}
+        aria-label={`Artist: ${label}`}
+        className="flex w-full items-center justify-center gap-2.5 rounded-input px-1.5 py-1.5 text-left text-sm text-text-hi transition-colors duration-hover hover:bg-bg-2/60 xl:justify-start xl:px-2"
         aria-expanded={open}
         aria-haspopup="listbox"
       >
-        <span className="truncate font-display text-[13px] tracking-wide">
-          {activeArtist?.name ?? "No artist"}
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-input border border-line bg-bg-2 font-display text-[11px] tracking-wide text-text-hi xl:hidden">
+          {initials(label)}
+        </span>
+        <span className="hidden min-w-0 truncate font-display text-[13px] tracking-wide xl:inline">
+          {label}
         </span>
         <ChevronDown
           className={cn(
-            "ml-auto size-3 shrink-0 text-text-lo transition-transform duration-hover",
+            "ml-auto hidden size-3 shrink-0 text-text-lo transition-transform duration-hover xl:block",
             open && "rotate-180"
           )}
         />
@@ -62,7 +76,7 @@ export function ArtistSwitcher() {
       {open ? (
         <div
           role="listbox"
-          className="absolute left-0 right-0 z-50 mt-1.5 overflow-hidden rounded-card border border-line bg-bg-1 shadow-raise"
+          className="absolute left-full top-0 z-50 ml-1.5 w-56 overflow-hidden rounded-card border border-line bg-bg-1 shadow-raise xl:left-0 xl:right-0 xl:top-auto xl:ml-0 xl:mt-1.5 xl:w-auto"
         >
           <ul className="max-h-56 overflow-y-auto py-1">
             {artists.map((artist) => {

@@ -60,6 +60,14 @@ export function SpectraCoverArt({
           path={artworkUrl}
           alt=""
           className="absolute inset-0 size-full"
+          fallback={
+            <SpectraPlaceholder
+              trackId={trackId}
+              title={title}
+              showTitle={false}
+              animate={animate}
+            />
+          }
         />
       )}
     </div>
@@ -131,7 +139,7 @@ function SpectraPlaceholder({
 
       {showTitle ? (
         <div className="absolute inset-x-0 bottom-0 z-[1] bg-gradient-to-t from-bg-0/90 via-bg-0/50 to-transparent px-3.5 pb-3 pt-10">
-          <span className="line-clamp-2 text-[11px] font-medium leading-snug text-text-hi/90">
+          <span className="line-clamp-2 text-xs font-medium leading-snug text-text-hi/90">
             {title}
           </span>
         </div>

@@ -8,28 +8,56 @@ describe("desktop background notifications", () => {
   const main = read("electron/main.js");
   const preload = read("electron/preload.js");
   const desktopPackage = JSON.parse(read("electron/package.json"));
+  const inbox = read("hooks/use-realtime-inbox.ts");
 
   it("keeps realtime delivery awake and close-to-tray independent of file sync", () => {
     expect(main).toContain("backgroundThrottling: false");
+    expect(main).toContain("disable-renderer-backgrounding");
+    expect(main).toContain("disable-background-timer-throttling");
     expect(main).toContain('mainWindow.on("close"');
     expect(main).toContain("if (quitting) return;");
     expect(main).not.toContain("if (quitting || !syncEnabled) return;");
   });
 
-  it("exposes glass alerts with a stable Windows identity", () => {
+  it("exposes a visible glass toast with sound when TEMPO is in the background", () => {
     expect(main).toContain("app.setAppUserModelId(APP_USER_MODEL_ID)");
     expect(main).toContain("showGlassNotification");
-    expect(main).toContain('backgroundMaterial: "acrylic"');
-    expect(main).toContain("popup.showInactive()");
+    expect(main).toContain("shouldShowDesktopAlert");
+    expect(main).toContain('setAlwaysOnTop(true, "screen-saver")');
+    expect(main).toContain('type: "panel"');
+    expect(main).toContain("visibleOnFullScreen: true");
+    expect(main).toContain("popup.show()");
+    expect(main).not.toContain('backgroundMaterial: "acrylic"');
     expect(main).toContain('ipcMain.handle("notifications:show"');
     expect(preload).toContain('ipcRenderer.invoke("notifications:show"');
+    expect(inbox).toContain("showDesktopNotification");
+    expect(inbox).toContain("showWebGlassAlert");
+    expect(inbox).toContain("playIncomingAlert");
   });
 
-  it("packages the real TEMPO art for the window, tray, and alerts", () => {
-    expect(desktopPackage.build.extraResources).toContainEqual({
-      from: "../public/tempo-emblem.png",
-      to: "assets/tempo-icon.png",
-    });
-    expect(main).toContain('path.join(process.resourcesPath, "assets", "tempo-icon.png")');
+  it("tints glass alerts from the active artist palette and stays quiet on Messages", () => {
+    expect(inbox).toContain("useActiveArtistPalette");
+    expect(inbox).toContain("normalizeAccentHex");
+    expect(inbox).toContain("isMessagesSurface");
+    expect(inbox).toContain('alertKind === "message" && isMessagesSurface');
+    expect(inbox).toContain("router.push(link)");
+    expect(main).toContain("iceHex");
+    expect(main).toContain("amberHex");
+  });
+
+  it("packages the TEMPO emblem and tray icons for the shell", () => {
+    expect(desktopPackage.build.extraResources).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          from: "../public/tempo-emblem.png",
+          to: "assets/tempo-icon.png",
+        }),
+        expect.objectContaining({
+          from: "../public/tempo-icon.ico",
+          to: "assets/tempo-icon.ico",
+        }),
+      ])
+    );
+    expect(main).toContain("tempo-tray-32.png");
   });
 });

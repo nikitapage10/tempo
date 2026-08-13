@@ -69,10 +69,15 @@ import {
 } from "@/hooks/use-track-groups";
 import { TRACK_GROUP_ACCENTS } from "@/lib/api/track-groups";
 import { SignedImage } from "@/components/ui/signed-image";
+import {
+  useProjectMutations,
+  useProjects,
+} from "@/hooks/use-projects";
 import { useTrackMutations, useTracks } from "@/hooks/use-tracks";
 import { useVersionsForTracks } from "@/hooks/use-versions";
 import { deriveAttentionSignals } from "@/lib/attention/signals";
 import { TRACK_TYPES } from "@/lib/constants";
+import { assignTracksToGroupOrder } from "@/lib/tracks/bulk-group-assign";
 import {
   formatTrackType,
   momentumDotClass,
@@ -315,7 +320,9 @@ export default function TracksPage() {
   const tracksQuery = useTracks(activeSpaceId);
   const presetsQuery = useTrackListPresets(activeSpaceId);
   const groupsQuery = useTrackGroups(activeSpaceId);
-  const { create, remove, reorder } = useTrackMutations(activeSpaceId);
+  const projectsQuery = useProjects(activeSpaceId);
+  const { create, remove, reorder, moveStage } = useTrackMutations(activeSpaceId);
+  const { attachTrack } = useProjectMutations();
   const {
     create: createPreset,
     update: updatePreset,
@@ -338,6 +345,7 @@ export default function TracksPage() {
   const tracks = tracksQuery.data ?? [];
   const presets = presetsQuery.data ?? [];
   const groups = groupsQuery.data ?? [];
+  const projects = projectsQuery.data ?? [];
   const stageName = React.useMemo(() => {
     const map = new Map(stages.map((s) => [s.id, s.name]));
     return (id: string | null) => (id ? map.get(id) ?? "—" : "—");
@@ -362,13 +370,17 @@ export default function TracksPage() {
   const [selected, setSelected] = React.useState<Set<string>>(new Set());
   const [confirmDelete, setConfirmDelete] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
+  const [bulkBusy, setBulkBusy] = React.useState(false);
 
   const [saveOpen, setSaveOpen] = React.useState(false);
   const [saveName, setSaveName] = React.useState("");
   const [savingOrder, setSavingOrder] = React.useState(false);
 
   const [groupDialog, setGroupDialog] = React.useState<
-    null | { mode: "create" } | { mode: "rename"; group: TrackGroup }
+    | null
+    | { mode: "create" }
+    | { mode: "create-from-selection" }
+    | { mode: "rename"; group: TrackGroup }
   >(null);
   const [groupName, setGroupName] = React.useState("");
   const [groupAccent, setGroupAccent] =
@@ -534,6 +546,119 @@ export default function TracksPage() {
         `Deleted ${ids.length - failed} of ${ids.length}. ${failed} couldn’t be removed.`
       );
     }
+  }
+
+  async function handleMoveSelectedToGroup(targetGroupId: string | null) {
+    const ids = Array.from(selected);
+    if (ids.length === 0) return;
+    setBulkBusy(true);
+    try {
+      const orderedTracks = sortTracks(tracks, "custom", stageSort, presets);
+      const payload = assignTracksToGroupOrder({
+        orderedTracks: orderedTracks.map((t) => ({
+          id: t.id,
+          list_group_id: t.list_group_id,
+        })),
+        groupIds: groups.map((g) => g.id),
+        selectedIds: ids,
+        targetGroupId,
+      });
+      await reorder.mutateAsync(payload);
+      if (sortSelection !== "custom") setSort("custom");
+      const label =
+        targetGroupId == null
+          ? "ungrouped"
+          : groups.find((g) => g.id === targetGroupId)?.name ?? "that group";
+      toast(
+        targetGroupId == null
+          ? `Ungrouped ${ids.length} track${ids.length === 1 ? "" : "s"}.`
+          : `Moved ${ids.length} to “${label}”.`,
+        "ok"
+      );
+    } catch (err) {
+      toast(
+        err instanceof Error ? err.message : "Couldn’t move those tracks."
+      );
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  async function handleMoveSelectedToStage(stageId: string) {
+    const ids = Array.from(selected);
+    if (ids.length === 0) return;
+    setBulkBusy(true);
+    let failed = 0;
+    for (const id of ids) {
+      try {
+        await moveStage.mutateAsync({ id, stageId });
+      } catch {
+        failed += 1;
+      }
+    }
+    setBulkBusy(false);
+    const name = stageName(stageId);
+    if (failed === 0) {
+      toast(
+        `Moved ${ids.length} to ${name}. Stage recipes aren’t run on multi-move.`,
+        "ok"
+      );
+    } else {
+      toast(
+        `Moved ${ids.length - failed} of ${ids.length} to ${name}. ${failed} couldn’t move.`
+      );
+    }
+  }
+
+  async function handleAttachSelectedToProject(projectId: string | null) {
+    const ids = Array.from(selected);
+    if (ids.length === 0) return;
+    setBulkBusy(true);
+    let failed = 0;
+    for (const id of ids) {
+      try {
+        await attachTrack.mutateAsync({ trackId: id, projectId });
+      } catch {
+        failed += 1;
+      }
+    }
+    setBulkBusy(false);
+    if (projectId == null) {
+      if (failed === 0) {
+        toast(
+          `Removed ${ids.length} from their project${ids.length === 1 ? "" : "s"}.`,
+          "ok"
+        );
+      } else {
+        toast(
+          `Detached ${ids.length - failed} of ${ids.length}. ${failed} couldn’t update.`
+        );
+      }
+      return;
+    }
+    const name = projects.find((p) => p.id === projectId)?.name ?? "that project";
+    if (failed === 0) {
+      toast(`Added ${ids.length} to “${name}”.`, "ok");
+    } else {
+      toast(
+        `Added ${ids.length - failed} of ${ids.length} to “${name}”. ${failed} couldn’t update.`
+      );
+    }
+  }
+
+  function openCreateGroupFromSelection() {
+    setGroupName("");
+    setGroupAccent(null);
+    setGroupAccentHex("#7fb4ff");
+    setGroupDialog({ mode: "create-from-selection" });
+  }
+
+  function selectAllDisplayed() {
+    setSelected(new Set(displayed.map((t) => t.id)));
+  }
+
+  function clearSelection() {
+    setSelected(new Set());
   }
 
   function handleDragOver(event: DragOverEvent) {
@@ -792,7 +917,10 @@ export default function TracksPage() {
     if (!name || !groupDialog) return;
     setSavingGroup(true);
     try {
-      if (groupDialog.mode === "create") {
+      if (
+        groupDialog.mode === "create" ||
+        groupDialog.mode === "create-from-selection"
+      ) {
         const group = await createGroup.mutateAsync(name);
         if (groupAccent) {
           await updateGroup.mutateAsync({
@@ -801,7 +929,27 @@ export default function TracksPage() {
             accentHex: groupAccent === "custom" ? groupAccentHex : null,
           });
         }
-        toast(`Created “${group.name}”. Drag tracks into it.`, "ok");
+        if (groupDialog.mode === "create-from-selection" && selected.size > 0) {
+          const ids = Array.from(selected);
+          const orderedTracks = sortTracks(tracks, "custom", stageSort, presets);
+          const payload = assignTracksToGroupOrder({
+            orderedTracks: orderedTracks.map((t) => ({
+              id: t.id,
+              list_group_id: t.list_group_id,
+            })),
+            groupIds: groups.map((g) => g.id),
+            selectedIds: ids,
+            targetGroupId: group.id,
+          });
+          await reorder.mutateAsync(payload);
+          if (sortSelection !== "custom") setSort("custom");
+          toast(
+            `Grouped ${ids.length} into “${group.name}”.`,
+            "ok"
+          );
+        } else {
+          toast(`Created “${group.name}”. Drag tracks into it.`, "ok");
+        }
       } else {
         await updateGroup.mutateAsync({
           id: groupDialog.group.id,
@@ -890,16 +1038,112 @@ export default function TracksPage() {
               <span className="font-data text-xs text-text-lo">
                 {selected.size} selected
               </span>
+              {displayed.length > 0 ? (
+                <button
+                  type="button"
+                  disabled={bulkBusy || deleting}
+                  onClick={
+                    selected.size === displayed.length
+                      ? clearSelection
+                      : selectAllDisplayed
+                  }
+                  className="text-xs text-ice hover:underline disabled:opacity-40"
+                >
+                  {selected.size === displayed.length
+                    ? "Clear"
+                    : "Select all"}
+                </button>
+              ) : null}
+              <HeaderMenu label="Group" panelWidth={260}>
+                <FilterGroup label="Move to" stacked>
+                  {groups.map((g) => (
+                    <Chip
+                      key={g.id}
+                      size="sm"
+                      disabled={bulkBusy || selected.size === 0}
+                      onClick={() => void handleMoveSelectedToGroup(g.id)}
+                    >
+                      {g.name}
+                    </Chip>
+                  ))}
+                  <Chip
+                    size="sm"
+                    disabled={bulkBusy || selected.size === 0}
+                    onClick={() => void handleMoveSelectedToGroup(null)}
+                  >
+                    Ungroup
+                  </Chip>
+                </FilterGroup>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="w-full"
+                  disabled={bulkBusy || selected.size === 0}
+                  onClick={openCreateGroupFromSelection}
+                >
+                  <FolderPlus className="size-3.5" />
+                  New group with these
+                </Button>
+              </HeaderMenu>
+              <HeaderMenu label="Stage" panelWidth={240}>
+                <FilterGroup label="Move to" stacked>
+                  {stages.map((s) => (
+                    <Chip
+                      key={s.id}
+                      size="sm"
+                      disabled={bulkBusy || selected.size === 0}
+                      onClick={() => void handleMoveSelectedToStage(s.id)}
+                    >
+                      {s.name}
+                    </Chip>
+                  ))}
+                </FilterGroup>
+                <p className="text-[11px] leading-snug text-text-lo/80">
+                  Recipes stay off for multi-move — open a track to run one.
+                </p>
+              </HeaderMenu>
+              <HeaderMenu label="Project" panelWidth={260}>
+                <FilterGroup label="Add to" stacked>
+                  {projects.length === 0 ? (
+                    <p className="text-xs text-text-lo">No projects yet.</p>
+                  ) : (
+                    projects.map((p) => (
+                      <Chip
+                        key={p.id}
+                        size="sm"
+                        disabled={bulkBusy || selected.size === 0}
+                        onClick={() =>
+                          void handleAttachSelectedToProject(p.id)
+                        }
+                      >
+                        {p.name}
+                      </Chip>
+                    ))
+                  )}
+                </FilterGroup>
+                <Chip
+                  size="sm"
+                  disabled={bulkBusy || selected.size === 0}
+                  onClick={() => void handleAttachSelectedToProject(null)}
+                >
+                  Remove from project
+                </Chip>
+              </HeaderMenu>
               <Button
                 size="sm"
                 variant="destructive"
-                disabled={selected.size === 0}
+                disabled={selected.size === 0 || bulkBusy || deleting}
                 onClick={() => setConfirmDelete(true)}
               >
                 <Trash2 className="size-3.5" />
                 Delete
               </Button>
-              <Button size="sm" variant="ghost" onClick={exitSelecting}>
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={bulkBusy || deleting}
+                onClick={exitSelecting}
+              >
                 <X className="size-3.5" />
                 Done
               </Button>
@@ -939,7 +1183,7 @@ export default function TracksPage() {
                           <span
                             key={preset.id}
                             className={cn(
-                              "inline-flex items-center gap-0.5 rounded-chip border text-[11px]",
+                              "inline-flex items-center gap-0.5 rounded-chip border text-xs",
                               sortSelection === `preset:${preset.id}`
                                 ? "border-ice/40 bg-ice/15 text-ice"
                                 : "border-line bg-bg-2 text-text-lo"
@@ -974,7 +1218,7 @@ export default function TracksPage() {
                         setSaveName("");
                         setSaveOpen(true);
                       }}
-                      className="self-start text-[11px] text-ice hover:underline"
+                      className="self-start text-xs text-ice hover:underline"
                     >
                       Save current Custom order…
                     </button>
@@ -1178,7 +1422,7 @@ export default function TracksPage() {
           }
         />
       ) : displayed.length === 0 ? (
-        <div className="rounded-card border border-dashed border-line/70 px-4 py-10 text-center">
+        <div className="panel-quiet border-dashed px-4 py-10 text-center">
           <p className="text-sm text-text-lo">Nothing matches these filters.</p>
           <button
             type="button"
@@ -1188,15 +1432,15 @@ export default function TracksPage() {
               setStageFilter("all");
               setAttentionFilter("all");
             }}
-            className="mt-2 text-[11px] text-ice hover:underline"
+            className="mt-2 text-xs text-ice hover:underline"
           >
             Clear filters
           </button>
         </div>
       ) : (
-        <>
+        <section className="panel p-3 sm:p-4">
           {sortSelection === "custom" && !selecting ? (
-            <p className="mb-2 text-[11px] text-text-lo/70">
+            <p className="mb-2 text-xs text-text-lo/70">
               {showGroups
                 ? "Drag to rearrange or move between groups · "
                 : "Drag to rearrange · "}
@@ -1226,7 +1470,7 @@ export default function TracksPage() {
             </p>
           ) : null}
           {activePreset ? (
-            <p className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-text-lo/70">
+            <p className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-lo/70">
               <span>“{activePreset.name}”</span>
               <button
                 type="button"
@@ -1245,7 +1489,7 @@ export default function TracksPage() {
             </p>
           ) : null}
           {!isPresetSort(sortSelection) && sortSelection !== "custom" ? (
-            <p className="mb-2 text-[11px] text-text-lo/70">
+            <p className="mb-2 text-xs text-text-lo/70">
               Sorted by{" "}
               {BUILTIN_SORTS.find((o) => o.value === sortSelection)?.label}
             </p>
@@ -1320,7 +1564,7 @@ export default function TracksPage() {
               )}
             </SortableContext>
           </DndContext>
-        </>
+        </section>
       )}
 
       {activeSpaceId ? (
@@ -1423,11 +1667,19 @@ export default function TracksPage() {
         }}
       >
         <DialogContent
-          title={groupDialog?.mode === "rename" ? "Edit group" : "New group"}
+          title={
+            groupDialog?.mode === "rename"
+              ? "Edit group"
+              : groupDialog?.mode === "create-from-selection"
+                ? "New group with selection"
+                : "New group"
+          }
           description={
             groupDialog?.mode === "rename"
               ? "Just how this reads on the Tracks list — projects stay as they are."
-              : "An album, EP, playlist, or any bucket you want on Tracks. Separate from projects."
+              : groupDialog?.mode === "create-from-selection"
+                ? `Creates a group and puts the ${selected.size} selected track${selected.size === 1 ? "" : "s"} in it. Separate from projects.`
+                : "An album, EP, playlist, or any bucket you want on Tracks. Separate from projects."
           }
           onClose={() => setGroupDialog(null)}
         >
@@ -1451,7 +1703,7 @@ export default function TracksPage() {
 
           <div className="mt-4">
             <span className="label-mono">Color</span>
-            <p className="mt-1 text-[11px] text-text-lo/70">
+            <p className="mt-1 text-xs text-text-lo/70">
               Optional. Tints the group so it stands apart from the others.
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -1460,7 +1712,7 @@ export default function TracksPage() {
                 onClick={() => setGroupAccent(null)}
                 aria-pressed={groupAccent === null}
                 className={cn(
-                  "rounded-chip border px-2.5 py-1 text-[11px] transition-colors",
+                  "rounded-chip border px-2.5 py-1 text-xs transition-colors",
                   groupAccent === null
                     ? "border-text-hi/60 text-text-hi"
                     : "border-line text-text-lo hover:text-text-hi"
@@ -1490,7 +1742,7 @@ export default function TracksPage() {
                   so clicking Custom opens it immediately. */}
               <span
                 className={cn(
-                  "relative inline-flex rounded-chip border px-2.5 py-1 text-[11px] transition-colors",
+                  "relative inline-flex rounded-chip border px-2.5 py-1 text-xs transition-colors",
                   groupAccent === "custom"
                     ? "border-text-hi/60 text-text-hi"
                     : "border-line text-text-lo hover:text-text-hi"
@@ -1765,7 +2017,7 @@ function SortableTrackRow({
                 )}
                 title={track.momentum}
               />
-              <span className="hidden shrink-0 truncate text-[11px] text-text-lo sm:inline sm:max-w-[7rem]">
+              <span className="hidden shrink-0 truncate text-xs text-text-lo sm:inline sm:max-w-[7rem]">
                 {stageLabel}
               </span>
             </button>
@@ -1863,19 +2115,19 @@ function SortableTrackRow({
                 <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
                   <span
                     className={cn(
-                      "rounded-chip px-2 py-0.5 text-[11px]",
+                      "rounded-chip px-2 py-0.5 text-xs",
                       typeChipClass(track.type)
                     )}
                   >
                     {formatTrackType(track.type)}
                   </span>
                   {meta.length > 0 ? (
-                    <span className="font-mono text-[11px] text-text-lo">
+                    <span className="font-mono text-xs text-text-lo">
                       {meta.join(" · ")}
                     </span>
                   ) : null}
                 </span>
-                <span className="mt-1.5 block truncate text-[11px]">
+                <span className="mt-1.5 block truncate text-xs">
                   {blocked ? (
                     <span className="text-warn">
                       Blocked — {track.blocked_reason}

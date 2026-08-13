@@ -16,6 +16,19 @@ if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version ?? "")) {
   errors.push(`electron/package.json has an invalid version: ${version ?? "missing"}`);
 }
 
+const handoffPath = path.join(root, "lib", "desktop", "handoff.ts");
+const handoffSource = fs.readFileSync(handoffPath, "utf8");
+const shellVersionMatch = handoffSource.match(
+  /export const DESKTOP_SHELL_VERSION = "([^"]+)"/
+);
+if (!shellVersionMatch) {
+  errors.push("lib/desktop/handoff.ts must export DESKTOP_SHELL_VERSION");
+} else if (shellVersionMatch[1] !== version) {
+  errors.push(
+    `DESKTOP_SHELL_VERSION (${shellVersionMatch[1]}) must match electron/package.json (${version})`
+  );
+}
+
 if (desktopPackage.build?.extraMetadata?.version !== version) {
   errors.push("electron/package.json version and build.extraMetadata.version must match");
 }
@@ -39,8 +52,57 @@ if (desktopPackage.build?.win?.target !== "nsis") {
   errors.push("Windows desktop releases must use the NSIS updater-compatible target");
 }
 
+// Every local require() from main.js must ship inside the asar — omitting one
+// crashes launch with "Cannot find module" (media-permissions on v0.100.12).
+const packagedFiles = new Set(desktopPackage.build?.files ?? []);
+for (const required of [
+  "main.js",
+  "media-permissions.js",
+  "oauth-navigation.js",
+  "preload.js",
+  "vault.js",
+  "vault-media-response.js",
+]) {
+  if (!packagedFiles.has(required)) {
+    errors.push(`electron build.files must include ${required}`);
+  }
+  if (!fs.existsSync(path.join(root, "electron", required))) {
+    errors.push(`missing electron/${required}`);
+  }
+}
+
 if (desktopPackage.build?.win?.artifactName !== "TEMPO-Setup.${ext}") {
   errors.push("the Windows installer must keep the stable TEMPO-Setup.${ext} asset name");
+}
+
+const nsis = desktopPackage.build?.nsis;
+if (nsis?.oneClick !== false) {
+  errors.push("Windows installer must use the assisted wizard (nsis.oneClick: false)");
+}
+if (nsis?.allowToChangeInstallationDirectory !== true) {
+  errors.push("Windows installer must let artists choose the install folder");
+}
+const buildResources = path.join(root, "electron", "build");
+for (const asset of ["installerSidebar.bmp", "installerHeader.bmp", "installer.nsh"]) {
+  if (!fs.existsSync(path.join(buildResources, asset))) {
+    errors.push(`missing electron/build/${asset} for the branded Windows wizard`);
+  }
+}
+
+const mac = desktopPackage.build?.mac;
+if (mac?.artifactName !== "TEMPO-Mac.${ext}") {
+  errors.push("the Mac DMG must keep the stable TEMPO-Mac.${ext} asset name");
+}
+if (mac?.identity !== null) {
+  errors.push("Mac releases stay unsigned until Apple signing is configured (identity must be null)");
+}
+
+const macTargets = Array.isArray(mac?.target) ? mac.target : mac?.target ? [mac.target] : [];
+const hasDmg = macTargets.some((t) =>
+  typeof t === "string" ? t === "dmg" : t?.target === "dmg"
+);
+if (!hasDmg) {
+  errors.push("Mac desktop releases must include a dmg target");
 }
 
 if (errors.length > 0) {

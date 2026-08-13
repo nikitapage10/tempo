@@ -157,7 +157,7 @@ export function TrendLine({
 
   if (points.length < 2) {
     return (
-      <p className="text-[11px] text-text-lo">
+      <p className="text-xs text-text-lo">
         {points.length === 1
           ? "One day recorded — the trend line starts once there are two."
           : "No history yet."}
@@ -253,7 +253,7 @@ function Figure({
     <div>
       <p className="text-[22px] leading-none text-text-hi">{value}</p>
       <p className="label-mono mt-1.5">{label}</p>
-      {hint ? <p className="mt-1 text-[10px] text-text-lo/70">{hint}</p> : null}
+      {hint ? <p className="mt-1 text-[11px] text-text-lo/70">{hint}</p> : null}
     </div>
   );
 }
@@ -348,11 +348,11 @@ function CatalogModule({
                   {release.name}
                 </span>
                 {release.albumType ? (
-                  <span className="shrink-0 rounded-chip bg-bg-2 px-2 py-0.5 text-[10px] text-text-lo">
+                  <span className="shrink-0 rounded-chip bg-bg-2 px-2 py-0.5 text-[11px] text-text-lo">
                     {release.albumType}
                   </span>
                 ) : null}
-                <span className="shrink-0 text-[11px] tabular-nums text-text-lo">
+                <span className="shrink-0 text-xs tabular-nums text-text-lo">
                   {release.releaseDate ?? "\u2014"}
                 </span>
                 {release.url ? (
@@ -369,7 +369,7 @@ function CatalogModule({
               </li>
             ))}
           </ul>
-          <p className="mt-4 text-[10px] text-text-lo/70">{footnote}</p>
+          <p className="mt-4 text-[11px] text-text-lo/70">{footnote}</p>
         </>
       )}
     </PlatformShell>
@@ -483,7 +483,7 @@ export function SoundCloudModule({ artist }: { artist: Artist }) {
             </>
           ) : null}
 
-          <p className="mt-4 text-[10px] text-text-lo/70">
+          <p className="mt-4 text-[11px] text-text-lo/70">
             Last read {latest.captured_on}. Totals across your public tracks —
             SoundCloud’s Insights breakdowns aren’t available to apps.
           </p>

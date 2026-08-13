@@ -73,7 +73,7 @@ export function PeoplePanel({ trackId, ownerUserId, isOwner }: PeoplePanelProps)
   return (
     <section className="rounded-card border border-line bg-bg-1 p-4">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <h2 className="font-mono text-[11px] uppercase tracking-[0.08em] text-text-lo">
+        <h2 className="font-mono text-xs uppercase tracking-[0.08em] text-text-lo">
           People
         </h2>
         {isOwner && !open ? (
@@ -150,7 +150,7 @@ export function PeoplePanel({ trackId, ownerUserId, isOwner }: PeoplePanelProps)
           </div>
           <button
             type="button"
-            className="mt-2 text-[11px] text-text-lo hover:text-text-hi"
+            className="mt-2 text-xs text-text-lo hover:text-text-hi"
             onClick={() => setFreshInvite(null)}
           >
             Done
@@ -164,7 +164,7 @@ export function PeoplePanel({ trackId, ownerUserId, isOwner }: PeoplePanelProps)
             <span className="text-sm text-text-hi">
               {ownerUserId === user?.id ? "You" : "Owner"}
             </span>
-            <span className="rounded-chip bg-amber/15 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-amber">
+            <span className="rounded-chip bg-amber/15 px-1.5 py-0.5 font-mono text-[11px] uppercase tracking-wider text-amber">
               Owner
             </span>
           </div>
@@ -241,14 +241,14 @@ function CollaboratorRow({
             </span>
             <span
               className={cn(
-                "rounded-chip px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider",
+                "rounded-chip px-1.5 py-0.5 font-mono text-[11px] uppercase tracking-wider",
                 pending ? "bg-text-lo/15 text-text-lo" : "bg-ok/15 text-ok"
               )}
             >
               {pending ? "pending" : "active"}
             </span>
           </div>
-          <p className="mt-1 font-mono text-[11px] text-text-lo">
+          <p className="mt-1 font-mono text-xs text-text-lo">
             invited {formatShortDate(collaborator.created_at)}
             {collaborator.accepted_at
               ? ` · accepted ${formatShortDate(collaborator.accepted_at)}`
@@ -261,7 +261,7 @@ function CollaboratorRow({
             <select
               value={collaborator.role}
               onChange={(e) => void onChangeRole(e.target.value as CollaboratorRole)}
-              className="h-7 rounded-input border border-line bg-bg-2 px-1.5 text-[11px] text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+              className="h-7 rounded-input border border-line bg-bg-2 px-1.5 text-xs text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
             >
               {COLLABORATOR_ROLES.map((r) => (
                 <option key={r.value} value={r.value}>
@@ -270,7 +270,7 @@ function CollaboratorRow({
               ))}
             </select>
             {confirmRevoke ? (
-              <span className="flex items-center gap-1 text-[11px]">
+              <span className="flex items-center gap-1 text-xs">
                 <span className="text-warn">Revoke?</span>
                 <button
                   type="button"
@@ -290,7 +290,7 @@ function CollaboratorRow({
             ) : (
               <button
                 type="button"
-                className="rounded-input px-2 py-1 text-[11px] text-text-lo hover:bg-bg-1 hover:text-warn"
+                className="rounded-input px-2 py-1 text-xs text-text-lo hover:bg-bg-1 hover:text-warn"
                 onClick={onRequestRevoke}
               >
                 Revoke
@@ -298,7 +298,7 @@ function CollaboratorRow({
             )}
           </div>
         ) : (
-          <span className="shrink-0 rounded-chip bg-bg-2 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-text-lo">
+          <span className="shrink-0 rounded-chip bg-bg-2 px-1.5 py-0.5 font-mono text-[11px] uppercase tracking-wider text-text-lo">
             {roleLabel(collaborator.role)}
           </span>
         )}

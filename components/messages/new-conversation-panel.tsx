@@ -107,7 +107,7 @@ export function NewConversationPanel({
                 />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-xs font-medium text-text-hi">{person.display_name}</p>
-                  <p className="truncate text-[11px] text-text-lo">
+                  <p className="truncate text-xs text-text-lo">
                     {person.handle ? `@${person.handle}` : person.tagline ?? "On the network"}
                   </p>
                 </div>

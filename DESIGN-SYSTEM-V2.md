@@ -28,10 +28,33 @@ Added tokens (`app/globals.css`):
 Added utilities: `.panel`, `.panel-quiet`, `.well`, `.lift`, `.glow-ice`,
 `.glow-amber`, `.label-mono`, `.stat-value`, `.scrim-reveal`, `.scrim-center`.
 
+As of v0.113, `.panel` and `.panel-quiet` are the app-wide glass surfaces:
+they keep the existing radius, top edge, elevation, gradients and accent
+layers, but use translucent fills and backdrop blur over the persistent
+workspace video. `.well` remains the quieter nested surface and deliberately
+does not add a second backdrop blur.
+
+As of v0.118, peer modules share one cast shadow (`--shadow-2`) on `.panel`,
+`.panel-quiet`, `.glass`, and `.glass-hero`. Quiet/primary hierarchy comes from
+fill opacity and blur strength — not from stacking a deep drop next to a flat
+tile. `--shadow-3` is reserved for true overlays (menus, dialogs, Origin
+chapters). Soften the whole ramp so glass on the dark wash does not read as a
+heavy black halo.
+
+The amber→ice side stroke is **opt-in** via `.prism-edge` (with `.prism-edge-sm`
+for tighter cards). Use it on page heroes and Board **columns** — not on every
+track card or Calendar chrome. Board tracks keep the hover Spectra frame
+(`LfWindow` + spotlight) instead of a permanent side line. The stroke is
+vertically inset past the corner radius. Board columns may use
+`overflow: hidden` so backdrop blur clips to the radius — Spotlight edge glow
+tracks local `--spot-x` / `--spot-y`, so that clip no longer kills hover.
+
 Also added: `.spotlight` / `<SpotlightCard>` (`components/ui/spotlight-card.tsx`)
 — a cursor-tracked highlight for clickable surfaces. Default tone is `ramp`,
 which cross-fades ice → white → amber with pointer X (one shared listener via
-`useSpotlightPointer`, not one per card). Applied to every place a track,
+`useSpotlightPointer`, not one per card). Edge glow tracks **local**
+`--spot-x` / `--spot-y` on the card so Board stage transforms still show the
+same hover rim as Tracks. Applied to every place a track,
 project, or task appears as a clickable row/card — board cards, Tracks rows,
 Today's attention list, project track lists, release track rows, project
 cards, task rows. Don't invent a new hue for it; `tone` accepts the existing
@@ -73,21 +96,24 @@ Rules that changed:
 | `--ok` | `#6FD99A` | Success |
 | `--warn` | `#FF7A6B` | Danger / overdue |
 
-### Typography (v0.16 — two families, not three)
-- **Space Grotesk** — display, track titles, the wordmark
-- **Inter** — everything else: body UI *and* BPM, keys, timestamps, version
-  numbers, durations, counts, deadlines. JetBrains Mono was dropped at the
-  user's request (three fonts read as inconsistent); `font-mono` and
-  `.font-data` both resolve to Inter now. Numeric alignment is looser than a
-  true monospace gave — accepted tradeoff, don't "fix" it by bringing a third
-  family back without asking.
+### Typography (v0.117 — Jura UI, Inter numerals, lifted small sizes)
+- **Jura** — geometric face for the product UI (rail, menus, titles, body).
+  Hierarchy from weight: **300** wordmark, **500** body/controls, **600**
+  titles, active nav, labels.
+- **Inter** — numerals only (`.stat-value`, `.font-data`, `font-mono`, and
+  `.tabular-nums`). Jura’s zero has a centre dot that reads oddly on counts;
+  Inter keeps those clean.
+- **Size** — body is 15px; Tailwind `text-sm` / `text-xs` sit one step up
+  (15px / 13px); section labels are 12px. Dense meta that was 10–11px was
+  lifted with the same pass.
+- Custom artist logos remain images, not fonts.
 
 ### Rules
 - Dark UI only.
 - Ice = interaction; amber = status. Never both as competing CTAs.
 - Radius: 10px cards, 8px inputs, 999px chips.
 - `.flare-line` for active dividers / markers.
-- Spectra shader only in already-approved atmospheric moments (intro, top edge, empty states, Today banner) — **not** behind dense track data.
+- The root Spectra shader stays in approved atmospheric moments (intro, empty states, active marks, selected feature areas), not as the dense-data backdrop. A separate softly focused video is the persistent signed-in workspace backdrop behind the shared glass surfaces; thin flare / slit dividers still punch through that video so the shader can run along page-header rules and rail ticks. The former top-edge shader strip is removed.
 - `prefers-reduced-motion`: pause shaders; disable non-essential transitions; ambient tint may be static.
 
 ---
