@@ -63,8 +63,17 @@ export default async function AppLayout({
       row.origin_status === "not_started" || row.origin_status === "in_progress"
   );
 
+  const finishedMusician = musicOwned.some(
+    (row) => row.origin_status === "complete" || row.origin_status === "skipped"
+  );
+
   if (!ownedError && unfinishedMusic) {
-    redirect("/origin");
+    // Team-only accounts may still have leftover not_started rows from a
+    // bug that minted Artist profiles on invite accept. Don't send them
+    // through Origin; dual users who already finished as a musician still go.
+    if (!membership || finishedMusician) {
+      redirect("/origin");
+    }
   }
   if (
     !ownedError &&

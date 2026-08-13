@@ -183,7 +183,7 @@ function RegisterForm() {
         router.refresh();
         return;
       }
-      router.replace("/");
+      router.replace("/team");
       router.refresh();
       return;
     }

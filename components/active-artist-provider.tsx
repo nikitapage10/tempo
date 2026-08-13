@@ -18,7 +18,12 @@ import {
 } from "@/lib/api/artists";
 import { ACTIVE_ARTIST_KEY } from "@/lib/constants";
 import { resolveArtistHues, type ResolvedArtistHues } from "@/lib/artist-theme";
-import { pickDefaultArtistId } from "@/lib/workspace-mode";
+import {
+  classifyOwnedKind,
+  membershipArtists,
+  ownedPersonalWorkspace,
+  pickDefaultArtistId,
+} from "@/lib/workspace-mode";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import type { Artist } from "@/lib/types";
 
@@ -109,6 +114,19 @@ export function ActiveArtistProvider({
         pickDefaultArtistId(artists, user?.id) ?? artists[0].id;
       setActiveArtistIdState(next);
       writeStoredArtistId(next);
+      return;
+    }
+    const keeper = ownedPersonalWorkspace(artists, user?.id);
+    const active = artists.find((a) => a.id === activeArtistId);
+    const hasMembership = membershipArtists(artists, user?.id).length > 0;
+    if (
+      keeper &&
+      active &&
+      active.id !== keeper.id &&
+      classifyOwnedKind(active, user?.id, hasMembership) === "personal"
+    ) {
+      setActiveArtistIdState(keeper.id);
+      writeStoredArtistId(keeper.id);
     }
   }, [artists, activeArtistId, user?.id]);
 

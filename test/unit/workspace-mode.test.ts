@@ -3,6 +3,7 @@ import type { Artist } from "@/lib/types";
 import {
   homePathForMode,
   isPathAllowedForMode,
+  ownedMusicArtists,
   pickDefaultArtistId,
   resolveWorkspaceMode,
   socialAuthorArtistId,
@@ -34,7 +35,13 @@ function artist(partial: Partial<Artist> & Pick<Artist, "id" | "user_id" | "name
 
 describe("workspace mode", () => {
   const me = "user-1";
-  const music = artist({ id: "a-music", user_id: me, name: "Jane", workspace_kind: "artist" });
+  const music = artist({
+    id: "a-music",
+    user_id: me,
+    name: "Jane",
+    workspace_kind: "artist",
+    origin_status: "complete",
+  });
   const personal = artist({
     id: "a-work",
     user_id: me,
@@ -61,6 +68,35 @@ describe("workspace mode", () => {
     expect(pickDefaultArtistId([music], me)).toBe("a-music");
   });
 
+  it("does not treat a teammate's leftover email-named artist as My artist", () => {
+    const leftover = artist({
+      id: "a-music-glitch",
+      user_id: me,
+      name: "music",
+      workspace_kind: "artist",
+      origin_status: "not_started",
+    });
+    expect(resolveWorkspaceMode(leftover, me, [leftover, managed])).toBe("work");
+    expect(pickDefaultArtistId([leftover, managed], me)).toBe("a-music-glitch");
+    expect(ownedMusicArtists([leftover, leftover, managed], me)).toEqual([]);
+  });
+
+  it("still treats a dual user's finished music artist as My artist", () => {
+    const finished = artist({
+      id: "a-real",
+      user_id: me,
+      name: "music",
+      workspace_kind: "artist",
+      origin_status: "complete",
+    });
+    expect(resolveWorkspaceMode(finished, me, [finished, managed, personal])).toBe(
+      "artist"
+    );
+    expect(ownedMusicArtists([finished, managed, personal], me).map((a) => a.id)).toEqual([
+      "a-real",
+    ]);
+  });
+
   it("posts as the personal workspace unless in My artist", () => {
     expect(socialAuthorArtistId([personal, music, managed], music, me)).toBe("a-music");
     expect(socialAuthorArtistId([personal, music, managed], personal, me)).toBe("a-work");
@@ -80,5 +116,6 @@ describe("workspace mode", () => {
     expect(isPathAllowedForMode("/board", "entered", { catalog: "read" })).toBe(true);
     expect(isPathAllowedForMode("/artist", "entered", {})).toBe(true);
     expect(homePathForMode("entered")).toBe("/team");
+    expect(homePathForMode("work")).toBe("/team");
   });
 });

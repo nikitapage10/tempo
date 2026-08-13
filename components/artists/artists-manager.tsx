@@ -29,7 +29,9 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import { SignedImage } from "@/components/ui/signed-image";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { countArtistContents } from "@/lib/api/artists";
+import { ownedMusicArtists } from "@/lib/workspace-mode";
 import {
   ARTIST_PALETTES,
   BANNER_COLORS,
@@ -42,7 +44,8 @@ import { cn } from "@/lib/utils";
 export function ArtistsManager() {
   const { artists, activeArtistId, setActiveArtistId, isLoading } =
     useActiveArtist();
-  const musicArtists = artists.filter((a) => a.workspace_kind !== "personal");
+  const user = useCurrentUser();
+  const musicArtists = ownedMusicArtists(artists, user?.id);
   const {
     create,
     rename,
@@ -78,7 +81,7 @@ export function ArtistsManager() {
     try {
       const artist = await create.mutateAsync({
         name: newName.trim(),
-        sort: artists.length,
+        sort: musicArtists.length,
 
       });
       setNewName("");

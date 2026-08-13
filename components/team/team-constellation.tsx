@@ -14,13 +14,27 @@ export type ConstellationPerson = {
   featured?: boolean;
 };
 
-function cardState(index: number, total: number) {
-  const centerIndex = (total - 1) / 2;
-  const distance = index - centerIndex;
+export type FanPose = {
+  x: number;
+  y: number;
+  rotate: number;
+  zIndex: number;
+};
+
+/**
+ * Artist sits at the center, in front. Members fan left/right behind.
+ */
+export function teamFanPose(featured: boolean, memberIndex: number): FanPose {
+  if (featured) {
+    return { x: 0, y: 0, rotate: 0, zIndex: 40 };
+  }
+  const side = memberIndex % 2 === 0 ? -1 : 1;
+  const rank = Math.floor(memberIndex / 2) + 1;
   return {
-    x: distance * 90,
-    y: Math.abs(distance) * -30,
-    rotate: distance * 12,
+    x: side * rank * 108,
+    y: rank * -26,
+    rotate: side * rank * 11,
+    zIndex: 12 - rank,
   };
 }
 
@@ -49,6 +63,23 @@ export function TeamConstellation({
     if (inView) controls.start("visible");
   }, [inView, controls]);
 
+  const memberIndexById = React.useMemo(() => {
+    const map = new Map<string, number>();
+    let n = 0;
+    for (const person of people) {
+      if (person.featured) continue;
+      map.set(person.id, n);
+      n += 1;
+    }
+    return map;
+  }, [people]);
+
+  // Paint members first so the artist card wins even if z-index is ignored.
+  const paintOrder = React.useMemo(
+    () => [...people.filter((p) => !p.featured), ...people.filter((p) => p.featured)],
+    [people]
+  );
+
   const containerVariants = {
     hidden: {},
     visible: { transition: { staggerChildren: 0.1 } },
@@ -56,11 +87,14 @@ export function TeamConstellation({
 
   const itemVariants = {
     hidden: { opacity: 0, scale: 0.5, x: 0, y: 0, rotate: 0 },
-    visible: (i: number) => {
-      const { x, y, rotate } = cardState(i, people.length);
+    visible: (person: ConstellationPerson) => {
+      const { x, y, rotate } = teamFanPose(
+        !!person.featured,
+        memberIndexById.get(person.id) ?? 0
+      );
       return {
         opacity: 1,
-        scale: 1,
+        scale: person.featured ? 1.04 : 1,
         x,
         y,
         rotate,
@@ -87,51 +121,51 @@ export function TeamConstellation({
         initial="hidden"
         animate={controls}
       >
-        {people.map((person, i) => (
-          <motion.button
-            key={person.id}
-            type="button"
-            custom={i}
-            variants={itemVariants}
-            style={{
-              zIndex:
-                people.length - Math.abs(i - (people.length - 1) / 2) + (person.featured ? 8 : 0),
-            }}
-            whileHover={{
-              scale: 1.1,
-              zIndex: 99,
-              transition: { type: "spring", stiffness: 300, damping: 20 },
-            }}
-            onClick={() => onSelectPerson?.(person.id)}
-            className="absolute flex flex-col items-center gap-1.5"
-          >
-            <div
-              className={cn(
-                "overflow-hidden rounded-xl border-2 bg-bg-2 shadow-e2",
-                person.featured
-                  ? "h-32 w-32 border-ice/40 md:h-40 md:w-40 lg:h-44 lg:w-44"
-                  : "h-28 w-28 border-bg-0 md:h-36 md:w-36 lg:h-40 lg:w-40"
-              )}
+        {paintOrder.map((person) => {
+          const pose = teamFanPose(!!person.featured, memberIndexById.get(person.id) ?? 0);
+          return (
+            <motion.button
+              key={person.id}
+              type="button"
+              custom={person}
+              variants={itemVariants}
+              style={{ zIndex: pose.zIndex }}
+              whileHover={{
+                scale: 1.1,
+                zIndex: 99,
+                transition: { type: "spring", stiffness: 300, damping: 20 },
+              }}
+              onClick={() => onSelectPerson?.(person.id)}
+              className="absolute flex flex-col items-center gap-1.5"
             >
-              <SignedImage
-                path={person.avatarUrl}
-                alt={person.name}
-                className="h-full w-full object-cover"
-                fallback={
-                  <div className="flex h-full w-full items-center justify-center font-display text-lg text-text-hi">
-                    {initials(person.name)}
-                  </div>
-                }
-              />
-            </div>
-            <span className="max-w-[7rem] truncate text-[11px] text-text-hi">{person.name}</span>
-            {person.subtitle ? (
-              <span className="label-mono max-w-[7rem] truncate text-text-lo">
-                {person.subtitle}
-              </span>
-            ) : null}
-          </motion.button>
-        ))}
+              <div
+                className={cn(
+                  "overflow-hidden rounded-xl border-2 bg-bg-2 shadow-e2",
+                  person.featured
+                    ? "h-32 w-32 border-ice/40 md:h-40 md:w-40 lg:h-44 lg:w-44"
+                    : "h-28 w-28 border-bg-0 md:h-36 md:w-36 lg:h-40 lg:w-40"
+                )}
+              >
+                <SignedImage
+                  path={person.avatarUrl}
+                  alt={person.name}
+                  className="h-full w-full object-cover"
+                  fallback={
+                    <div className="flex h-full w-full items-center justify-center font-display text-lg text-text-hi">
+                      {initials(person.name)}
+                    </div>
+                  }
+                />
+              </div>
+              <span className="max-w-[7rem] truncate text-[11px] text-text-hi">{person.name}</span>
+              {person.subtitle ? (
+                <span className="label-mono max-w-[7rem] truncate text-text-lo">
+                  {person.subtitle}
+                </span>
+              ) : null}
+            </motion.button>
+          );
+        })}
       </motion.div>
     </div>
   );

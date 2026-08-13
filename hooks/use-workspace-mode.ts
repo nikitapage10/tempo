@@ -25,7 +25,7 @@ export function useWorkspaceMode(): {
   const { activeArtist, artists, isLoading: artistLoading } = useActiveArtist();
   const user = useCurrentUser();
   const membership = useArtistMembership(activeArtist);
-  const mode = resolveWorkspaceMode(activeArtist, user?.id);
+  const mode = resolveWorkspaceMode(activeArtist, user?.id, artists);
   return {
     mode,
     isOwner: membership.isOwner,

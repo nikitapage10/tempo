@@ -2,7 +2,11 @@ import { createClient } from "@/lib/supabase/client";
 import { buildArtistAssetPath, deleteFile, uploadFile } from "@/lib/storage";
 import { DEFAULT_ARTIST_NAME } from "@/lib/constants";
 import { fetchMyMemberProfile } from "@/lib/api/member-profile";
-import { artistWorkspaceKind } from "@/lib/workspace-mode";
+import {
+  membershipArtists,
+  ownedPersonalHomes,
+  ownedPersonalWorkspace,
+} from "@/lib/workspace-mode";
 import type { Artist, ArtistUpdate, OriginStatus } from "@/lib/types";
 
 function mapArtist(row: Record<string, unknown>): Artist {
@@ -54,16 +58,11 @@ export async function createArtist(
   if (options.originStatus) row.origin_status = options.originStatus;
   if (options.originCompletedAt) row.origin_completed_at = options.originCompletedAt;
   const { data, error } = await supabase.from("artists").insert(row).select().single();
-  if (error) {
-    if (options.workspaceKind && isMissingWorkspaceKind(error)) {
-      return createArtist(name, sort);
-    }
-    throw error;
-  }
+  if (error) throw error;
   return mapArtist(data as Record<string, unknown>);
 }
 
-async function personalWorkspaceName(email: string | null | undefined): Promise<string> {
+async function personalWorkspaceName(): Promise<string> {
   try {
     const profile = await fetchMyMemberProfile();
     const named = profile?.displayName?.trim();
@@ -71,9 +70,94 @@ async function personalWorkspaceName(email: string | null | undefined): Promise<
   } catch {
     /* profile table may not exist yet */
   }
-  const local = email?.split("@")[0]?.trim();
-  if (local) return local.slice(0, 60);
   return "Your work";
+}
+
+function looksLikeEmailLocalName(name: string, email: string | null | undefined): boolean {
+  const local = email?.split("@")[0]?.trim().toLowerCase();
+  return !!local && name.trim().toLowerCase() === local;
+}
+
+async function markWorkspacePersonal(
+  id: string,
+  name?: string
+): Promise<Artist | null> {
+  const supabase = createClient();
+  const patch: Record<string, unknown> = {
+    workspace_kind: "personal",
+    origin_status: "legacy_complete",
+  };
+  if (name) patch.name = name;
+  const { data, error } = await supabase
+    .from("artists")
+    .update(patch)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) {
+    if (isMissingWorkspaceKind(error)) {
+      const fallback: Record<string, unknown> = { origin_status: "legacy_complete" };
+      if (name) fallback.name = name;
+      const retry = await supabase
+        .from("artists")
+        .update(fallback)
+        .eq("id", id)
+        .select()
+        .single();
+      if (retry.error || !retry.data) return null;
+      return mapArtist(retry.data as Record<string, unknown>);
+    }
+    return null;
+  }
+  return mapArtist(data as Record<string, unknown>);
+}
+
+/**
+ * Collapse teammate-owned Artist rows that were minted by the old invite
+ * path (named from email, never Origin) into a single personal home.
+ */
+async function repairTeammateHomes(
+  existing: Artist[],
+  userId: string,
+  email: string | null | undefined,
+  preferredName: string
+): Promise<Artist[]> {
+  if (membershipArtists(existing, userId).length === 0) return existing;
+  const homes = ownedPersonalHomes(existing, userId);
+  if (homes.length === 0) return existing;
+
+  const keeper =
+    homes.find((a) => a.workspace_kind === "personal") ??
+    homes.find((a) => a.emblem_url || a.logo_url) ??
+    homes[0];
+  let next = existing;
+  const rename =
+    looksLikeEmailLocalName(keeper.name, email) || keeper.name === DEFAULT_ARTIST_NAME
+      ? preferredName
+      : undefined;
+
+  if (keeper.workspace_kind !== "personal" || rename) {
+    const updated = await markWorkspacePersonal(keeper.id, rename);
+    if (updated) {
+      next = next.map((a) => (a.id === updated.id ? updated : a));
+    }
+  }
+
+  for (const extra of homes.filter((a) => a.id !== keeper.id)) {
+    try {
+      const counts = await countArtistContents(extra.id);
+      if (counts.spaces === 0 && counts.tracks === 0) {
+        await deleteArtist(extra.id);
+        next = next.filter((a) => a.id !== extra.id);
+      } else if (extra.workspace_kind !== "personal") {
+        const updated = await markWorkspacePersonal(extra.id);
+        if (updated) next = next.map((a) => (a.id === updated.id ? updated : a));
+      }
+    } catch {
+      /* UI still hides extras via ownedMusicArtists */
+    }
+  }
+  return next;
 }
 
 export async function updateArtist(id: string, patch: ArtistUpdate): Promise<Artist> {
@@ -232,44 +316,94 @@ export async function clearArtistEmblem(artist: Artist): Promise<Artist> {
   return updated;
 }
 
+let ensureArtistsInflight: Promise<Artist[]> | null = null;
+
 /**
  * The artist list, seeding a default music artist when the user has none
  * (first sign-in), and a personal workspace when they work on someone else's
  * team but don't yet have a home of their own. Returns the list it already
  * read instead of leaving the caller to fetch it a second time.
+ *
+ * Concurrent calls share one in-flight promise so a refetch cannot mint
+ * another home while the first insert is still landing.
  */
 export async function ensureArtists(): Promise<Artist[]> {
-  const existing = await fetchArtists();
-  if (existing.length === 0) {
-    return [await createArtist(DEFAULT_ARTIST_NAME, 0)];
+  if (!ensureArtistsInflight) {
+    ensureArtistsInflight = ensureArtistsOnce().finally(() => {
+      ensureArtistsInflight = null;
+    });
   }
+  return ensureArtistsInflight;
+}
 
+async function ensureArtistsOnce(): Promise<Artist[]> {
+  const existing = await fetchArtists();
   const supabase = createClient();
   const { data: userData } = await supabase.auth.getUser();
   const userId = userData.user?.id;
+
+  if (existing.length === 0) {
+    if (userId) {
+      const { data: membership } = await supabase
+        .from("artist_members")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("status", "active")
+        .limit(1)
+        .maybeSingle();
+      if (membership) {
+        try {
+          const personal = await createArtist(await personalWorkspaceName(), 0, {
+            workspaceKind: "personal",
+            originStatus: "legacy_complete",
+            originCompletedAt: new Date().toISOString(),
+          });
+          try {
+            sessionStorage.setItem("tempo.preferPersonalHome", personal.id);
+          } catch {
+            /* ignore */
+          }
+          return [personal];
+        } catch {
+          return [];
+        }
+      }
+    }
+    return [await createArtist(DEFAULT_ARTIST_NAME, 0)];
+  }
+
   if (!userId) return existing;
 
-  const owned = existing.filter((a) => a.user_id === userId);
-  const hasMembership = existing.some((a) => a.user_id !== userId);
-  const hasPersonal = owned.some((a) => artistWorkspaceKind(a) === "personal");
-  if (!hasMembership || hasPersonal) return existing;
+  const hasMembership = membershipArtists(existing, userId).length > 0;
+  if (hasMembership) {
+    const preferredName = await personalWorkspaceName();
+    const repaired = await repairTeammateHomes(
+      existing,
+      userId,
+      userData.user?.email,
+      preferredName
+    );
+    if (ownedPersonalWorkspace(repaired, userId)) return repaired;
 
-  try {
-    const name = await personalWorkspaceName(userData.user?.email);
-    const personal = await createArtist(name, owned.length, {
-      workspaceKind: "personal",
-      originStatus: "legacy_complete",
-      originCompletedAt: new Date().toISOString(),
-    });
+    const owned = repaired.filter((a) => a.user_id === userId);
     try {
-      sessionStorage.setItem("tempo.preferPersonalHome", personal.id);
+      const personal = await createArtist(preferredName, owned.length, {
+        workspaceKind: "personal",
+        originStatus: "legacy_complete",
+        originCompletedAt: new Date().toISOString(),
+      });
+      try {
+        sessionStorage.setItem("tempo.preferPersonalHome", personal.id);
+      } catch {
+        /* ignore */
+      }
+      return [...repaired, personal];
     } catch {
-      /* ignore */
+      // Migration 092 not applied yet — stay on the membership-visible list
+      // rather than minting a music artist named from the email.
+      return repaired;
     }
-    return [...existing, personal];
-  } catch {
-    // Migration 092 not applied yet — stay on the membership-visible list
-    // rather than failing the whole shell.
-    return existing;
   }
+
+  return existing;
 }

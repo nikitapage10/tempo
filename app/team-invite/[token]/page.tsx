@@ -52,7 +52,7 @@ export default function TeamInvitePage() {
       const res = await fetch(`/api/team-invite/${token}`, { method: "POST" });
       const body = await res.json();
       if (!res.ok) throw new Error(body.error || "Couldn’t accept that invite.");
-      router.push("/");
+      router.push("/team");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn’t accept that invite.");
     } finally {

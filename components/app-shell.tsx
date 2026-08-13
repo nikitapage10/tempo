@@ -20,6 +20,7 @@ import {
   CircleUser,
   MoreHorizontal,
   ArrowLeft,
+  Globe,
 } from "lucide-react";
 import { AssistantRoot } from "@/components/assistant/assistant-root";
 import { ArtistFavicon } from "@/components/artist-favicon";
@@ -58,6 +59,12 @@ import { StarterChecklist } from "@/components/onboarding/starter-checklist";
 import { ContextualPageTour } from "@/components/onboarding/contextual-page-tour";
 import { DemoBanner } from "@/components/demo/demo-banner";
 import { DownloadButton } from "@/components/desktop/download-button";
+import {
+  flattenRailItems,
+  isRailHrefActive,
+  RailNavItem,
+  type RailItem,
+} from "@/components/rail-nav-item";
 import { ZoomControl } from "@/components/desktop/zoom-control";
 import { OfflineBanner } from "@/components/offline-banner";
 import { DesktopUpdateBanner } from "@/components/desktop/update-banner";
@@ -71,21 +78,28 @@ import {
   railTypeZoom,
 } from "@/lib/desktop/content-zoom";
 
+const ARTIST_NAV_CHILDREN = [
+  { href: "/team", label: "Team", icon: Users },
+  { href: "/stats", label: "Stats", icon: BarChart3 },
+] as const satisfies readonly RailItem[];
+
+const SOCIAL_NAV_CHILDREN = [
+  { href: "/social", label: "Network", icon: Globe },
+  { href: "/scenes", label: "Scenes", icon: Users2 },
+] as const satisfies readonly RailItem[];
+
 // Artist sits above the space-scoped screens: it rolls up every space the
 // artist owns, so it stays in the rail whatever the active space's focus is.
-const MUSIC_MAIN_NAV = [
+const MUSIC_MAIN_NAV: RailItem[] = [
   { href: "/", label: "Today", icon: SunMedium },
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/board", label: "Board", icon: Columns3 },
   { href: "/tracks", label: "Tracks", icon: Music2 },
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
-  { href: "/artist", label: "Artist", icon: Disc3 },
-  { href: "/team", label: "Team", icon: Users },
-  { href: "/social", label: "Social", icon: Orbit },
-  { href: "/scenes", label: "Scenes", icon: Users2 },
-  { href: "/stats", label: "Stats", icon: BarChart3 },
-] as const;
+  { href: "/artist", label: "Artist", icon: Disc3, children: ARTIST_NAV_CHILDREN },
+  { href: "/social", label: "Social", icon: Orbit, children: SOCIAL_NAV_CHILDREN },
+];
 
 const MUSIC_MOBILE_NAV = [
   { href: "/", label: "Today", icon: SunMedium },
@@ -94,17 +108,14 @@ const MUSIC_MOBILE_NAV = [
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
 ] as const;
 
-const TASKS_MAIN_NAV = [
+const TASKS_MAIN_NAV: RailItem[] = [
   { href: "/", label: "Today", icon: SunMedium },
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
-  { href: "/artist", label: "Artist", icon: Disc3 },
-  { href: "/team", label: "Team", icon: Users },
-  { href: "/social", label: "Social", icon: Orbit },
-  { href: "/scenes", label: "Scenes", icon: Users2 },
-  { href: "/stats", label: "Stats", icon: BarChart3 },
-] as const;
+  { href: "/artist", label: "Artist", icon: Disc3, children: ARTIST_NAV_CHILDREN },
+  { href: "/social", label: "Social", icon: Orbit, children: SOCIAL_NAV_CHILDREN },
+];
 
 const TASKS_MOBILE_NAV = [
   { href: "/", label: "Today", icon: SunMedium },
@@ -113,16 +124,15 @@ const TASKS_MOBILE_NAV = [
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
 ] as const;
 
-const WORK_MAIN_NAV = [
+const WORK_MAIN_NAV: RailItem[] = [
   { href: "/", label: "Today", icon: SunMedium },
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/profile", label: "Profile", icon: CircleUser },
   { href: "/team", label: "Artists", icon: Users },
-  { href: "/social", label: "Social", icon: Orbit },
-  { href: "/scenes", label: "Scenes", icon: Users2 },
-] as const;
+  { href: "/social", label: "Social", icon: Orbit, children: SOCIAL_NAV_CHILDREN },
+];
 
 const WORK_MOBILE_NAV = [
   { href: "/", label: "Today", icon: SunMedium },
@@ -148,8 +158,7 @@ const NAV_DESCRIPTIONS: Record<string, string> = {
 };
 
 function isActive(pathname: string, href: string) {
-  if (href === "/") return pathname === "/";
-  return pathname === href || pathname.startsWith(`${href}/`);
+  return isRailHrefActive(pathname, href);
 }
 
 const FOCUS_ROUTE = /^\/track\/[^/]+\/focus(\/|$)/;
@@ -180,11 +189,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     "/social": "social",
   };
 
-  const artistNav = tasksFocused ? TASKS_MAIN_NAV : MUSIC_MAIN_NAV;
-  const enteredNav = artistNav.filter((item) => {
-    const area = NAV_AREA[item.href];
+  const grantOk = (href: string) => {
+    const area = NAV_AREA[href];
     return !area || canRead(memberAreas, area);
-  });
+  };
+  const filterRail = (items: RailItem[]): RailItem[] =>
+    items.flatMap((item) => {
+      const children = (item.children ?? []).filter((child) => grantOk(child.href));
+      if (!item.children) return grantOk(item.href) ? [item] : [];
+      if (!grantOk(item.href) && children.length === 0) return [];
+      if (!grantOk(item.href)) {
+        return [{ ...item, href: children[0].href, children }];
+      }
+      return [{ ...item, children }];
+    });
+
+  const artistNav = tasksFocused ? TASKS_MAIN_NAV : MUSIC_MAIN_NAV;
+  const enteredNav = filterRail(artistNav);
   const mainNav =
     mode === "work" ? WORK_MAIN_NAV : mode === "entered" ? enteredNav : artistNav;
   const mobileNav =
@@ -195,7 +216,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         );
   const [moreOpen, setMoreOpen] = React.useState(false);
   const moreNav = [
-    ...mainNav.filter((item) => !mobileNav.some((m) => m.href === item.href)),
+    ...flattenRailItems(mainNav).filter(
+      (item) => !mobileNav.some((m) => m.href === item.href)
+    ),
     { href: "/settings", label: "Settings", icon: Settings },
   ];
 
@@ -235,7 +258,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             with content zoom only while labeled (so type can scale when there
             is room). Left 2px gutter stays transparent for active-nav windows. */}
         <aside
-          className="sticky top-0 z-30 hidden h-screen shrink-0 flex-col overflow-hidden border-r border-line md:flex"
+          className="sticky top-0 z-40 hidden h-screen shrink-0 flex-col overflow-visible border-r border-line md:flex"
           style={{
             width: railWidth,
             background:
@@ -282,39 +305,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
 
           <nav data-tour="workspace-nav" className="flex flex-1 flex-col gap-0.5 px-1.5 xl:px-3">
-            {mainNav.map(({ href, label, icon: Icon }) => {
-              const active = isActive(pathname, href);
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  data-context-tour={href.slice(1) || "today"}
-                  title={NAV_DESCRIPTIONS[href]}
-                  aria-label={label}
-                  className={cn(
-                    "group relative flex items-center justify-center gap-2.5 rounded-input px-2 py-2 text-sm transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice xl:justify-start xl:px-3",
-                    active
-                      ? "font-semibold text-text-hi"
-                      : "font-medium text-text-lo hover:bg-bg-2/60 hover:text-text-hi"
-                  )}
-                >
-                  {active ? (
-                    <LfWindow
-                      className="absolute left-[-6px] top-1.5 bottom-1.5 w-[2px] xl:left-[-12px]"
-                      aria-hidden
-                    />
-                  ) : null}
-                  <Icon
-                    className={cn("size-4 shrink-0", active ? "text-ice" : "text-text-lo")}
-                    strokeWidth={1.75}
-                  />
-                  <span className="hidden xl:inline">{label}</span>
-                  <span className="pointer-events-none absolute left-[calc(100%+12px)] top-1/2 z-[90] hidden w-60 -translate-y-1/2 rounded-input border border-line bg-bg-1 px-3 py-2 text-xs leading-relaxed text-text-lo opacity-0 shadow-e3 transition-opacity delay-150 group-hover:opacity-100 group-focus-visible:opacity-100 xl:block">
-                    {NAV_DESCRIPTIONS[href]}
-                  </span>
-                </Link>
-              );
-            })}
+            {mainNav.map((item) => (
+              <RailNavItem
+                key={`${item.label}-${item.href}`}
+                item={item}
+                pathname={pathname}
+                descriptions={NAV_DESCRIPTIONS}
+              />
+            ))}
           </nav>
 
           <GlobalPlayerBar />
@@ -413,7 +411,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   onClick={() => {
                     const home = ownedPersonalWorkspace(artists, user?.id);
                     if (home) setActiveArtistId(home.id);
-                    router.push("/");
+                    router.push("/team");
                   }}
                 >
                   <ArrowLeft className="size-3.5" />

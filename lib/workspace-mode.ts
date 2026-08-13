@@ -17,25 +17,70 @@ export function isOwnedWorkspace(
   return !!artist && !!userId && artist.user_id === userId;
 }
 
+function finishedAsMusician(
+  status: Artist["origin_status"] | null | undefined
+): boolean {
+  return status === "complete" || status === "skipped";
+}
+
+/**
+ * An owned row is a music artist when it was tagged that way and the person
+ * actually finished (or skipped) Origin as a musician. Team-only accounts
+ * used to get leftover Artist rows named from their email; those read as a
+ * personal home even if `workspace_kind` never landed.
+ */
+export function classifyOwnedKind(
+  artist: Pick<Artist, "user_id" | "workspace_kind" | "origin_status">,
+  userId: string | null | undefined,
+  hasMembership: boolean
+): WorkspaceKind | null {
+  if (!userId || artist.user_id !== userId) return null;
+  if (artist.workspace_kind === "personal") return "personal";
+  if (
+    hasMembership &&
+    !finishedAsMusician(artist.origin_status) &&
+    artist.origin_status !== "in_progress"
+  ) {
+    return "personal";
+  }
+  return "artist";
+}
+
 /** What shell the signed-in person is in for the currently active artist row. */
 export function resolveWorkspaceMode(
   artist: Artist | null | undefined,
-  userId: string | null | undefined
+  userId: string | null | undefined,
+  roster: Artist[] = []
 ): WorkspaceMode {
   if (!artist || !userId) return "work";
   if (artist.user_id !== userId) return "entered";
-  return artistWorkspaceKind(artist) === "personal" ? "work" : "artist";
+  const hasMembership = membershipArtists(roster, userId).length > 0;
+  return classifyOwnedKind(artist, userId, hasMembership) === "personal"
+    ? "work"
+    : "artist";
+}
+
+export function ownedPersonalHomes(
+  artists: Artist[],
+  userId: string | null | undefined
+): Artist[] {
+  if (!userId) return [];
+  const hasMembership = membershipArtists(artists, userId).length > 0;
+  return artists.filter(
+    (a) => classifyOwnedKind(a, userId, hasMembership) === "personal"
+  );
 }
 
 export function ownedPersonalWorkspace(
   artists: Artist[],
   userId: string | null | undefined
 ): Artist | null {
-  if (!userId) return null;
+  const homes = ownedPersonalHomes(artists, userId);
   return (
-    artists.find(
-      (a) => a.user_id === userId && artistWorkspaceKind(a) === "personal"
-    ) ?? null
+    homes.find((a) => a.workspace_kind === "personal") ??
+    homes.find((a) => a.emblem_url || a.logo_url) ??
+    homes[0] ??
+    null
   );
 }
 
@@ -44,8 +89,9 @@ export function ownedMusicArtists(
   userId: string | null | undefined
 ): Artist[] {
   if (!userId) return [];
+  const hasMembership = membershipArtists(artists, userId).length > 0;
   return artists.filter(
-    (a) => a.user_id === userId && artistWorkspaceKind(a) === "artist"
+    (a) => classifyOwnedKind(a, userId, hasMembership) === "artist"
   );
 }
 
@@ -84,7 +130,7 @@ export function socialAuthorArtistId(
   activeArtist: Artist | null | undefined,
   userId: string | null | undefined
 ): string | null {
-  const mode = resolveWorkspaceMode(activeArtist, userId);
+  const mode = resolveWorkspaceMode(activeArtist, userId, artists);
   if (mode === "artist") return activeArtist?.id ?? null;
   const personal = ownedPersonalWorkspace(artists, userId);
   if (personal) return personal.id;
@@ -169,7 +215,7 @@ export function isPathAllowedForMode(
 }
 
 export function homePathForMode(mode: WorkspaceMode): string {
-  if (mode === "work") return "/";
+  if (mode === "work") return "/team";
   if (mode === "entered") return "/team";
   return "/";
 }

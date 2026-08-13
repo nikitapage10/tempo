@@ -18,6 +18,8 @@ describe("team member accounts", () => {
   it("puts Team on the rail and serves it at /team", () => {
     const shell = read("components/app-shell.tsx");
     expect(shell).toContain('{ href: "/team", label: "Team"');
+    expect(shell).toContain("ARTIST_NAV_CHILDREN");
+    expect(shell).toContain('{ href: "/social", label: "Network"');
     expect(shell).toContain('{ href: "/profile", label: "Profile"');
     expect(shell).toContain("WORK_MAIN_NAV");
     expect(existsSync(resolve("app/(app)/team/page.tsx"))).toBe(true);
@@ -29,11 +31,13 @@ describe("team member accounts", () => {
     const artists = read("lib/api/artists.ts");
     expect(artists).toContain('workspaceKind: "personal"');
     expect(artists).toContain("tempo.preferPersonalHome");
+    expect(artists).toContain("repairTeammateHomes");
   });
 
-  it("fans rectangular team cards instead of a single You node", () => {
+  it("fans rectangular team cards with the artist at the center", () => {
     const constellation = read("components/team/team-constellation.tsx");
     expect(constellation).toContain("rounded-xl");
+    expect(constellation).toContain("teamFanPose");
     expect(constellation).not.toContain("orbitPosition");
     expect(read("app/(app)/team/page.tsx")).toContain("useActiveTeamRoster");
   });
