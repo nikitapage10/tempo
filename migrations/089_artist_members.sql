@@ -12,6 +12,19 @@
 -- read/write policies elsewhere, additively, using the helper functions
 -- defined here.
 
+-- A CHECK constraint can't contain a correlated subquery (Postgres rejects
+-- it outright), so the areas-shape validation has to be a plain function
+-- call instead of the `not exists (select ... from jsonb_each_text(...))`
+-- form used elsewhere in this file's design notes — this is that function.
+create or replace function is_valid_area_grants(p_areas jsonb) returns boolean
+language sql immutable as $$
+  select coalesce(
+    (select bool_and(value in ('none', 'read', 'write'))
+       from jsonb_each_text(p_areas)),
+    true
+  );
+$$;
+
 create table if not exists artist_members (
   id uuid primary key default gen_random_uuid(),
   artist_id uuid not null references artists(id) on delete cascade,
@@ -32,11 +45,7 @@ create table if not exists artist_members (
   created_at timestamptz not null default now(),
 
   constraint artist_members_areas_shape check (
-    jsonb_typeof(areas) = 'object'
-    and not exists (
-      select 1 from jsonb_each_text(areas) kv
-      where kv.value not in ('none', 'read', 'write')
-    )
+    jsonb_typeof(areas) = 'object' and is_valid_area_grants(areas)
   )
 );
 
