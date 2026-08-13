@@ -159,7 +159,7 @@ export function CalendarItemSurface({
         radius={7}
         borderWidth={1}
         size={110}
-        className="min-w-0 max-w-full overflow-hidden"
+        className="relative z-0 min-w-0 max-w-full hover:z-10"
       >
         <button
           type="button"
@@ -295,37 +295,47 @@ export function CalendarTimedItemSurface({
   const surfaceStyle = categorySurfaceStyle(color, true);
 
   return (
-    <button
-      type="button"
-      draggable={!!onDragStart}
-      onDragStart={(event) => onDragStart?.(item, event)}
-      onClick={() => onActivate(item)}
-      aria-label={[item.title, time, crossZone ? `originally in ${item.timezone}` : null].filter(Boolean).join(", ")}
-      style={{ ...style, ...surfaceStyle }}
-      className={cn(
-        "absolute overflow-hidden rounded-[7px] border border-line bg-bg-1/75 px-1.5 py-1 text-left shadow-e1 backdrop-blur-sm transition-shadow duration-hover hover:z-10 hover:shadow-e2 focus-visible:outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ice",
-        item.state === "completed" && "opacity-60"
-      )}
+    <SpotlightCard
+      tone={base.tone}
+      accent={color}
+      radius={7}
+      borderWidth={1}
+      size={110}
+      className="absolute z-0 hover:z-10"
+      style={style}
     >
-      <span className="flex items-center gap-1">
-        <Icon className="size-3 shrink-0" style={{ color }} aria-hidden />
-        {time ? (
-          <span className="inline-flex shrink-0 items-center gap-0.5 truncate font-mono text-[10px] text-text-lo">
-            {time}
-            {crossZone ? <Globe2 className="size-2.5" aria-hidden /> : null}
+      <button
+        type="button"
+        draggable={!!onDragStart}
+        onDragStart={(event) => onDragStart?.(item, event)}
+        onClick={() => onActivate(item)}
+        aria-label={[item.title, time, crossZone ? `originally in ${item.timezone}` : null].filter(Boolean).join(", ")}
+        style={surfaceStyle}
+        className={cn(
+          "h-full w-full overflow-hidden rounded-[7px] border border-line bg-bg-1/75 px-1.5 py-1 text-left shadow-e1 backdrop-blur-sm transition-shadow duration-hover hover:shadow-e2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
+          item.state === "completed" && "opacity-60"
+        )}
+      >
+        <span className="flex items-center gap-1">
+          <Icon className="size-3 shrink-0" style={{ color }} aria-hidden />
+          {time ? (
+            <span className="inline-flex shrink-0 items-center gap-0.5 truncate font-mono text-[10px] text-text-lo">
+              {time}
+              {crossZone ? <Globe2 className="size-2.5" aria-hidden /> : null}
+            </span>
+          ) : null}
+        </span>
+        {!dense ? (
+          <span
+            className={cn(
+              "block truncate text-xs font-medium text-text-hi",
+              item.state === "completed" && "line-through"
+            )}
+          >
+            {item.title}
           </span>
         ) : null}
-      </span>
-      {!dense ? (
-        <span
-          className={cn(
-            "block truncate text-xs font-medium text-text-hi",
-            item.state === "completed" && "line-through"
-          )}
-        >
-          {item.title}
-        </span>
-      ) : null}
-    </button>
+      </button>
+    </SpotlightCard>
   );
 }

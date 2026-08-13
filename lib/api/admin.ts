@@ -1,4 +1,43 @@
-export type AdminOverview = { totalMembers: number; signupsWeek: number; signupsMonth: number; active7: number; active30: number; openReports: number; openSupportReports: number; outstandingInvites: number; totalStorageBytes: number; signups: { date: string; count: number }[] };
+import type { AdminSystemHealth } from "@/lib/admin/health-status";
+export type { AdminSystemHealth };
+export type AdminOverviewSupport = {
+  id: string;
+  email: string | null;
+  category: "bug" | "help" | "feedback";
+  subject: string;
+  status: "open" | "in_progress" | "resolved";
+  created_at: string;
+  last_message_at: string | null;
+};
+export type AdminOverviewReport = {
+  id: string;
+  target_type: "post" | "post_comment" | "profile";
+  reason: string;
+  status: string;
+  created_at: string;
+};
+export type AdminOverviewAudit = {
+  id: string;
+  action: string;
+  target_type: string;
+  created_at: string;
+};
+export type AdminOverview = {
+  totalMembers: number;
+  signupsWeek: number;
+  signupsMonth: number;
+  active7: number;
+  active30: number;
+  suspendedMembers: number;
+  openReports: number;
+  openSupportReports: number;
+  outstandingInvites: number;
+  totalStorageBytes: number;
+  signups: { date: string; count: number }[];
+  recentSupport: AdminOverviewSupport[];
+  recentReports: AdminOverviewReport[];
+  recentAudit: AdminOverviewAudit[];
+};
 export type AdminAnalytics = { totals: { aiMessages: number; aiMessages30: number; aiEscalations30: number; aiUsers30: number; storageBytes: number; storageAdded30: number; uploads30: number; focusSeconds30: number; sessions30: number; tracks30: number; projects30: number; members: number }; days: { date: string; aiMessages: number; aiEscalations: number; storageAddedBytes: number; uploads: number; focusSeconds: number }[]; tracking: { aiCostAvailable: boolean; storageIncludes: string[] } };
 export type AdminActivationPulse = {
   definitionVersion: number;
@@ -34,6 +73,7 @@ export async function checkPlatformAdminAccess(): Promise<boolean> {
 }
 
 export const getAdminOverview = () => adminFetch<AdminOverview>("/api/admin/overview");
+export const getAdminSystemHealth = () => adminFetch<AdminSystemHealth>("/api/admin/system-health");
 export const getAdminAnalytics = () => adminFetch<AdminAnalytics>("/api/admin/analytics");
 export const getAdminActivationPulse = () => adminFetch<AdminActivationPulse>("/api/admin/activation-pulse");
 export const getAdminUsers = (params: { q?: string; status?: string; page: number; sort?: string }) => adminFetch<{ users: AdminMember[]; page: number; totalPages: number; total: number }>(`/api/admin/users?${new URLSearchParams({ q: params.q ?? "", status: params.status ?? "", page: String(params.page), sort: params.sort ?? "newest" })}`);

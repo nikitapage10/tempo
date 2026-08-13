@@ -1,7 +1,17 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  closestCorners,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
@@ -13,42 +23,31 @@ import {
 } from "@/components/ui/filter-row";
 import { FlareLine } from "@/components/flare-line";
 import { SlitDivider } from "@/components/ui/slit";
-import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
 import { useActiveSpace } from "@/components/active-space-provider";
+import { TaskDoneArchive } from "@/components/tasks/task-done-archive";
+import { TaskRescheduleDialog } from "@/components/tasks/task-reschedule-dialog";
+import { DraggableTaskRow } from "@/components/tasks/task-row";
 import { useProjects } from "@/hooks/use-projects";
 import { useTaskMutations, useTasks } from "@/hooks/use-tasks";
 import { useTracks } from "@/hooks/use-tracks";
 import { TASK_CATEGORIES, TASK_STATUSES } from "@/lib/constants";
+import { localDateString } from "@/lib/format";
 import {
-  addDays,
-  localDateString,
-  startOfLocalDay,
-} from "@/lib/format";
+  TASK_BUCKETS,
+  TASK_BUCKET_LABELS,
+  bucketDropId,
+  bucketForTask,
+  dropNeedsDatePrompt,
+  immediateDueDateForBucket,
+  parseBucketDropId,
+  type TaskBucket,
+} from "@/lib/tasks/buckets";
 import type { Task, TaskCategory, TaskStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
-
-type Bucket = "overdue" | "today" | "week" | "later";
-
-function bucketFor(task: Task, today: string): Bucket | null {
-  if (task.status === "done") return null;
-  if (!task.due_date) return "later";
-  if (task.due_date < today) return "overdue";
-  if (task.due_date === today) return "today";
-  const weekEnd = localDateString(addDays(startOfLocalDay(), 7));
-  if (task.due_date < weekEnd) return "week";
-  return "later";
-}
-
-const BUCKET_LABELS: Record<Bucket, string> = {
-  overdue: "Overdue",
-  today: "Today",
-  week: "This week",
-  later: "Later",
-};
 
 export default function TasksPage() {
   return (
@@ -92,24 +91,35 @@ function TasksContent() {
   const [projectId, setProjectId] = React.useState("");
   const [notes, setNotes] = React.useState("");
   const [showMore, setShowMore] = React.useState(false);
+  const [activeTask, setActiveTask] = React.useState<Task | null>(null);
+  const [pendingMove, setPendingMove] = React.useState<{
+    task: Task;
+    target: TaskBucket;
+  } | null>(null);
 
   const today = localDateString();
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
+  const reducedMotion = usePrefersReducedMotion();
 
   React.useEffect(() => {
     if (!editTaskId || isLoading) return;
+    const target = tasks.find((t) => t.id === editTaskId);
+    if (target?.status === "done") setStatusFilter("done");
+    else setStatusFilter("all");
     setCategoryFilter("all");
-    setStatusFilter("all");
     const timer = window.setTimeout(() => {
       document.getElementById(`task-${editTaskId}`)?.scrollIntoView({
         block: "center",
-        behavior: "smooth",
+        behavior: reducedMotion ? "auto" : "smooth",
       });
       document
         .querySelector<HTMLInputElement>(`#task-${editTaskId} input[type="date"]`)
         ?.focus();
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [editTaskId, isLoading]);
+  }, [editTaskId, isLoading, tasks, reducedMotion]);
 
   const filtered = React.useMemo(() => {
     return tasks.filter((t) => {
@@ -121,7 +131,7 @@ function TasksContent() {
   }, [tasks, categoryFilter, statusFilter]);
 
   const grouped = React.useMemo(() => {
-    const map: Record<Bucket, Task[]> = {
+    const map: Record<TaskBucket, Task[]> = {
       overdue: [],
       today: [],
       week: [],
@@ -133,11 +143,23 @@ function TasksContent() {
         done.push(t);
         continue;
       }
-      const b = bucketFor(t, today);
+      const b = bucketForTask(t, today);
       if (b) map[b].push(t);
     }
     return { ...map, done };
   }, [filtered, today]);
+
+  const doneCount = React.useMemo(
+    () =>
+      tasks.filter(
+        (t) =>
+          t.status === "done" &&
+          (categoryFilter === "all" || t.category === categoryFilter)
+      ).length,
+    [tasks, categoryFilter]
+  );
+
+  const showingDone = statusFilter === "done";
 
   const trackName = React.useCallback(
     (id: string | null) => tracks.find((t) => t.id === id)?.title,
@@ -175,11 +197,79 @@ function TasksContent() {
     }
   }
 
+  async function patchTask(id: string, patch: { status?: TaskStatus; due_date?: string | null }) {
+    try {
+      await update.mutateAsync({ id, patch });
+    } catch (err) {
+      toast(
+        err instanceof Error ? err.message : "Couldn’t update task."
+      );
+    }
+  }
+
+  async function deleteTask(id: string) {
+    try {
+      await remove.mutateAsync(id);
+    } catch (err) {
+      toast(
+        err instanceof Error ? err.message : "Couldn’t delete task."
+      );
+    }
+  }
+
+  function handleDragStart(event: DragStartEvent) {
+    const task = event.active.data.current?.task;
+    if (task) setActiveTask(task as Task);
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const task = event.active.data.current?.task as Task | undefined;
+    const target = parseBucketDropId(event.over?.id);
+    setActiveTask(null);
+    if (!task || !target) return;
+    const current = bucketForTask(task, today);
+    if (current === target) return;
+    if (!dropNeedsDatePrompt(target)) {
+      void patchTask(task.id, {
+        due_date: immediateDueDateForBucket(target, today),
+      });
+      return;
+    }
+    setPendingMove({ task, target });
+  }
+
+  function rowHandlers(task: Task) {
+    return {
+      onToggle: () =>
+        patchTask(task.id, {
+          status: task.status === "done" ? "todo" : "done",
+        }),
+      onStatus: (next: TaskStatus) => patchTask(task.id, { status: next }),
+      onDue: (next: string) => patchTask(task.id, { due_date: next || null }),
+      onDelete: () => deleteTask(task.id),
+    };
+  }
+
   return (
     <div className="space-y-5">
       <PageHeader
         title="Tasks"
         subtitle="Actionable stuff outside a single track — pitching, social, admin."
+        actions={
+          <Button
+            type="button"
+            variant="secondary"
+            className={cn(
+              showingDone && "border-ok/40 text-ok hover:bg-ok/10"
+            )}
+            onClick={() => setStatusFilter(showingDone ? "all" : "done")}
+          >
+            Closed out
+            {doneCount > 0 ? (
+              <span className="font-data tabular-nums text-ok">{doneCount}</span>
+            ) : null}
+          </Button>
+        }
       />
 
       <form onSubmit={handleQuickAdd} className="panel p-5">
@@ -322,7 +412,7 @@ function TasksContent() {
               active={statusFilter === s.value}
               onClick={() => setStatusFilter(s.value)}
             >
-              {s.label}
+              {s.label === "Done" ? "Closed out" : s.label}
             </Chip>
           ))}
           {categoryFilter !== "all" || statusFilter !== "all" ? (
@@ -345,163 +435,141 @@ function TasksContent() {
           <div className="h-14 animate-pulse rounded-card bg-bg-1" />
           <div className="h-14 animate-pulse rounded-card bg-bg-1" />
         </div>
+      ) : showingDone ? (
+        <TaskDoneArchive
+          tasks={grouped.done}
+          trackName={trackName}
+          projectName={projectName}
+          focusedId={editTaskId}
+          onToggle={(task) => rowHandlers(task).onToggle()}
+          onStatus={(task, next) => rowHandlers(task).onStatus(next)}
+          onDue={(task, next) => rowHandlers(task).onDue(next)}
+          onDelete={(task) => rowHandlers(task).onDelete()}
+        />
       ) : (
-        // Buckets as columns — the week reads at a glance and the page uses
-        // its width instead of one narrow stack down the middle.
-        <div className="grid gap-3 sm:grid-cols-2 lg:min-h-[248px] lg:grid-cols-4">
-          {(["overdue", "today", "week", "later"] as Bucket[]).map(
-            (bucket) => {
-              const list = grouped[bucket];
-              const urgent = bucket === "overdue" && list.length > 0;
-              return (
-                <section
-                  key={bucket}
-                  className={cn(
-                    "flex flex-col p-4",
-                    urgent ? "panel border-warn/40" : "panel-quiet"
-                  )}
-                >
-                  <h2 className="mb-3 flex items-center gap-2">
-                    <span
-                      className={cn("label-mono", urgent && "text-warn")}
-                    >
-                      {BUCKET_LABELS[bucket]}
-                    </span>
-                    {list.length > 0 ? (
-                      <span
-                        className={cn(
-                          "font-mono text-xs tabular-nums",
-                          urgent ? "text-warn" : "text-text-lo/70"
-                        )}
-                      >
-                        {list.length}
-                      </span>
-                    ) : null}
-                    <SlitDivider className="flex-1" />
-                  </h2>
-                  <ul className="space-y-2">
-                    {list.map((task) => (
-                      <TaskRow
-                        key={task.id}
-                        task={task}
-                        trackTitle={trackName(task.track_id)}
-                        projectTitle={projectName(task.project_id)}
-                        overdue={bucket === "overdue"}
-                        focused={editTaskId === task.id}
-                        onToggle={async () => {
-                          try {
-                            await update.mutateAsync({
-                              id: task.id,
-                              patch: {
-                                status:
-                                  task.status === "done" ? "todo" : "done",
-                              },
-                            });
-                          } catch (err) {
-                            toast(
-                              err instanceof Error
-                                ? err.message
-                                : "Couldn’t update task."
-                            );
-                          }
-                        }}
-                        onStatus={async (next) => {
-                          try {
-                            await update.mutateAsync({
-                              id: task.id,
-                              patch: { status: next },
-                            });
-                          } catch (err) {
-                            toast(
-                              err instanceof Error
-                                ? err.message
-                                : "Couldn’t update task."
-                            );
-                          }
-                        }}
-                        onDue={async (next) => {
-                          await update.mutateAsync({
-                            id: task.id,
-                            patch: { due_date: next || null },
-                          });
-                        }}
-                        onDelete={async () => {
-                          try {
-                            await remove.mutateAsync(task.id);
-                          } catch (err) {
-                            toast(
-                              err instanceof Error
-                                ? err.message
-                                : "Couldn’t delete task."
-                            );
-                          }
-                        }}
-                      />
-                    ))}
-                  </ul>
-                  {list.length === 0 ? <BucketEmpty bucket={bucket} /> : null}
-                </section>
-              );
-            }
-          )}
-        </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCorners}
+          onDragStart={handleDragStart}
+          onDragCancel={() => setActiveTask(null)}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="grid gap-3 sm:grid-cols-2 lg:min-h-[248px] lg:grid-cols-4">
+            {TASK_BUCKETS.map((bucket) => (
+              <TaskBucketColumn
+                key={bucket}
+                bucket={bucket}
+                list={grouped[bucket]}
+                editTaskId={editTaskId}
+                trackName={trackName}
+                projectName={projectName}
+                rowHandlers={rowHandlers}
+              />
+            ))}
+          </div>
+          <DragOverlay dropAnimation={reducedMotion ? null : undefined}>
+            {activeTask ? (
+              <div className="cursor-grabbing rounded-card border border-ice/40 bg-bg-1 px-3 py-2.5 shadow-raise">
+                <p className="text-sm text-text-hi">{activeTask.title}</p>
+              </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
       )}
 
-      {!isLoading ? (
-        <div>
-          {grouped.done.length > 0 && statusFilter !== "todo" ? (
-            <section>
-              <h2 className="mb-2 font-mono text-xs uppercase tracking-[0.08em] text-text-lo">
-                Done
-                <span className="ml-2 text-text-lo/70">
-                  {grouped.done.length}
-                </span>
-              </h2>
-              <ul className="space-y-2 opacity-70">
-                {grouped.done.map((task) => (
-                  <TaskRow
-                    key={task.id}
-                    task={task}
-                    trackTitle={trackName(task.track_id)}
-                    projectTitle={projectName(task.project_id)}
-                    overdue={false}
-                    focused={editTaskId === task.id}
-                    onToggle={async () => {
-                      await update.mutateAsync({
-                        id: task.id,
-                        patch: { status: "todo" },
-                      });
-                    }}
-                    onStatus={async (next) => {
-                      await update.mutateAsync({
-                        id: task.id,
-                        patch: { status: next },
-                      });
-                    }}
-                    onDue={async (next) => {
-                      await update.mutateAsync({
-                        id: task.id,
-                        patch: { due_date: next || null },
-                      });
-                    }}
-                    onDelete={async () => {
-                      await remove.mutateAsync(task.id);
-                    }}
-                  />
-                ))}
-              </ul>
-            </section>
-          ) : null}
-
-          {!filtered.length &&
-          (categoryFilter !== "all" || statusFilter !== "all") ? (
-            <p className="well mt-4 px-4 py-6 text-center text-sm text-text-lo">
-              No tasks match these filters.
-            </p>
-          ) : null}
-        </div>
+      {!isLoading &&
+      !filtered.length &&
+      (categoryFilter !== "all" || statusFilter !== "all") &&
+      !showingDone ? (
+        <p className="well mt-4 px-4 py-6 text-center text-sm text-text-lo">
+          No tasks match these filters.
+        </p>
       ) : null}
+
+      <TaskRescheduleDialog
+        task={pendingMove?.task ?? null}
+        target={pendingMove?.target ?? null}
+        today={today}
+        onOpenChange={(open) => {
+          if (!open) setPendingMove(null);
+        }}
+        onPick={(due) => {
+          const move = pendingMove;
+          setPendingMove(null);
+          if (!move) return;
+          void patchTask(move.task.id, { due_date: due });
+        }}
+      />
     </div>
+  );
+}
+
+function TaskBucketColumn({
+  bucket,
+  list,
+  editTaskId,
+  trackName,
+  projectName,
+  rowHandlers,
+}: {
+  bucket: TaskBucket;
+  list: Task[];
+  editTaskId: string | null;
+  trackName: (id: string | null) => string | undefined;
+  projectName: (id: string | null) => string | undefined;
+  rowHandlers: (task: Task) => {
+    onToggle: () => Promise<void>;
+    onStatus: (s: TaskStatus) => Promise<void>;
+    onDue: (date: string) => Promise<void>;
+    onDelete: () => Promise<void>;
+  };
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: bucketDropId(bucket),
+    data: { bucket },
+  });
+  const urgent = bucket === "overdue" && list.length > 0;
+
+  return (
+    <section
+      ref={setNodeRef}
+      className={cn(
+        "flex min-h-[12rem] flex-col p-4",
+        urgent ? "panel border-warn/40" : "panel-quiet",
+        isOver && "border-ice/50 ring-1 ring-ice/35"
+      )}
+    >
+      <h2 className="mb-3 flex items-center gap-2">
+        <span className={cn("label-mono", urgent && "text-warn")}>
+          {TASK_BUCKET_LABELS[bucket]}
+        </span>
+        {list.length > 0 ? (
+          <span
+            className={cn(
+              "font-mono text-xs tabular-nums",
+              urgent ? "text-warn" : "text-text-lo/70"
+            )}
+          >
+            {list.length}
+          </span>
+        ) : null}
+        <SlitDivider className="flex-1" />
+      </h2>
+      <ul className="space-y-2">
+        {list.map((task) => (
+          <DraggableTaskRow
+            key={task.id}
+            task={task}
+            trackTitle={trackName(task.track_id)}
+            projectTitle={projectName(task.project_id)}
+            overdue={bucket === "overdue"}
+            focused={editTaskId === task.id}
+            {...rowHandlers(task)}
+          />
+        ))}
+      </ul>
+      {list.length === 0 ? <BucketEmpty bucket={bucket} /> : null}
+    </section>
   );
 }
 
@@ -509,8 +577,8 @@ function TasksContent() {
  * A calm invitation rather than blank space. Only the "today" column offers an
  * action — four identical buttons would be the busywork we're avoiding.
  */
-function BucketEmpty({ bucket }: { bucket: Bucket }) {
-  const copy: Record<Bucket, string> = {
+function BucketEmpty({ bucket }: { bucket: TaskBucket }) {
+  const copy: Record<TaskBucket, string> = {
     overdue: "Nothing overdue.",
     today: "Nothing due today.",
     week: "Clear for the rest of the week.",
@@ -519,7 +587,6 @@ function BucketEmpty({ bucket }: { bucket: Bucket }) {
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-2 py-6 text-center">
-      {/* A tick of the lightfield instead of dead space above the copy. */}
       <FlareLine variant="tick" className="mb-1 !w-10 opacity-70" />
       <p className="text-xs leading-relaxed text-text-lo/70">
         {copy[bucket]}
@@ -537,138 +604,14 @@ function BucketEmpty({ bucket }: { bucket: Bucket }) {
   );
 }
 
-function TaskRow({
-  task,
-  trackTitle,
-  projectTitle,
-  overdue,
-  focused,
-  onToggle,
-  onStatus,
-  onDue,
-  onDelete,
-}: {
-  task: Task;
-  trackTitle?: string;
-  projectTitle?: string;
-  overdue: boolean;
-  focused: boolean;
-  onToggle: () => Promise<void>;
-  onStatus: (s: TaskStatus) => Promise<void>;
-  onDue: (date: string) => Promise<void>;
-  onDelete: () => Promise<void>;
-}) {
-  const [confirm, setConfirm] = React.useState(false);
-  const cat =
-    TASK_CATEGORIES.find((c) => c.value === task.category)?.label ??
-    task.category;
-
-  return (
-    <SpotlightCard
-      id={`task-${task.id}`}
-      as="li"
-      tone={overdue ? "warn" : task.status === "done" ? "ok" : "ice"}
-      radius={10}
-      size={180}
-      className={cn(
-        "flex items-start gap-3 rounded-card border border-line bg-bg-1 px-3 py-2.5",
-        focused && "ring-2 ring-ice shadow-e2"
-      )}
-    >
-      <input
-        type="checkbox"
-        checked={task.status === "done"}
-        onChange={() => void onToggle()}
-        className="mt-1 size-4 accent-[var(--ice)]"
-        aria-label={`Mark ${task.title} done`}
-      />
-      <div className="min-w-0 flex-1">
-        <p
-          className={cn(
-            "text-sm",
-            task.status === "done"
-              ? "text-text-lo line-through"
-              : overdue
-                ? "text-warn"
-                : "text-text-hi"
-          )}
-        >
-          {task.title}
-        </p>
-        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-          <span className="rounded-chip bg-bg-2 px-2 py-0.5 text-xs text-text-lo">
-            {cat}
-          </span>
-          <select
-            className="h-6 rounded-chip border border-line bg-bg-2 px-2 font-mono text-[11px] text-text-lo"
-            value={task.status}
-            onChange={(e) => void onStatus(e.target.value as TaskStatus)}
-          >
-            {TASK_STATUSES.map((s) => (
-              <option key={s.value} value={s.value}>
-                {s.label}
-              </option>
-            ))}
-          </select>
-          {task.due_date ? (
-            <input
-              type="date"
-              value={task.due_date}
-              onChange={(e) => void onDue(e.target.value)}
-              aria-label={`Due date for ${task.title}`}
-              className={cn(
-                "h-6 rounded-chip border border-line bg-bg-2 px-2 font-mono text-[11px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
-                overdue ? "text-warn" : "text-text-lo"
-              )}
-            />
-          ) : null}
-          {task.track_id && trackTitle ? (
-            <Link
-              href={`/track/${task.track_id}`}
-              className="rounded-chip bg-ice/10 px-2 py-0.5 text-xs text-ice hover:underline"
-            >
-              {trackTitle}
-            </Link>
-          ) : null}
-          {task.project_id && projectTitle ? (
-            <Link
-              href={`/projects/${task.project_id}`}
-              className="rounded-chip bg-amber/10 px-2 py-0.5 text-xs text-amber hover:underline"
-            >
-              {projectTitle}
-            </Link>
-          ) : null}
-        </div>
-        {task.notes ? (
-          <p className="mt-1 text-xs text-text-lo">{task.notes}</p>
-        ) : null}
-      </div>
-      {confirm ? (
-        <span className="flex shrink-0 items-center gap-1 text-xs">
-          <button
-            type="button"
-            className="text-warn hover:underline"
-            onClick={() => void onDelete()}
-          >
-            Delete
-          </button>
-          <button
-            type="button"
-            className="text-text-lo"
-            onClick={() => setConfirm(false)}
-          >
-            Cancel
-          </button>
-        </span>
-      ) : (
-        <button
-          type="button"
-          className="shrink-0 text-xs text-text-lo hover:text-warn"
-          onClick={() => setConfirm(true)}
-        >
-          Delete
-        </button>
-      )}
-    </SpotlightCard>
-  );
+function usePrefersReducedMotion() {
+  const [reduced, setReduced] = React.useState(false);
+  React.useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setReduced(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+  return reduced;
 }

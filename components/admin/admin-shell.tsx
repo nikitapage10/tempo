@@ -7,6 +7,7 @@ import {
   ArrowLeft,
   BarChart3,
   ClipboardList,
+  HeartPulse,
   KeyRound,
   LifeBuoy,
   Shield,
@@ -14,11 +15,13 @@ import {
 } from "lucide-react";
 import { Wordmark } from "@/components/wordmark";
 import { FlareLine } from "@/components/flare-line";
+import { AppVideoBackdrop } from "@/components/app-video-backdrop";
 import { ZoomControl } from "@/components/desktop/zoom-control";
 import { SlitDivider } from "@/components/ui/slit";
-import { useAdminOverview } from "@/hooks/use-admin";
+import { useAdminOverview, useAdminSystemHealth } from "@/hooks/use-admin";
 import { useContentZoom } from "@/hooks/use-content-zoom";
 import { useRealtimeInbox } from "@/hooks/use-realtime-inbox";
+import { summarizeSystemHealth } from "@/lib/admin/health-status";
 import { APP_VERSION } from "@/lib/version";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +32,7 @@ const items = [
   { href: "/admin/invites", label: "Invites", icon: KeyRound },
   { href: "/admin/support", label: "Support", icon: LifeBuoy, attention: "support" as const },
   { href: "/admin/reports", label: "Reports", icon: Shield, attention: "reports" as const },
+  { href: "/admin/system", label: "System", icon: HeartPulse, attention: "system" as const, desktopOnly: true },
   { href: "/admin/audit", label: "Audit", icon: ClipboardList },
 ];
 
@@ -37,15 +41,19 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const { factor: contentZoom } = useContentZoom();
   const pathname = usePathname();
   const overview = useAdminOverview();
-  const attentionCount = (attention?: "support" | "reports") =>
+  const health = useAdminSystemHealth();
+  const healthIssues = health.data ? summarizeSystemHealth(health.data).issues.length : 0;
+  const attentionCount = (attention?: "support" | "reports" | "system") =>
     attention === "support"
       ? overview.data?.openSupportReports ?? 0
       : attention === "reports"
         ? overview.data?.openReports ?? 0
-        : 0;
+        : attention === "system"
+          ? healthIssues
+          : 0;
   return (
-    <div className="min-h-screen bg-bg-0 md:grid md:grid-cols-[15rem_minmax(0,1fr)]">
-      <aside className="hidden min-h-screen border-r border-line bg-bg-1 md:flex md:flex-col">
+    <div className="relative isolate min-h-screen bg-bg-0 md:grid md:grid-cols-[15rem_minmax(0,1fr)]">
+      <aside className="relative z-30 hidden min-h-screen border-r border-line bg-bg-1 md:flex md:flex-col">
         <div className="px-5 pb-4 pt-12">
           <div className="flex items-center justify-between gap-3">
             <Wordmark size={25} />
@@ -75,7 +83,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                     aria-label={`${count} open ${label.toLowerCase()}`}
                     className={cn(
                       "ml-auto min-w-5 rounded-full px-1.5 py-0.5 text-center font-mono text-[11px] font-semibold leading-4",
-                      attention === "reports" ? "bg-warn/15 text-warn" : "bg-amber/15 text-amber"
+                      attention === "reports" || attention === "system"
+                        ? "bg-warn/15 text-warn"
+                        : "bg-amber/15 text-amber"
                     )}
                   >
                     {count > 99 ? "99+" : count}
@@ -102,51 +112,56 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       {/* Extra top padding clears desktop window chrome (and reads the same on web).
           Content zoom scales this column only — the Admin rail stays put. */}
       <main
-        className="min-w-0 px-4 pb-24 pt-12 sm:px-6 md:px-8 md:pb-8"
+        className="relative z-20 isolate min-w-0 px-4 pb-24 pt-12 sm:px-6 md:px-8 md:pb-8"
         style={contentZoom !== 1 ? { zoom: contentZoom } : undefined}
       >
-        <div className="mb-4 md:hidden">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 rounded-input border border-line bg-bg-1 px-3 py-2 text-sm text-text-lo transition-colors hover:bg-bg-2 hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
-          >
-            <ArrowLeft className="size-4" />
-            Back to TEMPO
-          </Link>
-        </div>
-        {children}
-      </main>
-      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-7 border-t border-line bg-bg-1 md:hidden">
-        {items.map(({ href, label, icon: Icon, attention }) => {
-          const active = href === "/admin" ? pathname === href : pathname.startsWith(href);
-          const count = attentionCount(attention);
-          return (
+        <AppVideoBackdrop className="fixed inset-0 z-0 md:left-[15rem]" />
+        <div className="relative z-[1]">
+          <div className="mb-4 md:hidden">
             <Link
-              key={href}
-              href={href}
-              className={cn(
-                "flex min-w-0 flex-col items-center gap-1 px-1 py-2 text-[11px]",
-                active ? "text-ice" : "text-text-lo"
-              )}
+              href="/"
+              className="inline-flex items-center gap-2 rounded-input border border-line bg-bg-1/70 px-3 py-2 text-sm text-text-lo backdrop-blur-md transition-colors hover:bg-bg-2 hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
             >
-              <span className="relative">
-                <Icon className="size-4" />
-                {count > 0 ? (
-                  <span
-                    aria-label={`${count} open ${label.toLowerCase()}`}
-                    className={cn(
-                      "absolute -right-3 -top-2 min-w-4 rounded-full px-1 text-center font-mono text-[9px] font-semibold leading-4",
-                      attention === "reports" ? "bg-warn text-bg-0" : "bg-amber text-bg-0"
-                    )}
-                  >
-                    {count > 9 ? "9+" : count}
-                  </span>
-                ) : null}
-              </span>
-              <span className="truncate">{label}</span>
+              <ArrowLeft className="size-4" />
+              Back to TEMPO
             </Link>
-          );
-        })}
+          </div>
+          {children}
+        </div>
+      </main>
+      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-7 border-t border-line bg-bg-1/85 backdrop-blur-md md:hidden">
+        {items
+          .filter((item) => !item.desktopOnly)
+          .map(({ href, label, icon: Icon, attention }) => {
+            const active = href === "/admin" ? pathname === href : pathname.startsWith(href);
+            const count = attentionCount(attention);
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={cn(
+                  "flex min-w-0 flex-col items-center gap-1 px-1 py-2 text-[11px]",
+                  active ? "text-ice" : "text-text-lo"
+                )}
+              >
+                <span className="relative">
+                  <Icon className="size-4" />
+                  {count > 0 ? (
+                    <span
+                      aria-label={`${count} open ${label.toLowerCase()}`}
+                      className={cn(
+                        "absolute -right-3 -top-2 min-w-4 rounded-full px-1 text-center font-mono text-[9px] font-semibold leading-4",
+                        attention === "reports" ? "bg-warn text-bg-0" : "bg-amber text-bg-0"
+                      )}
+                    >
+                      {count > 9 ? "9+" : count}
+                    </span>
+                  ) : null}
+                </span>
+                <span className="truncate">{label}</span>
+              </Link>
+            );
+          })}
       </nav>
       <ZoomControl placement="admin" />
     </div>

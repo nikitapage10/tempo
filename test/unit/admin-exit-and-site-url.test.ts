@@ -12,6 +12,16 @@ describe("admin shell exit", () => {
     expect(shell).toContain("Back to TEMPO");
     expect(shell).toContain("ArrowLeft");
   });
+
+  it("washes Admin with the same persistent video backdrop as the studio", () => {
+    expect(shell).toContain("AppVideoBackdrop");
+    expect(shell).toContain("md:left-[15rem]");
+  });
+
+  it("exposes a System health destination from the desktop rail", () => {
+    expect(shell).toContain('href: "/admin/system"');
+    expect(shell).toContain("HeartPulse");
+  });
 });
 
 describe("canonical production URL", () => {

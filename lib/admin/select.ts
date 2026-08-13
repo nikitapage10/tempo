@@ -33,3 +33,10 @@ export const SUPPORT_REPORT_COLUMNS =
   "id, user_id, email, category, subject, details, page_url, user_agent, source, status, admin_notes, created_at, updated_at, resolved_at, resolved_by, last_message_at, last_admin_reply_at, member_archived_at, admin_archived_at, member_last_read_at, admin_last_read_at";
 export const SUPPORT_MESSAGE_COLUMNS =
   "id, report_id, sender_role, sender_user_id, body, media, reply_to_message_id, edited_at, deleted_at, deleted_by_user_id, created_at";
+/** Overview queues — identity and status only; never ticket bodies or reported copy. */
+export const OVERVIEW_SUPPORT_COLUMNS =
+  "id, email, category, subject, status, created_at, last_message_at";
+export const OVERVIEW_REPORT_COLUMNS =
+  "id, target_type, reason, status, created_at";
+export const OVERVIEW_AUDIT_COLUMNS =
+  "id, action, target_type, created_at";

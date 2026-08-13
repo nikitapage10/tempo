@@ -4,6 +4,12 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-12
 
+- Added (v0.136.0): on Tasks, drag a to-do from one column to another to change when it’s due — Today sets today; This week, Later, and Overdue ask which date.
+- Changed (v0.136.0): finished tasks no longer sit faded under the board — **Closed out** in the header (or Show → Closed out) is a list of everything you’ve checked off in this space.
+- Changed (v0.136.0): the Admin home now sits on the same softly blurred video wash as Today, with frosted glass, a greeting hero, live support and moderation queues, recent admin actions, and a jump-search to find a member without leaving the page.
+- Added (v0.136.0): Admin has a System page for operational health — invite email setup, schema, product-event counts, and Pulse delivery queues — status and counts only, never secrets or private work.
+- Fixed (v0.136.0): Calendar events show the same cursor-following edge light as tracks and tasks — the glow was being clipped off the pill.
+
 - Fixed (v0.135.5): release checks now prepare their isolated test data before
   running, catch new duplicate migration numbers before a change lands, and
   run again after changes reach main. Two older shared numbers (080 and 058)

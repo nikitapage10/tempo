@@ -114,6 +114,8 @@ export type SpotlightCardProps = {
   fill?: boolean;
   /** Render as something other than a div (e.g. "li"). */
   as?: "div" | "li" | "article" | "section";
+  /** Positioning or other layout styles — merged under the spotlight CSS vars. */
+  style?: React.CSSProperties;
 };
 
 export function SpotlightCard({
@@ -127,6 +129,7 @@ export function SpotlightCard({
   size = 220,
   fill = true,
   as: Tag = "div",
+  style,
 }: SpotlightCardProps) {
   useSpotlightPointer();
 
@@ -148,6 +151,7 @@ export function SpotlightCard({
       onPointerMove={syncLocalSpot}
       style={
         {
+          ...style,
           "--spot-color": accent ?? TONE_VAR[tone],
           "--spot-radius": radius,
           "--spot-border": borderWidth,

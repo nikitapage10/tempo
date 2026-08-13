@@ -1,6 +1,6 @@
 "use client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { actOnAdminReport, checkPlatformAdminAccess, createAdminInvite, deleteAdminInvite, deleteAdminUser, getAdminActivationPulse, getAdminAnalytics, getAdminAudit, getAdminInvites, getAdminOverview, getAdminReports, getAdminSupport, getAdminUser, getAdminUsers, reactivateAdminUser, revokeAdminInvite, sendAdminInvite, suspendAdminUser, updateAdminSupport, updateAdminUserRole } from "@/lib/api/admin";
+import { actOnAdminReport, checkPlatformAdminAccess, createAdminInvite, deleteAdminInvite, deleteAdminUser, getAdminActivationPulse, getAdminAnalytics, getAdminAudit, getAdminInvites, getAdminOverview, getAdminReports, getAdminSupport, getAdminSystemHealth, getAdminUser, getAdminUsers, reactivateAdminUser, revokeAdminInvite, sendAdminInvite, suspendAdminUser, updateAdminSupport, updateAdminUserRole } from "@/lib/api/admin";
 import type { AdminInviteRole } from "@/lib/api/admin";
 
 /** Whether the signed-in account can open the Admin portal. Non-admins stay false. */
@@ -14,6 +14,7 @@ export function usePlatformAdmin() {
 }
 
 export function useAdminOverview() { return useQuery({ queryKey: ["admin", "overview"], queryFn: getAdminOverview, refetchInterval: 30_000 }); }
+export function useAdminSystemHealth() { return useQuery({ queryKey: ["admin", "system-health"], queryFn: getAdminSystemHealth, refetchInterval: 30_000 }); }
 export function useAdminAnalytics() { return useQuery({ queryKey: ["admin", "analytics"], queryFn: getAdminAnalytics }); }
 export function useAdminActivationPulse() { return useQuery({ queryKey: ["admin", "activation-pulse"], queryFn: getAdminActivationPulse }); }
 export function useAdminUsers(params: { q?: string; status?: string; page: number; sort?: string }) { return useQuery({ queryKey: ["admin", "users", params], queryFn: () => getAdminUsers(params) }); }
