@@ -4,6 +4,7 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-13
 
+- Added (v0.154.0): When an admin formally invites someone as a **team member** (not an artist — a manager, label owner, collective founder, or anything in between), accepting the invite opens **Passage**: a short, cinematic welcome in the same style as Origin — same film, same scrolling story — that asks what got them into the music industry, who they support, and what they actually do day to day. Someone invited to a team the ordinary way (an artist adding a manager or collaborator from Team) still goes straight to account creation with no extra steps. Under the hood: run migration 094 in the Supabase SQL editor after 093.
 - Fixed (v0.153.3): Hovering Artist for Stats (or Social for Scenes) still keeps that menu if you cut across the tab underneath — but switching Artist → Social is instant again. The old pause before the other menu could open is gone.
 - Fixed (v0.153.2 / Desktop v0.100.24): On TEMPO Desktop, **Open web app** opens your normal browser at the same page — it no longer opens a second TEMPO window. Launching the app again (Start menu, Dock, or installer) focuses the one that’s already running. Windows and Mac get this together; update after Desktop Release publishes both installers.
 - Fixed (v0.153.1): Asking TEMPO to also invite a collaborator as a full artist no longer claims you don’t own the track when you do.

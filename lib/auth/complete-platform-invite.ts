@@ -2,6 +2,7 @@ import { ACTIVE_ARTIST_KEY, PREFER_ORIGIN_ARTIST_KEY } from "@/lib/constants";
 
 export type CompletedPlatformInvite = {
   startOrigin: boolean;
+  startPassage: boolean;
   originArtistId: string | null;
 };
 
@@ -35,6 +36,7 @@ export async function completePlatformInvite(
   if (originArtistId) rememberOriginArtist(originArtistId);
   return {
     startOrigin: Boolean(body?.startOrigin),
+    startPassage: Boolean(body?.startPassage),
     originArtistId,
   };
 }

@@ -56,6 +56,10 @@ function WelcomeChooser() {
       .then((result) => {
         if (cancelled) return;
         setInviteReady(true);
+        if (result.startPassage) {
+          router.replace("/passage");
+          return;
+        }
         if (isDesktopApp() || result.startOrigin) {
           if (isDesktopApp()) router.replace("/origin");
           return;

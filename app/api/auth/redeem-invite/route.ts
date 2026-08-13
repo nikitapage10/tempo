@@ -101,7 +101,10 @@ export async function POST(req: NextRequest) {
     }
 
     if (memberRole === "team_member") {
-      return NextResponse.json({ ok: true, startOrigin: false }, { headers });
+      return NextResponse.json(
+        { ok: true, startOrigin: false, startPassage: true },
+        { headers }
+      );
     }
 
     const origin = await ensureOriginArtistForInvite(service, user.id);
