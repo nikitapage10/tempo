@@ -3,14 +3,13 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Import, Sparkles } from "lucide-react";
+import { Import, Sparkles, Users2 } from "lucide-react";
 import { ArtistsManager } from "@/components/artists/artists-manager";
 import { SpacesManager } from "@/components/spaces/spaces-manager";
 import { AccountPanel } from "@/components/settings/account-panel";
 import { CatalogBackupPanel } from "@/components/settings/catalog-backup-panel";
 import { NotificationsPanel } from "@/components/settings/notifications-panel";
 import { PulsePreferencesPanel } from "@/components/settings/pulse-preferences-panel";
-import { TeamPanel } from "@/components/settings/team-panel";
 import { FlareLine } from "@/components/flare-line";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
@@ -20,7 +19,6 @@ import { cn } from "@/lib/utils";
 const TABS = [
   { id: "studio", label: "Studio", hint: "Artists & spaces" },
   { id: "catalog", label: "Catalog", hint: "Import & backups" },
-  { id: "team", label: "Team", hint: "Managers & agents" },
   { id: "notifications", label: "Notifications", hint: "Full activity" },
   { id: "account", label: "Account", hint: "Sign-in & privacy" },
 ] as const;
@@ -205,6 +203,13 @@ function SettingsPageInner() {
                     cta="Open Artist Origin"
                     secondaryCta="Replay introduction"
                   />
+                  <ActionTile
+                    href="/artist/team"
+                    icon={Users2}
+                    title="Team"
+                    body="Managers, agents, and anyone else who works with this artist — who has access, and to what."
+                    cta="Open Team"
+                  />
                 </div>
               </SettingsPanel>
             </div>
@@ -244,22 +249,6 @@ function SettingsPageInner() {
                   </div>
                   <CatalogBackupPanel />
                 </div>
-              </SettingsPanel>
-            </div>
-          ) : null}
-
-          {active === "team" ? (
-            <div
-              role="tabpanel"
-              id="settings-panel-team"
-              aria-labelledby="settings-tab-team"
-            >
-              <SettingsPanel
-                eyebrow="Team"
-                title="Who else has access"
-                description="Invite a manager, agent, or tour manager to this artist and control exactly what they can see and change — not a full account, and not a track collaborator."
-              >
-                <TeamPanel />
               </SettingsPanel>
             </div>
           ) : null}

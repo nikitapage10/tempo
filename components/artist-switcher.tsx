@@ -8,24 +8,38 @@ import {
   Disc3,
   Plus,
   Settings2,
+  Users2,
 } from "lucide-react";
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
 import { useActiveArtist } from "@/components/active-artist-provider";
-import { cn } from "@/lib/utils";
-
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase();
-}
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { listMemberOfArtists } from "@/lib/api/artist-members";
+import { ROLE_LABELS } from "@/lib/team/roles";
+import { cn, initials } from "@/lib/utils";
 
 export function ArtistSwitcher() {
   const { artists, activeArtist, setActiveArtistId, isLoading } =
     useActiveArtist();
+  const user = useCurrentUser();
   const [open, setOpen] = React.useState(false);
   const ref = React.useRef<HTMLDivElement>(null);
   const label = activeArtist?.name ?? "No artist";
+
+  // Owned vs. member-of only matters once there's more than one artist to
+  // choose between and at least one of them isn't yours — otherwise this is
+  // a wasted round trip on every load for the overwhelming majority of
+  // solo-artist accounts.
+  const mightHaveMemberships = artists.some((a) => a.user_id !== user?.id);
+  const membershipsQuery = useQuery({
+    queryKey: ["member-of-artists", user?.id],
+    queryFn: listMemberOfArtists,
+    enabled: !!user && mightHaveMemberships,
+    staleTime: 60_000,
+  });
+  const roleByArtistId = new Map(
+    (membershipsQuery.data ?? []).map((m) => [m.artistId, m.role])
+  );
 
   React.useEffect(() => {
     if (!open) return;
@@ -81,6 +95,7 @@ export function ArtistSwitcher() {
           <ul className="max-h-56 overflow-y-auto py-1">
             {artists.map((artist) => {
               const selected = artist.id === activeArtist?.id;
+              const memberRole = roleByArtistId.get(artist.id);
               return (
                 <li key={artist.id}>
                   <button
@@ -104,7 +119,12 @@ export function ArtistSwitcher() {
                         selected ? "text-ice opacity-100" : "opacity-0"
                       )}
                     />
-                    <span className="truncate">{artist.name}</span>
+                    <span className="min-w-0 flex-1 truncate">{artist.name}</span>
+                    {memberRole ? (
+                      <span className="shrink-0 rounded-chip border border-line px-1.5 py-0.5 text-[10px] text-text-lo">
+                        {ROLE_LABELS[memberRole]}
+                      </span>
+                    ) : null}
                   </button>
                 </li>
               );
@@ -126,6 +146,14 @@ export function ArtistSwitcher() {
             >
               <BarChart3 className="size-3.5" />
               Stats
+            </Link>
+            <Link
+              href="/artist/team"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2 px-3 py-2 text-sm text-text-lo transition-colors duration-hover hover:bg-bg-2/60 hover:text-text-hi"
+            >
+              <Users2 className="size-3.5" />
+              Team
             </Link>
             <Link
               href="/settings?tab=studio#artists"

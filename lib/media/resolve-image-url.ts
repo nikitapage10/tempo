@@ -23,7 +23,7 @@ export function isAbsoluteMediaSrc(path: string): boolean {
 /** Scene / social art usually isn't client-signable (RLS) — go straight to proxy. */
 export function proxyRouteForStoragePath(path: string): string | null {
   if (/^scenes\//.test(path)) return "/api/scenes/media/url";
-  if (/^(artists|profiles)\//.test(path)) return "/api/social/media/url";
+  if (/^(artists|profiles|members)\//.test(path)) return "/api/social/media/url";
   return null;
 }
 

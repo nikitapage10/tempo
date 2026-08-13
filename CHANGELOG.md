@@ -4,6 +4,21 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-12
 
+- Changed (v0.142.0): Team moved out of Settings and into its own page —
+  reach it from Artist → **Team**, or the artist switcher. It opens on a
+  visual of your team: your artist at the center, everyone who works with
+  you fanned out around it, their own photo if they've set one. Team invite
+  emails now actually send (the same way an artist account invite does)
+  instead of only producing a link to copy and paste yourself — the invited
+  person creates a real TEMPO account the normal way, they just don't go
+  through Origin, since they're not onboarding as an artist. A team member
+  now has their own name and photo, separate from any single artist they
+  work with, editable from their own view of the Team page. If someone owns
+  their own artist *and* works another artist's team under the same email,
+  the artist switcher now labels which entries are theirs and which are a
+  role (Manager, Agent, etc.) so switching between them is unambiguous.
+  Under the hood: run migration 091 in the Supabase SQL editor after 085–090,
+  on a non-production project first.
 - Fixed (v0.140.1): Admin’s moving wash stays put when you zoom the page — it was sliding with the content.
 - Changed (v0.140.1): **Back to TEMPO** stays on the left Admin menu while you scroll.
 - Added (v0.140.0): **Team** — under Settings → Team, bring on a manager,

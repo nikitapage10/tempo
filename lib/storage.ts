@@ -63,6 +63,20 @@ export function buildArtistAssetPath(params: {
   return `artists/${artistId}/${kind}/${sanitizeFilename(filename)}`;
 }
 
+/**
+ * A team member's own avatar (migration 091) — private bucket, path stored
+ * on artist_member_profiles. Cross-user reads (an artist owner viewing a
+ * member's photo) go through app/api/social/media/url, same as artist
+ * emblems, since storage policies gate on owner = auth.uid().
+ */
+export function buildMemberAvatarPath(params: {
+  userId: string;
+  filename: string;
+}): string {
+  const { userId, filename } = params;
+  return `members/${userId}/avatar/${sanitizeFilename(filename)}`;
+}
+
 /** Social post image attachments — private bucket, path stored in posts.media. */
 export function buildPostMediaPath(params: {
   profileId: string;

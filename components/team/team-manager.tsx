@@ -5,10 +5,15 @@ import { Copy, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { QuietEmpty } from "@/components/ui/section-header";
-import { useActiveArtist } from "@/components/active-artist-provider";
 import { useArtistMemberMutations, useArtistMembers } from "@/hooks/use-artist-members";
 import { teamInviteUrl, type ArtistMember } from "@/lib/api/artist-members";
-import { AREA_DESCRIPTIONS, AREA_KEYS, AREA_LABELS, type AreaGrants, type AreaLevel } from "@/lib/team/areas";
+import {
+  AREA_DESCRIPTIONS,
+  AREA_KEYS,
+  AREA_LABELS,
+  type AreaGrants,
+  type AreaLevel,
+} from "@/lib/team/areas";
 import {
   MEMBER_ROLES,
   ROLE_DESCRIPTIONS,
@@ -21,9 +26,8 @@ import { cn } from "@/lib/utils";
 
 const LEVEL_LABELS: Record<AreaLevel, string> = { none: "None", read: "Read", write: "Write" };
 
-export function TeamPanel() {
-  const { activeArtist } = useActiveArtist();
-  const artistId = activeArtist?.id ?? null;
+/** The owner's side of the team page — invite, edit grants, revoke. */
+export function TeamManager({ artistId }: { artistId: string }) {
   const { data: members, isLoading } = useArtistMembers(artistId);
   const mutations = useArtistMemberMutations(artistId);
   const { toast } = useToast();
@@ -32,18 +36,26 @@ export function TeamPanel() {
   const [email, setEmail] = React.useState("");
   const [role, setRole] = React.useState<MemberRole>("manager");
   const [lastInviteUrl, setLastInviteUrl] = React.useState<string | null>(null);
+  const [lastEmailSent, setLastEmailSent] = React.useState<boolean | null>(null);
   const [expandedId, setExpandedId] = React.useState<string | null>(null);
 
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault();
-    if (!artistId || !email.trim()) return;
+    if (!email.trim()) return;
     try {
-      const { rawToken } = await mutations.invite.mutateAsync({
+      const { rawToken, emailSent } = await mutations.invite.mutateAsync({
         artistId,
         invitedEmail: email.trim(),
         role,
       });
       setLastInviteUrl(teamInviteUrl(rawToken));
+      setLastEmailSent(emailSent);
+      toast(
+        emailSent
+          ? `Invite sent to ${email.trim()}.`
+          : "Invite created — email delivery isn’t set up, so share the link below instead.",
+        emailSent ? "ok" : "info"
+      );
       setEmail("");
       setInviting(false);
     } catch (err) {
@@ -60,16 +72,14 @@ export function TeamPanel() {
     }
   }
 
-  if (!artistId) return null;
-
   const active = (members ?? []).filter((m) => m.status !== "revoked");
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm text-text-lo">
-          People who work with {activeArtist?.name} — managers, agents, tour managers, and
-          anyone else who needs access without being the account holder.
+          Managers, agents, tour managers, and anyone else who needs access without being
+          the account holder.
         </p>
         <Button type="button" size="sm" onClick={() => setInviting(true)}>
           <Plus className="size-3.5" />
@@ -79,6 +89,9 @@ export function TeamPanel() {
 
       {lastInviteUrl ? (
         <div className="panel-quiet flex items-center gap-2 p-3 text-xs">
+          {lastEmailSent === false ? (
+            <span className="shrink-0 text-amber">No email sent —</span>
+          ) : null}
           <span className="min-w-0 flex-1 truncate font-mono text-text-lo">{lastInviteUrl}</span>
           <button
             type="button"

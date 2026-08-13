@@ -9,6 +9,8 @@ const headers: HeadersInit = { "Cache-Control": "no-store" };
 const ARTIST_SHAPE = /^artists\/([0-9a-f-]{36})\/(emblem|banner)\/[^/]+$/i;
 // profiles/{profileId}/posts/{postId}/{filename} — see buildPostMediaPath.
 const POST_SHAPE = /^profiles\/([0-9a-f-]{36})\/posts\/([0-9a-f-]{36})\/[^/]+$/i;
+// members/{userId}/avatar/{filename} — see buildMemberAvatarPath.
+const MEMBER_AVATAR_SHAPE = /^members\/([0-9a-f-]{36})\/avatar\/[^/]+$/i;
 
 /**
  * Storage policies on the `audio` bucket gate on owner = auth.uid(), so a
@@ -33,14 +35,44 @@ export async function POST(request: NextRequest) {
   const path = typeof input?.path === "string" ? input.path : "";
   const artistMatch = path.match(ARTIST_SHAPE);
   const postMatch = path.match(POST_SHAPE);
-  if (!artistMatch && !postMatch) {
+  const memberAvatarMatch = path.match(MEMBER_AVATAR_SHAPE);
+  if (!artistMatch && !postMatch && !memberAvatarMatch) {
     return NextResponse.json({ error: "Invalid media request." }, { status: 400, headers });
   }
 
   const service = createAdminClient();
   let allowed = false;
 
-  if (artistMatch) {
+  if (memberAvatarMatch) {
+    const [, ownerUserId] = memberAvatarMatch;
+    if (ownerUserId === user.id) {
+      allowed = true;
+    } else {
+      const { data: profile } = await service
+        .from("artist_member_profiles")
+        .select("avatar_url")
+        .eq("user_id", ownerUserId)
+        .maybeSingle();
+      if (profile?.avatar_url === path) {
+        const { data: memberships } = await service
+          .from("artist_members")
+          .select("artist_id")
+          .eq("user_id", ownerUserId)
+          .eq("status", "active");
+        const artistIds = (memberships ?? []).map((m) => m.artist_id as string);
+        if (artistIds.length > 0) {
+          const { data: ownedArtist } = await service
+            .from("artists")
+            .select("id")
+            .eq("user_id", user.id)
+            .in("id", artistIds)
+            .limit(1)
+            .maybeSingle();
+          allowed = !!ownedArtist;
+        }
+      }
+    }
+  } else if (artistMatch) {
     const [, artistId, kind] = artistMatch;
     // Match the path against the profile row rather than trusting its shape,
     // so a guessed path can never be signed — only imagery the profile is

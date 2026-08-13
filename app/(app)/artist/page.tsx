@@ -270,6 +270,12 @@ export default function ArtistProfilePage() {
                     </Link>
                   </Button>
                 ) : null}
+                <Button asChild type="button" size="sm" variant="secondary">
+                  <Link href="/artist/team">
+                    <Users className="size-3.5" />
+                    Team
+                  </Link>
+                </Button>
                 <Button type="button" size="sm" variant="secondary" onClick={startEditing}>
                   <Pencil className="size-3.5" />
                   Edit profile

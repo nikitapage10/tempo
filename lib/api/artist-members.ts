@@ -102,6 +102,9 @@ export type CreatedTeamInvite = {
   member: ArtistMember;
   /** Raw token — only ever returned once. */
   rawToken: string;
+  /** Whether the invite email actually sent — false with a reason if RESEND isn't configured or the send failed. The copyable link (teamInviteUrl) always works as a fallback either way. */
+  emailSent: boolean;
+  emailReason?: string;
 };
 
 function defaultInviteExpiry(days = 14): string {
@@ -146,7 +149,26 @@ export async function inviteMember(input: InviteMemberInput): Promise<CreatedTea
     throw new Error(msg);
   }
 
-  return { member: fromRow(data), rawToken };
+  const member = fromRow(data);
+
+  // Best-effort: the row is already created either way, so a failed send
+  // never blocks the invite — the artist can still copy/share the link.
+  let emailSent = false;
+  let emailReason: string | undefined;
+  try {
+    const res = await fetch("/api/team-invite/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ memberId: member.id, rawToken }),
+    });
+    const body = await res.json().catch(() => ({}));
+    emailSent = !!body.sent;
+    emailReason = body.reason;
+  } catch {
+    emailReason = "network_error";
+  }
+
+  return { member, rawToken, emailSent, emailReason };
 }
 
 export async function updateMemberAreas(id: string, areas: AreaGrants): Promise<ArtistMember> {
