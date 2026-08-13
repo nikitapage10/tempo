@@ -57,7 +57,7 @@ describe("desktop content zoom wiring", () => {
     expect(shell).toContain("absolute inset-0");
     expect(zoom).toContain("railLayoutWidthPx");
     expect(zoom).toContain("--tempo-zoom-left");
-    expect(zoom).toContain('placement?: "rail" | "corner"');
+    expect(zoom).toContain('placement?: "rail" | "corner" | "admin"');
   });
 
   it("offers bottom-left zoom during Origin onboarding", () => {
@@ -65,5 +65,12 @@ describe("desktop content zoom wiring", () => {
     expect(origin).toContain("useContentZoom");
     expect(origin).toContain('placement="corner"');
     expect(origin).toContain("ZoomControl");
+  });
+
+  it("offers zoom on Admin past the ops rail", () => {
+    const admin = read("components/admin/admin-shell.tsx");
+    expect(admin).toContain("useContentZoom");
+    expect(admin).toContain('placement="admin"');
+    expect(admin).toContain("ZoomControl");
   });
 });

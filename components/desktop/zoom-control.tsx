@@ -10,12 +10,13 @@ import { cn } from "@/lib/utils";
 
 /**
  * Desktop-only interface zoom. In the studio it sits past the rail; on
- * full-bleed surfaces (Origin) it pins to the bottom-left corner.
+ * full-bleed surfaces (Origin) it pins to the bottom-left corner; Admin
+ * sits past its fixed 15rem ops rail.
  */
 export function ZoomControl({
   placement = "rail",
 }: {
-  placement?: "rail" | "corner";
+  placement?: "rail" | "corner" | "admin";
 }) {
   const { factor, zoomIn, zoomOut, zoomReset } = useContentZoom();
   const labeledRail = useLabeledRail();
@@ -25,6 +26,7 @@ export function ZoomControl({
 
   const percent = Math.round(factor * 100);
   const corner = placement === "corner";
+  const admin = placement === "admin";
   // 16px gutter past the live rail width (compact or zoom-grown labeled).
   const leftPx = railWidth + 16;
 
@@ -34,10 +36,12 @@ export function ZoomControl({
         "fixed z-[90] flex h-9 items-center gap-0.5 rounded-full border border-line bg-bg-2 px-1 text-text-lo shadow-e3 [-webkit-app-region:no-drag]",
         corner
           ? "bottom-5 left-4"
-          : "bottom-20 left-4 md:bottom-5 md:left-[var(--tempo-zoom-left)]"
+          : admin
+            ? "bottom-20 left-4 md:bottom-5 md:left-[calc(15rem+1rem)]"
+            : "bottom-20 left-4 md:bottom-5 md:left-[var(--tempo-zoom-left)]"
       )}
       style={
-        corner
+        corner || admin
           ? undefined
           : ({
               ["--tempo-zoom-left"]: `${leftPx}px`,
