@@ -163,6 +163,10 @@ Nothing in it is required. Every question can be passed, and **Skip for now** le
 
 A Pro's workspace is not an artist's. They get Today, Calendar, Projects, Tasks, Profile, **Artists**, and Social, with no Board, no Tracks, and no artist identity editor, because their work is coordinating the record rather than making it.
 
+Once inside, a Pro gets their own **guided page tour**, in the same style as the artist one and written from their side of the work: a manager opening Calendar is looking at other people's dates, not their own release. Every page in their rail has one, they appear once each, and taking or skipping one never affects the artist set for a dual account.
+
+Which arrival someone gets is decided in one place, and the desktop app follows the same rule rather than carrying its own. Origin is only ever offered to an account that actually owns an unfinished music artist, so a Pro whose workspace has not been created yet is never mistaken for a new musician.
+
 An unfinished first-time Origin is a hard gate in front of the workspace rather
 than a page the artist can accidentally leave behind. Draft copy and its stable
 section are saved to the artist's private Origin record, with an immediate

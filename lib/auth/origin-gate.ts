@@ -27,6 +27,19 @@ export function musicOwnedRows(owned: OriginOwnedRow[]): OriginOwnedRow[] {
 }
 
 /**
+ * True when this account owns a music artist that still owes Origin.
+ *
+ * Used to decide whether Origin has any business claiming a Pro: it does once
+ * they accept an artist invite, and it does not simply because their workspace
+ * rows have not been created yet.
+ */
+export function hasUnfinishedMusicArtist(owned: OriginOwnedRow[]): boolean {
+  return musicOwnedRows(owned).some((row) =>
+    isUnfinishedMusic(row.origin_status ?? null)
+  );
+}
+
+/**
  * Team-only leftover Artist rows (email-named, never Origin) must not trap a
  * manager in onboarding. A later artist invite mints a second unfinished
  * music row (or sits beside a personal home) — those must go to Origin.

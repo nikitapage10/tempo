@@ -39,6 +39,27 @@ export function passageFinished(status: string | null | undefined): boolean {
   return status === "complete" || status === "skipped";
 }
 
+/**
+ * Whether the Origin gate is allowed to claim this account at all.
+ *
+ * The Origin gate treats "owns no artist rows" as a brand new musician, which
+ * is right for a solo signup and wrong for a Pro. An admin-invited Pro has no
+ * rows either until their personal workspace is created on first load, so for
+ * one render they looked exactly like a new artist and were sent to Origin.
+ * The Passage check sits behind `sendingToOrigin`, so it never got to run and
+ * Passage simply never started, on desktop and on the web alike.
+ *
+ * A Pro who later accepts an artist invite really is owed Origin, and that is
+ * exactly when they have an unfinished music artist to run it on.
+ */
+export function originIsForThisAccount(input: {
+  isTeamMember: boolean;
+  hasUnfinishedMusicArtist: boolean;
+}): boolean {
+  if (!input.isTeamMember) return true;
+  return input.hasUnfinishedMusicArtist;
+}
+
 export function shouldSendToPassage(input: PassageGateInput): boolean {
   // Origin owns the arrival when it is running — never stack two films.
   if (input.sendingToOrigin) return false;

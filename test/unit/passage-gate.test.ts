@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   isTeamMemberAccount,
+  originIsForThisAccount,
   passageFinished,
   shouldSendToPassage,
 } from "@/lib/auth/passage-gate";
+import { hasUnfinishedMusicArtist } from "@/lib/auth/origin-gate";
 
 const base = {
   platformRole: null as string | null,
@@ -93,6 +95,62 @@ describe("shouldSendToPassage", () => {
         passageStatus: "in_progress",
       })
     ).toBe(true);
+  });
+});
+
+describe("Origin must not claim a Pro before Passage runs", () => {
+  it("a brand new Pro with no artist rows yet is not an Origin case", () => {
+    // The regression: shouldSendToOrigin returns true for zero owned rows,
+    // and the Passage check was gated behind !sendingToOrigin, so an
+    // admin-invited Pro was sent to artist onboarding before their personal
+    // workspace had been created. Hit web and desktop alike.
+    expect(
+      originIsForThisAccount({ isTeamMember: true, hasUnfinishedMusicArtist: false })
+    ).toBe(false);
+  });
+
+  it("still runs Origin for a Pro who later accepts an artist invite", () => {
+    expect(
+      originIsForThisAccount({ isTeamMember: true, hasUnfinishedMusicArtist: true })
+    ).toBe(true);
+  });
+
+  it("leaves plain artist accounts completely alone", () => {
+    expect(
+      originIsForThisAccount({ isTeamMember: false, hasUnfinishedMusicArtist: false })
+    ).toBe(true);
+    expect(
+      originIsForThisAccount({ isTeamMember: false, hasUnfinishedMusicArtist: true })
+    ).toBe(true);
+  });
+});
+
+describe("hasUnfinishedMusicArtist", () => {
+  const me = "user-1";
+
+  it("ignores a personal home", () => {
+    expect(
+      hasUnfinishedMusicArtist([
+        { id: "home", user_id: me, workspace_kind: "personal", origin_status: "legacy_complete" },
+      ])
+    ).toBe(false);
+  });
+
+  it("sees a freshly minted music artist", () => {
+    expect(
+      hasUnfinishedMusicArtist([
+        { id: "home", user_id: me, workspace_kind: "personal", origin_status: "legacy_complete" },
+        { id: "music", user_id: me, workspace_kind: "artist", origin_status: "not_started" },
+      ])
+    ).toBe(true);
+  });
+
+  it("does not count a finished one", () => {
+    expect(
+      hasUnfinishedMusicArtist([
+        { id: "music", user_id: me, workspace_kind: "artist", origin_status: "complete" },
+      ])
+    ).toBe(false);
   });
 });
 

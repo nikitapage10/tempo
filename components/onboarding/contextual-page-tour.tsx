@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { ArrowRight, Check, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useMemberOnboarding } from "@/hooks/use-member-onboarding";
+import { useWorkspaceMode } from "@/hooks/use-workspace-mode";
 import { cn } from "@/lib/utils";
 
 type TourStep = {
@@ -107,10 +108,98 @@ const TOURS: Record<string, PageTour> = {
   },
 };
 
-function tourFor(pathname: string) {
-  const exact = TOURS[pathname];
+/**
+ * The Pro set, for the pages a Pro's rail actually has.
+ *
+ * Deliberately a separate map rather than reworded shared steps. Half of the
+ * artist tour points at Board, Tracks, Stats and the artist identity editor,
+ * none of which a Pro can reach, and the pages they do share are described
+ * from the wrong side: a manager opening Calendar is not looking at "your
+ * music in time", they are looking at other people's.
+ *
+ * The ids carry a `pro-` prefix so taking one set never marks the other seen.
+ * A dual account (a Pro who later becomes an artist) gets both, in the shell
+ * that applies at the time.
+ */
+const PRO_TOURS: Record<string, PageTour> = {
+  "/": {
+    id: "pro-today",
+    steps: [
+      pageStep("Where the day starts", "Everything waiting on you.", "Today gathers what is due, what is moving, and what the artists you work with have been up to, across every workspace you have access to."),
+      { selector: "main section, main .panel, main .panel-quiet", kicker: "Across the roster", title: "One view, not one artist.", copy: "You are not locked to a single workspace. What surfaces here spans everyone you work with, so nothing gets buried in a room you did not open today." },
+    ],
+  },
+  "/calendar": {
+    id: "pro-calendar",
+    steps: [
+      pageStep("Hold the timing", "The schedule you are keeping.", "Sessions, deadlines, releases, and shows for the people you support. Month, Week, Agenda, and Timeline each answer a different question about the same dates."),
+      { selector: 'main [aria-label="Quick schedule with AI"]', kicker: "Just say it", title: "Type it, or speak it.", copy: "“Mix review Friday at 7pm” becomes a real event. Tap the microphone to dictate instead of typing, or start with “task:” to capture an action instead." },
+      { selector: 'main [aria-label="Creative timeline"], main [role="grid"], main .glass', kicker: "See the whole arc", title: "Spot the collisions early.", copy: "The timeline and month grid make overlapping deadlines, travel, and release dates visible before they become a problem." },
+    ],
+  },
+  "/projects": {
+    id: "pro-projects",
+    steps: [
+      pageStep("Gather the work", "Projects hold the bigger arc.", "Releases, campaigns, and any body of work with more than one moving part. This is usually where your day actually lives."),
+      { selector: 'main a[href^="/projects/"], main .panel, main [class*="grid"]', kicker: "Project rooms", title: "Keep the release together.", copy: "Open a project for its tracks, milestones, notes, links, and plan. Everyone with access sees the same state, so status meetings get shorter." },
+    ],
+  },
+  "/tasks": {
+    id: "pro-tasks",
+    steps: [
+      pageStep("The next action", "The work between the work.", "Pitching, admin, travel, follow-ups, and everything that does not belong inside a single song."),
+      { selector: "main form", kicker: "Capture it quickly", title: "Get it out of your head.", copy: "Type the next action, pick a category, and add detail only when it helps. Anything you capture here is visible to the people you share the workspace with." },
+      { selector: "main section, main .panel-quiet", kicker: "Work the list", title: "Find what is actually overdue.", copy: "The views below separate overdue, upcoming, and done, so a long list stays workable." },
+    ],
+  },
+  "/team": {
+    id: "pro-team",
+    steps: [
+      pageStep("Who you work with", "Every artist, in one place.", "The artists whose workspaces you have been given access to, with what is overdue, what is coming, and how big the catalog is."),
+      { selector: 'main a[href^="/artist/"], main .panel, main .panel-quiet', kicker: "Step inside", title: "Enter a workspace.", copy: "Opening an artist puts you in their room with exactly the areas they granted you. Their catalog, calendar, and releases, none of your own." },
+    ],
+  },
+  "/profile": {
+    id: "pro-profile",
+    steps: [
+      pageStep("How you show up", "Your own presence.", "The name, photo, and story you gave in Passage live here. This is what artists you work with and people on Social see."),
+      { selector: "main .panel-quiet, main .panel", kicker: "Yours to change", title: "Nothing here is fixed.", copy: "Edit any of it whenever it stops being true. This is a professional profile, not an artist page: it never implies you make the music." },
+    ],
+  },
+  "/social": {
+    id: "pro-social",
+    steps: [
+      pageStep("The network", "The people around the work.", "Social is separate from the workspaces you have access to. Join it when you want to be findable by the artists and industry people you do not already know."),
+      { selector: "main textarea, main .panel", kicker: "Post as yourself", title: "You post as you.", copy: "Anything you share here goes out under your own name, never as one of the artists you work with." },
+    ],
+  },
+  "/scenes": {
+    id: "pro-scenes",
+    steps: [
+      pageStep("Shared rooms", "Step into a scene.", "Scenes are focused communities with their own people, conversations, and events. Labels, collectives, and local circles tend to live here."),
+      { selector: 'main a[href="/scenes/new"], main [class*="flex-wrap"]', kicker: "Find your rooms", title: "Browse or start one.", copy: "Move between the scenes you are in and the ones you could join, or open a room for a community you already run." },
+    ],
+  },
+  "/settings": {
+    id: "pro-settings",
+    steps: [
+      pageStep("Make it yours", "Your account, your defaults.", "Your name and photo, notifications, sign-in, and privacy in one place."),
+      { selector: 'main [role="tablist"]', kicker: "Move by category", title: "Everything has a home.", copy: "Jump straight to the part you want to change." },
+      { selector: 'main [role="tabpanel"]', kicker: "Change with confidence", title: "Look lives here.", copy: "Colors, photo, logo, and banner for your own space, the same ones you set during Passage." },
+    ],
+  },
+};
+
+function tourFor(pathname: string, pro: boolean) {
+  const source = pro ? PRO_TOURS : TOURS;
+  const exact = source[pathname];
   if (exact) return exact;
-  return Object.entries(TOURS).find(([path]) => pathname.startsWith(`${path}/`))?.[1] ?? null;
+  // "/" must not prefix-match every route, so only real segments are walked.
+  return (
+    Object.entries(source).find(
+      ([path]) => path !== "/" && pathname.startsWith(`${path}/`)
+    )?.[1] ?? null
+  );
 }
 
 function visibleTarget(step: TourStep): HTMLElement | null {
@@ -135,7 +224,9 @@ function paddedRect(element: HTMLElement): DOMRect {
 export function ContextualPageTour() {
   const pathname = usePathname();
   const onboarding = useMemberOnboarding();
-  const tour = tourFor(pathname);
+  const { mode } = useWorkspaceMode();
+  const isPro = mode === "work";
+  const tour = tourFor(pathname, isPro);
   const [visible, setVisible] = React.useState(false);
   const [stepIndex, setStepIndex] = React.useState(0);
   const [targetRect, setTargetRect] = React.useState<DOMRect | null>(null);
@@ -145,7 +236,14 @@ export function ContextualPageTour() {
   const seen = tour
     ? Boolean(onboarding.data?.pageToursCompleted.includes(tour.id) || onboarding.data?.pageToursSkipped.includes(tour.id))
     : true;
-  const shouldOffer = Boolean(tour && onboarding.data?.eligible && onboarding.data.mainTourCompletedAt && !seen);
+  /**
+   * The artist path waits for the post-Origin main tour before offering page
+   * tours. A Pro never runs that tour, so `mainTourCompletedAt` stays null
+   * forever and they were silently never offered a single one. Passage is
+   * their equivalent, and reaching the app at all means it is behind them.
+   */
+  const introDone = isPro ? true : Boolean(onboarding.data?.mainTourCompletedAt);
+  const shouldOffer = Boolean(tour && onboarding.data?.eligible && introDone && !seen);
 
   React.useEffect(() => {
     setVisible(false);

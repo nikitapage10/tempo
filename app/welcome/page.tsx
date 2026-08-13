@@ -45,10 +45,21 @@ function WelcomeChooser() {
   const [inviteReady, setInviteReady] = React.useState(!inviteCode);
   const os = React.useMemo(() => detectOS(), []);
 
+  /**
+   * The desktop shell has no "browser or desktop?" question to ask, so it goes
+   * straight on. It used to go straight to /origin, which is artist onboarding:
+   * a Pro arriving in the desktop app was handed the wrong film, and Passage
+   * appeared never to start for them.
+   *
+   * Sending them to "/" instead lets the one gate in app/(app)/layout.tsx
+   * decide, which is the only place that knows whether this account is owed
+   * Origin, Passage, or neither. Duplicating that decision here is what made
+   * the two disagree in the first place.
+   */
   React.useEffect(() => {
     setMounted(true);
     if (!inviteCode) {
-      if (isDesktopApp()) router.replace("/origin");
+      if (isDesktopApp()) router.replace("/");
       return;
     }
     let cancelled = false;
@@ -60,16 +71,17 @@ function WelcomeChooser() {
           router.replace("/passage");
           return;
         }
-        if (isDesktopApp() || result.startOrigin) {
-          if (isDesktopApp()) router.replace("/origin");
+        if (isDesktopApp()) {
+          router.replace("/");
           return;
         }
+        if (result.startOrigin) return;
         router.replace("/");
       })
       .catch(() => {
         if (cancelled) return;
         setInviteReady(true);
-        if (isDesktopApp()) router.replace("/origin");
+        if (isDesktopApp()) router.replace("/");
       });
     return () => {
       cancelled = true;
