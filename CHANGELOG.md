@@ -4,6 +4,7 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-12
 
+- Changed (v0.135.4): on Calendar’s day panel, **New event** sits right under the date instead of at the bottom of the panel.
 - Fixed (v0.135.3): Admin gets more space at the top of the page so header controls (like the analytics day toggle) sit clear of the window edge — same on the web and in TEMPO Desktop.
 - Added (v0.135.3): on TEMPO Desktop, Admin shows the same bottom zoom control as the studio, so ops pages can enlarge without leaving Admin.
 - Fixed (v0.135.2 / Desktop v0.100.22): Google and Microsoft sign-in on TEMPO Desktop hand back into the app again — the sign-in code is finished inside the desktop window (where it was started), Windows keeps the `tempo://` return link, and long Google URLs aren’t blocked from opening your browser. Re-download after Desktop Release publishes. Confirm Supabase allow-lists `https://mytempo.dev/auth/desktop-bridge`.
