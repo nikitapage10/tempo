@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
-import { generateOpaqueToken, sha256Hex, siteOrigin } from "@/lib/tokens";
+import { siteOrigin } from "@/lib/tokens";
 import { normalizeAreas, type AreaGrants } from "@/lib/team/areas";
 import { presetForRole, type MemberRole } from "@/lib/team/roles";
 
@@ -114,84 +114,84 @@ export async function listMemberOfArtists(): Promise<{ artistId: string; role: M
 
 export type InviteMemberInput = {
   artistId: string;
-  invitedEmail: string;
   role: MemberRole;
+  invitedEmail?: string;
+  handle?: string;
+  profileId?: string;
   /** Overrides for the role's stock preset; unset keys fall back to the preset. */
   areaOverrides?: AreaGrants;
   expiresAt?: string | null;
 };
 
 export type CreatedTeamInvite = {
-  member: ArtistMember;
-  /** Raw token — only ever returned once. */
-  rawToken: string;
-  /** Whether the invite email actually sent — false with a reason if RESEND isn't configured or the send failed. The copyable link (teamInviteUrl) always works as a fallback either way. */
+  kind: "existing" | "email";
+  memberId: string;
+  /** Raw token — only returned for people not already on TEMPO. */
+  rawToken: string | null;
+  /** Whether the invite email actually sent. Existing members also get an in-app notification. */
   emailSent: boolean;
   emailReason?: string;
 };
 
-function defaultInviteExpiry(days = 14): string {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  return d.toISOString();
+export async function inviteMember(input: InviteMemberInput): Promise<CreatedTeamInvite> {
+  const res = await fetch("/api/team-invite/create", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      artistId: input.artistId,
+      role: input.role,
+      email: input.invitedEmail?.trim() || null,
+      handle: input.handle?.trim() || null,
+      profileId: input.profileId || null,
+      areaOverrides: input.areaOverrides,
+    }),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(typeof body.error === "string" ? body.error : "Couldn’t send that invite.");
+  }
+  return {
+    kind: body.kind === "existing" ? "existing" : "email",
+    memberId: body.memberId,
+    rawToken: typeof body.rawToken === "string" ? body.rawToken : null,
+    emailSent: !!body.emailSent,
+    emailReason: body.emailReason,
+  };
 }
 
-export async function inviteMember(input: InviteMemberInput): Promise<CreatedTeamInvite> {
-  const supabase = createClient();
-  const { data: userData, error: userError } = await supabase.auth.getUser();
-  if (userError) throw userError;
-  if (!userData.user) {
-    throw new Error("You’re signed out — sign in again, then retry.");
+export type PendingTeamInvite = {
+  id: string;
+  artistId: string;
+  artistName: string;
+  artistEmblemUrl: string | null;
+  role: MemberRole;
+  createdAt: string;
+  expiresAt: string | null;
+};
+
+export async function fetchPendingTeamInvites(): Promise<PendingTeamInvite[]> {
+  const res = await fetch("/api/team-invite/pending", { method: "GET" });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(typeof body.error === "string" ? body.error : "Couldn’t load team invites.");
   }
+  return Array.isArray(body.invites) ? body.invites : [];
+}
 
-  const rawToken = generateOpaqueToken();
-  const tokenHash = await sha256Hex(rawToken);
-  const areas = { ...presetForRole(input.role), ...input.areaOverrides };
-
-  const { data, error } = await supabase
-    .from("artist_members")
-    .insert({
-      artist_id: input.artistId,
-      invited_email: input.invitedEmail.trim().toLowerCase(),
-      role: input.role,
-      areas,
-      status: "pending",
-      invited_by: userData.user.id,
-      invite_token_hash: tokenHash,
-      expires_at: input.expiresAt || defaultInviteExpiry(),
-    })
-    .select()
-    .single();
-  if (error) {
-    const msg = error.message || "Couldn’t create that invite — try again.";
-    if (isMissingArtistMembersSchema({ message: msg })) {
-      throw new Error(
-        "Team accounts aren’t set up in the database yet — run migrations 089 and 090 in Supabase, then try again."
-      );
-    }
-    throw new Error(msg);
+export async function respondToTeamInvite(
+  memberId: string,
+  accept: boolean
+): Promise<{ artistId?: string }> {
+  const res = await fetch("/api/team-invite/respond", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ memberId, accept }),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(typeof body.error === "string" ? body.error : "Couldn’t update that invite.");
   }
-
-  const member = fromRow(data);
-
-  // Best-effort: the row is already created either way, so a failed send
-  // never blocks the invite — the artist can still copy/share the link.
-  let emailSent = false;
-  let emailReason: string | undefined;
-  try {
-    const res = await fetch("/api/team-invite/send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ memberId: member.id, rawToken }),
-    });
-    const body = await res.json().catch(() => ({}));
-    emailSent = !!body.sent;
-    emailReason = body.reason;
-  } catch {
-    emailReason = "network_error";
-  }
-
-  return { member, rawToken, emailSent, emailReason };
+  return { artistId: typeof body.artist_id === "string" ? body.artist_id : undefined };
 }
 
 export async function updateMemberAreas(id: string, areas: AreaGrants): Promise<ArtistMember> {

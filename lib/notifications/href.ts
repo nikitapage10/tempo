@@ -16,6 +16,9 @@ export function notificationHref(n: AppNotification): string {
     if (n.entity_type === "artist_invite_request") {
       return n.link_url || "/admin/invites";
     }
+    if (n.type === "team_invite" || n.type === "team_invite_accepted" || n.type === "team_invite_declined" || n.entity_type === "artist_member") {
+      return n.link_url || "/team";
+    }
     if (n.entity_type === "calendar_event" && n.entity_id) {
       return `/calendar?event=${n.entity_id}`;
     }

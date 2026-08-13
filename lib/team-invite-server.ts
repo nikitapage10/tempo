@@ -5,6 +5,7 @@
 
 import { createHash } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { connectTeamNetworkFollows } from "@/lib/social/connect-team-follows";
 import type { MemberRole } from "@/lib/team/roles";
 
 function sha256HexServer(value: string): string {
@@ -15,7 +16,7 @@ export type PendingTeamInviteContext = {
   member: {
     id: string;
     artist_id: string;
-    invited_email: string;
+    invited_email: string | null;
     role: MemberRole;
     status: string;
     invited_by: string;
@@ -85,3 +86,159 @@ export function noStoreHeaders(extra?: Record<string, string>): Record<string, s
 
 export const TEAM_INVITE_UNAVAILABLE_MESSAGE =
   "This invite isn’t available. It may have expired, already been used, or the link is wrong.";
+
+export type TeamMemberRow = {
+  id: string;
+  artist_id: string;
+  user_id: string | null;
+  invited_email: string | null;
+  role: MemberRole;
+  status: string;
+  invited_by: string;
+  expires_at: string | null;
+};
+
+export async function listPendingTeamInvitesForUser(userId: string): Promise<
+  {
+    id: string;
+    artistId: string;
+    artistName: string;
+    artistEmblemUrl: string | null;
+    role: MemberRole;
+    createdAt: string;
+    expiresAt: string | null;
+  }[]
+> {
+  const admin = createAdminClient();
+  const { data: rows, error } = await admin
+    .from("artist_members")
+    .select("id, artist_id, role, created_at, expires_at")
+    .eq("user_id", userId)
+    .eq("status", "pending")
+    .order("created_at", { ascending: false });
+  if (error || !rows?.length) return [];
+
+  const artistIds = Array.from(new Set(rows.map((row) => row.artist_id)));
+  const { data: artists } = await admin
+    .from("artists")
+    .select("id, name, emblem_url")
+    .in("id", artistIds);
+  const byId = new Map((artists ?? []).map((a) => [a.id, a]));
+
+  return rows
+    .filter((row) => !row.expires_at || new Date(row.expires_at).getTime() > Date.now())
+    .map((row) => {
+      const artist = byId.get(row.artist_id);
+      return {
+        id: row.id,
+        artistId: row.artist_id,
+        artistName: artist?.name ?? "An artist",
+        artistEmblemUrl: artist?.emblem_url ?? null,
+        role: row.role as MemberRole,
+        createdAt: row.created_at,
+        expiresAt: row.expires_at,
+      };
+    });
+}
+
+export async function declinePendingTeamMember(input: {
+  memberId: string;
+  userId: string;
+  actorName: string;
+}): Promise<boolean> {
+  const admin = createAdminClient();
+  const { data: updated, error } = await admin
+    .from("artist_members")
+    .update({ status: "revoked" })
+    .eq("id", input.memberId)
+    .eq("user_id", input.userId)
+    .eq("status", "pending")
+    .select("id, artist_id, invited_by, role")
+    .maybeSingle();
+  if (error || !updated) return false;
+
+  const { data: artist } = await admin
+    .from("artists")
+    .select("name")
+    .eq("id", updated.artist_id)
+    .maybeSingle();
+
+  void admin
+    .from("notifications")
+    .insert({
+      user_id: updated.invited_by,
+      type: "team_invite_declined",
+      title: `${input.actorName} declined your team invite`,
+      body: `They didn’t join "${artist?.name ?? "this artist"}" as ${updated.role}.`,
+      entity_type: "artist_member",
+      entity_id: updated.id,
+      link_url: "/team",
+    })
+    .then(
+      () => {},
+      () => {}
+    );
+
+  return true;
+}
+
+/**
+ * Flip a pending artist_members row to active and notify the inviter.
+ * Caller must already have checked that `userId` is allowed to accept.
+ */
+export async function activatePendingTeamMember(input: {
+  memberId: string;
+  userId: string;
+  actorName: string;
+}): Promise<{ artist_id: string; role: MemberRole; invited_by: string; artist_name: string } | null> {
+  const admin = createAdminClient();
+  const { data: updated, error } = await admin
+    .from("artist_members")
+    .update({
+      user_id: input.userId,
+      status: "active",
+      accepted_at: new Date().toISOString(),
+    })
+    .eq("id", input.memberId)
+    .eq("status", "pending")
+    .select("id, artist_id, role, invited_by")
+    .maybeSingle();
+
+  if (error || !updated) return null;
+
+  const { data: artist } = await admin
+    .from("artists")
+    .select("id, name")
+    .eq("id", updated.artist_id)
+    .maybeSingle();
+  const artistName = artist?.name ?? "this artist";
+
+  void admin
+    .from("notifications")
+    .insert({
+      user_id: updated.invited_by,
+      type: "team_invite_accepted",
+      title: `${input.actorName} accepted your team invite`,
+      body: `They can now access "${artistName}" as ${updated.role}.`,
+      entity_type: "artist_member",
+      entity_id: updated.id,
+      link_url: "/team",
+    })
+    .then(
+      () => {},
+      () => {}
+    );
+
+  try {
+    await connectTeamNetworkFollows(admin, input.userId);
+  } catch (error) {
+    console.error("[team-invite] team follow connect pending", error);
+  }
+
+  return {
+    artist_id: updated.artist_id,
+    role: updated.role as MemberRole,
+    invited_by: updated.invited_by,
+    artist_name: artistName,
+  };
+}

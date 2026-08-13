@@ -13,6 +13,7 @@ import { useHomeTimeline, useFeedMutations } from "@/hooks/use-feed";
 import { searchArtistProfiles } from "@/lib/api/people";
 import { ArtistMark } from "@/components/artists/artist-mark";
 import { ContactSheet } from "@/components/social/contact-sheet";
+import { InviteArtistFriend } from "@/components/social/invite-artist-friend";
 import { ConnectionGlobe } from "@/components/social/connection-globe";
 import type { GlobePerson } from "@/components/social/connection-globe";
 import { FeedComposer } from "@/components/social/feed-composer";
@@ -533,8 +534,16 @@ export default function SocialView() {
           ) : null}
 
           {tab === "discover" ? (
-            onNetwork ? (
-              <div className="max-w-2xl space-y-3">
+            <div className="max-w-2xl space-y-3">
+              <InviteArtistFriend
+                artistId={
+                  mode === "artist" && activeArtist?.workspace_kind !== "personal"
+                    ? activeArtist?.id
+                    : null
+                }
+              />
+              {onNetwork ? (
+              <>
                 <div className="relative">
                   <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-text-lo" />
                   <Input
@@ -677,10 +686,11 @@ export default function SocialView() {
                     )}
                   </>
                 )}
-              </div>
-            ) : (
-              networkGate
-            )
+              </>
+              ) : (
+                networkGate
+              )}
+            </div>
           ) : null}
 
         </div>

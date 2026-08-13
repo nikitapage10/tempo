@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
 
   if (teamInviteToken) {
     const ctx = await resolveTeamInvite(teamInviteToken);
-    if (!ctx || !email || !emailsMatch(email, ctx.member.invited_email)) {
+    if (!ctx || !email || !ctx.member.invited_email || !emailsMatch(email, ctx.member.invited_email)) {
       return NextResponse.json(
         { ok: false, error: "That invite isn’t valid for this email." },
         { status: 403, headers: noStoreHeaders() }

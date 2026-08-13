@@ -10,6 +10,7 @@ import { useActiveTeamRoster } from "@/hooks/use-artist-members";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { TeamConstellation, type ConstellationPerson } from "@/components/team/team-constellation";
 import { TeamManager } from "@/components/team/team-manager";
+import { PendingTeamInvites } from "@/components/team/pending-team-invites";
 import { WorkHub } from "@/components/team/work-hub";
 import { fetchMemberProfiles } from "@/lib/api/member-profile";
 import { listMemberOfArtists } from "@/lib/api/artist-members";
@@ -51,6 +52,7 @@ export default function TeamPage() {
           title="Artists you work with"
           subtitle="A roster of the artists who’ve brought you on — overdue work, what’s coming, and the numbers you can see — plus a door into each workspace."
         />
+        <PendingTeamInvites />
         <WorkHub
           artists={membershipArtists(artists, user?.id)}
           memberships={membershipsQuery.data ?? []}
@@ -84,6 +86,8 @@ export default function TeamPage() {
         title="Team"
         subtitle="Everyone who works with this artist, and exactly what they can reach."
       />
+
+      <PendingTeamInvites />
 
       <div className="glass-hero prism-edge relative overflow-hidden">
         <div className="absolute inset-0">

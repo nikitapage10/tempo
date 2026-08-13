@@ -1,11 +1,15 @@
 "use client";
 
 import * as React from "react";
-import { Copy, Plus, Trash2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Copy, Plus, Search, Trash2 } from "lucide-react";
+import { ArtistMark } from "@/components/artists/artist-mark";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import { QuietEmpty } from "@/components/ui/section-header";
 import { useArtistMemberMutations, useArtistMembers } from "@/hooks/use-artist-members";
+import { searchArtistProfiles, type ProfileSearchResult } from "@/lib/api/artist-profile";
 import { teamInviteUrl, type ArtistMember } from "@/lib/api/artist-members";
 import {
   AREA_DESCRIPTIONS,
@@ -26,6 +30,14 @@ import { cn } from "@/lib/utils";
 
 const LEVEL_LABELS: Record<AreaLevel, string> = { none: "None", read: "Read", write: "Write" };
 
+function looksLikeEmail(value: string): boolean {
+  return value.includes("@");
+}
+
+function normalizeHandle(raw: string): string {
+  return raw.trim().replace(/^@+/, "").toLowerCase();
+}
+
 /** The owner's side of the team page — invite, edit grants, revoke. */
 export function TeamManager({ artistId }: { artistId: string }) {
   const { data: members, isLoading } = useArtistMembers(artistId);
@@ -33,30 +45,56 @@ export function TeamManager({ artistId }: { artistId: string }) {
   const { toast } = useToast();
 
   const [inviting, setInviting] = React.useState(false);
-  const [email, setEmail] = React.useState("");
+  const [query, setQuery] = React.useState("");
+  const [debounced, setDebounced] = React.useState("");
+  const [picked, setPicked] = React.useState<ProfileSearchResult | null>(null);
   const [role, setRole] = React.useState<MemberRole>("manager");
   const [lastInviteUrl, setLastInviteUrl] = React.useState<string | null>(null);
   const [lastEmailSent, setLastEmailSent] = React.useState<boolean | null>(null);
   const [expandedId, setExpandedId] = React.useState<string | null>(null);
 
+  React.useEffect(() => {
+    const t = window.setTimeout(() => setDebounced(query.trim()), 200);
+    return () => window.clearTimeout(t);
+  }, [query]);
+
+  const searchTerm = looksLikeEmail(debounced) ? "" : normalizeHandle(debounced);
+  const searchQuery = useQuery({
+    queryKey: ["profile-search", "team", searchTerm],
+    queryFn: () => searchArtistProfiles(searchTerm, { limit: 8 }),
+    enabled: inviting && searchTerm.length >= 2,
+    staleTime: 30_000,
+  });
+
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault();
-    if (!email.trim()) return;
+    const email = looksLikeEmail(query) ? query.trim() : "";
+    const handle = picked?.handle || (!email ? normalizeHandle(query) : "");
+    if (!email && !handle && !picked) return;
     try {
-      const { rawToken, emailSent } = await mutations.invite.mutateAsync({
+      const result = await mutations.invite.mutateAsync({
         artistId,
-        invitedEmail: email.trim(),
         role,
+        invitedEmail: email || undefined,
+        handle: picked ? undefined : handle || undefined,
+        profileId: picked?.id,
       });
-      setLastInviteUrl(teamInviteUrl(rawToken));
-      setLastEmailSent(emailSent);
-      toast(
-        emailSent
-          ? `Invite sent to ${email.trim()}.`
-          : "Invite created — email delivery isn’t set up, so share the link below instead.",
-        emailSent ? "ok" : "info"
-      );
-      setEmail("");
+      if (result.kind === "existing") {
+        setLastInviteUrl(null);
+        setLastEmailSent(null);
+        toast("Invite sent — they’ll get a notification to approve.", "ok");
+      } else {
+        setLastInviteUrl(result.rawToken ? teamInviteUrl(result.rawToken) : null);
+        setLastEmailSent(result.emailSent);
+        toast(
+          result.emailSent
+            ? `Invite sent to ${email || handle}.`
+            : "Invite created — email delivery isn’t set up, so share the link below instead.",
+          result.emailSent ? "ok" : "info"
+        );
+      }
+      setQuery("");
+      setPicked(null);
       setInviting(false);
     } catch (err) {
       toast(err instanceof Error ? err.message : "Couldn’t send that invite.");
@@ -73,13 +111,15 @@ export function TeamManager({ artistId }: { artistId: string }) {
   }
 
   const active = (members ?? []).filter((m) => m.status !== "revoked");
+  const canSubmit = Boolean(picked || query.trim());
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm text-text-lo">
           Managers, agents, tour managers, and anyone else who needs access without being
-          the account holder.
+          the account holder. Invite someone already on TEMPO by handle or email, or send
+          an email to someone new.
         </p>
         <Button type="button" size="sm" onClick={() => setInviting(true)}>
           <Plus className="size-3.5" />
@@ -107,18 +147,63 @@ export function TeamManager({ artistId }: { artistId: string }) {
       {inviting ? (
         <form onSubmit={handleInvite} className="panel-quiet space-y-3 p-4">
           <div>
-            <label className="label-mono mb-1 block" htmlFor="team-invite-email">
-              Email
+            <label className="label-mono mb-1 block" htmlFor="team-invite-who">
+              Handle or email
             </label>
-            <input
-              id="team-invite-email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="h-9 w-full rounded-input border border-line bg-bg-2 px-2.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
-              placeholder="name@example.com"
-            />
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-text-lo" />
+              <Input
+                id="team-invite-who"
+                value={picked ? `${picked.display_name} (@${picked.handle})` : query}
+                onChange={(e) => {
+                  setPicked(null);
+                  setQuery(e.target.value);
+                }}
+                placeholder="@handle or name@example.com"
+                className="pl-9"
+                autoComplete="off"
+              />
+            </div>
+            {!picked && !looksLikeEmail(query) && searchTerm.length >= 2 ? (
+              <div className="mt-2 space-y-1.5">
+                {searchQuery.isFetching ? (
+                  <p className="text-xs text-text-lo">Looking them up…</p>
+                ) : (searchQuery.data ?? []).length === 0 ? (
+                  <p className="text-xs text-text-lo">
+                    No one on TEMPO matched. You can still send this as a handle, or switch
+                    to an email.
+                  </p>
+                ) : (
+                  (searchQuery.data ?? []).map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => {
+                        setPicked(p);
+                        setQuery(p.handle ?? "");
+                      }}
+                      className="well flex w-full items-center gap-3 rounded-input px-3 py-2 text-left transition-colors duration-hover hover:bg-bg-2/80"
+                    >
+                      <ArtistMark
+                        emblemUrl={p.emblem_url}
+                        paletteId={p.palette_id}
+                        iceColor={p.ice_color}
+                        amberColor={p.amber_color}
+                        name={p.display_name}
+                        size={18}
+                        className="size-[18px]"
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm text-text-hi">
+                          {p.display_name}
+                        </span>
+                        <span className="block truncate text-xs text-text-lo">@{p.handle}</span>
+                      </span>
+                    </button>
+                  ))
+                )}
+              </div>
+            ) : null}
           </div>
           <div>
             <label className="label-mono mb-1 block" htmlFor="team-invite-role">
@@ -139,10 +224,18 @@ export function TeamManager({ artistId }: { artistId: string }) {
             <p className="mt-1 text-xs text-text-lo">{ROLE_DESCRIPTIONS[role]}</p>
           </div>
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="ghost" onClick={() => setInviting(false)}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setInviting(false);
+                setQuery("");
+                setPicked(null);
+              }}
+            >
               Cancel
             </Button>
-            <Button type="submit" disabled={mutations.invite.isPending || !email.trim()}>
+            <Button type="submit" disabled={mutations.invite.isPending || !canSubmit}>
               {mutations.invite.isPending ? "Sending…" : "Send invite"}
             </Button>
           </div>
@@ -175,6 +268,12 @@ export function TeamManager({ artistId }: { artistId: string }) {
   );
 }
 
+function pendingLabel(member: ArtistMember): string {
+  if (member.status !== "pending") return "";
+  if (member.userId) return " · waiting for them to approve";
+  return " · invite pending";
+}
+
 function MemberRow({
   member,
   expanded,
@@ -191,18 +290,17 @@ function MemberRow({
   onRevoke: () => void;
 }) {
   const customized = isCustomizedFromRole(member.role, member.areas);
+  const label = member.invitedEmail ?? "On TEMPO";
 
   return (
     <li className="well rounded-input p-3">
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm text-text-hi">
-            {member.invitedEmail ?? member.userId}
-          </p>
+          <p className="truncate text-sm text-text-hi">{label}</p>
           <p className="text-xs text-text-lo">
             {ROLE_LABELS[member.role]}
             {customized ? " · customised" : ""}
-            {member.status === "pending" ? " · invite pending" : ""}
+            {pendingLabel(member)}
           </p>
         </div>
         <select

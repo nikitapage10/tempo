@@ -178,7 +178,7 @@ Team members own a **personal workspace** (`artists.workspace_kind = personal`) 
 
 UI hiding (rail, Settings Look + Account in the personal home, read-only Artist page in an entered workspace) is not security; RLS remains authoritative. Members never post as the managed artist.
 
-During beta, a member may invite team members and track collaborators directly. Inviting someone as a **full TEMPO artist** creates a pending `artist_invite_requests` row; only a platform admin may approve it, which then mints a normal `invites` row and sends the email. Admin Invites lists those requests plus team/collaborator invites sent by others (inviter name, invitee, kind).
+During beta, a member may invite team members and track collaborators directly. Inviting someone already on TEMPO onto an artist team (by handle or email) creates a pending `artist_members` row bound to that user; they must approve in-app before the membership becomes active. Inviting someone as a **full TEMPO artist** (from a track’s People tab or Social → Discover) creates a pending `artist_invite_requests` row; only a platform admin may approve it, which then mints a normal `invites` row and sends the email. Admin Invites lists those requests plus team/collaborator invites sent by others (inviter name, invitee, kind).
 
 ### Guest allowlist (explicit)
 **May see:** track title, artwork (signed), version number/label/changelog, waveform for linked version, comments for that version (as configured), own posted guest name.  
@@ -194,6 +194,7 @@ During beta, a member may invite team members and track collaborators directly. 
 | `/review`, `/review/[token]` | Yes | Prompt 4 |
 | `/api/review/*` | Yes + server validation | Exact paths only |
 | `/invite/[token]`, `/team-invite/[token]` | Landing may be public; accept requires auth + matching email | Prompt 10 / team |
+| `/api/team-invite/create`, `/pending`, `/respond` | No | Artist owner invites; the named person lists and approves. Handle/email matches use the service role and never expose other accounts. |
 | `/api/auth/verify-invite`, `/api/auth/redeem-invite` | Yes; redemption still requires an authenticated signup session. A pending team or track invite token bound to the same email may stand in for a platform invite code — it does not open signup for other addresses. | Registration gate |
 | `/admin/*`, `/api/admin/*` | No | Session required; server guard additionally requires `platform_admins` membership |
 | All `app/(app)/*` | No | Redirect login |

@@ -4,6 +4,9 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-13
 
+- Added (v0.159.0): On Social → Discover you can **invite an artist friend** who isn’t on TEMPO yet. That request waits for program approval during beta, then TEMPO emails them if it’s approved.
+- Added (v0.159.0): On Team you can invite someone **already on TEMPO** by their handle or email. They get a notification, and they have to approve before they join your artist team. People who aren’t on TEMPO yet still get the email invite as before.
+- Under the hood (v0.159.0): run migration 097 in the Supabase SQL editor after 096.
 - Changed (v0.158.0): Creating an account no longer asks for your name. Onboarding already does, so you were being asked twice within a minute. Passage now owns it, and still publishes it so artists you work with and people on Social see your name rather than a placeholder.
 - Added (v0.158.0): You can **talk instead of type** on every open question in Passage, the same as artists can in Origin. Typing stays an equal path: what you say lands in an ordinary editable box, so a blocked microphone costs you nothing.
 - Fixed (v0.158.0): Passage panels are now properly solid against the film. The fill was written in a form that can silently compile to nothing in this codebase, so the glass had been rendering with almost no tint at all. Question text is brighter too, so it holds up over the brightest frames.

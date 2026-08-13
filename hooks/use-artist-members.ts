@@ -2,9 +2,11 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  fetchPendingTeamInvites,
   inviteMember,
   listActiveTeamRoster,
   listArtistMembers,
+  respondToTeamInvite,
   revokeMember,
   updateMemberAreas,
   updateMemberRole,
@@ -61,4 +63,25 @@ export function useArtistMemberMutations(artistId: string | null) {
   });
 
   return { invite, setAreas, setRole, revoke };
+}
+
+export function usePendingTeamInvites() {
+  return useQuery({
+    queryKey: ["pending-team-invites"],
+    queryFn: fetchPendingTeamInvites,
+    staleTime: 15_000,
+  });
+}
+
+export function useRespondToTeamInvite() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ memberId, accept }: { memberId: string; accept: boolean }) =>
+      respondToTeamInvite(memberId, accept),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["pending-team-invites"] });
+      qc.invalidateQueries({ queryKey: ["member-of-artists"] });
+      qc.invalidateQueries({ queryKey: ["artists"] });
+    },
+  });
 }

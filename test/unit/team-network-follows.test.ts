@@ -49,8 +49,9 @@ describe("team network follows", () => {
   it("wires join, invite accept, and Social backfill", () => {
     expect(read("app/api/network/join/route.ts")).toContain("connectTeamNetworkFollows");
     expect(read("app/api/team-invite/[token]/route.ts")).toContain(
-      "connectTeamNetworkFollows"
+      "activatePendingTeamMember"
     );
+    expect(read("lib/team-invite-server.ts")).toContain("connectTeamNetworkFollows");
     expect(read("app/(app)/social/social-view.tsx")).toContain(
       "/api/network/team-follows"
     );

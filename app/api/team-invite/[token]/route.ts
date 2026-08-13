@@ -2,9 +2,9 @@ import { NextResponse, type NextRequest } from "next/server";
 import { authAccountExistsForEmail } from "@/lib/auth/account-exists";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient as createServerClient } from "@/lib/supabase/server";
-import { connectTeamNetworkFollows } from "@/lib/social/connect-team-follows";
 import {
   TEAM_INVITE_UNAVAILABLE_MESSAGE,
+  activatePendingTeamMember,
   noStoreHeaders,
   resolveTeamInvite,
 } from "@/lib/team-invite-server";
@@ -40,7 +40,9 @@ export async function GET(
       { status: 404, headers: noStoreHeaders() }
     );
   }
-  const accountExists = await authAccountExistsForEmail(ctx.member.invited_email);
+  const accountExists = ctx.member.invited_email
+    ? await authAccountExistsForEmail(ctx.member.invited_email)
+    : false;
   return NextResponse.json(
     {
       artist: { name: ctx.artist.name },
@@ -83,7 +85,10 @@ export async function POST(
     );
   }
 
-  if (user.email.trim().toLowerCase() !== ctx.member.invited_email.trim().toLowerCase()) {
+  if (
+    !ctx.member.invited_email ||
+    user.email.trim().toLowerCase() !== ctx.member.invited_email.trim().toLowerCase()
+  ) {
     return NextResponse.json(
       {
         error:
@@ -94,25 +99,6 @@ export async function POST(
   }
 
   const admin = createAdminClient();
-  const { data: updated, error } = await admin
-    .from("artist_members")
-    .update({
-      user_id: user.id,
-      status: "active",
-      accepted_at: new Date().toISOString(),
-    })
-    .eq("id", ctx.member.id)
-    .eq("status", "pending")
-    .select("id, artist_id, role, invited_by")
-    .maybeSingle();
-
-  if (error || !updated) {
-    return NextResponse.json(
-      { error: TEAM_INVITE_UNAVAILABLE_MESSAGE },
-      { status: 409, headers: noStoreHeaders() }
-    );
-  }
-
   const { data: memberProfile } = await admin
     .from("artist_member_profiles")
     .select("display_name")
@@ -120,27 +106,20 @@ export async function POST(
     .maybeSingle();
   const actorName =
     (typeof memberProfile?.display_name === "string" && memberProfile.display_name.trim()) ||
-    user.email;
+    user.email ||
+    "Someone";
 
-  // Best-effort notification — never block acceptance on this.
-  void admin
-    .from("notifications")
-    .insert({
-      user_id: updated.invited_by,
-      type: "team_invite_accepted",
-      title: `${actorName} accepted your team invite`,
-      body: `They can now access "${ctx.artist.name}" as ${updated.role}.`,
-    })
-    .then(
-      () => {},
-      () => {}
+  const activated = await activatePendingTeamMember({
+    memberId: ctx.member.id,
+    userId: user.id,
+    actorName,
+  });
+  if (!activated) {
+    return NextResponse.json(
+      { error: TEAM_INVITE_UNAVAILABLE_MESSAGE },
+      { status: 409, headers: noStoreHeaders() }
     );
-
-  try {
-    await connectTeamNetworkFollows(admin, user.id);
-  } catch (error) {
-    console.error("[team-invite] team follow connect pending", error);
   }
 
-  return NextResponse.json({ artist_id: updated.artist_id }, { headers: noStoreHeaders() });
+  return NextResponse.json({ artist_id: activated.artist_id }, { headers: noStoreHeaders() });
 }

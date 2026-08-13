@@ -43,4 +43,13 @@ describe("beta artist invite approval", () => {
     expect(panel).toContain("requestArtistInvite");
     expect(panel).toContain("Also ask TEMPO to invite them as a full artist");
   });
+
+  it("offers the same request from Social Discover for artist friends", () => {
+    const social = read("app/(app)/social/social-view.tsx");
+    const card = read("components/social/invite-artist-friend.tsx");
+    expect(social).toContain("InviteArtistFriend");
+    expect(card).toContain("requestArtistInvite");
+    expect(card).toContain("Invite an artist friend");
+    expect(card).toContain("needs approval during beta");
+  });
 });

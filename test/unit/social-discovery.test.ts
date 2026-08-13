@@ -26,6 +26,7 @@ describe("Social discovery", () => {
     expect(social).not.toContain("Recently active around TEMPO");
     expect(social).toContain("Followed and new-to-you artists");
     expect(social).toContain("Recently interacted with");
+    expect(social).toContain("InviteArtistFriend");
     expect(globe).toContain("const phiRef = React.useRef(0)");
     expect(globe).toContain("let phi = phiRef.current");
     expect(globe).toContain("phiRef.current = phi");

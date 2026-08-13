@@ -57,7 +57,8 @@ describe("membership invite signup", () => {
     expect(team).toContain("authAccountExistsForEmail");
     expect(team).toContain("account_exists");
     expect(team).toContain("artist_member_profiles");
-    expect(team).toContain("accepted your team invite");
+    expect(team).toContain("activatePendingTeamMember");
+    expect(read("lib/team-invite-server.ts")).toContain("accepted your team invite");
     expect(track).toContain("authAccountExistsForEmail");
     expect(track).toContain("account_exists");
   });
