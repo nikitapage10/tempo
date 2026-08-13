@@ -4,6 +4,8 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-12
 
+- Fixed (v0.140.1): Admin’s moving wash stays put when you zoom the page — it was sliding with the content.
+- Changed (v0.140.1): **Back to TEMPO** stays on the left Admin menu while you scroll.
 - Added (v0.140.0): **Team** — under Settings → Team, bring on a manager,
   agent, tour manager, label contact, or assistant at the artist level
   instead of one track at a time. Each role starts with sensible defaults

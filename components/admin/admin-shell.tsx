@@ -52,83 +52,85 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           ? healthIssues
           : 0;
   return (
-    <div className="relative isolate min-h-screen bg-bg-0 md:grid md:grid-cols-[15rem_minmax(0,1fr)]">
-      <aside className="relative z-30 hidden min-h-screen border-r border-line bg-bg-1 md:flex md:flex-col">
-        <div className="px-5 pb-4 pt-12">
-          <div className="flex items-center justify-between gap-3">
-            <Wordmark size={25} />
-            <span className="label-mono rounded-chip border border-amber/35 bg-amber/10 px-2 py-1 text-[10px] text-amber">
-              ADMIN
-            </span>
+    <div className="relative isolate flex min-h-screen flex-col bg-bg-0 md:h-screen md:max-h-screen md:overflow-hidden">
+      <div className="flex min-h-0 flex-1">
+        <aside className="relative z-30 hidden h-screen w-[15rem] shrink-0 flex-col overflow-hidden border-r border-line bg-bg-1 md:flex">
+          <div className="shrink-0 px-5 pb-4 pt-12">
+            <div className="flex items-center justify-between gap-3">
+              <Wordmark size={25} />
+              <span className="label-mono rounded-chip border border-amber/35 bg-amber/10 px-2 py-1 text-[10px] text-amber">
+                ADMIN
+              </span>
+            </div>
+            <FlareLine className="mt-4" />
           </div>
-          <FlareLine className="mt-4" />
-        </div>
-        <nav className="flex flex-1 flex-col gap-1 px-3">
-          {items.map(({ href, label, icon: Icon, attention }) => {
-            const active = href === "/admin" ? pathname === href : pathname.startsWith(href);
-            const count = attentionCount(attention);
-            return (
-              <Link
-                key={href}
-                href={href}
-                className={cn(
-                  "flex items-center gap-3 rounded-input px-3 py-2.5 text-sm transition-colors",
-                  active ? "bg-ice/10 text-ice" : "text-text-lo hover:bg-bg-2 hover:text-text-hi"
-                )}
-              >
-                <Icon className="size-4" />
-                <span>{label}</span>
-                {count > 0 ? (
-                  <span
-                    aria-label={`${count} open ${label.toLowerCase()}`}
-                    className={cn(
-                      "ml-auto min-w-5 rounded-full px-1.5 py-0.5 text-center font-mono text-[11px] font-semibold leading-4",
-                      attention === "reports" || attention === "system"
-                        ? "bg-warn/15 text-warn"
-                        : "bg-amber/15 text-amber"
-                    )}
-                  >
-                    {count > 99 ? "99+" : count}
-                  </span>
-                ) : null}
-              </Link>
-            );
-          })}
-        </nav>
-        <div className="px-3 pb-2">
-          <Link
-            href="/"
-            className="flex items-center gap-3 rounded-input px-3 py-2.5 text-sm text-text-lo transition-colors hover:bg-bg-2 hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
-          >
-            <ArrowLeft className="size-4" />
-            Back to TEMPO
-          </Link>
-        </div>
-        <SlitDivider />
-        <div className="px-5 py-4 text-[11px] text-text-lo">
-          Private operations · v{APP_VERSION}
-        </div>
-      </aside>
-      {/* Extra top padding clears desktop window chrome (and reads the same on web).
-          Content zoom scales this column only — the Admin rail stays put. */}
-      <main
-        className="relative z-20 isolate min-w-0 px-4 pb-24 pt-12 sm:px-6 md:px-8 md:pb-8"
-        style={contentZoom !== 1 ? { zoom: contentZoom } : undefined}
-      >
-        <AppVideoBackdrop className="fixed inset-0 z-0 md:left-[15rem]" />
-        <div className="relative z-[1]">
-          <div className="mb-4 md:hidden">
+          <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-3">
+            {items.map(({ href, label, icon: Icon, attention }) => {
+              const active = href === "/admin" ? pathname === href : pathname.startsWith(href);
+              const count = attentionCount(attention);
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={cn(
+                    "flex items-center gap-3 rounded-input px-3 py-2.5 text-sm transition-colors",
+                    active ? "bg-ice/10 text-ice" : "text-text-lo hover:bg-bg-2 hover:text-text-hi"
+                  )}
+                >
+                  <Icon className="size-4" />
+                  <span>{label}</span>
+                  {count > 0 ? (
+                    <span
+                      aria-label={`${count} open ${label.toLowerCase()}`}
+                      className={cn(
+                        "ml-auto min-w-5 rounded-full px-1.5 py-0.5 text-center font-mono text-[11px] font-semibold leading-4",
+                        attention === "reports" || attention === "system"
+                          ? "bg-warn/15 text-warn"
+                          : "bg-amber/15 text-amber"
+                      )}
+                    >
+                      {count > 99 ? "99+" : count}
+                    </span>
+                  ) : null}
+                </Link>
+              );
+            })}
+          </nav>
+          <div className="shrink-0 px-3 pb-2">
             <Link
               href="/"
-              className="inline-flex items-center gap-2 rounded-input border border-line bg-bg-1/70 px-3 py-2 text-sm text-text-lo backdrop-blur-md transition-colors hover:bg-bg-2 hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+              className="flex items-center gap-3 rounded-input px-3 py-2.5 text-sm text-text-lo transition-colors hover:bg-bg-2 hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
             >
               <ArrowLeft className="size-4" />
               Back to TEMPO
             </Link>
           </div>
-          {children}
-        </div>
-      </main>
+          <SlitDivider />
+          <div className="shrink-0 px-5 py-4 text-[11px] text-text-lo">
+            Private operations · v{APP_VERSION}
+          </div>
+        </aside>
+        {/* Unzoomed column fills the remaining width. Backdrop paints the
+            full pane; only the inner scroller zooms — same split as the studio. */}
+        <main className="relative z-20 isolate min-h-0 min-w-0 flex-1 overflow-hidden">
+          <AppVideoBackdrop className="pointer-events-none absolute inset-0 z-0" />
+          <div
+            className="relative z-[1] h-full min-h-0 overflow-x-hidden overflow-y-auto px-4 pb-24 pt-12 sm:px-6 md:px-8 md:pb-8"
+            style={contentZoom !== 1 ? { zoom: contentZoom } : undefined}
+          >
+            <div className="sticky top-0 z-20 -mx-4 mb-4 border-b border-line bg-bg-1/85 px-4 py-3 backdrop-blur-md md:hidden">
+              <Link
+                href="/"
+                className="inline-flex items-center gap-2 rounded-input px-1 py-0.5 text-sm text-text-lo transition-colors hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+              >
+                <ArrowLeft className="size-4" />
+                Back to TEMPO
+              </Link>
+            </div>
+            {children}
+          </div>
+        </main>
+      </div>
       <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-7 border-t border-line bg-bg-1/85 backdrop-blur-md md:hidden">
         {items
           .filter((item) => !item.desktopOnly)

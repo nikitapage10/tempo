@@ -67,10 +67,13 @@ describe("desktop content zoom wiring", () => {
     expect(origin).toContain("ZoomControl");
   });
 
-  it("offers zoom on Admin past the ops rail", () => {
+  it("offers zoom on Admin past the ops rail, without scaling the wash", () => {
     const admin = read("components/admin/admin-shell.tsx");
     expect(admin).toContain("useContentZoom");
     expect(admin).toContain('placement="admin"');
     expect(admin).toContain("ZoomControl");
+    expect(admin).toContain("AppVideoBackdrop");
+    expect(admin).toContain("absolute inset-0");
+    expect(admin).toContain("overflow-hidden");
   });
 });

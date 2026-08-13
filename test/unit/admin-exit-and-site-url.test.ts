@@ -15,7 +15,20 @@ describe("admin shell exit", () => {
 
   it("washes Admin with the same persistent video backdrop as the studio", () => {
     expect(shell).toContain("AppVideoBackdrop");
-    expect(shell).toContain("md:left-[15rem]");
+    expect(shell).toContain("absolute inset-0");
+    expect(shell).not.toContain("md:left-[15rem]");
+  });
+
+  it("keeps Back to TEMPO on the ops rail while the pages scroll", () => {
+    expect(shell).toContain("md:h-screen md:max-h-screen md:overflow-hidden");
+    expect(shell).toContain("h-screen w-[15rem]");
+    expect(shell).toContain("shrink-0 px-3 pb-2");
+  });
+
+  it("zooms the inner scroller, not the video wash", () => {
+    expect(shell).toContain("useContentZoom");
+    expect(shell).toContain("overflow-y-auto");
+    expect(shell).toContain("{ zoom: contentZoom }");
   });
 
   it("exposes a System health destination from the desktop rail", () => {
