@@ -4,6 +4,7 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-13
 
+- Fixed (v0.144.1): The team-access database step can be re-run without failing — it was blocking the rest of the schema from applying.
 - Changed (v0.144.0): Team members now sign in as themselves, not as a guest inside the artist's screen. They get their own home — Today, projects, tasks, calendar, a Profile page for their name and photo, and Social as themselves — plus **Artists you work with**, a hub with a snapshot of each artist who's brought them on and **Enter workspace** when they need to do the work. Inside that workspace a bar says they're working on you as Manager (or Agent, and so on) with **Back to my work**; they only see the tabs you've granted, your artist page is read-only, and Settings is just Account. Team is its own item on the left rail under Artist, with the team fanned out as photo cards. If the same person is an artist *and* a manager, one login switches between My artist and My work; on Social they show up once, with badges for the hats they wear. Under the hood: run migration 092 in the Supabase SQL editor after 091, on a non-production project first.
 
 ## 2026-08-12
