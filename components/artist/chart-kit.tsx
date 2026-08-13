@@ -230,3 +230,183 @@ export function NumbersToggle({
     </button>
   );
 }
+
+/**
+ * A minimal trend line — no axes, no ticks, just shape. Used inside compact
+ * modules and stat tiles where a full chart would be too heavy. `values`
+ * plots left-to-right in order; a single point or all-equal values render as
+ * a flat centred line rather than nothing.
+ */
+export function Sparkline({
+  values,
+  color,
+  className,
+  height = 28,
+}: {
+  values: number[];
+  color: string;
+  className?: string;
+  height?: number;
+}) {
+  const [ref, width] = useMeasuredWidth<HTMLDivElement>();
+  const w = Math.max(width, 1);
+
+  const path = React.useMemo(() => {
+    if (values.length === 0) return "";
+    const lo = Math.min(...values);
+    const hi = Math.max(...values);
+    const span = hi - lo || 1;
+    const stepX = values.length > 1 ? w / (values.length - 1) : 0;
+    const pad = 3;
+    const usableH = height - pad * 2;
+    return values
+      .map((v, i) => {
+        const x = values.length > 1 ? i * stepX : w / 2;
+        const norm = values.length > 1 ? (v - lo) / span : 0.5;
+        const y = pad + (1 - norm) * usableH;
+        return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
+      })
+      .join(" ");
+  }, [values, w, height]);
+
+  return (
+    <div ref={ref} className={cn("w-full", className)} style={{ height }}>
+      {w > 0 && path ? (
+        <svg
+          viewBox={`0 0 ${w} ${height}`}
+          width={w}
+          height={height}
+          className="overflow-visible"
+          aria-hidden
+        >
+          <path
+            d={path}
+            fill="none"
+            stroke={color}
+            strokeWidth={1.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * A `.stat-value` figure paired with a signed trend delta and an optional
+ * sparkline — the compact building block for feature-tier hero numbers.
+ * `delta` is pre-formatted (e.g. "+12%") so the caller controls precision and
+ * units; sign colour is derived from `deltaTone`, never guessed from the text.
+ */
+export function StatTile({
+  label,
+  value,
+  delta,
+  deltaTone = "neutral",
+  trend,
+  trendColor,
+  className,
+}: {
+  label: string;
+  value: string;
+  delta?: string;
+  deltaTone?: "up" | "down" | "neutral";
+  trend?: number[];
+  trendColor?: string;
+  className?: string;
+}) {
+  return (
+    <div className={cn("min-w-0", className)}>
+      <p className="label-mono mb-2">{label}</p>
+      <div className="flex items-baseline gap-2">
+        <p className="stat-value text-text-hi">{value}</p>
+        {delta ? (
+          <span
+            className={cn(
+              "text-xs tabular-nums",
+              deltaTone === "up" && "text-ok",
+              deltaTone === "down" && "text-warn",
+              deltaTone === "neutral" && "text-text-lo"
+            )}
+          >
+            {delta}
+          </span>
+        ) : null}
+      </div>
+      {trend && trend.length > 1 ? (
+        <Sparkline
+          values={trend}
+          color={trendColor ?? AXIS_TEXT}
+          className="mt-2"
+          height={22}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * Concentric ring gauge — the base the attribute radar's rings are drawn
+ * from, and usable on its own for a single 0–1 progress figure. `value` is
+ * clamped to [0,1]; `ringCount` draws that many evenly-spaced guide rings
+ * behind the fill arc, matching the radar's four-ring convention.
+ */
+export function RadialTrack({
+  value,
+  color,
+  size = 64,
+  strokeWidth = 6,
+  ringCount = 4,
+  className,
+}: {
+  value: number;
+  color: string;
+  size?: number;
+  strokeWidth?: number;
+  ringCount?: number;
+  className?: string;
+}) {
+  const clamped = Math.min(1, Math.max(0, value));
+  const r = (size - strokeWidth) / 2;
+  const cx = size / 2;
+  const cy = size / 2;
+  const circumference = 2 * Math.PI * r;
+  const dash = circumference * clamped;
+
+  return (
+    <svg
+      viewBox={`0 0 ${size} ${size}`}
+      width={size}
+      height={size}
+      className={className}
+      aria-hidden
+    >
+      {Array.from({ length: ringCount }, (_, i) => {
+        const ringR = (r * (i + 1)) / ringCount;
+        return (
+          <circle
+            key={i}
+            cx={cx}
+            cy={cy}
+            r={ringR}
+            fill="none"
+            stroke={GRID}
+            strokeWidth={1}
+          />
+        );
+      })}
+      <circle
+        cx={cx}
+        cy={cy}
+        r={r}
+        fill="none"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeDasharray={`${dash} ${circumference - dash}`}
+        transform={`rotate(-90 ${cx} ${cy})`}
+      />
+    </svg>
+  );
+}

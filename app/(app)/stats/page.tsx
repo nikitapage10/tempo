@@ -197,15 +197,12 @@ export default function ArtistStatsPage() {
             </p>
           </div>
 
+          {/* Trimmed to the figures nothing below repeats — Bounces and In
+              progress reappear in Output and Pipeline right underneath, so
+              they stayed out of the hero to stop the page saying the same
+              thing twice before it's said anything else. */}
           <div className="flex flex-wrap items-start gap-x-10 gap-y-5">
             <Stat value={data?.trackCount} label="Tracks" loading={loading} />
-            <Stat value={data?.bounceCount} label="Bounces" loading={loading} />
-            <Stat
-              value={data?.inProgressCount}
-              label="In progress"
-              tone="amber"
-              loading={loading}
-            />
             <Stat
               value={data?.releasedCount}
               label="Released"
@@ -286,8 +283,12 @@ function useArtistModules(
     const past = data.releases.filter((r) => r.isPast).reverse();
 
     return {
+      // Feature tier: the page's leading module. Wider padding and the same
+      // prism-edge treatment as the hero, so it reads as the page's anchor
+      // rather than one more panel — this is the slot the attribute sheet
+      // (gamification) takes over once it exists.
       output: (
-        <section className="panel p-5">
+        <section className="panel prism-edge p-6">
           <SectionHeader label="The year in bounces" />
           <MonthlyOutputChart months={data.monthly} />
         </section>
@@ -307,9 +308,11 @@ function useArtistModules(
         </section>
       ),
 
-      catalog: (
-        <section className="panel-quiet p-5">
-          <SectionHeader label="Catalog" />
+      // Compact tier: catalog + feedback merged into one small module instead
+      // of two panels that were each three to five rows in a full-size card.
+      signals: (
+        <section className="panel-quiet p-4">
+          <p className="label-mono mb-3">Signals</p>
           <dl className="space-y-2 text-sm">
             <MetaRow
               label="Total listening time"
@@ -317,6 +320,22 @@ function useArtistModules(
             />
             <MetaRow label="Sessions logged" value={String(data.sessionCount)} />
             <MetaRow label="Spaces" value={String(data.spaceCount)} />
+            {data.guestComments + data.ownComments + data.decisionCount === 0 ? (
+              <MetaRow label="Feedback received" value="—" />
+            ) : (
+              <>
+                <MetaRow
+                  label="Feedback received"
+                  value={String(data.guestComments + data.ownComments)}
+                />
+                <MetaRow
+                  label="Still open"
+                  value={String(data.openThreads)}
+                  tone={data.openThreads > 0 ? "amber" : undefined}
+                />
+                <MetaRow label="Approved" value={String(data.approvalCount)} />
+              </>
+            )}
           </dl>
         </section>
       ),
@@ -451,32 +470,6 @@ function useArtistModules(
         </section>
       ),
 
-      feedback: (
-        <section className="panel-quiet p-5">
-          <SectionHeader label="Feedback received" />
-          {data.guestComments + data.ownComments + data.decisionCount === 0 ? (
-            <QuietEmpty>
-              Nothing yet. Share a bounce with a guest review link and their
-              notes land here.
-            </QuietEmpty>
-          ) : (
-            <dl className="space-y-2 text-sm">
-              <MetaRow label="From guests" value={String(data.guestComments)} />
-              <MetaRow label="Your own notes" value={String(data.ownComments)} />
-              <MetaRow
-                label="Still open"
-                value={String(data.openThreads)}
-                tone={data.openThreads > 0 ? "amber" : undefined}
-              />
-              <MetaRow
-                label="Decisions logged"
-                value={String(data.decisionCount)}
-              />
-              <MetaRow label="Approved" value={String(data.approvalCount)} />
-            </dl>
-          )}
-        </section>
-      ),
       // Platform modules only exist once there's an artist row to link them to.
       spotify: artist ? <SpotifyModule artist={artist} /> : null,
       soundcloud: artist ? <SoundCloudModule artist={artist} /> : null,

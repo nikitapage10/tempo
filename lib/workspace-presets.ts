@@ -34,13 +34,14 @@ export type ArtistModuleId =
   | "output"
   | "pipeline"
   | "momentum"
-  | "catalog"
   | "spaces"
   | "sound"
   | "rhythm"
   | "releases"
   | "lingering"
-  | "feedback"
+  // Replaces the old separate "catalog" + "feedback" modules — each was a
+  // handful of MetaRows on its own full panel; merged into one compact one.
+  | "signals"
   | "spotify"
   | "soundcloud"
   | "apple"
@@ -77,20 +78,33 @@ export const MODULE_DEFS: { id: TrackModuleId; label: string }[] = [
 
 export const ALL_MODULE_IDS: ModuleId[] = MODULE_DEFS.map((m) => m.id);
 
-export const ARTIST_MODULE_DEFS: { id: ArtistModuleId; label: string }[] = [
-  { id: "output", label: "The year in bounces" },
-  { id: "pipeline", label: "Pipeline" },
-  { id: "momentum", label: "Momentum" },
-  { id: "catalog", label: "Catalog" },
-  { id: "spaces", label: "Spaces" },
-  { id: "sound", label: "Your sound" },
-  { id: "rhythm", label: "Work rhythm" },
-  { id: "releases", label: "Releases" },
-  { id: "lingering", label: "Longest in progress" },
-  { id: "feedback", label: "Feedback received" },
-  { id: "spotify", label: "Spotify" },
-  { id: "soundcloud", label: "SoundCloud" },
-  { id: "apple", label: "Apple Music" },
+/**
+ * A rendering hint, not a layout constraint — modules of any tier can still be
+ * dragged anywhere. `feature` gets full-bleed prominence (the attribute sheet
+ * lives here once it exists; until then `output` borrows the slot), `compact`
+ * gets reduced padding and no full section header, `standard` is everything
+ * else. This is what turns the default arrangement into a hierarchy instead
+ * of a flat wall of identical panels.
+ */
+export type ArtistModuleTier = "feature" | "standard" | "compact";
+
+export const ARTIST_MODULE_DEFS: {
+  id: ArtistModuleId;
+  label: string;
+  tier: ArtistModuleTier;
+}[] = [
+  { id: "output", label: "The year in bounces", tier: "feature" },
+  { id: "pipeline", label: "Pipeline", tier: "standard" },
+  { id: "momentum", label: "Momentum", tier: "compact" },
+  { id: "spaces", label: "Spaces", tier: "standard" },
+  { id: "sound", label: "Your sound", tier: "standard" },
+  { id: "rhythm", label: "Work rhythm", tier: "standard" },
+  { id: "releases", label: "Releases", tier: "standard" },
+  { id: "lingering", label: "Longest in progress", tier: "standard" },
+  { id: "signals", label: "Signals", tier: "compact" },
+  { id: "spotify", label: "Spotify", tier: "standard" },
+  { id: "soundcloud", label: "SoundCloud", tier: "standard" },
+  { id: "apple", label: "Apple Music", tier: "standard" },
 ];
 
 export const ALL_ARTIST_MODULE_IDS: ModuleId[] = ARTIST_MODULE_DEFS.map(
@@ -103,6 +117,11 @@ export function moduleLabel(id: ModuleId): string {
     ARTIST_MODULE_DEFS.find((m) => m.id === id)?.label ??
     id
   );
+}
+
+/** Defaults to "standard" for track modules and anything unrecognised (e.g. custom modules). */
+export function moduleTier(id: ModuleId): ArtistModuleTier {
+  return ARTIST_MODULE_DEFS.find((m) => m.id === id)?.tier ?? "standard";
 }
 
 /** The waveform can never be hidden once a track has versions — FEATURE-SPECS §15.5. */
@@ -349,22 +368,27 @@ export function hiddenModules(
   return vocabulary.filter((id) => !placed.has(id));
 }
 
-/** Default arrangement of the artist overview, before any personal edits. */
+/**
+ * Default arrangement of the artist overview, before any personal edits.
+ *
+ * A narrative, not an inventory: one feature module leads, the left column is
+ * the work (what's been made and what's in flight), the right column is
+ * everything else — grouped rather than stacked where it's naturally one
+ * story told three ways (the platforms), and the small stuff consolidated
+ * into one compact "Signals" module instead of two near-empty panels.
+ */
 export const DEFAULT_ARTIST_LAYOUT: ModuleLayout = {
   left: [["output"], ["pipeline"], ["spaces"], ["sound"], ["lingering"]],
   right: [
+    // Spotify, SoundCloud and Apple each report a different number, but
+    // they're the same *kind* of thing — connected-platform reach — so
+    // unlike the old one-panel-each layout, they lead as a single tabbed
+    // group here. Split them apart in Edit layout if you'd rather.
+    ["spotify", "soundcloud", "apple"],
     ["momentum"],
-    ["catalog"],
-    // Each platform stands on its own — they report different things (Spotify
-    // followers, SoundCloud plays, Apple catalog), so tabbing them together
-    // would hide two thirds of the picture behind a click. Drop one onto
-    // another in Edit layout to group them if you'd rather.
-    ["spotify"],
-    ["soundcloud"],
-    ["apple"],
     ["rhythm"],
     ["releases"],
-    ["feedback"],
+    ["signals"],
   ],
   leftPct: 60,
 };
@@ -397,10 +421,10 @@ export const ARTIST_LAYOUT_TEMPLATES: ArtistLayoutTemplate[] = [
   {
     id: "minimal",
     label: "Minimal",
-    description: "Just the shape of things: output, spaces, catalog.",
+    description: "Just the shape of things: output, spaces, signals.",
     layout: {
       left: [["output"], ["spaces"]],
-      right: [["catalog"], ["releases"]],
+      right: [["signals"], ["releases"]],
       leftPct: 60,
     },
   },
@@ -410,7 +434,7 @@ export const ARTIST_LAYOUT_TEMPLATES: ArtistLayoutTemplate[] = [
     description: "Numbers first — momentum, pipeline, rhythm, sound.",
     layout: {
       left: [["momentum"], ["pipeline"], ["output"]],
-      right: [["rhythm"], ["sound"], ["catalog"], ["feedback"]],
+      right: [["rhythm"], ["sound"], ["signals"]],
       leftPct: 55,
     },
   },
@@ -420,7 +444,7 @@ export const ARTIST_LAYOUT_TEMPLATES: ArtistLayoutTemplate[] = [
     description: "Spotify, SoundCloud and Apple Music lead the page.",
     layout: {
       left: [["spotify"], ["soundcloud"], ["apple"]],
-      right: [["output"], ["catalog"], ["spaces"]],
+      right: [["output"], ["signals"], ["spaces"]],
       leftPct: 55,
     },
   },

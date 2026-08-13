@@ -4,6 +4,13 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-12
 
+- Changed (v0.138.0): Stats has a clearer sense of what matters. **The year in
+  bounces** now leads the page as a bigger, framed section instead of sitting
+  level with everything else; Spotify, SoundCloud and Apple Music are grouped
+  into one tabbed card instead of three stacked ones; and the small "Catalog"
+  and "Feedback received" panels are combined into one compact "Signals" card.
+  Your own saved layout (if you've customized Stats) is preserved — anything
+  new just shows up once, ready to move or hide like everything else.
 - Changed (v0.137.0): dragging a task over a column now says **Move to today / this week / later / overdue** in that box, so you can see where it will land.
 - Changed (v0.137.0): **Closed out** sits under the task columns instead of next to the page title.
 - Added (v0.136.0): on Tasks, drag a to-do from one column to another to change when it’s due — Today sets today; This week, Later, and Overdue ask which date.
