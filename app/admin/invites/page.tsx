@@ -15,7 +15,7 @@ import type { AdminArtistInviteRequest, AdminInvite, AdminInviteRole, AdminMembe
 
 const ROLE_OPTIONS: { value: AdminInviteRole; label: string; detail: string }[] = [
   { value: "artist", label: "Artist", detail: "Standard member access and artist-first onboarding" },
-  { value: "team_member", label: "Team member", detail: "Team relationship recorded; standard product access" },
+  { value: "team_member", label: "Pro", detail: "Manager, label, collective, creative or crew. Full product access, no artist onboarding" },
   { value: "administrator", label: "Admin", detail: "Artist onboarding plus access to private operations" },
 ];
 
@@ -95,7 +95,7 @@ export default function AdminInvitesPage() {
     {invites.data ? <div className="flex items-start gap-3 rounded-card border border-line bg-bg-1 px-4 py-3">{invites.data.deliveryConfig.configured ? <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-ok"/> : <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warn"/>}<div><p className="text-sm text-text-hi">{invites.data.deliveryConfig.configured ? "Email delivery is configured" : "Email delivery needs configuration"}</p><p className="mt-0.5 text-xs leading-relaxed text-text-lo">{invites.data.deliveryConfig.configured ? <>Sending from <span className="text-text-hi">{invites.data.deliveryConfig.from}</span>. Resend must show <span className="text-text-hi">{invites.data.deliveryConfig.domain}</span> as verified.</> : <>Add both <span className="text-text-hi">RESEND_API_KEY</span> and <span className="text-text-hi">INVITE_FROM_EMAIL</span> to the production environment, then redeploy.</>}</p></div></div> : null}
     {invites.data ? <AdminTable columns={columns} rows={invites.data.invites} rowKey={(row) => row.id} empty="No invites yet." /> : null}
     {invites.data ? <div className="space-y-3"><PageHeader title="Needs approval" subtitle={pendingRequests.length ? `${pendingRequests.length} full-artist invite${pendingRequests.length === 1 ? "" : "s"} waiting on you during beta.` : "Nobody has asked to invite a full artist yet."} /><AdminTable columns={requestColumns} rows={invites.data.artistInviteRequests ?? []} rowKey={(row) => row.id} empty="No artist-invite requests." /></div> : null}
-    {invites.data ? <div className="space-y-3"><PageHeader title="Invites by others" subtitle="Team members and collaborators invited from inside TEMPO — who sent it, and who they invited." /><AdminTable columns={memberColumns} rows={invites.data.memberInvites ?? []} rowKey={(row) => `${row.kind}:${row.id}`} empty="Nobody has invited a team member or collaborator yet." /></div> : null}
+    {invites.data ? <div className="space-y-3"><PageHeader title="Invites by others" subtitle="Pros and collaborators invited from inside TEMPO: who sent it, and who they invited." /><AdminTable columns={memberColumns} rows={invites.data.memberInvites ?? []} rowKey={(row) => `${row.kind}:${row.id}`} empty="Nobody has invited a Pro or collaborator yet." /></div> : null}
     <Dialog open={open} onOpenChange={setOpen}><DialogContent title="Create invitation" description="Add an email to send TEMPO’s invitation automatically. Leave it blank to create a copyable link." onClose={() => setOpen(false)}><div className="space-y-3">
       <Input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Recipient email" />
       <select value={memberRole} onChange={(event) => setMemberRole(event.target.value as AdminInviteRole)} className="h-10 w-full rounded-input border border-line bg-bg-2 px-3 text-sm text-text-hi">

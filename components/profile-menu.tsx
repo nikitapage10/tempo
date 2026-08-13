@@ -79,8 +79,16 @@ export function ProfileMenu() {
       "Artist";
   const handle = asSelf ? null : profile?.handle?.trim() || null;
   const email = user?.email ?? null;
+  // A team member sets their photo in Settings > Look, which writes the
+  // emblem on their personal workspace row. That is a different field from
+  // the Social member profile's avatar, so reading only the latter left the
+  // toolbar showing initials next to a photo they had plainly already set.
+  // The member profile still wins when it has one; the workspace is the
+  // fallback rather than nothing.
   const emblemUrl = asSelf
-    ? memberProfileQuery.data?.avatarUrl ?? null
+    ? memberProfileQuery.data?.avatarUrl?.trim() ||
+      activeArtist?.emblem_url?.trim() ||
+      null
     : activeArtist?.emblem_url?.trim() || profile?.emblem_url?.trim() || null;
   const subtitle = asSelf
     ? role && activeArtist

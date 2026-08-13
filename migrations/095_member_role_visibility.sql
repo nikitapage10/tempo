@@ -60,4 +60,10 @@ where coalesce(a.workspace_kind, 'artist') = 'artist'
     where mo.user_id = a.user_id and mo.member_role = 'team_member'
   )
   and (select count(*) from artists o where o.user_id = a.user_id) = 1
-  and not exists (select 1 from tracks t where t.artist_id = a.id);
+  -- Tracks hang off an artist through their spaces (see 021), not directly.
+  and not exists (
+    select 1
+    from tracks t
+    join spaces s on s.id = t.space_id
+    where s.artist_id = a.id
+  );

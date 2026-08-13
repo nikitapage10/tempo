@@ -6,7 +6,7 @@ import { PassageExperience } from "@/components/passage/passage-experience";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Welcome — TEMPO",
+  title: "Welcome to TEMPO",
 };
 
 /**

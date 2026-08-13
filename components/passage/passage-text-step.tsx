@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { MorphingText } from "@/components/ui/morphing-text";
 import { OriginScrim } from "@/components/origin/origin-copy-layer";
+import { PASSAGE_PANEL } from "@/components/passage/passage-panel";
+import { cn } from "@/lib/utils";
 
 /**
  * One open question, held on its own loop. Frames 3–5 of PASSAGE (entry,
@@ -69,7 +71,12 @@ export function PassageTextStep({
   }
 
   return (
-    <OriginScrim className="pointer-events-auto relative flex w-full max-w-2xl flex-col gap-6 overflow-hidden p-0">
+    <OriginScrim
+      className={cn(
+        "pointer-events-auto relative flex w-full max-w-2xl flex-col gap-6 overflow-hidden p-0",
+        PASSAGE_PANEL
+      )}
+    >
       <span
         aria-hidden
         className="absolute inset-y-0 left-0 w-px bg-[linear-gradient(to_bottom,transparent,var(--amber),var(--ice),transparent)] opacity-70"

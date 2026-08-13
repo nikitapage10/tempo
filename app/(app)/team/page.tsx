@@ -71,7 +71,7 @@ export default function TeamPage() {
       const profile = profilesQuery.data?.get(m.userId!);
       return {
         id: m.id,
-        name: profile?.displayName || "Team member",
+        name: profile?.displayName || "Pro",
         subtitle: ROLE_LABELS[m.role],
         avatarUrl: profile?.avatarUrl,
       };

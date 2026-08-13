@@ -39,7 +39,7 @@ export function OriginLookStep({
   busy,
   kicker = "Look / 03",
   heading = "Give the signal a look",
-  blurb = "Colors, mark, and banner — all optional. You can change any of this later in Settings.",
+  blurb = "Colors, mark, and banner, all optional. You can change any of this later in Settings.",
 }: {
   onBack: () => void;
   onFinish: () => void;
@@ -125,7 +125,7 @@ export function OriginLookStep({
       setError(
         err instanceof Error
           ? err.message
-          : "Couldn’t upload that image — try a smaller file."
+          : "Couldn’t upload that image. Try a smaller file."
       );
     }
   }
@@ -424,7 +424,7 @@ export function OriginLookStep({
           </Button>
         </div>
         <p className="text-xs leading-relaxed text-text-lo/80">
-          Skip keeps Spectra for now — you can set a look any time in Settings.
+          Skip keeps Spectra for now. You can set a look any time in Settings.
         </p>
       </div>
     </OriginScrim>
@@ -618,7 +618,7 @@ function LookCustomAccentButton({
       onError(
         err instanceof Error
           ? err.message
-          : "Could not save custom colors — run migration 022 if you haven't."
+          : "Could not save custom colors. Run migration 022 if you haven't."
       );
     } finally {
       setSaving(false);
@@ -731,7 +731,7 @@ function LookCustomBannerButton({
       onError(
         err instanceof Error
           ? err.message
-          : "Could not save banner — run migration 022 if you haven't."
+          : "Could not save banner. Run migration 022 if you haven't."
       );
     } finally {
       setSaving(false);

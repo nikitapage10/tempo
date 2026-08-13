@@ -4,6 +4,7 @@ import * as React from "react";
 import {
   completeMemberPassage,
   fetchMemberPassage,
+  requestPassageInterpretation,
   saveMemberPassageDraft,
   skipMemberPassage,
 } from "@/lib/api/member-passage";
@@ -13,6 +14,7 @@ import {
   type PassageAction,
   type PassageState,
 } from "@/lib/passage/reducer";
+import type { MemberPassage, PassageInterpretation } from "@/lib/passage/types";
 import { prefersReducedMotion, networkProfile } from "@/lib/origin/readiness";
 
 /**
@@ -23,12 +25,21 @@ import { prefersReducedMotion, networkProfile } from "@/lib/origin/readiness";
 
 const DRAFT_DEBOUNCE_MS = 900;
 
+/** The chips plus any free-text answer, as one list for the writer. */
+function rolesFor(roleTitles: string[], other: string): string[] {
+  const extra = other.trim();
+  return extra ? [...roleTitles, extra] : roleTitles;
+}
+
 export type PassageController = {
   state: PassageState;
   dispatch: React.Dispatch<PassageAction>;
   hydrated: boolean;
+  /** Reads the answers and writes the closing story. Never throws. */
+  runInterpretation: () => void;
+  setInterpretation: (interpretation: PassageInterpretation) => void;
   complete: () => Promise<boolean>;
-  /** "Skip for now" — always resolves, so leaving is never blocked. */
+  /** "Skip for now" always resolves, so leaving is never blocked. */
   skip: () => Promise<void>;
 };
 
@@ -47,32 +58,35 @@ export function usePassageState(): PassageController {
     const staticMode = prefersReducedMotion() || networkProfile() === "save-data";
 
     void (async () => {
-      let resume = null;
+      let resume: MemberPassage | null = null;
       try {
         const row = await fetchMemberPassage();
         if (row && row.status === "in_progress") resume = row;
       } catch {
-        // Falls back to starting fresh — nothing has been lost yet.
+        // Falls back to starting fresh. Nothing has been lost yet.
       }
       dispatch({ type: "boot", staticMode, resume });
       setHydrated(true);
     })();
   }, []);
 
+  const draftOf = (s: PassageState) => ({
+    currentStep: s.savedStep,
+    displayName: s.displayName || null,
+    roleTitles: s.roleTitles,
+    roleTitleOther: s.roleTitleOther || null,
+    entryText: s.entryText || null,
+    supportsText: s.supportsText || null,
+    functionText: s.functionText || null,
+    interpretation: s.interpretationReady ? s.interpretation : undefined,
+  });
+
   React.useEffect(() => {
     if (!hydrated) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
 
     saveTimerRef.current = setTimeout(() => {
-      const s = stateRef.current;
-      void saveMemberPassageDraft({
-        currentStep: s.savedStep,
-        roleTitle: s.roleTitle || null,
-        roleTitleOther: s.roleTitleOther || null,
-        entryText: s.entryText || null,
-        supportsText: s.supportsText || null,
-        functionText: s.functionText || null,
-      }).catch(() => {
+      void saveMemberPassageDraft(draftOf(stateRef.current)).catch(() => {
         // Silent: nothing is lost, and the next save will carry it.
       });
     }, DRAFT_DEBOUNCE_MS);
@@ -80,15 +94,49 @@ export function usePassageState(): PassageController {
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     hydrated,
     state.savedStep,
-    state.roleTitle,
+    state.displayName,
+    state.roleTitles,
     state.roleTitleOther,
     state.entryText,
     state.supportsText,
     state.functionText,
+    state.interpretation,
+    state.interpretationReady,
   ]);
+
+  const inFlightRef = React.useRef(false);
+
+  const runInterpretation = React.useCallback(() => {
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
+    const s = stateRef.current;
+
+    void requestPassageInterpretation({
+      displayName: s.displayName,
+      roles: rolesFor(s.roleTitles, s.roleTitleOther),
+      entry: s.entryText,
+      supports: s.supportsText,
+      work: s.functionText,
+    })
+      .then((interpretation) => {
+        dispatch({ type: "interpretation_ok", interpretation });
+      })
+      .catch(() => {
+        // The recap falls back to their own answers, so this is never fatal.
+        dispatch({ type: "interpretation_failed" });
+      })
+      .finally(() => {
+        inFlightRef.current = false;
+      });
+  }, []);
+
+  const setInterpretation = React.useCallback((interpretation: PassageInterpretation) => {
+    dispatch({ type: "edit_interpretation", interpretation });
+  }, []);
 
   const complete = React.useCallback(async (): Promise<boolean> => {
     const s = stateRef.current;
@@ -96,35 +144,29 @@ export function usePassageState(): PassageController {
     dispatch({ type: "begin_save" });
     try {
       await completeMemberPassage({
-        roleTitle: s.roleTitle,
+        displayName: s.displayName,
+        roleTitles: s.roleTitles,
         roleTitleOther: s.roleTitleOther,
         entryText: s.entryText,
         supportsText: s.supportsText,
         functionText: s.functionText,
+        interpretation: s.interpretation,
       });
       dispatch({ type: "save_ok" });
       return true;
     } catch {
       dispatch({
         type: "save_failed",
-        message: "That didn't save. Your writing is still here — try again.",
+        message: "That didn't save. Your writing is still here, so try again.",
       });
       return false;
     }
   }, []);
 
   const skip = React.useCallback(async () => {
-    const s = stateRef.current;
     // Written first so skipping loses nothing that was already typed.
     try {
-      await saveMemberPassageDraft({
-        currentStep: s.savedStep,
-        roleTitle: s.roleTitle || null,
-        roleTitleOther: s.roleTitleOther || null,
-        entryText: s.entryText || null,
-        supportsText: s.supportsText || null,
-        functionText: s.functionText || null,
-      });
+      await saveMemberPassageDraft(draftOf(stateRef.current));
     } catch {
       /* skipping must not be blocked by a failed draft save */
     }
@@ -133,7 +175,16 @@ export function usePassageState(): PassageController {
     } catch {
       /* the redirect still happens; status can be set again later */
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { state, dispatch, hydrated, complete, skip };
+  return {
+    state,
+    dispatch,
+    hydrated,
+    runInterpretation,
+    setInterpretation,
+    complete,
+    skip,
+  };
 }
