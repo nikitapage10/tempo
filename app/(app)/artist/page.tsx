@@ -31,7 +31,10 @@ import { useActiveArtist } from "@/components/active-artist-provider";
 import { useArtistProfile } from "@/hooks/use-artist-profile";
 import { useProfileReleasedTracks } from "@/hooks/use-profile-released-tracks";
 import { checkHandleAvailable } from "@/lib/api/artist-profile";
+import { AttributeRow } from "@/components/artist/attribute-row";
+import { useArtistAttributes } from "@/hooks/use-artist-attributes";
 import type {
+  Artist,
   ArtistProfileUpdate,
   ProfileDmPolicy,
   ProfileLink,
@@ -291,6 +294,8 @@ export default function ArtistProfilePage() {
           </div>
         ) : null}
       </div>
+
+      {!editing && activeArtist ? <AttributeStrip artist={activeArtist} /> : null}
 
       {editing && draft ? (
         <ProfileEditor
@@ -705,6 +710,35 @@ function Field({
       {children}
       {hint ? <p className="mt-1 text-xs text-text-lo">{hint}</p> : null}
     </div>
+  );
+}
+
+/**
+ * Compact secondary home for the attribute sheet — six figures, no radar, no
+ * toasts. Same personal-only rule as the Stats page: never rendered on the
+ * public profile below, only here on the artist's own view.
+ */
+function AttributeStrip({ artist }: { artist: Artist }) {
+  const { data: attributes, isLoading } = useArtistAttributes(artist);
+  const [expandedKey, setExpandedKey] = React.useState<string | null>(null);
+
+  if (isLoading || !attributes) return null;
+
+  return (
+    <section className="panel-quiet p-4">
+      <p className="label-mono mb-2">Attributes</p>
+      <div>
+        {attributes.map((a) => (
+          <AttributeRow
+            key={a.key}
+            attribute={a}
+            expanded={expandedKey === a.key}
+            onToggle={() => setExpandedKey((prev) => (prev === a.key ? null : a.key))}
+            variant="compact"
+          />
+        ))}
+      </div>
+    </section>
   );
 }
 

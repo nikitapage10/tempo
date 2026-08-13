@@ -288,6 +288,22 @@
     }
   }
 
+  /* The one-time entrance pulse on a Flare/Corona-grade achievement toast —
+     gated behind prefers-reduced-motion by the component, not here, since
+     the class is only applied when motion is allowed in the first place. */
+  .achievement-toast-pulse {
+    animation: achievement-pulse 900ms ease-out 1;
+  }
+
+  @keyframes achievement-pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(255, 181, 107, 0.35);
+    }
+    100% {
+      box-shadow: 0 0 0 14px rgba(255, 181, 107, 0);
+    }
+  }
+
   /* Temporary track covers — vertical Spectra slits (title language).
      Light group blur + thin glow; no heavy bloom orb, no hard chrome. */
 

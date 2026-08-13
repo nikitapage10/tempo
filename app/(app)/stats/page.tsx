@@ -30,8 +30,11 @@ import {
   SpotifyModule,
 } from "@/components/artist/platform-modules";
 import { CustomModuleCard } from "@/components/artist/custom-stats";
+import { AttributeSheet } from "@/components/artist/attribute-sheet";
+import { PerformanceList } from "@/components/artist/performances/performance-list";
+import { AchievementList } from "@/components/gamification/achievement-list";
 import { ModularWorkspace } from "@/components/track/modular-workspace";
-import { sanitizeArtistLayout } from "@/lib/artist-layout";
+import { sanitizeArtistLayout, type GamificationPreference } from "@/lib/artist-layout";
 import {
   useCustomModuleMutations,
   useCustomModules,
@@ -64,7 +67,9 @@ export default function ArtistStatsPage() {
   const { data, isLoading, isError, error } = useArtistStats(
     activeArtist?.id ?? null
   );
-  const { layout, setLayout, reset } = useArtistLayout(activeArtist?.id ?? null);
+  const { layout, setLayout, gamification, setGamification, reset } = useArtistLayout(
+    activeArtist?.id ?? null
+  );
 
   const [editing, setEditing] = React.useState(false);
   const [draft, setDraft] = React.useState<ModuleLayout | null>(null);
@@ -122,7 +127,9 @@ export default function ArtistStatsPage() {
     data,
     activeArtist,
     customModules,
-    handleModuleDeleted
+    handleModuleDeleted,
+    gamification,
+    setGamification
   );
 
   return (
@@ -269,7 +276,9 @@ function useArtistModules(
   data: ArtistOverview | undefined,
   artist: Artist | null,
   customModules: CustomStatModule[],
-  onCustomModuleDeleted: (dbId: string) => void
+  onCustomModuleDeleted: (dbId: string) => void,
+  gamification: GamificationPreference,
+  onGamificationChange: (next: GamificationPreference) => void
 ): Partial<Record<ModuleId, React.ReactNode>> {
   const palette = useChartPalette();
 
@@ -474,6 +483,32 @@ function useArtistModules(
       spotify: artist ? <SpotifyModule artist={artist} /> : null,
       soundcloud: artist ? <SoundCloudModule artist={artist} /> : null,
       apple: artist ? <AppleModule artist={artist} /> : null,
+
+      // Gamification (stream 2) — personal only, never shown on the public
+      // profile. "off" is handled upstream: the module simply isn't placed.
+      attributes: artist ? (
+        <AttributeSheet
+          artist={artist}
+          trackCount={data.trackCount}
+          display={gamification.display}
+          onDisplayChange={(display) => onGamificationChange({ display })}
+        />
+      ) : null,
+      achievements: artist ? (
+        <section className="panel-quiet p-5">
+          <SectionHeader label="Achievements" />
+          <AchievementList artistId={artist.id} />
+        </section>
+      ) : null,
+      live: artist ? (
+        <section className="panel-quiet p-5">
+          <SectionHeader label="Live" />
+          <PerformanceList
+            artistId={artist.id}
+            spaces={data.spaces.map((s) => s.space)}
+          />
+        </section>
+      ) : null,
       ...(artist
         ? (Object.fromEntries(
             customModules.map((m) => [
@@ -489,7 +524,15 @@ function useArtistModules(
           ) as Partial<Record<ModuleId, React.ReactNode>>)
         : {}),
     } satisfies Partial<Record<ModuleId, React.ReactNode>>;
-  }, [data, palette, artist, customModules, onCustomModuleDeleted]);
+  }, [
+    data,
+    palette,
+    artist,
+    customModules,
+    onCustomModuleDeleted,
+    gamification,
+    onGamificationChange,
+  ]);
 }
 
 /** Edit-layout controls, mirroring the track workspace's toolbar. */

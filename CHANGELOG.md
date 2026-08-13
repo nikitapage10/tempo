@@ -4,6 +4,26 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-12
 
+- Added (v0.139.0): Stats has an **Artist attributes** section — six figures
+  (Output, Velocity, Follow-Through, Consistency, Stage Presence, Reach)
+  built entirely from things you actually did: bounces uploaded, tracks
+  finished, sessions logged, shows played, platforms linked. Tap any one to
+  see exactly what earned it — nothing here is a guess or a hidden score.
+  Real actions (finishing a track, moving one forward, logging a show) earn
+  points toward these, and milestone moments now pop up as **achievements** —
+  about a hundred of them, from the first bounce you ever upload to a full
+  year of consistent work — graded Glimmer through Corona along the same
+  ice-to-amber flare TEMPO already uses, with a few hidden ones that stay
+  unnamed until you earn them. If you've used TEMPO for a while, your
+  existing history (finished tracks, focus sessions, Origin, the
+  getting-started checklist) counts retroactively the first time you open the
+  page — nothing starts you at zero. A **Live** section lets you log shows
+  and festivals you've played (and pull in past calendar entries you tick
+  off yourself), which is what feeds Stage Presence. All of this is personal
+  — never shown on your public artist page — and can be turned down to a
+  plain figures list (or hidden entirely, like any other Stats section) from
+  the module's own controls. Under the hood: run migrations 085 through 088
+  in the Supabase SQL editor, in order, on a non-production project first.
 - Changed (v0.138.0): Stats has a clearer sense of what matters. **The year in
   bounces** now leads the page as a bigger, framed section instead of sitting
   level with everything else; Spotify, SoundCloud and Apple Music are grouped

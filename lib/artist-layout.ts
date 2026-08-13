@@ -25,6 +25,18 @@ function legacyKeyFor(artistId: string): string {
 
 const KNOWN = new Set<ModuleId>(ALL_ARTIST_MODULE_IDS);
 
+/** The gamification module's own display setting — see components/artist/attribute-sheet.tsx. */
+export type GamificationPreference = {
+  display: "full" | "dim";
+};
+
+const DEFAULT_GAMIFICATION_PREFERENCE: GamificationPreference = { display: "full" };
+
+function sanitizeGamificationPreference(raw: unknown): GamificationPreference {
+  const display = (raw as { display?: unknown })?.display;
+  return { display: display === "dim" ? "dim" : "full" };
+}
+
 /**
  * What actually goes in storage.
  *
@@ -37,6 +49,8 @@ export type StoredArtistLayout = {
   v: 1;
   layout: ModuleLayout;
   known: ModuleId[];
+  /** Full vs. dim for the gamification module — "off" is the module's absence, not a value here. */
+  gamification?: GamificationPreference;
 };
 
 /**
@@ -63,8 +77,16 @@ export function sanitizeArtistLayout(layout: ModuleLayout): ModuleLayout {
   };
 }
 
-export function buildStoredArtistLayout(layout: ModuleLayout): StoredArtistLayout {
-  return { v: 1, layout, known: ALL_ARTIST_MODULE_IDS };
+export function buildStoredArtistLayout(
+  layout: ModuleLayout,
+  gamification?: GamificationPreference
+): StoredArtistLayout {
+  return {
+    v: 1,
+    layout,
+    known: ALL_ARTIST_MODULE_IDS,
+    gamification: gamification ?? DEFAULT_GAMIFICATION_PREFERENCE,
+  };
 }
 
 /**
@@ -88,12 +110,28 @@ export function reconcileStoredArtistLayout(raw: unknown): ModuleLayout | null {
   );
   const placed = new Set(flattenLayout(layout));
   for (const id of ALL_ARTIST_MODULE_IDS) {
-    if (!placed.has(id) && !knownWhenSaved.has(id)) {
+    if (placed.has(id) || knownWhenSaved.has(id)) continue;
+    // The attribute sheet is the page's one feature module — landing it
+    // bottom-right with everything else pushed there over time would bury
+    // the thing it's meant to anchor. Every other newly-known module keeps
+    // the existing "append to the right column" behaviour.
+    if (id === "attributes") {
+      layout.left.unshift([id]);
+    } else {
       layout.right.push([id]);
     }
   }
 
   return layout;
+}
+
+/** Reads the gamification display preference out of a raw stored value, defaulting to "full". */
+export function gamificationPreferenceFromStored(raw: unknown): GamificationPreference {
+  if (!raw || typeof raw !== "object") return DEFAULT_GAMIFICATION_PREFERENCE;
+  const parsed = raw as Partial<StoredArtistLayout>;
+  return "gamification" in parsed
+    ? sanitizeGamificationPreference(parsed.gamification)
+    : DEFAULT_GAMIFICATION_PREFERENCE;
 }
 
 /** One-time read of the pre-migration 027 localStorage value, for carrying it into the database. */

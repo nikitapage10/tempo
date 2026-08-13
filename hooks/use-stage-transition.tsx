@@ -6,6 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/toast";
 import { useTemplates } from "@/hooks/use-templates";
+import { useActiveArtist } from "@/components/active-artist-provider";
+import { AchievementToast } from "@/components/gamification/achievement-toast";
+import { evaluateAchievements } from "@/lib/api/achievements";
+import { achievementByKey } from "@/lib/gamification/achievements";
 import {
   applyRecipeActions,
   deriveRunStatus,
@@ -42,9 +46,10 @@ type PendingPreview = {
  */
 export function useStageTransitionController(spaceId: string | null) {
   const qc = useQueryClient();
-  const { toast } = useToast();
+  const { toast, toastCustom } = useToast();
   const templatesQuery = useTemplates();
   const templates = templatesQuery.data ?? [];
+  const { activeArtist } = useActiveArtist();
 
   const [preview, setPreview] = React.useState<PendingPreview | null>(null);
   const [busy, setBusy] = React.useState(false);
@@ -53,6 +58,28 @@ export function useStageTransitionController(spaceId: string | null) {
     qc.invalidateQueries({ queryKey: ["track", trackId] });
     qc.invalidateQueries({ queryKey: ["tracks", spaceId] });
     qc.invalidateQueries({ queryKey: ["today-stats"] });
+  }
+
+  /**
+   * Fire-and-forget: a forward stage move is exactly the kind of action that
+   * can earn an achievement (see lib/gamification/rules.ts stage_advanced /
+   * track_finished). Failure here must never affect the move itself —
+   * gamification is a bonus layer, not a dependency of the workflow.
+   */
+  function checkAchievementsAfterMove() {
+    if (!activeArtist?.id) return;
+    evaluateAchievements(activeArtist.id)
+      .then(({ newlyAwardedKeys }) => {
+        qc.invalidateQueries({ queryKey: ["achievement-awards", activeArtist.id] });
+        qc.invalidateQueries({ queryKey: ["artist-point-events", activeArtist.id] });
+        for (const key of newlyAwardedKeys) {
+          const def = achievementByKey(key);
+          if (def) toastCustom(<AchievementToast achievement={def} />);
+        }
+      })
+      .catch(() => {
+        /* gamification is best-effort */
+      });
   }
 
   function invalidateAfterRecipe(trackId: string) {
@@ -141,6 +168,7 @@ export function useStageTransitionController(spaceId: string | null) {
       spaceId: spaceId ?? undefined,
     });
     invalidateAfterMove(trackId);
+    checkAchievementsAfterMove();
 
     if (result.recipe && result.recipe.actions.length > 0) {
       if (result.recipe.execution_mode === "automatic") {

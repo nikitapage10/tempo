@@ -45,6 +45,11 @@ export type ArtistModuleId =
   | "spotify"
   | "soundcloud"
   | "apple"
+  // Gamification (stream 2): the radar + rows, the trophy shelf, and the
+  // performance log that feeds Stage Presence.
+  | "attributes"
+  | "achievements"
+  | "live"
   // A hand-built module, one per row in artist_custom_modules — the id
   // vocabulary is per-artist and only known at runtime, so it can't be a
   // fixed literal like the ids above.
@@ -105,6 +110,9 @@ export const ARTIST_MODULE_DEFS: {
   { id: "spotify", label: "Spotify", tier: "standard" },
   { id: "soundcloud", label: "SoundCloud", tier: "standard" },
   { id: "apple", label: "Apple Music", tier: "standard" },
+  { id: "attributes", label: "Artist attributes", tier: "feature" },
+  { id: "achievements", label: "Achievements", tier: "standard" },
+  { id: "live", label: "Live", tier: "standard" },
 ];
 
 export const ALL_ARTIST_MODULE_IDS: ModuleId[] = ARTIST_MODULE_DEFS.map(
@@ -371,14 +379,22 @@ export function hiddenModules(
 /**
  * Default arrangement of the artist overview, before any personal edits.
  *
- * A narrative, not an inventory: one feature module leads, the left column is
- * the work (what's been made and what's in flight), the right column is
- * everything else — grouped rather than stacked where it's naturally one
- * story told three ways (the platforms), and the small stuff consolidated
- * into one compact "Signals" module instead of two near-empty panels.
+ * A narrative, not an inventory: the attribute sheet leads as the page's one
+ * feature module, the left column is the work (what's been made and what's
+ * in flight), the right column is everything else — grouped rather than
+ * stacked where it's naturally one story told three ways (the platforms),
+ * and the small stuff consolidated into one compact "Signals" module instead
+ * of two near-empty panels.
  */
 export const DEFAULT_ARTIST_LAYOUT: ModuleLayout = {
-  left: [["output"], ["pipeline"], ["spaces"], ["sound"], ["lingering"]],
+  left: [
+    ["attributes"],
+    ["output"],
+    ["pipeline"],
+    ["spaces"],
+    ["sound"],
+    ["lingering"],
+  ],
   right: [
     // Spotify, SoundCloud and Apple each report a different number, but
     // they're the same *kind* of thing — connected-platform reach — so
@@ -386,6 +402,8 @@ export const DEFAULT_ARTIST_LAYOUT: ModuleLayout = {
     // group here. Split them apart in Edit layout if you'd rather.
     ["spotify", "soundcloud", "apple"],
     ["momentum"],
+    ["achievements"],
+    ["live"],
     ["rhythm"],
     ["releases"],
     ["signals"],
