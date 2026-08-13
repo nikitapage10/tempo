@@ -49,7 +49,7 @@ export default function TeamPage() {
       <div className="space-y-6">
         <PageHeader
           title="Artists you work with"
-          subtitle="A window into each artist who’s brought you onto their team — open a snapshot, or step into their workspace when you need to do the work."
+          subtitle="A roster of the artists who’ve brought you on — overdue work, what’s coming, and the numbers you can see — plus a door into each workspace."
         />
         <WorkHub
           artists={membershipArtists(artists, user?.id)}

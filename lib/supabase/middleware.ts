@@ -181,7 +181,7 @@ export async function updateSession(request: NextRequest) {
   ) {
     const redirectUrl = request.nextUrl.clone();
     const invite = request.nextUrl.searchParams.get("invite");
-    if (invite && path.startsWith("/register")) {
+    if (invite && (path.startsWith("/register") || path.startsWith("/login"))) {
       redirectUrl.pathname = "/welcome";
       redirectUrl.search = `?invite=${encodeURIComponent(invite)}`;
       return NextResponse.redirect(redirectUrl);

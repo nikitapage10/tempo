@@ -24,6 +24,7 @@ describe("toolbar profile menu", () => {
     expect(menu).toContain('href="/settings"');
     expect(menu).toContain("resolveDesktopHandoff");
     expect(menu).toContain("Open web app");
+    expect(menu).toContain("onOpenWebAppClick");
     expect(menu).toContain("Open TEMPO");
     expect(menu).toContain("Download TEMPO");
     expect(menu).toContain("usePlatformAdmin");

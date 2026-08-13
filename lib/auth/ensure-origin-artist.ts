@@ -1,4 +1,5 @@
 import { DEFAULT_ARTIST_NAME } from "@/lib/constants";
+import { planOriginArtistForInvite } from "@/lib/auth/origin-gate";
 import type { createAdminClient } from "@/lib/supabase/admin";
 
 type Service = ReturnType<typeof createAdminClient>;
@@ -19,21 +20,33 @@ export async function ensureOriginArtistForInvite(
   if (error) throw error;
 
   const owned = rows ?? [];
-  const music = owned.filter((row) => row.workspace_kind !== "personal");
-  const finished = music.find(
-    (row) => row.origin_status === "complete" || row.origin_status === "skipped"
-  );
-  if (finished) {
-    return { originArtistId: finished.id, startOrigin: false };
+  const { count, error: memberError } = await service
+    .from("artist_members")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("status", "active");
+  if (memberError) throw memberError;
+  const hasMembership = (count ?? 0) > 0;
+
+  const plan = planOriginArtistForInvite(owned, hasMembership);
+  if (!plan.startOrigin && plan.reuseId) {
+    return { originArtistId: plan.reuseId, startOrigin: false };
   }
 
-  const unfinished = music.find(
-    (row) =>
-      row.origin_status === "not_started" || row.origin_status === "in_progress"
-  );
-  const hasPersonal = owned.some((row) => row.workspace_kind === "personal");
-  if (unfinished && hasPersonal) {
-    return { originArtistId: unfinished.id, startOrigin: true };
+  for (const id of plan.convertToPersonalIds) {
+    const { error: convertError } = await service
+      .from("artists")
+      .update({
+        workspace_kind: "personal",
+        origin_status: "legacy_complete",
+      })
+      .eq("id", id)
+      .eq("user_id", userId);
+    if (convertError) throw convertError;
+  }
+
+  if (plan.reuseId) {
+    return { originArtistId: plan.reuseId, startOrigin: true };
   }
 
   const nextSort =

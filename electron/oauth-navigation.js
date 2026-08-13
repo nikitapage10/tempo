@@ -53,6 +53,44 @@ function isAuthCallbackLink(link) {
 }
 
 /**
+ * Reconstruct a tempo:// URL from process.argv / second-instance argv.
+ * Windows quotes the argument, and an unquoted `&` splits query pairs into
+ * extra argv slots.
+ *
+ * @param {string[]} args
+ * @returns {string | null}
+ */
+function appLinkFromArgs(args) {
+  if (!Array.isArray(args)) return null;
+  const cleaned = args.map((arg) =>
+    String(arg)
+      .replace(/^["']|["']$/g, "")
+      .trim()
+  );
+  let start = -1;
+  for (let i = 0; i < cleaned.length; i++) {
+    if (cleaned[i].toLowerCase().includes("tempo://")) {
+      start = i;
+      break;
+    }
+  }
+  if (start < 0) return null;
+  let url = cleaned[start];
+  const idx = url.toLowerCase().indexOf("tempo://");
+  if (idx > 0) url = url.slice(idx);
+  for (let i = start + 1; i < cleaned.length; i++) {
+    const part = cleaned[i];
+    if (!part || part.startsWith("--")) break;
+    if (/^[a-z0-9_.-]+=/i.test(part) && !part.includes("://")) {
+      url += (url.includes("?") ? "&" : "?") + part;
+      continue;
+    }
+    break;
+  }
+  return url || null;
+}
+
+/**
  * Resolve a tempo:// deep link to an https URL loaded inside the main window.
  * Supports:
  *   tempo://open?path=/tracks
@@ -101,4 +139,37 @@ function appLinkDestination(rawUrl, appUrl, allowedOrigins) {
   }
 }
 
-module.exports = { isAllowedDesktopNavigation, appLinkDestination, isAuthCallbackLink };
+/**
+ * target=_blank / window.open must never spawn a second TEMPO window.
+ * Same-origin mytempo.dev links (Open web app) used to return { action: "allow" }
+ * and Electron created another BrowserWindow that looked like a second app.
+ * http(s) goes to the system browser; every other scheme is denied.
+ *
+ * @param {string} urlString
+ * @param {(href: string) => void} openExternal
+ * @returns {{ action: "deny" }}
+ */
+function handleRendererWindowOpen(urlString, openExternal) {
+  let url;
+  try {
+    url = new URL(String(urlString || ""));
+  } catch {
+    return { action: "deny" };
+  }
+  if (url.protocol === "https:" || url.protocol === "http:") {
+    try {
+      openExternal(url.href);
+    } catch {
+      /* ignore */
+    }
+  }
+  return { action: "deny" };
+}
+
+module.exports = {
+  isAllowedDesktopNavigation,
+  appLinkDestination,
+  isAuthCallbackLink,
+  appLinkFromArgs,
+  handleRendererWindowOpen,
+};

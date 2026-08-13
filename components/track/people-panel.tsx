@@ -1,14 +1,20 @@
 "use client";
 
 import * as React from "react";
-import { Check, Copy, UserPlus } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Check, Copy, Loader2, Search, UserPlus } from "lucide-react";
+import { ArtistMark } from "@/components/artists/artist-mark";
+import { useActiveArtist } from "@/components/active-artist-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/toast";
+import { useArtistProfile } from "@/hooks/use-artist-profile";
 import { useCollaboratorMutations, useCollaborators } from "@/hooks/use-collaborators";
 import { useCurrentUser } from "@/hooks/use-current-user";
-import { inviteUrl } from "@/lib/api/collaborators";
+import { useFollowing } from "@/hooks/use-follows";
+import { searchArtistProfiles } from "@/lib/api/artist-profile";
+import { inviteUrl, normalizeCollaboratorHandle } from "@/lib/api/collaborators";
 import { requestArtistInvite } from "@/lib/api/artist-invite-requests";
 import { COLLABORATOR_ROLES } from "@/lib/constants";
 import { formatShortDate } from "@/lib/format";
@@ -21,18 +27,33 @@ type PeoplePanelProps = {
   isOwner: boolean;
 };
 
+type InviteMode = "artist" | "email";
+
 function roleLabel(role: CollaboratorRole): string {
   return COLLABORATOR_ROLES.find((r) => r.value === role)?.label ?? role;
 }
 
+function collaboratorLabel(collaborator: TrackCollaborator, isMe: boolean): string {
+  if (isMe) return "You";
+  if (collaborator.display_name) return collaborator.display_name;
+  if (collaborator.handle) return `@${collaborator.handle}`;
+  return collaborator.invited_email ?? "Invited collaborator";
+}
+
 export function PeoplePanel({ trackId, ownerUserId, isOwner }: PeoplePanelProps) {
   const user = useCurrentUser();
+  const { activeArtist } = useActiveArtist();
+  const { profile: myProfile } = useArtistProfile(activeArtist?.id ?? null);
+  const followingQuery = useFollowing(myProfile?.id ?? null);
   const { data: collaborators = [], isLoading } = useCollaborators(trackId);
-  const { invite, revoke, changeRole } = useCollaboratorMutations(trackId);
+  const { includeArtist, invite, revoke, changeRole } = useCollaboratorMutations(trackId);
   const { toast } = useToast();
 
   const [open, setOpen] = React.useState(false);
+  const [mode, setMode] = React.useState<InviteMode>("artist");
   const [email, setEmail] = React.useState("");
+  const [handleQuery, setHandleQuery] = React.useState("");
+  const [debouncedQuery, setDebouncedQuery] = React.useState("");
   const [role, setRole] = React.useState<CollaboratorRole>("commenter");
   const [busy, setBusy] = React.useState(false);
   const [freshInvite, setFreshInvite] = React.useState<{ url: string } | null>(null);
@@ -40,9 +61,45 @@ export function PeoplePanel({ trackId, ownerUserId, isOwner }: PeoplePanelProps)
   const [confirmRevokeId, setConfirmRevokeId] = React.useState<string | null>(null);
   const [requestArtist, setRequestArtist] = React.useState(false);
 
-  const active = collaborators.filter((c) => c.status !== "revoked");
+  React.useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedQuery(handleQuery), 200);
+    return () => window.clearTimeout(timer);
+  }, [handleQuery]);
 
-  async function handleInvite(e: React.FormEvent) {
+  const searchTerm = normalizeCollaboratorHandle(debouncedQuery);
+  const { data: searchResults = [], isFetching: searching } = useQuery({
+    queryKey: ["profile-search", "collaborator", searchTerm, myProfile?.id],
+    queryFn: () =>
+      searchArtistProfiles(searchTerm, { excludeProfileId: myProfile?.id, limit: 8 }),
+    enabled: open && mode === "artist" && searchTerm.length >= 2,
+    staleTime: 30_000,
+  });
+
+  const active = collaborators.filter((c) => c.status !== "revoked");
+  const takenHandles = new Set(
+    active
+      .map((c) => c.handle?.toLowerCase())
+      .filter((handle): handle is string => !!handle)
+  );
+  const following = (followingQuery.data ?? [])
+    .map((row) => row.profile)
+    .filter((profile): profile is NonNullable<typeof profile> => !!profile?.handle)
+    .filter((profile) => profile.id !== myProfile?.id);
+
+  async function addArtist(input: { profileId?: string; handle?: string }) {
+    setBusy(true);
+    try {
+      await includeArtist.mutateAsync({ ...input, role });
+      toast("They’re on this track.", "ok");
+      setHandleQuery("");
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Couldn’t add that artist — try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleEmailInvite(e: React.FormEvent) {
     e.preventDefault();
     if (!email.trim()) return;
     setBusy(true);
@@ -60,6 +117,7 @@ export function PeoplePanel({ trackId, ownerUserId, isOwner }: PeoplePanelProps)
           await requestArtistInvite({
             email: invitedEmail,
             trackId,
+            artistId: activeArtist?.id,
             note: `Collaborator on this track (${role}).`,
           });
           toast("Invite created. TEMPO will review the artist invite before it goes out.", "ok");
@@ -100,27 +158,34 @@ export function PeoplePanel({ trackId, ownerUserId, isOwner }: PeoplePanelProps)
         {isOwner && !open ? (
           <Button type="button" size="sm" variant="secondary" onClick={() => setOpen(true)}>
             <UserPlus className="size-3.5" />
-            Invite
+            Add
           </Button>
         ) : null}
       </div>
 
       {open ? (
-        <form
-          onSubmit={handleInvite}
-          className="mb-4 space-y-3 rounded-card border border-line bg-bg-2/50 p-3"
-        >
-          <div>
-            <Label htmlFor="invite-email">Email</Label>
-            <Input
-              id="invite-email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="collaborator@studio.com"
-            />
+        <div className="mb-4 space-y-3 rounded-card border border-line bg-bg-2/50 p-3">
+          <div className="flex gap-1 rounded-input border border-line bg-bg-1 p-0.5">
+            {(
+              [
+                ["artist", "TEMPO artist"],
+                ["email", "Invite by email"],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setMode(id)}
+                className={cn(
+                  "flex-1 rounded-[7px] px-2 py-1.5 text-xs font-medium transition-colors",
+                  mode === id ? "bg-bg-2 text-text-hi" : "text-text-lo hover:text-text-hi"
+                )}
+              >
+                {label}
+              </button>
+            ))}
           </div>
+
           <div>
             <Label htmlFor="invite-role">Role</Label>
             <select
@@ -136,35 +201,107 @@ export function PeoplePanel({ trackId, ownerUserId, isOwner }: PeoplePanelProps)
               ))}
             </select>
           </div>
-          <p className="text-xs leading-relaxed text-text-lo">
-            A guest link lets someone comment with no account. This invite gives them a simple collaborator login on this track. Asking TEMPO to invite them as a full artist needs approval during beta.
-          </p>
-          <label className="flex items-start gap-2 text-xs text-text-hi">
-            <input
-              type="checkbox"
-              checked={requestArtist}
-              onChange={(e) => setRequestArtist(e.target.checked)}
-              className="mt-0.5"
-            />
-            <span>Also ask TEMPO to invite them as a full artist (needs approval)</span>
-          </label>
-          <div className="flex gap-2">
-            <Button type="submit" size="sm" disabled={busy || !email.trim()}>
-              {busy ? "Sending…" : "Create invite"}
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              onClick={() => {
-                setOpen(false);
-                setFreshInvite(null);
-              }}
-            >
-              Close
-            </Button>
-          </div>
-        </form>
+
+          {mode === "artist" ? (
+            <div className="space-y-2">
+              <Label htmlFor="invite-handle">Artist</Label>
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-text-lo" />
+                <Input
+                  id="invite-handle"
+                  value={handleQuery}
+                  onChange={(e) => setHandleQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      const handle = normalizeCollaboratorHandle(handleQuery);
+                      if (handle) void addArtist({ handle });
+                    }
+                  }}
+                  placeholder="Name or @handle"
+                  className="pl-8"
+                />
+              </div>
+              <p className="text-xs leading-relaxed text-text-lo">
+                Include someone already on TEMPO — people you follow, or anyone you can find by handle. They get this track, not your whole catalog.
+              </p>
+              {searchTerm.length >= 2 ? (
+                searching && searchResults.length === 0 ? (
+                  <p className="flex items-center gap-2 text-xs text-text-lo">
+                    <Loader2 className="size-3.5 animate-spin" />
+                    Searching…
+                  </p>
+                ) : searchResults.length ? (
+                  <ArtistPickList
+                    people={searchResults}
+                    takenHandles={takenHandles}
+                    busy={busy}
+                    onPick={(profileId) => void addArtist({ profileId })}
+                  />
+                ) : (
+                  <p className="text-xs text-text-lo">
+                    No one matched. Check the handle, or invite them by email instead.
+                  </p>
+                )
+              ) : following.length ? (
+                <div className="space-y-1.5">
+                  <p className="label-mono text-text-lo">People you follow</p>
+                  <ArtistPickList
+                    people={following}
+                    takenHandles={takenHandles}
+                    busy={busy}
+                    onPick={(profileId) => void addArtist({ profileId })}
+                  />
+                </div>
+              ) : (
+                <p className="text-xs text-text-lo">
+                  Type a handle to find anyone on the network.
+                </p>
+              )}
+            </div>
+          ) : (
+            <form onSubmit={handleEmailInvite} className="space-y-3">
+              <div>
+                <Label htmlFor="invite-email">Email</Label>
+                <Input
+                  id="invite-email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="collaborator@studio.com"
+                />
+              </div>
+              <p className="text-xs leading-relaxed text-text-lo">
+                A guest link lets someone comment with no account. This invite gives them a simple collaborator login on this track. Asking TEMPO to invite them as a full artist needs approval during beta.
+              </p>
+              <label className="flex items-start gap-2 text-xs text-text-hi">
+                <input
+                  type="checkbox"
+                  checked={requestArtist}
+                  onChange={(e) => setRequestArtist(e.target.checked)}
+                  className="mt-0.5"
+                />
+                <span>Also ask TEMPO to invite them as a full artist (needs approval)</span>
+              </label>
+              <Button type="submit" size="sm" disabled={busy || !email.trim()}>
+                {busy ? "Sending…" : "Create invite"}
+              </Button>
+            </form>
+          )}
+
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              setOpen(false);
+              setFreshInvite(null);
+            }}
+          >
+            Close
+          </Button>
+        </div>
       ) : null}
 
       {freshInvite ? (
@@ -207,7 +344,7 @@ export function PeoplePanel({ trackId, ownerUserId, isOwner }: PeoplePanelProps)
           <li className="h-12 animate-pulse rounded-card bg-bg-2" />
         ) : active.length === 0 ? (
           <li className="py-3 text-center text-sm text-text-lo">
-            No collaborators yet. Invite someone to get a second set of ears.
+            No collaborators yet. Include a TEMPO artist or invite someone by email.
           </li>
         ) : (
           active.map((c) => (
@@ -242,6 +379,63 @@ export function PeoplePanel({ trackId, ownerUserId, isOwner }: PeoplePanelProps)
   );
 }
 
+function ArtistPickList({
+  people,
+  takenHandles,
+  busy,
+  onPick,
+}: {
+  people: {
+    id: string;
+    handle: string | null;
+    display_name: string;
+    emblem_url: string | null;
+    palette_id?: string | null;
+    ice_color?: string | null;
+    amber_color?: string | null;
+  }[];
+  takenHandles: Set<string>;
+  busy: boolean;
+  onPick: (profileId: string) => void;
+}) {
+  return (
+    <ul className="max-h-56 overflow-y-auto">
+      {people.map((person) => {
+        const taken = !!person.handle && takenHandles.has(person.handle.toLowerCase());
+        return (
+          <li key={person.id}>
+            <button
+              type="button"
+              disabled={busy || taken}
+              onClick={() => onPick(person.id)}
+              className="flex w-full items-center gap-2.5 rounded-input px-2 py-2 text-left transition-colors hover:bg-bg-1 disabled:opacity-60"
+            >
+              <ArtistMark
+                emblemUrl={person.emblem_url}
+                paletteId={person.palette_id}
+                iceColor={person.ice_color}
+                amberColor={person.amber_color}
+                name={person.display_name}
+                size={18}
+                className="size-7"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-medium text-text-hi">{person.display_name}</p>
+                <p className="truncate text-xs text-text-lo">
+                  {person.handle ? `@${person.handle}` : "On the network"}
+                </p>
+              </div>
+              <span className="shrink-0 text-xs text-ice">
+                {taken ? "On track" : "Include"}
+              </span>
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 function CollaboratorRow({
   collaborator,
   isOwner,
@@ -261,7 +455,7 @@ function CollaboratorRow({
   onRevoke: () => Promise<void>;
   onChangeRole: (role: CollaboratorRole) => Promise<void>;
 }) {
-  const label = collaborator.invited_email ?? "Invited collaborator";
+  const label = collaboratorLabel(collaborator, isMe);
   const pending = collaborator.status === "pending";
 
   return (
@@ -269,9 +463,12 @@ function CollaboratorRow({
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="truncate text-sm text-text-hi">
-              {isMe ? "You" : label}
-            </span>
+            <span className="truncate text-sm text-text-hi">{label}</span>
+            {collaborator.handle && !isMe ? (
+              <span className="truncate font-mono text-[11px] text-text-lo">
+                @{collaborator.handle}
+              </span>
+            ) : null}
             <span
               className={cn(
                 "rounded-chip px-1.5 py-0.5 font-mono text-[11px] uppercase tracking-wider",
@@ -282,7 +479,8 @@ function CollaboratorRow({
             </span>
           </div>
           <p className="mt-1 font-mono text-xs text-text-lo">
-            invited {formatShortDate(collaborator.created_at)}
+            {collaborator.user_id && !pending ? "included" : "invited"}{" "}
+            {formatShortDate(collaborator.created_at)}
             {collaborator.accepted_at
               ? ` · accepted ${formatShortDate(collaborator.accepted_at)}`
               : ""}

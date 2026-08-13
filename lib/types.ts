@@ -867,6 +867,10 @@ export type TrackCollaborator = {
   expires_at: string | null;
   accepted_at: string | null;
   created_at: string;
+  /** Hydrated from the network profile when they already have a TEMPO login. */
+  display_name?: string | null;
+  handle?: string | null;
+  emblem_url?: string | null;
 };
 
 export type ActivityEvent = {

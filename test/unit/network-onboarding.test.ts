@@ -18,6 +18,7 @@ describe("network onboarding boundaries", () => {
   it("keeps network membership active while Green Room reconciliation retries", () => {
     const route = read("app/api/network/join/route.ts");
     expect(route).toContain("Green Room reconciliation pending");
+    expect(route).toContain("connectTeamNetworkFollows");
     expect(route).not.toContain("visibility: existing.visibility");
   });
 

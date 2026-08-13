@@ -26,16 +26,22 @@ export type FanPose = {
  */
 export function teamFanPose(featured: boolean, memberIndex: number): FanPose {
   if (featured) {
-    return { x: 0, y: 8, rotate: 0, zIndex: 40 };
+    return { x: 0, y: 6, rotate: 0, zIndex: 40 };
   }
   const side = memberIndex % 2 === 0 ? -1 : 1;
   const rank = Math.floor(memberIndex / 2) + 1;
   return {
-    x: side * rank * 168,
-    y: rank * 28,
-    rotate: side * rank * 9,
+    x: side * rank * 220,
+    y: rank * 18,
+    rotate: side * rank * 8,
     zIndex: 12 - rank,
   };
+}
+
+/** Stage height grows with how many people sit behind the artist — not a fixed empty slab. */
+export function teamFanStageMinHeight(memberCount: number): number {
+  const ranks = Math.max(0, Math.ceil(Math.max(0, memberCount) / 2));
+  return 400 + ranks * 28;
 }
 
 /**
@@ -86,7 +92,7 @@ export function TeamConstellation({
   };
 
   const itemVariants = {
-    hidden: { opacity: 0, scale: 0.5, x: 0, y: 0, rotate: 0 },
+    hidden: { opacity: 0, scale: 0.92, x: 0, y: 0, rotate: 0 },
     visible: (person: ConstellationPerson) => {
       const { x, y, rotate } = teamFanPose(
         !!person.featured,
@@ -94,7 +100,7 @@ export function TeamConstellation({
       );
       return {
         opacity: 1,
-        scale: person.featured ? 1.04 : 1,
+        scale: person.featured ? 1.06 : 1,
         x,
         y,
         rotate,
@@ -104,19 +110,24 @@ export function TeamConstellation({
   };
 
   return (
-    <div ref={ref} className={cn("flex flex-col items-center px-4 py-10 text-center", className)}>
+    <div ref={ref} className={cn("flex flex-col items-center px-4 py-5 text-center", className)}>
       {title ? (
-        <h2 className="font-display text-2xl font-semibold tracking-tight text-text-hi sm:text-4xl">
+        <h2 className="font-display text-xl font-semibold tracking-tight text-text-hi sm:text-2xl">
           {title}
         </h2>
       ) : null}
       {description ? (
-        <p className="mt-2 max-w-2xl text-sm text-text-lo sm:text-base">{description}</p>
+        <p className="mt-1 max-w-xl text-sm text-text-lo">{description}</p>
       ) : null}
 
       <motion.div
-        className="relative mt-16 flex items-center justify-center"
-        style={{ minHeight: people.length > 0 ? 480 : 160 }}
+        className="relative mt-6 flex items-center justify-center"
+        style={{
+          minHeight:
+            people.length > 0
+              ? teamFanStageMinHeight(people.filter((p) => !p.featured).length)
+              : 120,
+        }}
         variants={containerVariants}
         initial="hidden"
         animate={controls}
@@ -142,8 +153,8 @@ export function TeamConstellation({
                 className={cn(
                   "overflow-hidden rounded-xl border-2 bg-bg-2 shadow-e2",
                   person.featured
-                    ? "h-52 w-52 border-ice/40 md:h-64 md:w-64 lg:h-72 lg:w-72"
-                    : "h-32 w-32 border-bg-0 md:h-40 md:w-40 lg:h-44 lg:w-44"
+                    ? "h-64 w-64 border-ice/40 sm:h-72 sm:w-72 md:h-80 md:w-80"
+                    : "h-48 w-48 border-bg-0 sm:h-56 sm:w-56 md:h-64 md:w-64"
                 )}
               >
                 <SignedImage
@@ -159,8 +170,8 @@ export function TeamConstellation({
               </div>
               <span
                 className={cn(
-                  "max-w-[12rem] truncate text-text-hi",
-                  person.featured ? "text-base sm:text-lg" : "text-sm"
+                  "max-w-[16rem] truncate text-text-hi",
+                  person.featured ? "text-base sm:text-lg" : "text-sm sm:text-base"
                 )}
               >
                 {person.name}

@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { authAccountExistsForEmail } from "@/lib/auth/account-exists";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient as createServerClient } from "@/lib/supabase/server";
+import { connectTeamNetworkFollows } from "@/lib/social/connect-team-follows";
 import {
   TEAM_INVITE_UNAVAILABLE_MESSAGE,
   noStoreHeaders,
@@ -125,6 +126,12 @@ export async function POST(
       () => {},
       () => {}
     );
+
+  try {
+    await connectTeamNetworkFollows(admin, user.id);
+  } catch (error) {
+    console.error("[team-invite] team follow connect pending", error);
+  }
 
   return NextResponse.json({ artist_id: updated.artist_id }, { headers: noStoreHeaders() });
 }

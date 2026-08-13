@@ -318,8 +318,8 @@ export function onDesktopZoomNudge(
 }
 
 /**
- * Open an https URL in the system browser (desktop OAuth). Capability-detect
- * so older shells fall back to in-app navigation.
+ * Open an https URL in the system browser (desktop OAuth / Open web app).
+ * Capability-detect so older shells fall back to in-app navigation.
  */
 export function canOpenExternal(): boolean {
   return typeof bridge()?.openExternal === "function";
@@ -333,4 +333,17 @@ export async function openExternal(url: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/**
+ * Open web app in the system browser. Falls through to the <a href> when the
+ * shell is too old to expose openExternal.
+ */
+export function onOpenWebAppClick(
+  event: { preventDefault: () => void },
+  href: string
+): void {
+  if (!canOpenExternal()) return;
+  event.preventDefault();
+  void openExternal(href);
 }

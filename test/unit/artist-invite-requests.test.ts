@@ -18,8 +18,8 @@ describe("beta artist invite approval", () => {
 
   it("lets members request an artist invite without sending it", () => {
     const route = read("app/api/artist-invite-requests/route.ts");
-    expect(route).toContain("artist_invite_requests");
-    expect(route).toContain('status: "pending"');
+    expect(route).toContain('select("id, user_id, space_id")');
+    expect(route).not.toContain("artist_id, user_id");
     expect(route).toContain("notifyAdminsOfArtistInviteRequest");
     expect(route).not.toContain("deliverInvite");
   });

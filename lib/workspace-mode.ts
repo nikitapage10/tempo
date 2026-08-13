@@ -167,6 +167,16 @@ function pathStartsWith(pathname: string, prefix: string): boolean {
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
 }
 
+/** Own identity editor and the old Team-under-Artist path — not a handle. */
+function isStudioArtistPath(pathname: string): boolean {
+  return (
+    pathname === "/artist" ||
+    pathname === "/artist/" ||
+    pathname === "/artist/team" ||
+    pathname.startsWith("/artist/team/")
+  );
+}
+
 /** UI hiding only — RLS still enforces the actual access. */
 export function isPathAllowedForMode(
   pathname: string,
@@ -185,7 +195,10 @@ export function isPathAllowedForMode(
   if (mode === "artist") return true;
 
   if (mode === "work") {
-    if (pathname.startsWith("/artist")) return false;
+    // Studio identity stays off-limits. Network profiles at /artist/[handle]
+    // are how Discover and Social open another artist — not the editor at /artist.
+    if (isStudioArtistPath(pathname)) return false;
+    if (pathname.startsWith("/artist/")) return true;
     if (pathname.startsWith("/board") || pathname.startsWith("/tracks") || pathname.startsWith("/track/")) {
       return false;
     }

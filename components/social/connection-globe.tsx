@@ -4,7 +4,6 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import createGlobe from "cobe";
 import { ArtistMark } from "@/components/artists/artist-mark";
-import { isDesktopApp } from "@/lib/desktop/bridge";
 import { resolveLocation, scatter } from "@/lib/geo";
 import type { LatLon } from "@/lib/geo";
 import { cn } from "@/lib/utils";
@@ -56,17 +55,13 @@ const BASE_THETA = 0.3;
 const SOUTH_TIP = 0.72;
 /** Slow, ambient drift — about one rotation every ~3.5 minutes. */
 const BASE_SPEED = 0.0008;
-/** Fraction of the (square) canvas kept visible on web. */
-const VISIBLE_WEB = 0.8;
-/** Desktop crops tighter — about two-thirds of the sphere, not a near-full ball. */
-const VISIBLE_DESKTOP = 0.66;
+/** Fraction of the (square) canvas kept visible — about two-thirds of the sphere. */
+const VISIBLE_FRACTION = 0.66;
 /** Room above the sphere crest for the atmosphere glow — without this the
  *  halo clips against the container and reads as a flat square top. */
 const GLOW_PAD = 28;
-/** Shift the square globe up within its crop so more of the planet reads
- *  above the page fold (web). Desktop lifts less so the tighter crop holds. */
-const GLOBE_LIFT_WEB_PX = 56;
-const GLOBE_LIFT_DESKTOP_PX = 18;
+/** Shift the square globe up within its crop so the planet crests from below. */
+const GLOBE_LIFT_PX = 18;
 const ZOOM_MIN = 1;
 const ZOOM_MAX = 2.55;
 /** At zoom 1, pins closer than this (degrees) hide behind each other;
@@ -427,9 +422,8 @@ export function ConnectionGlobe({
     });
   }, [allMarkers]);
 
-  const desktopShell = isDesktopApp();
-  const visibleFraction = desktopShell ? VISIBLE_DESKTOP : VISIBLE_WEB;
-  const globeLiftPx = desktopShell ? GLOBE_LIFT_DESKTOP_PX : GLOBE_LIFT_WEB_PX;
+  const visibleFraction = VISIBLE_FRACTION;
+  const globeLiftPx = GLOBE_LIFT_PX;
 
   function open(m: GlobeMarker) {
     if (m.handle) router.push(`/artist/${m.handle}`);

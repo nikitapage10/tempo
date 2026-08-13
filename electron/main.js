@@ -17,7 +17,10 @@ const { isMediaRequestAllowed } = require("./media-permissions");
 const {
   isAllowedDesktopNavigation,
   appLinkDestination: resolveAppLinkDestination,
+  appLinkFromArgs,
+  handleRendererWindowOpen,
 } = require("./oauth-navigation");
+const { startOauthLoopback } = require("./oauth-loopback");
 const { version: appVersion } = require("./package.json");
 
 const APP_URL = process.env.TEMPO_DESKTOP_URL || "https://mytempo.dev";
@@ -61,6 +64,8 @@ let vault = null;
 let pendingAppLink = null;
 let notificationWindow = null;
 let notificationTimer = null;
+let oauthLoopback = null;
+let lastOauthHandoffCode = null;
 
 // Give Windows notifications and taskbar entries a stable TEMPO identity.
 if (process.platform === "win32") app.setAppUserModelId(APP_USER_MODEL_ID);
@@ -84,7 +89,11 @@ if (!hasSingleInstanceLock) {
   // system browser aren't dropped while the shell is already running.
   app.on("second-instance", (_event, argv) => {
     const appLink = appLinkFromArgs(argv);
-    if (!receiveAppLink(appLink) && app.isReady()) showMainWindow();
+    receiveAppLink(appLink);
+    if (app.isReady()) {
+      closeStrayDesktopWindows();
+      showMainWindow();
+    }
   });
 }
 
@@ -95,10 +104,6 @@ if (process.defaultApp && process.argv[1]) {
   app.setAsDefaultProtocolClient(APP_PROTOCOL, process.execPath, [path.resolve(process.argv[1])]);
 } else {
   app.setAsDefaultProtocolClient(APP_PROTOCOL);
-}
-
-function appLinkFromArgs(args) {
-  return args.find((arg) => typeof arg === "string" && arg.toLowerCase().startsWith(`${APP_PROTOCOL}://`)) || null;
 }
 
 function appLinkDestination(rawUrl) {
@@ -115,6 +120,17 @@ function receiveAppLink(rawUrl) {
   mainWindow.loadURL(destination);
   showMainWindow();
   return true;
+}
+
+function receiveOauthHandoff({ code, next, state }) {
+  if (!code) return false;
+  if (lastOauthHandoffCode === code) return true;
+  lastOauthHandoffCode = code;
+  const tempo = new URL("tempo://auth/callback");
+  tempo.searchParams.set("code", code);
+  tempo.searchParams.set("next", next || "/");
+  if (state) tempo.searchParams.set("state", state);
+  return receiveAppLink(tempo.toString());
 }
 
 pendingAppLink = appLinkFromArgs(process.argv);
@@ -171,6 +187,11 @@ function initialWindowBounds() {
 }
 
 function createWindow() {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    showMainWindow();
+    return;
+  }
+
   const isMac = process.platform === "darwin";
 
   mainWindow = new BrowserWindow({
@@ -246,13 +267,25 @@ function guardRendererNavigation(webContents) {
     shell.openExternal(url);
   });
 
-  webContents.setWindowOpenHandler(({ url }) => {
-    if (isAllowedDesktopNavigation(url, ALLOWED_ORIGINS)) {
-      return { action: "allow" };
-    }
-    shell.openExternal(url);
-    return { action: "deny" };
-  });
+  // Never { action: "allow" } — that spawned a second TEMPO window when
+  // Open web app used target=_blank on mytempo.dev (an allowed origin).
+  webContents.setWindowOpenHandler(({ url }) =>
+    handleRendererWindowOpen(url, (href) => {
+      shell.openExternal(href);
+    })
+  );
+}
+
+function isOwnedDesktopWindow(win) {
+  return Boolean(win) && (win === mainWindow || win === notificationWindow);
+}
+
+/** Extra BrowserWindows look like a second TEMPO; keep only main + glass toast. */
+function closeStrayDesktopWindows() {
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (isOwnedDesktopWindow(win) || win.isDestroyed()) continue;
+    win.destroy();
+  }
 }
 
 function mediaRequestAllowed(webContents, permission, details = {}) {
@@ -288,11 +321,22 @@ function registerMediaPermissions() {
 }
 
 function showMainWindow() {
-  if (!mainWindow) {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    mainWindow = null;
     createWindow();
     return;
   }
   if (mainWindow.isMinimized()) mainWindow.restore();
+  // Windows often keeps the existing instance behind the browser after a
+  // protocol / loopback handoff unless we briefly steal top-most.
+  if (process.platform === "win32") {
+    mainWindow.setAlwaysOnTop(true);
+    mainWindow.show();
+    mainWindow.focus();
+    mainWindow.moveTop();
+    mainWindow.setAlwaysOnTop(false);
+    return;
+  }
   mainWindow.show();
   mainWindow.focus();
 }
@@ -669,10 +713,16 @@ app.whenReady().then(() => {
   registerUpdateIpc();
   registerMediaPermissions();
 
-  // OAuth popups (and any future in-app windows) get the same navigation
-  // allowlist as the main window.
+  // Every renderer (main + glass toast) uses the same navigation allowlist.
+  // target=_blank never becomes a second TEMPO window.
   app.on("web-contents-created", (_event, contents) => {
     guardRendererNavigation(contents);
+  });
+  app.on("browser-window-created", (_event, win) => {
+    queueMicrotask(() => {
+      if (win.isDestroyed() || isOwnedDesktopWindow(win)) return;
+      win.destroy();
+    });
   });
 
   // Windows: no menu bar at all — File/Edit/View/Window/Help added nothing
@@ -697,6 +747,16 @@ app.whenReady().then(() => {
   createWindow();
   createTray();
 
+  void startOauthLoopback({
+    allowedOrigins: ALLOWED_ORIGINS,
+    onHandoff: receiveOauthHandoff,
+  }).then((handle) => {
+    oauthLoopback = handle;
+    if (!handle) {
+      console.warn("[tempo-desktop] oauth loopback could not bind; tempo:// return still available");
+    }
+  });
+
   syncTimer = setInterval(syncTick, SYNC_INTERVAL_MS);
   void syncTick();
 
@@ -717,6 +777,10 @@ app.on("before-quit", () => {
   closeNotificationWindow();
   if (syncTimer) clearInterval(syncTimer);
   if (updateTimer) clearInterval(updateTimer);
+  if (oauthLoopback) {
+    oauthLoopback.close();
+    oauthLoopback = null;
+  }
 });
 
 app.on("window-all-closed", () => {

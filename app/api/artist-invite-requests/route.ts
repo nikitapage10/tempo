@@ -34,18 +34,40 @@ export async function POST(req: NextRequest) {
     typeof body?.artistId === "string" && body.artistId ? body.artistId : null;
 
   if (trackId) {
-    const { data: track } = await supabase
+    const { data: track, error: trackError } = await supabase
       .from("tracks")
-      .select("id, artist_id, user_id")
+      .select("id, user_id, space_id")
       .eq("id", trackId)
       .maybeSingle();
-    if (!track || track.user_id !== user.id) {
+    if (trackError || !track) {
       return Response.json(
         { error: "You can only request an artist invite from a track you own." },
         { status: 403 }
       );
     }
-    artistId = track.artist_id ?? artistId;
+    const { data: space } = track.space_id
+      ? await supabase
+          .from("spaces")
+          .select("artist_id")
+          .eq("id", track.space_id)
+          .maybeSingle()
+      : { data: null };
+    artistId = space?.artist_id ?? artistId;
+    let artistOwnerId: string | null = null;
+    if (space?.artist_id) {
+      const { data: artist } = await supabase
+        .from("artists")
+        .select("id, user_id")
+        .eq("id", space.artist_id)
+        .maybeSingle();
+      artistOwnerId = artist?.user_id ?? null;
+    }
+    if (track.user_id !== user.id && artistOwnerId !== user.id) {
+      return Response.json(
+        { error: "You can only request an artist invite from a track you own." },
+        { status: 403 }
+      );
+    }
   } else if (artistId) {
     const { data: artist } = await supabase
       .from("artists")

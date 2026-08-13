@@ -106,9 +106,16 @@ describe("workspace mode", () => {
   it("hides artist studio routes from My work", () => {
     expect(isPathAllowedForMode("/board", "work", {})).toBe(false);
     expect(isPathAllowedForMode("/artist", "work", {})).toBe(false);
+    expect(isPathAllowedForMode("/artist/team", "work", {})).toBe(false);
+    expect(isPathAllowedForMode("/artist/teammate", "work", {})).toBe(true);
     expect(isPathAllowedForMode("/profile", "work", {})).toBe(true);
     expect(isPathAllowedForMode("/team", "work", {})).toBe(true);
     expect(isPathAllowedForMode("/tasks", "work", {})).toBe(true);
+  });
+
+  it("lets My work open another artist's network profile", () => {
+    expect(isPathAllowedForMode("/artist/president", "work", {})).toBe(true);
+    expect(isPathAllowedForMode("/artist/someone", "work", {})).toBe(true);
   });
 
   it("gates entered-workspace catalog routes on grants", () => {

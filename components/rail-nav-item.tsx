@@ -40,6 +40,98 @@ export function flattenRailItems(items: readonly RailItem[]): RailLeaf[] {
   return out;
 }
 
+/** Grace to travel from the rail label into its own submenu. */
+export const RAIL_FLYOUT_CLOSE_MS = 180;
+/**
+ * Pause before a neighboring submenu (Artist → Social) can take over.
+ * Instant on first open; the delay only applies while another flyout is already up.
+ */
+export const RAIL_FLYOUT_SWITCH_MS = 650;
+
+export function flyoutOpenDelayMs(openId: string | null, nextId: string): number {
+  if (openId == null || openId === nextId) return 0;
+  return RAIL_FLYOUT_SWITCH_MS;
+}
+
+type RailFlyoutApi = {
+  openId: string | null;
+  enter: (id: string, opts?: { immediate?: boolean }) => void;
+  leave: () => void;
+  dismiss: () => void;
+};
+
+const RailFlyoutContext = React.createContext<RailFlyoutApi | null>(null);
+
+function clearTimer(ref: React.MutableRefObject<number | null>) {
+  if (ref.current != null) {
+    window.clearTimeout(ref.current);
+    ref.current = null;
+  }
+}
+
+/** One flyout at a time, with a switch pause so a diagonal to Stats does not open Social. */
+export function RailFlyoutScope({ children }: { children: React.ReactNode }) {
+  const [openId, setOpenId] = React.useState<string | null>(null);
+  const openIdRef = React.useRef<string | null>(null);
+  openIdRef.current = openId;
+  const openTimer = React.useRef<number | null>(null);
+  const closeTimer = React.useRef<number | null>(null);
+  const pendingId = React.useRef<string | null>(null);
+
+  const enter = React.useCallback((id: string, opts?: { immediate?: boolean }) => {
+    clearTimer(closeTimer);
+    if (openIdRef.current === id) {
+      clearTimer(openTimer);
+      pendingId.current = null;
+      return;
+    }
+    const delay = opts?.immediate ? 0 : flyoutOpenDelayMs(openIdRef.current, id);
+    clearTimer(openTimer);
+    if (delay === 0) {
+      pendingId.current = null;
+      setOpenId(id);
+      return;
+    }
+    pendingId.current = id;
+    openTimer.current = window.setTimeout(() => {
+      pendingId.current = null;
+      openTimer.current = null;
+      setOpenId(id);
+    }, delay);
+  }, []);
+
+  const leave = React.useCallback(() => {
+    clearTimer(openTimer);
+    pendingId.current = null;
+    clearTimer(closeTimer);
+    closeTimer.current = window.setTimeout(() => {
+      closeTimer.current = null;
+      setOpenId(null);
+    }, RAIL_FLYOUT_CLOSE_MS);
+  }, []);
+
+  const dismiss = React.useCallback(() => {
+    clearTimer(openTimer);
+    clearTimer(closeTimer);
+    pendingId.current = null;
+    setOpenId(null);
+  }, []);
+
+  React.useEffect(
+    () => () => {
+      clearTimer(openTimer);
+      clearTimer(closeTimer);
+    },
+    []
+  );
+
+  const api = React.useMemo(
+    () => ({ openId, enter, leave, dismiss }),
+    [openId, enter, leave, dismiss]
+  );
+  return <RailFlyoutContext.Provider value={api}>{children}</RailFlyoutContext.Provider>;
+}
+
 export function RailNavItem({
   item,
   pathname,
@@ -52,8 +144,11 @@ export function RailNavItem({
   const reduceMotion = useReducedMotion();
   const children = item.children ?? [];
   const hasFlyout = children.length > 0;
-  const [open, setOpen] = React.useState(false);
+  const flyout = React.useContext(RailFlyoutContext);
+  const [localOpen, setLocalOpen] = React.useState(false);
   const closeTimer = React.useRef<number | null>(null);
+  const id = item.href;
+  const open = flyout ? flyout.openId === id : localOpen;
   const active = isRailItemActive(pathname, item);
   const Icon = item.icon;
 
@@ -64,30 +159,54 @@ export function RailNavItem({
     }
   }, []);
 
-  const openFlyout = React.useCallback(() => {
-    if (!hasFlyout) return;
-    cancelClose();
-    setOpen(true);
-  }, [cancelClose, hasFlyout]);
+  const openFlyout = React.useCallback(
+    (immediate = false) => {
+      if (!hasFlyout) return;
+      if (flyout) {
+        flyout.enter(id, immediate ? { immediate: true } : undefined);
+        return;
+      }
+      cancelClose();
+      setLocalOpen(true);
+    },
+    [cancelClose, flyout, hasFlyout, id]
+  );
 
   const scheduleClose = React.useCallback(() => {
+    if (flyout) {
+      flyout.leave();
+      return;
+    }
     cancelClose();
-    closeTimer.current = window.setTimeout(() => setOpen(false), 140);
-  }, [cancelClose]);
+    closeTimer.current = window.setTimeout(() => setLocalOpen(false), RAIL_FLYOUT_CLOSE_MS);
+  }, [cancelClose, flyout]);
+
+  const closeNow = React.useCallback(() => {
+    if (flyout) {
+      flyout.dismiss();
+      return;
+    }
+    cancelClose();
+    setLocalOpen(false);
+  }, [cancelClose, flyout]);
 
   React.useEffect(() => () => cancelClose(), [cancelClose]);
 
   return (
     <div
       className="relative"
-      onMouseEnter={openFlyout}
-      onMouseLeave={scheduleClose}
-      onFocus={openFlyout}
-      onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget as Node)) {
-          scheduleClose();
-        }
-      }}
+      onMouseEnter={hasFlyout ? () => openFlyout(false) : undefined}
+      onMouseLeave={hasFlyout ? scheduleClose : undefined}
+      onFocus={hasFlyout ? () => openFlyout(true) : undefined}
+      onBlur={
+        hasFlyout
+          ? (event) => {
+              if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+                scheduleClose();
+              }
+            }
+          : undefined
+      }
     >
       <Link
         href={item.href}
@@ -141,7 +260,7 @@ export function RailNavItem({
             exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: -8, filter: "blur(4px)" }}
             transition={{ duration: reduceMotion ? 0.12 : 0.22, ease: [0.22, 1, 0.36, 1] }}
             className="absolute left-full top-0 z-[90] pl-1.5"
-            onMouseEnter={openFlyout}
+            onMouseEnter={() => openFlyout(false)}
             onMouseLeave={scheduleClose}
           >
             <div className="w-48 overflow-hidden rounded-card border border-line bg-bg-1 py-1 shadow-raise">
@@ -165,7 +284,7 @@ export function RailNavItem({
                     role="menuitem"
                     data-context-tour={child.href.slice(1) || "today"}
                     title={descriptions[child.href]}
-                    onClick={() => setOpen(false)}
+                    onClick={closeNow}
                     className={cn(
                       "flex items-center gap-2.5 px-3 py-2 text-sm transition-colors duration-hover",
                       childActive

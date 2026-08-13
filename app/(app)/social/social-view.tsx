@@ -117,6 +117,11 @@ export default function SocialView() {
   const { like, unlike, edit, remove } = useFeedMutations(myProfileId);
 
   React.useEffect(() => {
+    if (!onNetwork) return;
+    void fetch("/api/network/team-follows", { method: "POST" });
+  }, [onNetwork, myProfileId]);
+
+  React.useEffect(() => {
     const p = searchParams.get("post");
     if (p) setPostId(p);
   }, [searchParams]);
@@ -413,8 +418,9 @@ export default function SocialView() {
             <>
               {displayedGlobePeople.length === 0 ? (
                 <p className="text-xs text-text-lo">
-                  Nobody has set a location yet — add yours on the Artist page and
-                  you’ll show up here too.
+                  Nobody has set a location yet — add yours on{" "}
+                  {mode === "work" ? "Profile" : "the Artist page"} and you’ll
+                  show up here too.
                 </p>
               ) : null}
               <ConnectionGlobe

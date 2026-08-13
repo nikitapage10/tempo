@@ -37,6 +37,8 @@ describe("web and desktop platform handoff", () => {
 
   it("offers reciprocal labels and preserves the current path", () => {
     expect(button).toContain("resolveDesktopHandoff");
+    expect(button).toContain("onOpenWebAppClick");
+    expect(read("components/profile-menu.tsx")).toContain("onOpenWebAppClick");
     expect(read("lib/desktop/handoff.ts")).toContain('"Open in desktop"');
     expect(read("lib/desktop/handoff.ts")).toContain('"Open web app"');
     expect(desktopPackage).toContain('"schemes"');
@@ -50,6 +52,7 @@ describe("web and desktop platform handoff", () => {
     expect(main).toContain('app.on("second-instance"');
     expect(main).toContain("appLinkDestination(pendingAppLink) || APP_URL");
     expect(main).toContain("process.exit(0)");
+    expect(main).toContain("closeStrayDesktopWindows");
     expect(desktopPackage).toContain("tempo-icon.ico");
   });
 

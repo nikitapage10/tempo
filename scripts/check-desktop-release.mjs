@@ -59,6 +59,7 @@ for (const required of [
   "main.js",
   "media-permissions.js",
   "oauth-navigation.js",
+  "oauth-loopback.js",
   "preload.js",
   "vault.js",
   "vault-media-response.js",

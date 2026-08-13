@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Download, ExternalLink, MonitorSmartphone, RefreshCw } from "lucide-react";
 import { useActiveDesktopDevice } from "@/hooks/use-devices";
 import { resolveDesktopHandoff, DESKTOP_WINDOWS_INSTALLER_URL } from "@/lib/desktop/handoff";
+import { onOpenWebAppClick } from "@/lib/desktop/bridge";
 import { detectOS, isDesktopApp } from "@/lib/platform";
 import { getSiteUrl } from "@/lib/site";
 import { cn } from "@/lib/utils";
@@ -50,6 +51,11 @@ export function DownloadButton({ className }: { className?: string }) {
       href={handoff.href}
       target={handoff.kind === "open-web" ? "_blank" : undefined}
       rel={handoff.kind === "open-web" ? "noreferrer" : undefined}
+      onClick={
+        handoff.kind === "open-web"
+          ? (event) => onOpenWebAppClick(event, handoff.href)
+          : undefined
+      }
       title={handoff.label}
       aria-label={handoff.label}
       className={cn(

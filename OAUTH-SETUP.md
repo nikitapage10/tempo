@@ -14,8 +14,9 @@ Auth callback TEMPO uses: `https://mytempo.dev/auth/callback`
 **TEMPO Desktop:** Google / Microsoft sign-in opens in your **system browser**
 (so providers don’t flag Electron as an insecure embedded app). After you
 finish, the browser hits `/auth/desktop-bridge`, which hands the one-time
-code back to the app via `tempo://auth/callback`. The code is exchanged
-**inside** Electron so session cookies land in TEMPO, not Chrome/Edge.
+code back to the running app over localhost (and `tempo://` as a fallback).
+The code is exchanged **inside** Electron so session cookies land in TEMPO,
+not Chrome/Edge.
 
 Add this redirect URL in Supabase as well as `/auth/callback`:
 - `https://mytempo.dev/auth/desktop-bridge`

@@ -62,6 +62,7 @@ import { DownloadButton } from "@/components/desktop/download-button";
 import {
   flattenRailItems,
   isRailHrefActive,
+  RailFlyoutScope,
   RailNavItem,
   type RailItem,
 } from "@/components/rail-nav-item";
@@ -306,14 +307,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
 
           <nav data-tour="workspace-nav" className="flex flex-1 flex-col gap-0.5 px-1.5 xl:px-3">
-            {mainNav.map((item) => (
-              <RailNavItem
-                key={`${item.label}-${item.href}`}
-                item={item}
-                pathname={pathname}
-                descriptions={NAV_DESCRIPTIONS}
-              />
-            ))}
+            <RailFlyoutScope>
+              {mainNav.map((item) => (
+                <RailNavItem
+                  key={`${item.label}-${item.href}`}
+                  item={item}
+                  pathname={pathname}
+                  descriptions={NAV_DESCRIPTIONS}
+                />
+              ))}
+            </RailFlyoutScope>
           </nav>
 
           <GlobalPlayerBar />

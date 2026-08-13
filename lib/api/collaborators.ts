@@ -18,7 +18,12 @@ export async function listCollaborators(
     }
     throw new Error(error.message);
   }
-  return data ?? [];
+  return hydrateCollaboratorProfiles(data ?? []);
+}
+
+/** Strip @ and case so a typed handle matches the network profile. */
+export function normalizeCollaboratorHandle(raw: string): string {
+  return raw.trim().replace(/^@+/, "").toLowerCase();
 }
 
 export type InviteCollaboratorInput = {
@@ -79,6 +84,137 @@ export async function invite(
   }
 
   return { collaborator: data, rawToken };
+}
+
+async function hydrateCollaboratorProfiles(
+  rows: TrackCollaborator[]
+): Promise<TrackCollaborator[]> {
+  const userIds = Array.from(
+    new Set(rows.map((row) => row.user_id).filter((id): id is string => !!id))
+  );
+  if (userIds.length === 0) return rows;
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("artist_profiles")
+    .select("owner_user_id, display_name, handle, emblem_url")
+    .in("owner_user_id", userIds);
+  if (error) return rows;
+  const byUser = new Map<
+    string,
+    { display_name: string; handle: string | null; emblem_url: string | null }
+  >();
+  for (const profile of data ?? []) {
+    const ownerId = profile.owner_user_id as string;
+    const next = {
+      display_name: (profile.display_name as string) ?? "Artist",
+      handle: (profile.handle as string | null) ?? null,
+      emblem_url: (profile.emblem_url as string | null) ?? null,
+    };
+    const current = byUser.get(ownerId);
+    if (!current || (!current.handle && next.handle)) byUser.set(ownerId, next);
+  }
+  return rows.map((row) => {
+    if (!row.user_id) return row;
+    const profile = byUser.get(row.user_id);
+    if (!profile) return row;
+    return { ...row, ...profile };
+  });
+}
+
+export type IncludeArtistCollaboratorInput = {
+  trackId: string;
+  role: CollaboratorRole;
+  profileId?: string;
+  handle?: string;
+};
+
+/**
+ * Put an existing TEMPO artist on this track. They already have an account,
+ * so they become an active collaborator — no email invite link.
+ */
+export async function includeArtistCollaborator(
+  input: IncludeArtistCollaboratorInput
+): Promise<TrackCollaborator> {
+  const supabase = createClient();
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError) throw userError;
+  if (!userData.user) {
+    throw new Error("You’re signed out — sign in again, then retry.");
+  }
+
+  let profileQuery = supabase
+    .from("artist_profiles")
+    .select("id, owner_user_id, artist_id, handle, display_name, visibility");
+  if (input.profileId) {
+    profileQuery = profileQuery.eq("id", input.profileId);
+  } else if (input.handle) {
+    const handle = normalizeCollaboratorHandle(input.handle);
+    if (!handle) throw new Error("Type a handle, or pick someone you follow.");
+    profileQuery = profileQuery.eq("handle", handle);
+  } else {
+    throw new Error("Pick a TEMPO artist or type their handle.");
+  }
+
+  const { data: profile, error: profileError } = await profileQuery.maybeSingle();
+  if (profileError) throw new Error(profileError.message);
+  if (!profile?.owner_user_id) {
+    throw new Error("Couldn’t find that artist on TEMPO.");
+  }
+  if (profile.owner_user_id === userData.user.id) {
+    throw new Error("You’re already the owner of this track.");
+  }
+
+  const { data: artist } = await supabase
+    .from("artists")
+    .select("demo_kind")
+    .eq("id", profile.artist_id)
+    .maybeSingle();
+  if (artist?.demo_kind) {
+    throw new Error("That’s a demo artist — pick a real TEMPO member.");
+  }
+
+  const { data: existingRows, error: existingError } = await supabase
+    .from("track_collaborators")
+    .select("*")
+    .eq("track_id", input.trackId)
+    .eq("user_id", profile.owner_user_id)
+    .limit(1);
+  if (existingError && !/track_collaborators|schema cache|does not exist/i.test(existingError.message)) {
+    throw new Error(existingError.message);
+  }
+  const existing = existingRows?.[0] ?? null;
+  if (existing && existing.status !== "revoked") {
+    throw new Error("They’re already on this track.");
+  }
+
+  const payload = {
+    track_id: input.trackId,
+    user_id: profile.owner_user_id as string,
+    invited_email: null,
+    role: input.role,
+    status: "active" as const,
+    invited_by: userData.user.id,
+    invite_token_hash: null,
+    expires_at: null,
+    accepted_at: new Date().toISOString(),
+  };
+
+  const write = existing
+    ? supabase.from("track_collaborators").update(payload).eq("id", existing.id).select().single()
+    : supabase.from("track_collaborators").insert(payload).select().single();
+  const { data, error } = await write;
+  if (error) {
+    const msg = error.message || "Couldn’t add that artist — try again.";
+    if (/track_collaborators|schema cache|does not exist/i.test(msg)) {
+      throw new Error(
+        "Collaboration isn’t set up in the database yet — run migrations 001–011 in Supabase, then try again."
+      );
+    }
+    throw new Error(msg);
+  }
+
+  const [hydrated] = await hydrateCollaboratorProfiles([data]);
+  return hydrated;
 }
 
 export async function revokeCollaborator(id: string): Promise<TrackCollaborator> {

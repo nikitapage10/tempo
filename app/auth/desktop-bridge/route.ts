@@ -1,4 +1,9 @@
 import { NextResponse } from "next/server";
+import {
+  OAUTH_LOOPBACK_HOST,
+  OAUTH_LOOPBACK_PATH,
+  OAUTH_LOOPBACK_PORTS,
+} from "@/lib/desktop/oauth-loopback";
 
 function isSafeNext(path: string | null): path is string {
   return !!path && path.startsWith("/") && !path.startsWith("//");
@@ -7,7 +12,11 @@ function isSafeNext(path: string | null): path is string {
 /**
  * HTTPS landing page after Google / Microsoft OAuth on TEMPO Desktop.
  * Does NOT exchange the auth code — that must happen inside Electron so
- * session cookies land in the app. Forwards the code via tempo://auth/callback.
+ * session cookies land in the app.
+ *
+ * Hands the code to the running shell two ways:
+ * 1. POST/GET http://127.0.0.1:<port>/oauth/handoff (Chrome/Edge often block tempo://)
+ * 2. tempo://auth/callback as a fallback (Open TEMPO button + retries)
  */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -42,13 +51,19 @@ export async function GET(request: Request) {
     .replace(/"/g, "&quot;")
     .replace(/</g, "&lt;");
 
+  const payload = { code, next, state: state || null };
+  const loopback = {
+    host: OAUTH_LOOPBACK_HOST,
+    path: OAUTH_LOOPBACK_PATH,
+    ports: [...OAUTH_LOOPBACK_PORTS],
+  };
+
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Opening TEMPO…</title>
-  <meta http-equiv="refresh" content="0;url=${safeHref}" />
   <style>
     :root { color-scheme: dark; }
     body {
@@ -70,19 +85,65 @@ export async function GET(request: Request) {
 </head>
 <body>
   <main>
-    <h1>Opening TEMPO</h1>
-    <p>Sign-in finished in the browser. Return to the app to continue — if it doesn’t open, use the button below.</p>
+    <h1 id="title">Opening TEMPO</h1>
+    <p id="copy">Sign-in finished in the browser. Return to the app to continue — if it doesn’t open, use the button below.</p>
     <a id="open" href="${safeHref}">Open TEMPO</a>
   </main>
   <script>
     (function () {
       var href = ${JSON.stringify(deepLink)};
-      function go() {
+      var payload = ${JSON.stringify(payload)};
+      var loopback = ${JSON.stringify(loopback)};
+      var handed = false;
+
+      function markDone() {
+        if (handed) return;
+        handed = true;
+        var title = document.getElementById("title");
+        var copy = document.getElementById("copy");
+        if (title) title.textContent = "You can close this tab";
+        if (copy) copy.textContent = "TEMPO should be signing you in now. Switch back to the app if it isn’t already in front.";
+      }
+
+      function qs() {
+        var params = new URLSearchParams();
+        params.set("code", payload.code);
+        params.set("next", payload.next);
+        if (payload.state) params.set("state", payload.state);
+        return params.toString();
+      }
+
+      function loopbackUrl(port) {
+        return "http://" + loopback.host + ":" + port + loopback.path + "?" + qs();
+      }
+
+      function pingLoopback() {
+        var query = qs();
+        loopback.ports.forEach(function (port) {
+          try {
+            var img = new Image();
+            img.src = "http://" + loopback.host + ":" + port + loopback.path + "?" + query;
+          } catch (e) {}
+          fetch(loopbackUrl(port), {
+            method: "POST",
+            mode: "cors",
+            cache: "no-store",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          }).then(function (res) {
+            if (res && res.ok) markDone();
+          }).catch(function () {});
+        });
+      }
+
+      function goTempo() {
         try { window.location.href = href; } catch (e) {}
       }
-      go();
-      setTimeout(go, 350);
-      setTimeout(go, 1200);
+
+      pingLoopback();
+      setTimeout(pingLoopback, 400);
+      setTimeout(goTempo, 700);
+      setTimeout(goTempo, 1600);
     })();
   </script>
 </body>

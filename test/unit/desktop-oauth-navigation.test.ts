@@ -4,9 +4,12 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const require = createRequire(import.meta.url);
-const { isAllowedDesktopNavigation, appLinkDestination } = require(
-  resolve("electron/oauth-navigation.js")
-);
+const {
+  isAllowedDesktopNavigation,
+  appLinkDestination,
+  appLinkFromArgs,
+  handleRendererWindowOpen,
+} = require(resolve("electron/oauth-navigation.js"));
 
 const ORIGINS = ["https://mytempo.dev"];
 const APP_URL = "https://mytempo.dev";
@@ -75,6 +78,23 @@ describe("desktop OAuth navigation allowlist", () => {
     ).toBe("https://mytempo.dev/auth/callback?code=win2&next=%2F");
   });
 
+  it("rebuilds tempo:// links from quoted or split Windows argv", () => {
+    expect(
+      appLinkFromArgs([
+        "C:\\\\Program Files\\\\TEMPO\\\\TEMPO.exe",
+        '"tempo://auth/callback?code=abc&next=%2F"',
+      ])
+    ).toBe("tempo://auth/callback?code=abc&next=%2F");
+    expect(
+      appLinkFromArgs([
+        "TEMPO.exe",
+        "tempo://auth/callback?code=abc",
+        "next=%2F",
+        "state=xyz",
+      ])
+    ).toBe("tempo://auth/callback?code=abc&next=%2F&state=xyz");
+  });
+
   it("wires system-browser OAuth into the shell and login buttons", () => {
     const main = readFileSync(resolve("electron/main.js"), "utf8");
     const pkg = readFileSync(resolve("electron/package.json"), "utf8");
@@ -92,16 +112,54 @@ describe("desktop OAuth navigation allowlist", () => {
     );
     expect(main).toContain("shell:openExternal");
     expect(main).toContain("resolveAppLinkDestination");
+    expect(main).toContain("startOauthLoopback");
+    expect(main).toContain("receiveOauthHandoff");
     expect(main).toContain("16_384");
     expect(main).toContain('app.on("second-instance"');
     expect(pkg).toContain("oauth-navigation.js");
+    expect(pkg).toContain("oauth-loopback.js");
     expect(oauth).toContain("skipBrowserRedirect");
     expect(oauth).toContain("canOpenExternal");
     expect(oauth).toContain("/auth/desktop-bridge");
     expect(oauth).toContain("window.location.assign");
     expect(bridge).toContain("tempo://auth/callback");
+    expect(bridge).toContain("OAUTH_LOOPBACK_PORTS");
+    expect(bridge).toContain("127.0.0.1");
     expect(bridge).not.toContain("exchangeCodeForSession");
     expect(callbackPage).toContain("exchangeCodeForSession");
     expect(callbackPage).toContain("createClient");
+  });
+
+  it("never allows window.open to spawn a second TEMPO window", () => {
+    const opened: string[] = [];
+    expect(
+      handleRendererWindowOpen("https://mytempo.dev/tracks", (href: string) => {
+        opened.push(href);
+      })
+    ).toEqual({ action: "deny" });
+    expect(opened).toEqual(["https://mytempo.dev/tracks"]);
+
+    opened.length = 0;
+    expect(
+      handleRendererWindowOpen(
+        "https://accounts.google.com/o/oauth2/v2/auth",
+        (href: string) => {
+          opened.push(href);
+        }
+      )
+    ).toEqual({ action: "deny" });
+    expect(opened).toEqual(["https://accounts.google.com/o/oauth2/v2/auth"]);
+
+    opened.length = 0;
+    expect(
+      handleRendererWindowOpen("javascript:alert(1)", () => opened.push("x"))
+    ).toEqual({ action: "deny" });
+    expect(opened).toEqual([]);
+
+    const main = readFileSync(resolve("electron/main.js"), "utf8");
+    expect(main).toContain("handleRendererWindowOpen");
+    expect(main).toContain("closeStrayDesktopWindows");
+    expect(main).toContain('app.on("browser-window-created"');
+    expect(main).not.toMatch(/setWindowOpenHandler[\s\S]*action:\s*"allow"/);
   });
 });

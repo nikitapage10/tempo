@@ -30,6 +30,7 @@ import {
   resolveDesktopHandoff,
   type DesktopHandoffKind,
 } from "@/lib/desktop/handoff";
+import { onOpenWebAppClick } from "@/lib/desktop/bridge";
 import { detectOS, isDesktopApp } from "@/lib/platform";
 import { getSiteUrl } from "@/lib/site";
 import { createClient } from "@/lib/supabase/client";
@@ -283,7 +284,12 @@ export function ProfileMenu() {
                 role="menuitem"
                 target={handoff.kind === "open-web" ? "_blank" : undefined}
                 rel={handoff.kind === "open-web" ? "noreferrer" : undefined}
-                onClick={() => setOpen(false)}
+                onClick={(event) => {
+                  setOpen(false);
+                  if (handoff.kind === "open-web") {
+                    onOpenWebAppClick(event, handoff.href);
+                  }
+                }}
                 className={itemClass}
               >
                 <HandoffIcon className="size-4 shrink-0" strokeWidth={1.75} />

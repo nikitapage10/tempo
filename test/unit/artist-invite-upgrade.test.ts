@@ -32,7 +32,7 @@ describe("team member artist-invite upgrade", () => {
     expect(ensure).toContain("workspace_kind");
     expect(ensure).toContain("not_started");
     const layout = read("app/(app)/layout.tsx");
-    expect(layout).toContain("hasPersonalHome");
+    expect(layout).toContain("shouldSendToOrigin");
     const provider = read("components/active-artist-provider.tsx");
     expect(provider).toContain("PREFER_ORIGIN_ARTIST_KEY");
   });
@@ -41,6 +41,14 @@ describe("team member artist-invite upgrade", () => {
     const middleware = read("lib/supabase/middleware.ts");
     expect(middleware).toContain('pathname = "/welcome"');
     expect(middleware).toContain("invite");
+    expect(middleware).toContain(
+      'invite && (path.startsWith("/register") || path.startsWith("/login"))'
+    );
+    const welcome = read("app/welcome/page.tsx");
+    expect(welcome).toContain("inviteReady");
+    expect(welcome).toContain("completePlatformInvite");
+    const originRoot = read("components/origin/origin-root.tsx");
+    expect(originRoot).toContain("pickOriginArtistId");
   });
 
   it("verify-invite reports whether that email already has an account", () => {

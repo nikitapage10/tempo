@@ -390,7 +390,7 @@ Streaming analytics; inventing ISRC/UPC; forcing all projects to be releases.
 Solo ownership works until a mixer, vocalist, or friend needs limited access to one track — not the whole catalog.
 
 ### Primary flows
-1. Owner invites by email + role (editor, uploader, commenter, viewer); hashed invite token; copy link (no email provider).
+1. Owner includes a TEMPO artist (people they follow, or anyone by handle) as a collaborator, or invites by email + role (editor, uploader, commenter, viewer); hashed invite token for email; copy link (no email provider).
 2. Invitee signs in; email must match; accept → active.
 3. Owner change role / revoke / replace invite.
 4. UI hides/disables unauthorized controls; RLS is authoritative.

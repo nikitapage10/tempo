@@ -32,8 +32,9 @@ type OAuthButtonsProps = {
  *
  * On TEMPO Desktop (shells with openExternal), OAuth runs in the system
  * browser so Google/Microsoft don't flag Electron as insecure, then returns
- * via /auth/desktop-bridge → tempo://auth/callback → /auth/callback in-app.
- * Older desktop shells and the web app keep the normal in-tab redirect.
+ * via /auth/desktop-bridge → localhost handoff (and tempo:// as fallback)
+ * → /auth/callback in-app. Older desktop shells and the web app keep the
+ * normal in-tab redirect.
  */
 export function OAuthButtons({ next = "/" }: OAuthButtonsProps) {
   const { toast } = useToast();

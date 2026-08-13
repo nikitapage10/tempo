@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { flattenRailItems, isRailHrefActive, isRailItemActive } from "@/components/rail-nav-item";
+import {
+  flattenRailItems,
+  flyoutOpenDelayMs,
+  isRailHrefActive,
+  isRailItemActive,
+  RAIL_FLYOUT_SWITCH_MS,
+} from "@/components/rail-nav-item";
 import type { LucideIcon } from "lucide-react";
 
 const Icon = (() => null) as unknown as LucideIcon;
@@ -42,5 +48,11 @@ describe("rail flyouts", () => {
     expect(isRailHrefActive("/", "/")).toBe(true);
     expect(isRailHrefActive("/artist", "/")).toBe(false);
     expect(isRailHrefActive("/scenes/demo", "/scenes")).toBe(true);
+  });
+
+  it("opens the first flyout immediately and pauses before switching to a neighbor", () => {
+    expect(flyoutOpenDelayMs(null, "/artist")).toBe(0);
+    expect(flyoutOpenDelayMs("/artist", "/artist")).toBe(0);
+    expect(flyoutOpenDelayMs("/artist", "/social")).toBe(RAIL_FLYOUT_SWITCH_MS);
   });
 });

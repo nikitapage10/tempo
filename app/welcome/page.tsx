@@ -42,19 +42,37 @@ function WelcomeChooser() {
   const searchParams = useSearchParams();
   const inviteCode = searchParams.get("invite")?.trim() ?? "";
   const [mounted, setMounted] = React.useState(false);
+  const [inviteReady, setInviteReady] = React.useState(!inviteCode);
   const os = React.useMemo(() => detectOS(), []);
 
   React.useEffect(() => {
     setMounted(true);
-    if (inviteCode) {
-      void completePlatformInvite(inviteCode).catch(() => {
-        /* already signed in without a usable invite — Origin still opens */
-      });
+    if (!inviteCode) {
+      if (isDesktopApp()) router.replace("/origin");
+      return;
     }
-    if (isDesktopApp()) router.replace("/origin");
+    let cancelled = false;
+    void completePlatformInvite(inviteCode)
+      .then((result) => {
+        if (cancelled) return;
+        setInviteReady(true);
+        if (isDesktopApp() || result.startOrigin) {
+          if (isDesktopApp()) router.replace("/origin");
+          return;
+        }
+        router.replace("/");
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setInviteReady(true);
+        if (isDesktopApp()) router.replace("/origin");
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [inviteCode, router]);
 
-  if (!mounted) {
+  if (!mounted || !inviteReady) {
     return (
       <AuthShell>
         <div className="h-40 animate-pulse rounded-panel bg-bg-2/40" />

@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { provisionStarterCommunity } from "@/lib/onboarding-starter-community";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { connectTeamNetworkFollows } from "@/lib/social/connect-team-follows";
 
 export const dynamic = "force-dynamic";
 
@@ -140,6 +141,12 @@ export async function POST(request: NextRequest) {
       .eq("user_id", user.id);
   } catch (error) {
     console.error("[network/join] Green Room reconciliation pending", error);
+  }
+
+  try {
+    await connectTeamNetworkFollows(createAdminClient(), user.id);
+  } catch (error) {
+    console.error("[network/join] team follow connect pending", error);
   }
 
   return NextResponse.json(profile, { headers });

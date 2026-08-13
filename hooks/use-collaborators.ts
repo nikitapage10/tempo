@@ -3,10 +3,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   fetchMyRole,
+  includeArtistCollaborator,
   invite,
   listCollaborators,
   revokeCollaborator,
   updateRole,
+  type IncludeArtistCollaboratorInput,
   type InviteCollaboratorInput,
 } from "@/lib/api/collaborators";
 import type { CollaboratorRole, TrackCollaborator } from "@/lib/types";
@@ -55,6 +57,12 @@ export function useCollaboratorMutations(trackId: string | null) {
 
   const invalidate = () => qc.invalidateQueries({ queryKey: key });
 
+  const includeArtist = useMutation({
+    mutationFn: (input: Omit<IncludeArtistCollaboratorInput, "trackId">) =>
+      includeArtistCollaborator({ ...input, trackId: trackId! }),
+    onSuccess: invalidate,
+  });
+
   const inviteCollaborator = useMutation({
     mutationFn: (input: Omit<InviteCollaboratorInput, "trackId">) =>
       invite({ ...input, trackId: trackId! }),
@@ -100,5 +108,5 @@ export function useCollaboratorMutations(trackId: string | null) {
     onSettled: invalidate,
   });
 
-  return { invite: inviteCollaborator, revoke, changeRole };
+  return { includeArtist, invite: inviteCollaborator, revoke, changeRole };
 }

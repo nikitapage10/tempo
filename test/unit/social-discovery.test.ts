@@ -42,10 +42,10 @@ describe("Social discovery", () => {
     expect(globe).toContain("dark antialiased limb");
   });
 
-  it("crops the desktop Social globe to about two-thirds of the sphere", () => {
+  it("crops the Social globe to about two-thirds of the sphere", () => {
     const globe = read("components/social/connection-globe.tsx");
-    expect(globe).toContain("VISIBLE_DESKTOP = 0.66");
-    expect(globe).toContain("isDesktopApp()");
-    expect(globe).toContain("GLOBE_LIFT_DESKTOP_PX");
+    expect(globe).toContain("VISIBLE_FRACTION = 0.66");
+    expect(globe).toContain("GLOBE_LIFT_PX");
+    expect(globe).not.toContain("VISIBLE_WEB");
   });
 });
