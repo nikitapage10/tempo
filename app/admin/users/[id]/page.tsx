@@ -25,13 +25,13 @@ function bytes(value: number) {
 
 function role(value: string | undefined) {
   if (value === "administrator") return "Admin";
-  if (value === "team_member") return "Team member";
+  if (value === "team_member") return "Pro";
   return "Artist";
 }
 
 const ROLE_OPTIONS: { value: AdminInviteRole; label: string; detail: string }[] = [
   { value: "artist", label: "Artist", detail: "Standard product access" },
-  { value: "team_member", label: "Team member", detail: "Recognized as part of the TEMPO team" },
+  { value: "team_member", label: "Pro", detail: "Manager, label, collective, creative or crew. Full product access, no artist onboarding" },
   { value: "administrator", label: "Admin", detail: "Full access to private administration" },
 ];
 

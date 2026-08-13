@@ -15,6 +15,8 @@ import {
   type PassageState,
 } from "@/lib/passage/reducer";
 import type { MemberPassage, PassageInterpretation } from "@/lib/passage/types";
+import { normalizePersonDisplayName } from "@/lib/auth/person-name";
+import { updateMyMemberProfile } from "@/lib/api/member-profile";
 import { prefersReducedMotion, networkProfile } from "@/lib/origin/readiness";
 
 /**
@@ -138,10 +140,26 @@ export function usePassageState(): PassageController {
     dispatch({ type: "edit_interpretation", interpretation });
   }, []);
 
+  /**
+   * Passage is now the only place a Pro is asked for their name, so it owns
+   * publishing it. Without this their personal home stays labelled "Home" and
+   * artists see that instead of a person.
+   */
+  const publishName = React.useCallback(async (raw: string) => {
+    const named = normalizePersonDisplayName(raw);
+    if (!named) return;
+    try {
+      await updateMyMemberProfile({ displayName: named });
+    } catch {
+      /* the name is still on the passage row and editable from Profile */
+    }
+  }, []);
+
   const complete = React.useCallback(async (): Promise<boolean> => {
     const s = stateRef.current;
     if (s.busy) return false;
     dispatch({ type: "begin_save" });
+    await publishName(s.displayName);
     try {
       await completeMemberPassage({
         displayName: s.displayName,
@@ -161,9 +179,11 @@ export function usePassageState(): PassageController {
       });
       return false;
     }
-  }, []);
+  }, [publishName]);
 
   const skip = React.useCallback(async () => {
+    // A name given before skipping is still a name they chose to give.
+    await publishName(stateRef.current.displayName);
     // Written first so skipping loses nothing that was already typed.
     try {
       await saveMemberPassageDraft(draftOf(stateRef.current));
@@ -175,8 +195,9 @@ export function usePassageState(): PassageController {
     } catch {
       /* the redirect still happens; status can be set again later */
     }
+    // draftOf reads only from stateRef, so it needs no dependency of its own.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [publishName]);
 
   return {
     state,

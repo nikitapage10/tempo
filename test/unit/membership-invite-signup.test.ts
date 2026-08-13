@@ -22,10 +22,25 @@ describe("membership invite signup", () => {
     expect(page).toContain("trackInviteToken");
     expect(page).toContain("needsCode");
     expect(page).toContain("Create an account to work with");
-    expect(page).toContain("Your name");
-    expect(page).toContain("updateMyMemberProfile");
-    expect(page).toContain("normalizePersonDisplayName");
     expect(page).not.toContain("function isSafeRedirect");
+  });
+
+  it("does not ask for a name at signup, since onboarding already does", () => {
+    // Asking twice was the actual complaint: sign-up collected a name and
+    // then Passage asked for it again a minute later. Onboarding keeps it,
+    // because that is where there is enough context to explain what it is for.
+    const page = read("app/register/page.tsx");
+    expect(page).not.toContain("display-name");
+    expect(page).not.toContain("normalizePersonDisplayName");
+    expect(page).not.toContain("updateMyMemberProfile");
+  });
+
+  it("hands the name to Passage, which publishes it to the member profile", () => {
+    const passage = read("hooks/use-passage-state.ts");
+    expect(passage).toContain("normalizePersonDisplayName");
+    expect(passage).toContain("updateMyMemberProfile");
+    // Both exits publish it: a name given before skipping is still a name.
+    expect(passage).toContain("publishName");
   });
 
   it("replaces Sign in to accept with Create an account when the invited email is new", () => {

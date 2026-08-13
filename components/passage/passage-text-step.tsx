@@ -1,18 +1,26 @@
 "use client";
 
 import * as React from "react";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { MorphingText } from "@/components/ui/morphing-text";
 import { OriginScrim } from "@/components/origin/origin-copy-layer";
-import { PASSAGE_PANEL } from "@/components/passage/passage-panel";
+import {
+  PASSAGE_PANEL,
+  PASSAGE_PANEL_TOP_EDGE,
+} from "@/components/passage/passage-panel";
+import { useOriginSpeech } from "@/hooks/use-origin-speech";
 import { cn } from "@/lib/utils";
 
 /**
- * One open question, held on its own loop. Frames 3–5 of PASSAGE (entry,
- * support, function) all share this shape — only the copy and the field
- * change between them.
+ * One open question, held on its own loop. Frames 4 to 6 of PASSAGE (entry,
+ * support, function) all share this shape. Only the copy and the field change
+ * between them.
+ *
+ * Speaking and typing are equal paths, the same as Origin's introduction step:
+ * the transcript is an ordinary editable textarea at all times, so a denied
+ * microphone or an unsupported browser costs nothing but the dictation.
  */
 export function PassageTextStep({
   kicker,
@@ -39,7 +47,7 @@ export function PassageTextStep({
   onFinish: () => void;
   /** Leaves the whole flow, not just this question. */
   onSkipAll?: () => void;
-  /** False while the next clip is still buffering — see use-passage-media. */
+  /** False while the next clip is still buffering. See use-passage-media. */
   mediaReady?: boolean;
   continueLabel?: string;
   maxChars?: number;
@@ -47,16 +55,21 @@ export function PassageTextStep({
 }) {
   /**
    * Nothing here is required. These are questions about a person, not a form
-   * that has to validate — someone who would rather get on with the work can
+   * that has to validate. Someone who would rather get on with the work can
    * pass any of them, and everything stays editable in Settings afterwards.
    */
   const answered = value.trim().length > 0;
 
-  /**
-   * Advancing waits on the destination clip rather than blocking the button:
-   * the member's press is remembered and honoured the moment the film is
-   * ready, so a slow connection reads as a beat rather than a dead control.
-   */
+  // Text present before dictation started, so speaking adds to existing typing.
+  const baseTextRef = React.useRef("");
+  const valueRef = React.useRef(value);
+  valueRef.current = value;
+
+  const speech = useOriginSpeech({
+    onTranscript: onValueChange,
+    baseText: () => baseTextRef.current,
+  });
+
   const [attempted, setAttempted] = React.useState(false);
   const waiting = attempted && !mediaReady;
 
@@ -64,11 +77,22 @@ export function PassageTextStep({
     if (attempted && mediaReady) onFinish();
   }, [attempted, mediaReady, onFinish]);
 
+  async function handleDictation() {
+    if (speech.listening) {
+      await speech.finish();
+      return;
+    }
+    baseTextRef.current = valueRef.current.trim();
+    await speech.start();
+  }
+
   function handleContinue() {
     if (busy) return;
     setAttempted(true);
     if (mediaReady) onFinish();
   }
+
+  const canSpeak = speech.mode !== "unavailable" && !speech.micDenied;
 
   return (
     <OriginScrim
@@ -77,6 +101,7 @@ export function PassageTextStep({
         PASSAGE_PANEL
       )}
     >
+      <span aria-hidden className={PASSAGE_PANEL_TOP_EDGE} />
       <span
         aria-hidden
         className="absolute inset-y-0 left-0 w-px bg-[linear-gradient(to_bottom,transparent,var(--amber),var(--ice),transparent)] opacity-70"
@@ -90,14 +115,16 @@ export function PassageTextStep({
           <ChevronLeft className="size-3.5" /> Back
         </button>
         <div className="flex flex-col gap-3">
-          <p className="text-[11px] uppercase tracking-[0.28em] text-text-lo/70">{kicker}</p>
+          <p className="text-[11px] uppercase tracking-[0.28em] text-text-lo/80">{kicker}</p>
           <MorphingText
             as="h1"
             texts={[heading]}
             loop={false}
             className="font-display text-3xl leading-tight text-text-hi sm:text-4xl [&>span]:text-left"
           />
-          <p className="max-w-lg text-sm leading-relaxed text-text-lo">{prompt}</p>
+          {/* Brighter than text-lo: this sits over film, not over the app's
+              flat background, and at text-lo it was washing out entirely. */}
+          <p className="max-w-lg text-sm leading-relaxed text-text-hi/75">{prompt}</p>
         </div>
 
         <div className="relative flex flex-col gap-2 pl-5 before:absolute before:inset-y-1 before:left-0 before:w-px before:bg-[linear-gradient(to_bottom,var(--ice),var(--amber),transparent)]">
@@ -111,11 +138,53 @@ export function PassageTextStep({
             rows={5}
             maxLength={maxChars}
             placeholder={placeholder}
-            className="min-h-32 resize-none rounded-none border-0 bg-transparent px-0 text-base leading-relaxed shadow-none focus-visible:ring-0"
+            className="min-h-32 resize-none rounded-none border-0 bg-transparent px-0 text-base leading-relaxed text-text-hi shadow-none placeholder:text-text-lo/70 focus-visible:ring-0"
+            aria-describedby={`passage-status-${kicker}`}
           />
+          {/* Restrained live region: state changes, not every word heard. */}
+          <p
+            id={`passage-status-${kicker}`}
+            aria-live="polite"
+            className="min-h-4 text-xs text-text-lo"
+          >
+            {speech.transcribing
+              ? "Writing down what you said…"
+              : speech.listening
+                ? "Listening… pause for a moment or tap the microphone to stop."
+                : ""}
+          </p>
         </div>
 
+        {speech.error ? (
+          <p role="alert" className="text-xs text-warn">
+            {speech.error}
+          </p>
+        ) : null}
+
         <div className="flex flex-wrap items-center gap-2">
+          {canSpeak ? (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleDictation}
+              disabled={speech.transcribing}
+              aria-pressed={speech.listening}
+              className={speech.listening ? "border-ice/70 bg-ice/10 text-ice" : undefined}
+            >
+              <Mic
+                className={
+                  speech.listening ? "animate-pulse motion-reduce:animate-none" : undefined
+                }
+              />
+              {speech.listening
+                ? "Listening…"
+                : speech.transcribing
+                  ? "Finishing…"
+                  : answered
+                    ? "Dictate more"
+                    : "Dictate"}
+            </Button>
+          ) : null}
           {onSkipAll ? (
             <Button
               type="button"
@@ -132,7 +201,7 @@ export function PassageTextStep({
             type="button"
             variant="ghost"
             onClick={handleContinue}
-            disabled={busy}
+            disabled={busy || speech.listening || speech.transcribing}
             className="ml-auto rounded-full border border-line/80 bg-white/[0.035] px-5 text-text-hi hover:border-ice/50 hover:bg-ice/[0.06] hover:text-text-hi"
           >
             {waiting ? "One moment…" : answered ? continueLabel : "Pass on this one"}

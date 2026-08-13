@@ -3,7 +3,10 @@
 import * as React from "react";
 import { MorphingText } from "@/components/ui/morphing-text";
 import { OriginScrim } from "@/components/origin/origin-copy-layer";
-import { PASSAGE_PANEL } from "@/components/passage/passage-panel";
+import {
+  PASSAGE_PANEL,
+  PASSAGE_PANEL_TOP_EDGE,
+} from "@/components/passage/passage-panel";
 import { cn } from "@/lib/utils";
 
 /**
@@ -26,6 +29,7 @@ export function PassageProcessingStep() {
         PASSAGE_PANEL
       )}
     >
+      <span aria-hidden className={PASSAGE_PANEL_TOP_EDGE} />
       <span
         aria-hidden
         className="absolute inset-y-0 left-0 w-px bg-[linear-gradient(to_bottom,transparent,var(--amber),var(--ice),transparent)] opacity-75"

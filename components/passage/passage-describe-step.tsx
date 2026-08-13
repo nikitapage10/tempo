@@ -5,7 +5,10 @@ import { ArrowRight, Check, ChevronLeft } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { MorphingText } from "@/components/ui/morphing-text";
 import { OriginScrim } from "@/components/origin/origin-copy-layer";
-import { PASSAGE_PANEL } from "@/components/passage/passage-panel";
+import {
+  PASSAGE_PANEL,
+  PASSAGE_PANEL_TOP_EDGE,
+} from "@/components/passage/passage-panel";
 import { PASSAGE_ROLE_CHIPS } from "@/lib/passage/roles";
 import { cn } from "@/lib/utils";
 
@@ -59,6 +62,7 @@ export function PassageDescribeStep({
         PASSAGE_PANEL
       )}
     >
+      <span aria-hidden className={PASSAGE_PANEL_TOP_EDGE} />
       <span
         aria-hidden
         className="absolute inset-y-0 left-0 w-px bg-[linear-gradient(to_bottom,transparent,var(--ice),var(--amber),transparent)] opacity-80 shadow-[0_0_24px_var(--ice)]"

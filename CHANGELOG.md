@@ -4,6 +4,10 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-13
 
+- Changed (v0.158.0): Creating an account no longer asks for your name. Onboarding already does, so you were being asked twice within a minute. Passage now owns it, and still publishes it so artists you work with and people on Social see your name rather than a placeholder.
+- Added (v0.158.0): You can **talk instead of type** on every open question in Passage, the same as artists can in Origin. Typing stays an equal path: what you say lands in an ordinary editable box, so a blocked microphone costs you nothing.
+- Fixed (v0.158.0): Passage panels are now properly solid against the film. The fill was written in a form that can silently compile to nothing in this codebase, so the glass had been rendering with almost no tint at all. Question text is brighter too, so it holds up over the brightest frames.
+- Fixed (v0.158.0): Admin **Members** and the member detail page said "Team member". They now say Pro, along with the invitation email.
 - Changed (v0.157.0): People who aren't artists are now called **Pros**, not "team members". They hold too many different roles for one label: manager, label owner, collective founder, A&R, publicist, creative director, visual artist, photographer, engineer. The admin invite now offers Artist, **Pro**, or Admin.
 - Changed (v0.157.0): Passage now opens by asking your **name**, then what describes you, and you can **pick as many as fit** instead of one. Most people wear more than one hat. The list covers everything from label owner and collective founder to photographer, engineer and marketing, with room to write your own.
 - Added (v0.157.0): The closing scroll of Passage is now **written for you** rather than read back to you. TEMPO takes your answers, finds the thread through them, and tells it as one short story with a headline and an introduction you can edit before it's kept. If it can't write for any reason, your own answers stand in, so the ending is never blank.

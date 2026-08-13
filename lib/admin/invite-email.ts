@@ -51,7 +51,7 @@ function providerError(status: number, body: unknown) {
 
 function roleLabel(role: InviteEmail["memberRole"]) {
   if (role === "administrator") return "Admin";
-  if (role === "team_member") return "Team member";
+  if (role === "team_member") return "Pro";
   return "Artist";
 }
 
