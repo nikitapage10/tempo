@@ -28,6 +28,22 @@ describe("login Tempo Theme bed", () => {
     expect(bed).toContain("tempo-theme-ready");
   });
 
+  it("hushes the bed when the page is hidden and keeps listening after play starts", () => {
+    expect(bed).toContain("hushTempoThemeBed");
+    expect(bed).toContain('visibilityState === "hidden"');
+    const onPlaying = bed.slice(
+      bed.indexOf("const onPlaying ="),
+      bed.indexOf("const tryStart =")
+    );
+    expect(onPlaying).not.toContain("clearAllListeners");
+    expect(onPlaying).not.toContain("clearVisibilityListener");
+    const gestures = bed.slice(
+      bed.indexOf("const clearGestureListeners ="),
+      bed.indexOf("const clearVisibilityListener =")
+    );
+    expect(gestures).not.toContain("visibilitychange");
+  });
+
   it("relies on Electron allowing autoplay without a gesture", () => {
     expect(main).toContain('autoplay-policy", "no-user-gesture-required"');
   });

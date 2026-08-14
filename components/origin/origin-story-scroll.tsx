@@ -58,6 +58,13 @@ const CHAPTER_TITLES = [
 
 const CHAPTER_KICKERS = ["About", "Sound", "Now", "Story", "Intake", "Arrival"];
 
+/** Cap chapter glass to the stage; divide by --origin-zoom so desktop zoom cannot overflow it. */
+const CHAPTER_MAX =
+  "max-h-[min(calc((100dvh-5rem)/var(--origin-zoom,1)),52rem)]";
+const CHAPTER_BODY =
+  "mt-5 min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-auto pr-1 spectra-scrollbar";
+const STORY_STAGE = "h-[calc(100dvh/var(--origin-zoom,1))]";
+
 /**
  * Where each chapter sits horizontally.
  *
@@ -131,7 +138,7 @@ function ChapterBackButton({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="mb-4 flex w-fit items-center gap-1 text-xs uppercase tracking-[0.16em] text-text-lo transition-colors hover:text-text-hi"
+      className="mb-2 flex w-fit items-center gap-1 text-xs uppercase tracking-[0.16em] text-text-lo transition-colors hover:text-text-hi"
     >
       <ChevronLeft className="size-3.5" /> Back
     </button>
@@ -210,15 +217,12 @@ function ChapterSection({
           from the right, so the copy sits on the quieter side of the frame. */}
       <div
         className={cn(
-          "origin-story-chapter relative flex w-full flex-col rounded-[26px] border bg-[linear-gradient(125deg,rgb(9_10_13/0.9),rgb(21_25_32/0.76),rgb(10_10_13/0.86))] shadow-3 backdrop-blur-xl",
-          // Short chapters stay viewport-bound; The Story grows with its tiles
-          // and pans via the outer scrub transform instead of an inner scroll.
-          // Import (scrollBody) fills the stage and scrolls its own body.
+          "origin-story-chapter relative flex w-full flex-col overflow-hidden rounded-[26px] border bg-[linear-gradient(125deg,rgb(9_10_13/0.9),rgb(21_25_32/0.76),rgb(10_10_13/0.86))] shadow-3 backdrop-blur-xl",
+          // Outer overflow is hidden so decorative arcs cannot inflate the
+          // scroll height. The body below is the real scroller — including The Story.
           scrollBody
-            ? "h-full min-h-0 max-h-full flex-1 overflow-hidden"
-            : index === STORY_CHAPTER
-              ? "overflow-hidden"
-              : "max-h-[min(calc(100dvh-5rem),52rem)] overflow-x-hidden overflow-y-auto",
+            ? "h-full min-h-0 max-h-full flex-1"
+            : !staticMode && CHAPTER_MAX,
           index % 2 === 0 ? "border-amber/25" : "border-ice/30",
           "transition-[max-width,transform] duration-700 motion-reduce:transition-none",
           wide ? "max-w-5xl" : "max-w-3xl",
@@ -241,12 +245,7 @@ function ChapterSection({
             index % 2 === 0 ? "via-amber/70" : "via-ice/70"
           )}
         />
-        <div
-          className={cn(
-            "relative grid min-h-0 grid-cols-[2.5rem_1fr] gap-5 px-6 py-7 sm:grid-cols-[3rem_1fr] sm:gap-7 sm:px-8 sm:py-8",
-            scrollBody && "h-full min-h-0 flex-1 grid-rows-[minmax(0,1fr)] overflow-hidden"
-          )}
-        >
+        <div className="relative grid min-h-0 flex-1 grid-cols-[2.5rem_1fr] grid-rows-[minmax(0,1fr)] gap-5 overflow-hidden px-6 py-7 sm:grid-cols-[3rem_1fr] sm:gap-7 sm:px-8 sm:py-8">
           <div className="flex flex-col items-center gap-3 pt-0.5 text-[10px] uppercase tracking-[0.2em] text-text-lo/70">
             <span className={cn("font-mono", index % 2 === 0 ? "text-amber" : "text-ice")}>
               {String(index + 1).padStart(2, "0")}
@@ -254,12 +253,7 @@ function ChapterSection({
             <span className="h-10 w-px bg-[linear-gradient(to_bottom,var(--line),transparent)]" />
             <span className="[writing-mode:vertical-rl]">{CHAPTER_KICKERS[index]}</span>
           </div>
-          <div
-            className={cn(
-              "min-h-0 min-w-0",
-              scrollBody && "flex min-h-0 flex-col overflow-hidden"
-            )}
-          >
+          <div className="flex min-h-0 min-w-0 flex-col overflow-hidden">
             {onBack ? <ChapterBackButton onClick={onBack} /> : null}
             <h2
               id={`origin-chapter-${index}`}
@@ -269,12 +263,11 @@ function ChapterSection({
             </h2>
             <div
               className={cn(
-                "mt-5 min-h-0",
-                // Single scroll surface for Shape the Workspace / import —
-                // nested max-h boxes under a centered sticky stage clipped the
-                // Continue actions off-screen with no way to reach them.
-                scrollBody &&
-                  "origin-import-scroll flex-1 overflow-y-auto overscroll-contain pr-1"
+                scrollBody
+                  ? "origin-import-scroll mt-5 min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1 spectra-scrollbar"
+                  : staticMode
+                    ? "mt-5"
+                    : CHAPTER_BODY
               )}
             >
               {children}
@@ -409,24 +402,9 @@ export function OriginStoryScroll({
         x = 10 * t;
       }
 
-      // Tall story panels: pan with the outer scroller so tiles aren't trapped
-      // in an inner overflow box people won't notice. At the start of the
-      // chapter the top of the panel is in view; by EXIT_AT the bottom is.
-      let yPx = 0;
-      if (i === STORY_CHAPTER) {
-        const viewH = window.innerHeight * 0.88;
-        const contentH = el.offsetHeight;
-        const overflow = Math.max(0, contentH - viewH);
-        if (overflow > 0) {
-          const storyT =
-            local <= 0 ? 0 : local >= EXIT_AT ? 1 : local / EXIT_AT;
-          yPx = overflow * (0.5 - storyT);
-        }
-      }
-
       const clamped = Math.max(0, Math.min(1, opacity));
       el.style.opacity = String(clamped);
-      el.style.transform = `translate3d(${x}%, calc(-50% + ${yPx}px), 0) scale(${scale})`;
+      el.style.transform = `translate3d(${x}%, -50%, 0) scale(${scale})`;
       // Only the chapter in focus should be clickable, and a chapter that is
       // all but invisible must never intercept a click meant for the one above.
       el.style.pointerEvents = clamped > 0.6 ? "auto" : "none";
@@ -868,7 +846,7 @@ export function OriginStoryScroll({
             index={i}
             staticMode
             title={i === 4 && importStarted ? importTitle[importStep] : undefined}
-            wide={i === 3 || (i === 4 && importStarted)}
+            wide={i === STORY_CHAPTER || (i === 4 && importStarted)}
             alignClass={i === 4 && importStarted ? importAlign : undefined}
             // Static mode uses the page scroller — nested h-full scrollBody isn't needed.
             onBack={() => backForChapter(i)}
@@ -896,7 +874,8 @@ export function OriginStoryScroll({
       <div style={{ height: `${sections.length * VH_PER_CHAPTER + 100}vh` }} className="w-full">
         <div
           className={cn(
-            "sticky top-0 flex h-[100dvh] px-5",
+            "sticky top-0 flex px-5",
+            importStarted ? "h-[100dvh]" : STORY_STAGE,
             // Import fills the stage top-to-bottom; centering + overflow-hidden
             // was clipping Shape the Workspace before Continue could be reached.
             importStarted
@@ -925,7 +904,7 @@ export function OriginStoryScroll({
                 index={i}
                 staticMode={false}
                 title={i === 4 && importStarted ? importTitle[importStep] : undefined}
-                wide={i === 3 || (i === 4 && importStarted)}
+                wide={i === STORY_CHAPTER || (i === 4 && importStarted)}
                 alignClass={i === 4 && importStarted ? importAlign : undefined}
                 scrollBody={i === 4 && importStarted}
                 onBack={() => backForChapter(i)}

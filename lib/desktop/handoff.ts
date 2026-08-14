@@ -11,7 +11,7 @@ export type DesktopDeviceRef = {
 export const DESKTOP_LINK_MIN_VERSION = [0, 100, 10] as const;
 
 /** Must match electron/package.json — fallback pin if the public channel is empty. */
-export const DESKTOP_SHELL_VERSION = "0.100.24";
+export const DESKTOP_SHELL_VERSION = "0.100.25";
 
 /**
  * Fallback Windows installer URL (version-pinned). Live Download prefers

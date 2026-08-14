@@ -242,8 +242,16 @@ function createWindow() {
   mainWindow.on("close", (event) => {
     if (quitting) return;
     event.preventDefault();
+    setMainAudioMuted(true);
     mainWindow.hide();
   });
+  // Login / Origin beds keep looping while the renderer stays awake in the
+  // tray. Mute at the shell so closing TEMPO is actually quiet, even if a
+  // page missed its own pause. Notification toasts use a separate window.
+  mainWindow.on("hide", () => setMainAudioMuted(true));
+  mainWindow.on("minimize", () => setMainAudioMuted(true));
+  mainWindow.on("show", () => setMainAudioMuted(false));
+  mainWindow.on("restore", () => setMainAudioMuted(false));
 
   mainWindow.on("closed", () => {
     mainWindow = null;
@@ -318,6 +326,11 @@ function registerMediaPermissions() {
     }
     callback(true);
   });
+}
+
+function setMainAudioMuted(muted) {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  mainWindow.webContents.setAudioMuted(muted);
 }
 
 function showMainWindow() {

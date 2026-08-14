@@ -432,7 +432,10 @@ export function OriginExperience({
         className="absolute inset-0"
         style={
           contentZoom !== 1 && !importUiActive
-            ? { zoom: contentZoom }
+            ? ({
+                zoom: contentZoom,
+                ["--origin-zoom"]: String(contentZoom),
+              } as React.CSSProperties)
             : undefined
         }
       >

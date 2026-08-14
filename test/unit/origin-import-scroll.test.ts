@@ -25,13 +25,18 @@ describe("Origin Shape the Workspace scroll", () => {
   });
 
   it("lets ordinary story chapters scroll inside their max-height instead of clipping", () => {
-    expect(story).toContain("max-h-[min(calc(100dvh-5rem),52rem)] overflow-x-hidden overflow-y-auto");
+    expect(story).toContain("CHAPTER_MAX");
+    expect(story).toContain("CHAPTER_BODY");
+    expect(story).toContain("spectra-scrollbar");
+    expect(story).not.toContain("max-h-[min(calc(100dvh-5rem),52rem)] overflow-x-hidden overflow-y-auto");
+    expect(story).not.toContain("index === STORY_CHAPTER");
   });
 
   it("pauses desktop CSS zoom while import owns the stage", () => {
     expect(story).toContain("onImportActiveChange");
     expect(experience).toContain("importUiActive");
     expect(experience).toContain("contentZoom !== 1 && !importUiActive");
+    expect(experience).toContain("--origin-zoom");
   });
 
   it("keeps the Spotify match list inside the chapter and pins the actions", () => {
@@ -73,6 +78,8 @@ describe("Origin and Passage overlay fit", () => {
   });
 
   it("lets Passage story chapters scroll inside the stage", () => {
-    expect(passageStory).toContain("max-h-[min(calc(100dvh-5rem),52rem)] overflow-x-hidden overflow-y-auto");
+    expect(passageStory).toContain("overflow-hidden");
+    expect(passageStory).toContain("spectra-scrollbar");
+    expect(passageStory).not.toContain("max-h-[min(calc(100dvh-5rem),52rem)] overflow-x-hidden overflow-y-auto");
   });
 });

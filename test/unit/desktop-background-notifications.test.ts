@@ -17,6 +17,9 @@ describe("desktop background notifications", () => {
     expect(main).toContain('mainWindow.on("close"');
     expect(main).toContain("if (quitting) return;");
     expect(main).not.toContain("if (quitting || !syncEnabled) return;");
+    expect(main).toContain("webContents.setAudioMuted(muted)");
+    expect(main).toContain("setMainAudioMuted(true)");
+    expect(main).toContain("setMainAudioMuted(false)");
   });
 
   it("exposes a visible glass toast with sound when TEMPO is in the background", () => {

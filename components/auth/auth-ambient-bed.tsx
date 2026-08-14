@@ -6,6 +6,7 @@ import {
   TEMPO_THEME_VOLUME,
   TEMPO_THEME_FADE_IN_MS,
   fadeAudioTo,
+  hushTempoThemeBed,
   stopTempoThemeBed,
 } from "@/lib/audio/tempo-theme-bed";
 import { isDesktopApp } from "@/lib/desktop/bridge";
@@ -51,12 +52,16 @@ export function AuthAmbientBed() {
       window.removeEventListener("pointerdown", onGesture);
       window.removeEventListener("keydown", onGesture);
       window.removeEventListener("focus", tryStart);
+    };
+
+    const clearVisibilityListener = () => {
       document.removeEventListener("visibilitychange", onVisibility);
     };
 
     const clearAllListeners = () => {
       clearMediaListeners();
       clearGestureListeners();
+      clearVisibilityListener();
       if (retryTimer != null) {
         window.clearInterval(retryTimer);
         retryTimer = null;
@@ -72,7 +77,15 @@ export function AuthAmbientBed() {
         TEMPO_THEME_VOLUME,
         TEMPO_THEME_FADE_IN_MS
       );
-      clearAllListeners();
+      // Keep visibilitychange — once the bed is going, closing to the tray
+      // (or hiding the tab) must still be able to hush it. Media/gesture
+      // retries are done.
+      clearMediaListeners();
+      clearGestureListeners();
+      if (retryTimer != null) {
+        window.clearInterval(retryTimer);
+        retryTimer = null;
+      }
       try {
         window.dispatchEvent(new Event("tempo-theme-ready"));
       } catch {
@@ -82,6 +95,9 @@ export function AuthAmbientBed() {
 
     const tryStart = () => {
       if (cancelled || startedRef.current || !unlocked) return;
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+        return;
+      }
       // Wait until we have something to play — don't require the whole 2.7MB.
       if (audio.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return;
 
@@ -106,7 +122,14 @@ export function AuthAmbientBed() {
     };
 
     const onVisibility = () => {
-      if (document.visibilityState === "visible") tryStart();
+      if (document.visibilityState === "hidden") {
+        cancelFadeRef.current?.();
+        cancelFadeRef.current = null;
+        startedRef.current = false;
+        hushTempoThemeBed(audio);
+        return;
+      }
+      tryStart();
     };
 
     window.addEventListener("pointerdown", onGesture, { passive: true });

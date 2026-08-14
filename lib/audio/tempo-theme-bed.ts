@@ -58,3 +58,9 @@ export function stopTempoThemeBed(audio: HTMLAudioElement) {
     });
   });
 }
+
+/** Cut immediately — closing TEMPO to the tray must not keep a fade playing. */
+export function hushTempoThemeBed(audio: HTMLAudioElement) {
+  audio.pause();
+  audio.volume = 0;
+}

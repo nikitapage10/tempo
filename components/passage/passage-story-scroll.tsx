@@ -67,21 +67,22 @@ function ChapterSection({
     <section aria-labelledby={`passage-chapter-${index}`} className={cn(staticMode && "py-12")}>
       <div
         className={cn(
-          "relative ml-0 flex w-full max-w-2xl flex-col rounded-[26px] border shadow-3 backdrop-blur-2xl sm:ml-[6%]",
+          "relative ml-0 flex w-full max-w-2xl flex-col overflow-hidden rounded-[26px] border shadow-3 backdrop-blur-2xl sm:ml-[6%]",
           // Dense enough to carry body copy over the film's bright streaks.
           "bg-[linear-gradient(125deg,rgb(9_10_13/0.94),rgb(18_21_27/0.9),rgb(10_10_13/0.94))]",
-          "max-h-[min(calc(100dvh-5rem),52rem)] overflow-x-hidden overflow-y-auto",
+          !staticMode &&
+            "max-h-[min(calc((100dvh-5rem)/var(--origin-zoom,1)),52rem)]",
           index % 2 === 0 ? "border-amber/25" : "border-ice/30"
         )}
       >
         <span
           aria-hidden
           className={cn(
-            "absolute -right-20 -top-24 size-56 rounded-full border opacity-70",
+            "pointer-events-none absolute -right-20 -top-24 size-56 rounded-full border opacity-70",
             index % 2 === 0 ? "border-amber/15 bg-amber/[0.025]" : "border-ice/15 bg-ice/[0.03]"
           )}
         />
-        <div className="relative grid min-h-0 grid-cols-[2.5rem_1fr] gap-5 px-6 py-7 sm:grid-cols-[3rem_1fr] sm:gap-7 sm:px-8 sm:py-8">
+        <div className="relative grid min-h-0 flex-1 grid-cols-[2.5rem_1fr] grid-rows-[minmax(0,1fr)] gap-5 overflow-hidden px-6 py-7 sm:grid-cols-[3rem_1fr] sm:gap-7 sm:px-8 sm:py-8">
           <div className="flex flex-col items-center gap-3 pt-0.5 text-[10px] uppercase tracking-[0.2em] text-text-lo/70">
             <span className={cn("font-mono", index % 2 === 0 ? "text-amber" : "text-ice")}>
               {String(index + 1).padStart(2, "0")}
@@ -91,12 +92,12 @@ function ChapterSection({
               {CHAPTER_KICKERS[Math.min(index, CHAPTER_KICKERS.length - 1)]}
             </span>
           </div>
-          <div className="min-h-0 min-w-0">
+          <div className="flex min-h-0 min-w-0 flex-col overflow-hidden">
             {onBack ? (
               <button
                 type="button"
                 onClick={onBack}
-                className="mb-4 flex w-fit items-center gap-1 text-xs uppercase tracking-[0.16em] text-text-lo transition-colors hover:text-text-hi"
+                className="mb-2 flex w-fit items-center gap-1 text-xs uppercase tracking-[0.16em] text-text-lo transition-colors hover:text-text-hi"
               >
                 <ChevronLeft className="size-3.5" /> Back
               </button>
@@ -107,7 +108,15 @@ function ChapterSection({
             >
               {title}
             </h2>
-            <div className="mt-5 min-h-0">{children}</div>
+            <div
+              className={cn(
+                staticMode
+                  ? "mt-5"
+                  : "mt-5 min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-auto pr-1 spectra-scrollbar"
+              )}
+            >
+              {children}
+            </div>
           </div>
         </div>
       </div>
@@ -435,7 +444,7 @@ export function PassageStoryScroll({
       className="no-scrollbar absolute inset-0 z-10 overflow-y-auto overscroll-contain"
     >
       <div style={{ height: `${sections.length * VH_PER_CHAPTER + 100}vh` }} className="w-full">
-        <div className="sticky top-0 flex h-[100dvh] items-center overflow-hidden px-5 py-6 sm:py-8">
+        <div className="sticky top-0 flex h-[calc(100dvh/var(--origin-zoom,1))] items-center overflow-hidden px-5 py-6 sm:py-8">
           {sections.map((section, i) => (
             <div
               key={i}
