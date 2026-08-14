@@ -4,6 +4,8 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-14
 
+- Changed (v0.161.0): Origin's welcome film now keeps every step centered on screen, matching where the very first line of text sits. The Story chapter no longer has its own inner scrollbar — scrolling the page carries you through its chapters the same way it does everywhere else.
+- Added (v0.161.0): You can now sign out of Origin partway through, instead of being stuck once the film starts. A quiet sign-out button (next to the zoom control on desktop) fades in once you've tuned in.
 - Fixed (v0.160.4 / Desktop v0.100.25): Signing out and closing TEMPO no longer leaves the login music playing in the tray. The app still sits in the background; it just goes quiet until you open it again. Update the desktop app after Desktop Release publishes both installers (Windows and Mac).
 - Fixed (v0.160.3): Origin and Passage story chapters no longer clip their last cards or opening lines. If a chapter is taller than the screen, it scrolls inside the glass — including The Story — instead of cutting off with no bar, and decorative rings no longer overlap the words or fake a second scrollbar.
 - Fixed (v0.160.2): Signing out and into a different account no longer leaves the previous catalog, artist, or permissions on screen. Admin portal, “who you’re working as,” and the rest of the workspace now belong to the account you just signed in as — on the web and on TEMPO Desktop — without needing a refresh. Each account still remembers its own artist, so coming back to PRESIDENT does not dump you onto an empty Home. The catalog was not deleted.

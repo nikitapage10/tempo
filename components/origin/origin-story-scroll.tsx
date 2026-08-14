@@ -155,6 +155,11 @@ function ChapterSection({
   onBack,
   /** Import owns a tall interactive form — scroll the chapter body, don't clip it. */
   scrollBody = false,
+  /** The Story: content taller than the panel pans with the outer page scroll
+   *  instead of carrying its own scrollbar — see `bodyRef`/`trackRef`. */
+  panBody = false,
+  bodyRef,
+  trackRef,
 }: {
   index: number;
   staticMode: boolean;
@@ -164,6 +169,9 @@ function ChapterSection({
   alignClass?: string;
   onBack?: () => void;
   scrollBody?: boolean;
+  panBody?: boolean;
+  bodyRef?: React.RefObject<HTMLDivElement>;
+  trackRef?: React.RefObject<HTMLDivElement>;
 }) {
   if (index === 0) {
     return (
@@ -262,15 +270,24 @@ function ChapterSection({
               {title ?? CHAPTER_TITLES[index]}
             </h2>
             <div
+              ref={panBody ? bodyRef : undefined}
               className={cn(
                 scrollBody
                   ? "origin-import-scroll mt-5 min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1 spectra-scrollbar"
-                  : staticMode
-                    ? "mt-5"
-                    : CHAPTER_BODY
+                  : panBody
+                    ? "mt-5 min-h-0 flex-1 overflow-hidden"
+                    : staticMode
+                      ? "mt-5"
+                      : CHAPTER_BODY
               )}
             >
-              {children}
+              {panBody ? (
+                <div ref={trackRef} className="will-change-transform">
+                  {children}
+                </div>
+              ) : (
+                children
+              )}
             </div>
           </div>
         </div>
@@ -312,6 +329,9 @@ export function OriginStoryScroll({
 }) {
   const scrollerRef = React.useRef<HTMLDivElement>(null);
   const sectionRefs = React.useRef<Array<HTMLDivElement | null>>([]);
+  /** The Story chapter's own body/content, panned by outer scroll — see `paint`. */
+  const storyBodyRef = React.useRef<HTMLDivElement>(null);
+  const storyTrackRef = React.useRef<HTMLDivElement>(null);
   const [importStarted, setImportStarted] = React.useState(false);
   const [importStep, setImportStep] = React.useState<ImportStep>("intake");
   const [editingChapter, setEditingChapter] = React.useState<number | null>(null);
@@ -374,6 +394,21 @@ export function OriginStoryScroll({
       const span = Math.max(0.0001, end - start);
       // -1 well before its turn, 0 dead centre on it, +1 once it has passed.
       const local = (progress - start) / span;
+
+      // The Story's own content pans with this same local progress instead of
+      // carrying a nested scrollbar — the chapter's dedicated span (wider than
+      // the others, see CHAPTER_STOPS) doubles as the scroll distance for its
+      // content, so one continuous page-scroll gesture both brings the chapter
+      // in and moves through what's inside it.
+      if (i === STORY_CHAPTER) {
+        const body = storyBodyRef.current;
+        const track = storyTrackRef.current;
+        if (body && track) {
+          const maxPan = Math.max(0, track.scrollHeight - body.clientHeight);
+          const storyLocal = Math.max(0, Math.min(1, local));
+          track.style.transform = `translate3d(0, ${-storyLocal * maxPan}px, 0)`;
+        }
+      }
 
       const isLast = i === stops.length - 1;
 
@@ -907,6 +942,9 @@ export function OriginStoryScroll({
                 wide={i === STORY_CHAPTER || (i === 4 && importStarted)}
                 alignClass={i === 4 && importStarted ? importAlign : undefined}
                 scrollBody={i === 4 && importStarted}
+                panBody={i === STORY_CHAPTER}
+                bodyRef={i === STORY_CHAPTER ? storyBodyRef : undefined}
+                trackRef={i === STORY_CHAPTER ? storyTrackRef : undefined}
                 onBack={() => backForChapter(i)}
               >
                 {content}

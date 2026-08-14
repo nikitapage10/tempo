@@ -20,6 +20,7 @@ import {
   OriginProcessingStep,
 } from "@/components/origin/origin-processing-step";
 import { OriginStoryScroll } from "@/components/origin/origin-story-scroll";
+import { OriginExitControl } from "@/components/origin/origin-exit-control";
 import { ZoomControl } from "@/components/desktop/zoom-control";
 import { MorphingText } from "@/components/ui/morphing-text";
 import {
@@ -426,8 +427,13 @@ export function OriginExperience({
       onActiveElement={handleActiveElement}
     >
       <audio ref={soundtrack.ref} src={SOUNDTRACK_SRC} preload="auto" loop aria-hidden="true" />
-      {/* Desktop zoom control — bottom-left; scales the copy/panels, not the film. */}
-      {isDesktopApp() ? <ZoomControl placement="corner" /> : null}
+      {/* Desktop zoom control — bottom-left; scales the copy/panels, not the film.
+          Hidden until the artist has tuned in: appearing over the still opening
+          frame read as a stray piece of UI before there was anything to zoom. */}
+      {isDesktopApp() ? <ZoomControl placement="corner" visible={soundOn} /> : null}
+      {/* Top-left way out of ORIGIN, on both web and desktop — desktop has no
+          browser chrome to fall back on. Same fade-in gate as the zoom control. */}
+      <OriginExitControl visible={soundOn} />
       <div
         className="absolute inset-0"
         style={
@@ -475,14 +481,19 @@ export function OriginExperience({
           ) : null}
 
           {state.phase === "opening" ? (
-            <TimedCopy
-              lines={OPENING_LINES}
-              videoRef={activeVideoRef}
-              showAll={media.staticMode}
-              resetKey={state.phase}
-              matches={activeKeyRef.current === clip?.key}
-              tick={activeTick}
-            />
+            // The one panel that opts out of centre-centre: it sits beside the
+            // streak of light in the opening film, so it stays pinned to that
+            // edge instead of following the rest of the steps to the middle.
+            <div className="w-full justify-self-end sm:pr-[14vw]">
+              <TimedCopy
+                lines={OPENING_LINES}
+                videoRef={activeVideoRef}
+                showAll={media.staticMode}
+                resetKey={state.phase}
+                matches={activeKeyRef.current === clip?.key}
+                tick={activeTick}
+              />
+            </div>
           ) : null}
 
           {mountName ? (
@@ -519,7 +530,7 @@ export function OriginExperience({
                 delaySeconds={0.15}
                 holdSeconds={1.05}
                 morphSeconds={0.75}
-                className="font-display text-right text-2xl leading-snug text-text-hi sm:text-3xl [&>span]:text-right"
+                className="font-display text-center text-2xl leading-snug text-text-hi sm:text-3xl [&>span]:text-center"
               />
             </StepFade>
           ) : null}

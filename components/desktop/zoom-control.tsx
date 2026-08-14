@@ -15,8 +15,12 @@ import { cn } from "@/lib/utils";
  */
 export function ZoomControl({
   placement = "rail",
+  visible = true,
 }: {
   placement?: "rail" | "corner" | "admin";
+  /** Fades the control in/out rather than mounting it outright — Origin uses
+   *  this to hold it back until the artist has tuned in. */
+  visible?: boolean;
 }) {
   const { factor, zoomIn, zoomOut, zoomReset } = useContentZoom();
   const labeledRail = useLabeledRail();
@@ -34,6 +38,8 @@ export function ZoomControl({
     <div
       className={cn(
         "fixed z-[90] flex h-9 items-center gap-0.5 rounded-full border border-line bg-bg-2 px-1 text-text-lo shadow-e3 [-webkit-app-region:no-drag]",
+        "transition-opacity duration-[1400ms] ease-out motion-reduce:transition-none",
+        visible ? "opacity-100" : "pointer-events-none opacity-0",
         corner
           ? "bottom-5 left-4"
           : admin

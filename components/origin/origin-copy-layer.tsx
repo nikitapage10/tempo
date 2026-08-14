@@ -255,9 +255,12 @@ export function TimedCopy({
 /**
  * The layer that holds interactive content above the film.
  *
- * Right-middle, not centred: the supplied footage carries its subject on the
- * left, so copy sitting centre-screen lands on top of it. On narrow screens it
- * falls back to full width, where there is no room to sit to one side.
+ * Centre-centre by default — every step after the opening line reads as one
+ * fixed anchor point regardless of what the footage behind it is doing. The
+ * opening line is the one exception: it sits beside the streak of light in
+ * the first film, so it opts out of this centring itself (see its own
+ * `justify-self-end` wrapper in OriginExperience) rather than the shared
+ * layout dragging every later step off to the side with it.
  */
 export function OriginOverlay({
   children,
@@ -288,12 +291,12 @@ export function OriginOverlay({
         className
       )}
     >
-      <div className="flex min-h-full flex-col px-5 sm:pr-[14vw]">
+      <div className="flex min-h-full flex-col px-5">
         <div
           aria-hidden
           className="min-h-[max(1.5rem,env(safe-area-inset-top))] shrink-0 grow basis-0"
         />
-        <div className="grid w-full justify-items-stretch sm:justify-items-end [&>*]:col-start-1 [&>*]:row-start-1">
+        <div className="grid w-full justify-items-center [&>*]:col-start-1 [&>*]:row-start-1">
           {children}
         </div>
         <div
