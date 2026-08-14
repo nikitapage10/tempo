@@ -4,6 +4,7 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-13
 
+- Fixed (v0.160.1): Origin and Passage no longer run off the screen. Question panels, the story chapters, and especially the Spotify import list now stay on the film — if there's more than fits, they scroll inside the glass, and Continue stays reachable.
 - Fixed (v0.160.0): Passage never started for Pros. On the very first sign-in, before your workspace had been created, TEMPO could not tell you apart from a brand-new artist and sent you to the artist onboarding instead. The desktop app made it worse by always going straight to artist onboarding regardless of who you were. Both are fixed, and the desktop app now follows the same single rule the web app does.
 - Added (v0.160.0): Pros get their own **guided tour** through the app, in the same style as the artist one but written for the work you actually do. Today, Calendar, Projects, Tasks, Profile, Artists, Social, Scenes and Settings each have their own. Previously Pros were never offered a tour at all, because the app was waiting on an artist step that Pros never reach.
 - Added (v0.159.0): On Social → Discover you can **invite an artist friend** who isn’t on TEMPO yet. That request waits for program approval during beta, then TEMPO emails them if it’s approved.
