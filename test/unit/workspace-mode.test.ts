@@ -5,6 +5,7 @@ import {
   isPathAllowedForMode,
   ownedMusicArtists,
   pickDefaultArtistId,
+  pickResumeArtistId,
   resolveWorkspaceMode,
   socialAuthorArtistId,
 } from "@/lib/workspace-mode";
@@ -66,6 +67,25 @@ describe("workspace mode", () => {
     expect(pickDefaultArtistId([managed, personal, music], me)).toBe("a-work");
     expect(pickDefaultArtistId([managed], me)).toBe("a-other");
     expect(pickDefaultArtistId([music], me)).toBe("a-music");
+  });
+
+  it("resumes a stored artist, and a demo catalog instead of empty Home", () => {
+    const demo = artist({
+      id: "a-demo",
+      user_id: me,
+      name: "PRESIDENT",
+      demo_kind: "president-v5",
+      origin_status: "complete",
+    });
+    expect(pickResumeArtistId([managed, personal, demo], me, "a-demo")).toBe(
+      "a-demo"
+    );
+    expect(pickResumeArtistId([managed, personal, demo], me, null)).toBe(
+      "a-demo"
+    );
+    expect(pickResumeArtistId([managed, personal, music], me, null)).toBe(
+      "a-work"
+    );
   });
 
   it("does not treat a teammate's leftover email-named artist as My artist", () => {

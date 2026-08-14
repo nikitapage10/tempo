@@ -7,7 +7,7 @@
  * isn't there yet or has just been deleted.
  */
 
-import { ACTIVE_ARTIST_KEY, ACTIVE_SPACE_KEY } from "@/lib/constants";
+import { writeStoredArtistId, writeStoredSpaceId, clearLegacyWorkspaceMemory } from "@/lib/auth/workspace-memory";
 
 export type DemoArtist = {
   artistId: string;
@@ -60,12 +60,8 @@ export async function removeDemoWorkspace(
 
 /** Point the app at the demo before navigating into the workspace. */
 export function focusDemo(result: { artistId: string; spaceId: string }): void {
-  try {
-    localStorage.setItem(ACTIVE_ARTIST_KEY, result.artistId);
-    if (result.spaceId) localStorage.setItem(ACTIVE_SPACE_KEY, result.spaceId);
-  } catch {
-    /* Private mode: the providers fall back to the first artist, which is the demo. */
-  }
+  writeStoredArtistId(null, result.artistId);
+  if (result.spaceId) writeStoredSpaceId(null, result.spaceId);
 }
 
 /**
@@ -76,10 +72,5 @@ export function focusDemo(result: { artistId: string; spaceId: string }): void {
  * points at a space that went with it.
  */
 export function forgetDemo(): void {
-  try {
-    localStorage.removeItem(ACTIVE_ARTIST_KEY);
-    localStorage.removeItem(ACTIVE_SPACE_KEY);
-  } catch {
-    /* Nothing stored means nothing to forget. */
-  }
+  clearLegacyWorkspaceMemory();
 }

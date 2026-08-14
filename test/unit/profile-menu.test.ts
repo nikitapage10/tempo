@@ -30,7 +30,7 @@ describe("toolbar profile menu", () => {
     expect(menu).toContain("usePlatformAdmin");
     expect(menu).toContain('href="/admin"');
     expect(menu).toContain("Admin portal");
-    expect(menu).toContain("signOut");
+    expect(menu).toContain("signOutOfTempo");
     expect(menu).toContain("Sign out");
   });
 

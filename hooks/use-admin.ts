@@ -1,13 +1,16 @@
 "use client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { actOnAdminReport, approveArtistInviteRequest, checkPlatformAdminAccess, createAdminInvite, deleteAdminInvite, deleteAdminUser, getAdminActivationPulse, getAdminAnalytics, getAdminAudit, getAdminInvites, getAdminOverview, getAdminReports, getAdminSupport, getAdminSystemHealth, getAdminUser, getAdminUsers, reactivateAdminUser, rejectArtistInviteRequest, revokeAdminInvite, sendAdminInvite, suspendAdminUser, updateAdminSupport, updateAdminUserRole } from "@/lib/api/admin";
 import type { AdminInviteRole } from "@/lib/api/admin";
 
 /** Whether the signed-in account can open the Admin portal. Non-admins stay false. */
 export function usePlatformAdmin() {
+  const user = useCurrentUser();
   return useQuery({
-    queryKey: ["admin", "access"],
+    queryKey: ["admin", "access", user?.id ?? null],
     queryFn: checkPlatformAdminAccess,
+    enabled: !!user?.id,
     staleTime: 5 * 60 * 1000,
     retry: false,
   });

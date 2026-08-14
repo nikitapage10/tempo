@@ -1,4 +1,6 @@
-import { ACTIVE_ARTIST_KEY, PREFER_ORIGIN_ARTIST_KEY } from "@/lib/constants";
+import { PREFER_ORIGIN_ARTIST_KEY } from "@/lib/constants";
+import { writeStoredArtistId } from "@/lib/auth/workspace-memory";
+import { createClient } from "@/lib/supabase/client";
 
 export type CompletedPlatformInvite = {
   startOrigin: boolean;
@@ -6,13 +8,13 @@ export type CompletedPlatformInvite = {
   originArtistId: string | null;
 };
 
-function rememberOriginArtist(id: string) {
+function rememberOriginArtist(id: string, userId?: string | null) {
   try {
     sessionStorage.setItem(PREFER_ORIGIN_ARTIST_KEY, id);
-    localStorage.setItem(ACTIVE_ARTIST_KEY, id);
   } catch {
     /* ignore */
   }
+  writeStoredArtistId(userId ?? null, id);
 }
 
 /**
@@ -33,7 +35,11 @@ export async function completePlatformInvite(
   }
   const originArtistId =
     typeof body?.originArtistId === "string" ? body.originArtistId : null;
-  if (originArtistId) rememberOriginArtist(originArtistId);
+  if (originArtistId) {
+    const supabase = createClient();
+    const { data } = await supabase.auth.getUser();
+    rememberOriginArtist(originArtistId, data.user?.id ?? null);
+  }
   return {
     startOrigin: Boolean(body?.startOrigin),
     startPassage: Boolean(body?.startPassage),

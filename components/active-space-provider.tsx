@@ -12,7 +12,11 @@ import {
 } from "@/lib/api/spaces";
 import { ensureDefaultTemplates } from "@/lib/api/templates";
 import { useActiveArtist } from "@/components/active-artist-provider";
-import { ACTIVE_SPACE_KEY } from "@/lib/constants";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import {
+  readStoredSpaceId,
+  writeStoredSpaceId,
+} from "@/lib/auth/workspace-memory";
 import { artistWorkspaceKind } from "@/lib/workspace-mode";
 import type { Space, SpaceFocus } from "@/lib/types";
 
@@ -29,23 +33,6 @@ type ActiveSpaceContextValue = {
 const ActiveSpaceContext = React.createContext<ActiveSpaceContextValue | null>(
   null
 );
-
-function readStoredSpaceId(): string | null {
-  if (typeof window === "undefined") return null;
-  try {
-    return localStorage.getItem(ACTIVE_SPACE_KEY);
-  } catch {
-    return null;
-  }
-}
-
-function writeStoredSpaceId(id: string) {
-  try {
-    localStorage.setItem(ACTIVE_SPACE_KEY, id);
-  } catch {
-    /* ignore */
-  }
-}
 
 async function bootstrapSpacesForArtist(
   artistId: string,
@@ -67,12 +54,14 @@ export function ActiveSpaceProvider({
     null
   );
   const [hydrated, setHydrated] = React.useState(false);
+  const user = useCurrentUser();
   const { activeArtist, activeArtistId, isLoading: artistLoading } = useActiveArtist();
 
   React.useEffect(() => {
-    setActiveSpaceIdState(readStoredSpaceId());
+    if (user === undefined) return;
+    setActiveSpaceIdState(readStoredSpaceId(user?.id ?? null));
     setHydrated(true);
-  }, []);
+  }, [user?.id, user]);
 
   // Keyed by artist so switching artists refetches that artist's spaces; the
   // "still valid" effect below then re-resolves the active space for us.
@@ -98,14 +87,17 @@ export function ActiveSpaceProvider({
     if (!stillValid) {
       const next = spaces[0].id;
       setActiveSpaceIdState(next);
-      writeStoredSpaceId(next);
+      writeStoredSpaceId(user?.id ?? null, next);
     }
-  }, [spaces, activeSpaceId]);
+  }, [spaces, activeSpaceId, user?.id]);
 
-  const setActiveSpaceId = React.useCallback((id: string) => {
-    setActiveSpaceIdState(id);
-    writeStoredSpaceId(id);
-  }, []);
+  const setActiveSpaceId = React.useCallback(
+    (id: string) => {
+      setActiveSpaceIdState(id);
+      writeStoredSpaceId(user?.id ?? null, id);
+    },
+    [user?.id]
+  );
 
   const activeSpace =
     spaces.find((s) => s.id === activeSpaceId) ?? spaces[0] ?? null;

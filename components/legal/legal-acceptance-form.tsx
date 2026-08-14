@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ShieldCheck } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { signOutOfTempo } from "@/lib/auth/reset-client-session";
 import { LEGAL_VERSION } from "@/lib/legal";
 import { Button } from "@/components/ui/button";
 
@@ -46,9 +46,7 @@ export function LegalAcceptanceForm({ next }: { next: string }) {
 
   async function handleSignOut() {
     setBusy(true);
-    await createClient().auth.signOut();
-    router.replace("/login");
-    router.refresh();
+    await signOutOfTempo();
   }
 
   return (

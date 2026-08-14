@@ -2,6 +2,10 @@
 
 Plain-English history of what changed in TEMPO, newest first.
 
+## 2026-08-14
+
+- Fixed (v0.160.2): Signing out and into a different account no longer leaves the previous catalog, artist, or permissions on screen. Admin portal, “who you’re working as,” and the rest of the workspace now belong to the account you just signed in as — on the web and on TEMPO Desktop — without needing a refresh. Each account still remembers its own artist, so coming back to PRESIDENT does not dump you onto an empty Home. The catalog was not deleted.
+
 ## 2026-08-13
 
 - Fixed (v0.160.1): Origin and Passage no longer run off the screen. Question panels, the story chapters, and especially the Spotify import list now stay on the film — if there's more than fits, they scroll inside the glass, and Continue stays reachable.

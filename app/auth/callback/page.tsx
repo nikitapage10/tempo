@@ -1,8 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { finishAuthNavigation } from "@/lib/auth/reset-client-session";
 
 function isSafeNext(path: string | null): path is string {
   return !!path && path.startsWith("/") && !path.startsWith("//");
@@ -15,7 +16,6 @@ function isSafeNext(path: string | null): path is string {
  * tempo:// from the system browser.
  */
 function AuthCallbackInner() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const ran = React.useRef(false);
 
@@ -29,15 +29,19 @@ function AuthCallbackInner() {
     const authError = searchParams.get("error");
 
     if (authError || !code) {
-      router.replace("/login?error=auth");
+      window.location.assign("/login?error=auth");
       return;
     }
 
     const supabase = createClient();
-    void supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
-      router.replace(error ? "/login?error=auth" : next);
+    void supabase.auth.exchangeCodeForSession(code).then(async ({ error }) => {
+      if (error) {
+        window.location.assign("/login?error=auth");
+        return;
+      }
+      await finishAuthNavigation(next);
     });
-  }, [router, searchParams]);
+  }, [searchParams]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-bg-0 px-6">

@@ -527,6 +527,18 @@ export async function warmSignedUrls(
   return warmed;
 }
 
+/** Drop every cached signed URL. Used when the signed-in account changes. */
+export function clearSignedUrlCache(): void {
+  signedUrlMemory.clear();
+  signedUrlInflight.clear();
+  if (typeof sessionStorage === "undefined") return;
+  try {
+    sessionStorage.removeItem(SIGNED_URL_SESSION_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 /** Drop cached signed URLs for a storage path (call when the file is replaced/removed). */
 export function invalidateSignedUrl(path: string): void {
   if (!path || path.startsWith("http://") || path.startsWith("https://")) return;

@@ -1,8 +1,17 @@
 "use client";
 
 import type { Query, QueryClient } from "@tanstack/react-query";
-import { idbGetAll, idbSet, QUERY_CACHE_STORE } from "@/lib/offline/db";
+import { createClient } from "@/lib/supabase/client";
+import {
+  idbClear,
+  idbGetAll,
+  idbSet,
+  OUTBOX_STORE,
+  QUERY_CACHE_STORE,
+} from "@/lib/offline/db";
 import { isDesktopApp } from "@/lib/desktop/bridge";
+
+export const OFFLINE_CACHE_USER_KEY = "tempo.offlineCacheUserId";
 
 /**
  * Offline read (TEMPO Desktop Package 4, planning/desktop/02 §6). Only the
@@ -32,28 +41,75 @@ function isOfflineEligible(queryKey: readonly unknown[]): boolean {
   return typeof first === "string" && OFFLINE_KEY_PREFIXES.includes(first);
 }
 
-function storageKeyFor(queryKey: readonly unknown[]): string {
-  return JSON.stringify(queryKey);
+function storageKeyFor(userId: string, queryKey: readonly unknown[]): string {
+  return `${userId}:${JSON.stringify(queryKey)}`;
 }
 
 type PersistedQuery = {
   queryKey: unknown[];
   data: unknown;
   updatedAt: string;
+  userId?: string;
 };
 
+export function readOfflineCacheUser(): string | null {
+  if (typeof localStorage === "undefined") return null;
+  try {
+    return localStorage.getItem(OFFLINE_CACHE_USER_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function rememberOfflineCacheUser(userId: string | null): void {
+  if (typeof localStorage === "undefined") return;
+  try {
+    if (!userId) localStorage.removeItem(OFFLINE_CACHE_USER_KEY);
+    else localStorage.setItem(OFFLINE_CACHE_USER_KEY, userId);
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Restore only the signed-in account's cache — never another person's catalog. */
+export function canRestoreOfflineCache(
+  sessionUserId: string | null,
+  cacheUserId: string | null
+): boolean {
+  return !!sessionUserId && !!cacheUserId && sessionUserId === cacheUserId;
+}
+
+export function entryBelongsToUser(
+  entry: { userId?: string },
+  sessionUserId: string | null
+): boolean {
+  return !!sessionUserId && entry.userId === sessionUserId;
+}
+
+/** Drop queued offline writes so they cannot flush as a different account. */
+export async function clearOfflineOutbox(): Promise<void> {
+  if (typeof indexedDB === "undefined") return;
+  try {
+    await idbClear(OUTBOX_STORE);
+  } catch (err) {
+    console.warn("[offline] outbox clear failed", err);
+  }
+}
+
 /**
- * Loads every persisted entry into the query cache before the app renders
- * its first screen. A component's useQuery for the same key then reads this
- * as its initial data instead of starting blank — offline or online, this
- * is what makes reopening TEMPO feel already-caught-up rather than empty
- * while the real fetch (if any) resolves in the background.
+ * Loads this account's persisted entries into the query cache before the app
+ * renders. Other accounts' rows stay on disk so signing back in still has them.
  */
 export async function hydrateOfflineCache(queryClient: QueryClient): Promise<void> {
   if (!isDesktopApp()) return;
   try {
+    const { data } = await createClient().auth.getSession();
+    const sessionUserId = data.session?.user?.id ?? null;
+    if (!sessionUserId) return;
+    rememberOfflineCacheUser(sessionUserId);
     const entries = await idbGetAll<PersistedQuery>(QUERY_CACHE_STORE);
     for (const entry of entries) {
+      if (!entryBelongsToUser(entry, sessionUserId)) continue;
       queryClient.setQueryData(entry.queryKey, entry.data);
     }
   } catch (err) {
@@ -74,11 +130,25 @@ export function installOfflinePersistence(queryClient: QueryClient): () => void 
     if (query.state.status !== "success") return;
     if (!isOfflineEligible(query.queryKey)) return;
 
-    const key = storageKeyFor(query.queryKey);
+    const userId = readOfflineCacheUser();
+    if (!userId) {
+      void createClient()
+        .auth.getSession()
+        .then(({ data }) => {
+          const nextId = data.session?.user?.id ?? null;
+          if (nextId) rememberOfflineCacheUser(nextId);
+        })
+        .catch(() => {
+          /* owner tag is a safety net, not required for the write */
+        });
+      return;
+    }
+    const key = storageKeyFor(userId, query.queryKey);
     const entry: PersistedQuery = {
       queryKey: [...query.queryKey],
       data: query.state.data,
       updatedAt: new Date().toISOString(),
+      userId,
     };
     void idbSet(QUERY_CACHE_STORE, key, entry).catch((err) => {
       console.warn("[offline] cache write failed", key, err);

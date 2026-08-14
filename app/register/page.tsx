@@ -11,6 +11,7 @@ import { Wordmark } from "@/components/wordmark";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { isSafeRedirect, parseInviteRedirect, platformInviteLoginHref } from "@/lib/auth/invite-signup";
 import { completePlatformInvite } from "@/lib/auth/complete-platform-invite";
+import { finishAuthNavigation } from "@/lib/auth/reset-client-session";
 import { LEGAL_VERSION } from "@/lib/legal";
 import { ROLE_LABELS, type MemberRole } from "@/lib/team/roles";
 
@@ -237,8 +238,7 @@ function RegisterForm() {
         router.refresh();
         return;
       }
-      router.replace("/team");
-      router.refresh();
+      await finishAuthNavigation("/team");
       return;
     }
 
@@ -246,8 +246,7 @@ function RegisterForm() {
     // off to /import when it finishes or is skipped. Fresh invite signups land
     // on /welcome first so the artist can choose browser vs desktop.
     // Team-invite signups skip that — they join an existing artist.
-    router.replace(isSafeRedirect(redirectTo) ? redirectTo : "/welcome");
-    router.refresh();
+    await finishAuthNavigation(isSafeRedirect(redirectTo) ? redirectTo : "/welcome");
   }
 
   const preview = previewQuery.data;

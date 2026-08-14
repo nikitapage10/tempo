@@ -16,13 +16,17 @@ import {
   uploadArtistEmblem,
   uploadArtistLogo,
 } from "@/lib/api/artists";
-import { ACTIVE_ARTIST_KEY, PREFER_ORIGIN_ARTIST_KEY } from "@/lib/constants";
+import { PREFER_ORIGIN_ARTIST_KEY } from "@/lib/constants";
+import {
+  readStoredArtistId,
+  writeStoredArtistId,
+} from "@/lib/auth/workspace-memory";
 import { resolveArtistHues, type ResolvedArtistHues } from "@/lib/artist-theme";
 import {
   classifyOwnedKind,
   membershipArtists,
   ownedPersonalWorkspace,
-  pickDefaultArtistId,
+  pickResumeArtistId,
 } from "@/lib/workspace-mode";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import type { Artist } from "@/lib/types";
@@ -40,23 +44,6 @@ type ActiveArtistContextValue = {
 const ActiveArtistContext = React.createContext<ActiveArtistContextValue | null>(
   null
 );
-
-function readStoredArtistId(): string | null {
-  if (typeof window === "undefined") return null;
-  try {
-    return localStorage.getItem(ACTIVE_ARTIST_KEY);
-  } catch {
-    return null;
-  }
-}
-
-function writeStoredArtistId(id: string) {
-  try {
-    localStorage.setItem(ACTIVE_ARTIST_KEY, id);
-  } catch {
-    /* ignore */
-  }
-}
 
 async function bootstrapArtists(): Promise<Artist[]> {
   return ensureArtists();
@@ -83,14 +70,15 @@ export function ActiveArtistProvider({
   const user = useCurrentUser();
 
   React.useEffect(() => {
-    setActiveArtistIdState(readStoredArtistId());
+    if (user === undefined) return;
+    setActiveArtistIdState(readStoredArtistId(user?.id ?? null));
     setHydrated(true);
-  }, []);
+  }, [user?.id, user]);
 
   const artistsQuery = useQuery({
     queryKey: ["artists"],
     queryFn: bootstrapArtists,
-    enabled: hydrated,
+    enabled: hydrated && !!user?.id,
   });
 
   const artists = React.useMemo(
@@ -100,10 +88,11 @@ export function ActiveArtistProvider({
 
   React.useEffect(() => {
     if (!artists.length) return;
+    const userId = user?.id ?? null;
     let preferOrigin: string | null = readPreferOriginArtistId();
     if (preferOrigin && artists.some((a) => a.id === preferOrigin)) {
       setActiveArtistIdState(preferOrigin);
-      writeStoredArtistId(preferOrigin);
+      writeStoredArtistId(userId, preferOrigin);
       return;
     }
     let preferPersonal: string | null = null;
@@ -119,36 +108,39 @@ export function ActiveArtistProvider({
         /* ignore */
       }
       setActiveArtistIdState(preferPersonal);
-      writeStoredArtistId(preferPersonal);
+      writeStoredArtistId(userId, preferPersonal);
       return;
     }
     const stillValid =
       activeArtistId && artists.some((a) => a.id === activeArtistId);
     if (!stillValid) {
       const next =
-        pickDefaultArtistId(artists, user?.id) ?? artists[0].id;
+        pickResumeArtistId(artists, userId, activeArtistId) ?? artists[0].id;
       setActiveArtistIdState(next);
-      writeStoredArtistId(next);
+      writeStoredArtistId(userId, next);
       return;
     }
-    const keeper = ownedPersonalWorkspace(artists, user?.id);
+    const keeper = ownedPersonalWorkspace(artists, userId);
     const active = artists.find((a) => a.id === activeArtistId);
-    const hasMembership = membershipArtists(artists, user?.id).length > 0;
+    const hasMembership = membershipArtists(artists, userId).length > 0;
     if (
       keeper &&
       active &&
       active.id !== keeper.id &&
-      classifyOwnedKind(active, user?.id, hasMembership) === "personal"
+      classifyOwnedKind(active, userId, hasMembership) === "personal"
     ) {
       setActiveArtistIdState(keeper.id);
-      writeStoredArtistId(keeper.id);
+      writeStoredArtistId(userId, keeper.id);
     }
   }, [artists, activeArtistId, user?.id]);
 
-  const setActiveArtistId = React.useCallback((id: string) => {
-    setActiveArtistIdState(id);
-    writeStoredArtistId(id);
-  }, []);
+  const setActiveArtistId = React.useCallback(
+    (id: string) => {
+      setActiveArtistIdState(id);
+      writeStoredArtistId(user?.id ?? null, id);
+    },
+    [user?.id]
+  );
 
   const preferOriginId = hydrated ? readPreferOriginArtistId() : null;
   const resolvedArtistId =
@@ -163,7 +155,7 @@ export function ActiveArtistProvider({
     activeArtist,
     activeArtistId: activeArtist?.id ?? null,
     setActiveArtistId,
-    isLoading: !hydrated || artistsQuery.isLoading,
+    isLoading: !hydrated || user === undefined || (!!user?.id && artistsQuery.isPending),
     isError: artistsQuery.isError,
     error: artistsQuery.error as Error | null,
   };

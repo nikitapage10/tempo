@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   Eye,
   HelpCircle,
@@ -16,6 +15,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { signOutOfTempo } from "@/lib/auth/reset-client-session";
 import { useWorkspaceMode } from "@/hooks/use-workspace-mode";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -43,7 +43,6 @@ function providerLabel(provider: IdentityProvider): string {
 }
 
 export function AccountPanel() {
-  const router = useRouter();
   const { toast } = useToast();
   const user = useCurrentUser();
   const { mode } = useWorkspaceMode();
@@ -82,10 +81,7 @@ export function AccountPanel() {
 
   async function handleSignOut() {
     setSigningOut(true);
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/login");
-    router.refresh();
+    await signOutOfTempo();
   }
 
   async function handleEmailSave(e: React.FormEvent) {
@@ -153,11 +149,7 @@ export function AccountPanel() {
       });
       const body = (await res.json().catch(() => null)) as { error?: string } | null;
       if (!res.ok) throw new Error(body?.error ?? "Couldn’t delete account.");
-      const supabase = createClient();
-      await supabase.auth.signOut();
-      toast("Account deleted.", "ok");
-      router.push("/login");
-      router.refresh();
+      await signOutOfTempo();
     } catch (err) {
       toast(err instanceof Error ? err.message : "Couldn’t delete account.");
     } finally {

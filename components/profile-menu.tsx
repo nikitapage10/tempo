@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   BarChart3,
   CircleUser,
@@ -33,7 +33,7 @@ import {
 import { onOpenWebAppClick } from "@/lib/desktop/bridge";
 import { detectOS, isDesktopApp } from "@/lib/platform";
 import { getSiteUrl } from "@/lib/site";
-import { createClient } from "@/lib/supabase/client";
+import { signOutOfTempo } from "@/lib/auth/reset-client-session";
 import { cn, initials } from "@/lib/utils";
 
 function profileHandoffLabel(kind: DesktopHandoffKind): string {
@@ -52,7 +52,6 @@ export function ProfileMenu() {
   const [signingOut, setSigningOut] = React.useState(false);
   const [mounted, setMounted] = React.useState(false);
   const ref = React.useRef<HTMLDivElement>(null);
-  const router = useRouter();
   const pathname = usePathname();
   const user = useCurrentUser();
   const { activeArtist } = useActiveArtist();
@@ -109,11 +108,8 @@ export function ProfileMenu() {
 
   async function handleSignOut() {
     setSigningOut(true);
-    const supabase = createClient();
-    await supabase.auth.signOut();
     setOpen(false);
-    router.push("/login");
-    router.refresh();
+    await signOutOfTempo();
   }
 
   const itemClass =

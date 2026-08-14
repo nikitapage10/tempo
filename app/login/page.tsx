@@ -2,13 +2,14 @@
 
 import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Wordmark } from "@/components/wordmark";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { OAuthButtons } from "@/components/auth/oauth-buttons";
+import { finishAuthNavigation } from "@/lib/auth/reset-client-session";
 import { isSafeRedirect, platformInviteWelcomeHref } from "@/lib/auth/invite-signup";
 import { completePlatformInvite } from "@/lib/auth/complete-platform-invite";
 
@@ -21,7 +22,6 @@ export default function LoginPage() {
 }
 
 function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect");
   const inviteCode = searchParams.get("invite")?.trim() ?? "";
@@ -66,8 +66,9 @@ function LoginForm() {
     if (inviteCode) {
       try {
         const result = await completePlatformInvite(inviteCode);
-        router.replace(result.startOrigin ? "/welcome" : isSafeRedirect(redirectTo) ? redirectTo : "/");
-        router.refresh();
+        await finishAuthNavigation(
+          result.startOrigin ? "/welcome" : isSafeRedirect(redirectTo) ? redirectTo : "/"
+        );
         return;
       } catch (redeemError) {
         setStatus("error");
@@ -80,8 +81,7 @@ function LoginForm() {
       }
     }
 
-    router.replace(isSafeRedirect(redirectTo) ? redirectTo : "/");
-    router.refresh();
+    await finishAuthNavigation(isSafeRedirect(redirectTo) ? redirectTo : "/");
   }
 
   return (

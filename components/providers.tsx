@@ -1,11 +1,21 @@
 "use client";
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ToastProvider } from "@/components/ui/toast";
 import { WebGlassAlertHost } from "@/components/notifications/web-glass-alert";
+import {
+  registerQueryClient,
+  resetClientSession,
+  clearAuthHandoffKeys,
+} from "@/lib/auth/reset-client-session";
+import { createClient } from "@/lib/supabase/client";
 import { isDesktopApp } from "@/lib/desktop/bridge";
-import { hydrateOfflineCache, installOfflinePersistence } from "@/lib/offline/query-persistence";
+import {
+  hydrateOfflineCache,
+  installOfflinePersistence,
+  rememberOfflineCacheUser,
+} from "@/lib/offline/query-persistence";
 import { flushOutbox } from "@/lib/offline/outbox";
 import { ensureDeviceRegistered } from "@/lib/desktop/device";
 
@@ -15,18 +25,54 @@ import { ensureDeviceRegistered } from "@/lib/desktop/device";
 // sit for long once the connection is actually back.
 const OUTBOX_POLL_MS = 60_000;
 
-export function Providers({ children }: { children: React.ReactNode }) {
-  const [queryClient] = useState(
-    () =>
-      new QueryClient({
-        defaultOptions: {
-          queries: {
-            staleTime: 30_000,
-            refetchOnWindowFocus: false,
-          },
+function AuthSessionBoundary({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient();
+  const lastUserId = useRef<string | null | undefined>(undefined);
+
+  useEffect(() => {
+    registerQueryClient(queryClient);
+    const supabase = createClient();
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      const nextId = session?.user?.id ?? null;
+      const previousId = lastUserId.current;
+      lastUserId.current = nextId;
+      if (nextId) rememberOfflineCacheUser(nextId);
+
+      // First callback hydrates whatever session this tab already has.
+      // TOKEN_REFRESHED is the same person. Neither should wipe the workspace.
+      if (
+        previousId === undefined ||
+        event === "INITIAL_SESSION" ||
+        event === "TOKEN_REFRESHED"
+      ) {
+        return;
+      }
+      if (previousId !== nextId) {
+        if (!nextId) clearAuthHandoffKeys();
+        void resetClientSession(queryClient);
+      }
+    });
+    return () => {
+      data.subscription.unsubscribe();
+    };
+  }, [queryClient]);
+
+  return <>{children}</>;
+}
+
+export function Providers({ children }: { children: ReactNode }) {
+  const [queryClient] = useState(() => {
+    const client = new QueryClient({
+      defaultOptions: {
+        queries: {
+          staleTime: 30_000,
+          refetchOnWindowFocus: false,
         },
-      })
-  );
+      },
+    });
+    registerQueryClient(client);
+    return client;
+  });
   // Always starts true so the client's first hydration pass matches the
   // server-rendered HTML (isDesktopApp() is necessarily false during SSR —
   // there's no window). Only flips inside the effect below, which runs
@@ -72,10 +118,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ToastProvider>
-        {hydrated ? children : null}
-        <WebGlassAlertHost />
-      </ToastProvider>
+      <AuthSessionBoundary>
+        <ToastProvider>
+          {hydrated ? children : null}
+          <WebGlassAlertHost />
+        </ToastProvider>
+      </AuthSessionBoundary>
     </QueryClientProvider>
   );
 }
