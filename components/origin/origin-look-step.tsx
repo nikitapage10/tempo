@@ -9,7 +9,12 @@ import {
 import { ArtistBanner } from "@/components/artists/artist-banner";
 import { ArtistMark } from "@/components/artists/artist-mark";
 import { HexColorInput } from "@/components/artists/hex-color-input";
-import { OriginScrim } from "@/components/origin/origin-copy-layer";
+import {
+  ORIGIN_FIT_BODY,
+  ORIGIN_FIT_FOOTER,
+  ORIGIN_FIT_SHELL,
+  OriginScrim,
+} from "@/components/origin/origin-copy-layer";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { SignedImage } from "@/components/ui/signed-image";
@@ -70,7 +75,10 @@ export function OriginLookStep({
     return (
       <OriginScrim
         tone="story"
-        className="pointer-events-auto relative flex w-full max-w-2xl flex-col gap-4 overflow-hidden border-line bg-[linear-gradient(135deg,rgb(7_8_11/0.88),rgb(14_15_20/0.80))] p-7 shadow-[0_24px_80px_rgb(0_0_0/0.52)] backdrop-blur-2xl sm:px-9 sm:py-8"
+        className={cn(
+          "pointer-events-auto relative flex w-full max-w-2xl flex-col gap-4 overflow-hidden border-line bg-[linear-gradient(135deg,rgb(7_8_11/0.88),rgb(14_15_20/0.80))] p-7 shadow-[0_24px_80px_rgb(0_0_0/0.52)] backdrop-blur-2xl sm:px-9 sm:py-8",
+          ORIGIN_FIT_SHELL
+        )}
       >
         <p className="text-sm text-text-lo">Loading artist…</p>
         <div className="flex flex-wrap items-center gap-2">
@@ -133,13 +141,16 @@ export function OriginLookStep({
   return (
     <OriginScrim
       tone="story"
-      className="origin-look-step pointer-events-auto relative flex w-full max-w-2xl flex-col gap-6 overflow-hidden border-line bg-[linear-gradient(135deg,rgb(7_8_11/0.88),rgb(14_15_20/0.80))] p-0 shadow-[0_24px_80px_rgb(0_0_0/0.52)] backdrop-blur-2xl"
+      className={cn(
+        "origin-look-step pointer-events-auto relative flex w-full max-w-2xl flex-col gap-0 overflow-hidden border-line bg-[linear-gradient(135deg,rgb(7_8_11/0.88),rgb(14_15_20/0.80))] p-0 shadow-[0_24px_80px_rgb(0_0_0/0.52)] backdrop-blur-2xl",
+        ORIGIN_FIT_SHELL
+      )}
     >
       <span
         aria-hidden
         className="absolute inset-y-0 left-0 w-px bg-[linear-gradient(to_bottom,transparent,var(--ice),var(--amber),transparent)] opacity-75"
       />
-      <div className="relative flex max-h-[min(84vh,720px)] flex-col gap-5 overflow-y-auto px-7 py-8 sm:px-9">
+      <div className={cn(ORIGIN_FIT_BODY, "flex flex-col gap-5 px-7 py-8 sm:px-9")}>
         <button
           type="button"
           onClick={onBack}
@@ -402,8 +413,10 @@ export function OriginLookStep({
         </div>
 
         {error ? <p role="alert" className="text-xs text-warn">{error}</p> : null}
+      </div>
 
-        <div className="flex flex-wrap items-center gap-2 pt-1">
+      <div className={ORIGIN_FIT_FOOTER}>
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"
             variant="ghost"
@@ -423,7 +436,7 @@ export function OriginLookStep({
             Continue <ArrowRight className="size-4" />
           </Button>
         </div>
-        <p className="text-xs leading-relaxed text-text-lo/80">
+        <p className="mt-2.5 text-xs leading-relaxed text-text-lo/80">
           Skip keeps Spectra for now. You can set a look any time in Settings.
         </p>
       </div>

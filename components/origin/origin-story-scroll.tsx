@@ -210,15 +210,15 @@ function ChapterSection({
           from the right, so the copy sits on the quieter side of the frame. */}
       <div
         className={cn(
-          "origin-story-chapter relative flex w-full flex-col overflow-hidden rounded-[26px] border bg-[linear-gradient(125deg,rgb(9_10_13/0.9),rgb(21_25_32/0.76),rgb(10_10_13/0.86))] shadow-3 backdrop-blur-xl",
+          "origin-story-chapter relative flex w-full flex-col rounded-[26px] border bg-[linear-gradient(125deg,rgb(9_10_13/0.9),rgb(21_25_32/0.76),rgb(10_10_13/0.86))] shadow-3 backdrop-blur-xl",
           // Short chapters stay viewport-bound; The Story grows with its tiles
           // and pans via the outer scrub transform instead of an inner scroll.
           // Import (scrollBody) fills the stage and scrolls its own body.
           scrollBody
-            ? "min-h-0 flex-1"
+            ? "h-full min-h-0 max-h-full flex-1 overflow-hidden"
             : index === STORY_CHAPTER
-              ? null
-              : "max-h-[min(86dvh,52rem)]",
+              ? "overflow-hidden"
+              : "max-h-[min(calc(100dvh-5rem),52rem)] overflow-x-hidden overflow-y-auto",
           index % 2 === 0 ? "border-amber/25" : "border-ice/30",
           "transition-[max-width,transform] duration-700 motion-reduce:transition-none",
           wide ? "max-w-5xl" : "max-w-3xl",
@@ -244,7 +244,7 @@ function ChapterSection({
         <div
           className={cn(
             "relative grid min-h-0 grid-cols-[2.5rem_1fr] gap-5 px-6 py-7 sm:grid-cols-[3rem_1fr] sm:gap-7 sm:px-8 sm:py-8",
-            scrollBody && "h-full min-h-0 flex-1"
+            scrollBody && "h-full min-h-0 flex-1 grid-rows-[minmax(0,1fr)] overflow-hidden"
           )}
         >
           <div className="flex flex-col items-center gap-3 pt-0.5 text-[10px] uppercase tracking-[0.2em] text-text-lo/70">
@@ -366,9 +366,9 @@ export function OriginStoryScroll({
         // Top-align the import panel so tall review content can scroll inside
         // the stage instead of being centered and clipped by overflow:hidden.
         el.style.transform = "translate3d(0, 0, 0) scale(1)";
-        el.style.top = own ? "0" : "";
-        el.style.bottom = own ? "0" : "";
-        el.style.height = own ? "100%" : "";
+        el.style.top = own ? "1rem" : "";
+        el.style.bottom = own ? "1rem" : "";
+        el.style.height = own ? "auto" : "";
         el.style.pointerEvents = own ? "auto" : "none";
         el.style.zIndex = own ? "40" : "0";
         return;
@@ -917,7 +917,7 @@ export function OriginStoryScroll({
               // (import mode overrides top/height in paint for a scroll body).
               className={cn(
                 "absolute inset-x-5 will-change-[transform,opacity]",
-                importStarted && i === 4 ? "top-0 bottom-0" : "top-1/2"
+                importStarted && i === 4 ? "top-4 bottom-4 sm:top-5 sm:bottom-5" : "top-1/2"
               )}
               style={{ opacity: 0, transition: "opacity 520ms ease-out" }}
             >

@@ -39,6 +39,7 @@ type PlanReviewProps = {
   onAnswerQuestions: (answers: { question: string; answer: string }[]) => void;
   answering: boolean;
   onContinue: () => void;
+  embedded?: boolean;
 };
 
 const CONFIDENCE_TONE: Record<Confidence, string> = {
@@ -315,6 +316,7 @@ export function PlanReview({
   onAnswerQuestions,
   answering,
   onContinue,
+  embedded = false,
 }: PlanReviewProps) {
   const [answers, setAnswers] = React.useState<Record<string, string>>({});
 
@@ -351,7 +353,7 @@ export function PlanReview({
   const answeredCount = Object.values(answers).filter((a) => a.trim()).length;
 
   return (
-    <div className="space-y-6">
+    <div className={cn("space-y-6", embedded && "pb-2")}>
       {plan.overview ? (
         <div className="panel p-4">
           <div className="flex items-start gap-3">
@@ -646,7 +648,13 @@ export function PlanReview({
         </section>
       ) : null}
 
-      <div className="flex justify-end">
+      <div
+        className={cn(
+          "flex justify-end",
+          embedded &&
+            "sticky bottom-0 z-10 -mx-1 border-t border-line/40 bg-[linear-gradient(to_top,rgb(9_10_13)_70%,rgb(9_10_13/0.92),transparent)] px-1 pb-1 pt-3"
+        )}
+      >
         <Button type="button" size="lg" onClick={onContinue}>
           Review what gets built
         </Button>

@@ -28,6 +28,8 @@ type Props = {
   onBack: () => void;
   onSkip: () => void;
   onContinue: (selection: SpotifyImportSelection) => void;
+  /** Inside Origin: fill the chapter and scroll the match list, not the film. */
+  embedded?: boolean;
 };
 
 function duration(ms: number | null): string | null {
@@ -49,6 +51,7 @@ export function SpotifyCatalogStep({
   onBack,
   onSkip,
   onContinue,
+  embedded = false,
 }: Props) {
   const [query, setQuery] = React.useState(artistName);
   const [results, setResults] = React.useState<SpotifyArtistCandidate[]>([]);
@@ -136,15 +139,15 @@ export function SpotifyCatalogStep({
     }).length ?? 0;
 
   return (
-    <div className="space-y-6">
-      <section className="panel overflow-hidden">
-        <div className="border-b border-line p-5">
+    <div className={cn("space-y-4", embedded && "flex min-h-0 flex-1 flex-col")}>
+      <section className={cn("panel-quiet overflow-hidden", embedded && "shrink-0")}>
+        <div className="border-b border-line/60 p-4">
           <div className="flex items-start gap-3">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#1DB954]/15 text-[#1DB954]">
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#1DB954]/15 text-[#1DB954]">
               <Music2 className="size-4" />
             </div>
-            <div>
-              <h2 className="font-display text-lg font-semibold text-text-hi">
+            <div className="min-w-0">
+              <h2 className="font-display text-base font-semibold text-text-hi sm:text-lg">
                 Match tracks and bring in your released catalog
               </h2>
               <p className="mt-1 max-w-2xl text-sm leading-relaxed text-text-lo">
@@ -157,7 +160,7 @@ export function SpotifyCatalogStep({
         </div>
 
         {!preview ? (
-          <div className="p-5">
+          <div className="p-4">
             <form onSubmit={handleSearch} className="flex gap-2">
               <Input
                 value={query}
@@ -212,7 +215,7 @@ export function SpotifyCatalogStep({
             {error ? <p className="mt-3 text-sm text-warn">{error}</p> : null}
           </div>
         ) : (
-          <div className="p-5">
+          <div className="p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <span className="relative size-10 overflow-hidden rounded-full bg-bg-3">
@@ -254,7 +257,12 @@ export function SpotifyCatalogStep({
       </section>
 
       {preview ? (
-        <section>
+        <section
+          className={cn(
+            "origin-spotify-matches min-h-0",
+            embedded ? "flex-1 overflow-y-auto overscroll-contain pr-1" : undefined
+          )}
+        >
           <ul className="space-y-2">
             {preview.matches.map((match) => {
               const selected = match.candidates.find(
@@ -268,8 +276,8 @@ export function SpotifyCatalogStep({
                     selected ? "border-ice/25 bg-ice/5" : "border-line bg-bg-2/40"
                   )}
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="relative size-14 shrink-0 overflow-hidden rounded-input bg-bg-3">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="relative size-11 shrink-0 overflow-hidden rounded-input bg-bg-3">
                       <SignedImage
                         path={selected?.album.artworkUrl}
                         alt=""
@@ -315,7 +323,7 @@ export function SpotifyCatalogStep({
                         selectCandidate(match.trackRef, event.target.value || null)
                       }
                       aria-label={`Spotify match for ${match.tempoTitle}`}
-                      className="h-8 max-w-56 rounded-input border border-line bg-bg-2 px-2 text-xs text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+                      className="h-8 max-w-full rounded-input border border-line bg-bg-2 px-2 text-xs text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice sm:max-w-56"
                     >
                       <option value="">No match</option>
                       {match.candidates.map((candidate) => (
@@ -351,7 +359,13 @@ export function SpotifyCatalogStep({
         </section>
       ) : null}
 
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div
+        className={cn(
+          "flex flex-wrap items-center justify-between gap-2",
+          embedded &&
+            "sticky bottom-0 z-10 -mx-1 mt-auto border-t border-line/40 bg-[linear-gradient(to_top,rgb(9_10_13)_70%,rgb(9_10_13/0.92),transparent)] px-1 pb-1 pt-3"
+        )}
+      >
         <Button type="button" variant="ghost" onClick={onBack}>Back</Button>
         <div className="flex items-center gap-2">
           <Button type="button" variant="ghost" onClick={onSkip}>Skip Spotify</Button>

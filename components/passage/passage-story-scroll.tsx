@@ -67,10 +67,10 @@ function ChapterSection({
     <section aria-labelledby={`passage-chapter-${index}`} className={cn(staticMode && "py-12")}>
       <div
         className={cn(
-          "relative ml-0 flex w-full max-w-2xl flex-col overflow-hidden rounded-[26px] border shadow-3 backdrop-blur-2xl sm:ml-[6%]",
+          "relative ml-0 flex w-full max-w-2xl flex-col rounded-[26px] border shadow-3 backdrop-blur-2xl sm:ml-[6%]",
           // Dense enough to carry body copy over the film's bright streaks.
           "bg-[linear-gradient(125deg,rgb(9_10_13/0.94),rgb(18_21_27/0.9),rgb(10_10_13/0.94))]",
-          "max-h-[min(86dvh,52rem)]",
+          "max-h-[min(calc(100dvh-5rem),52rem)] overflow-x-hidden overflow-y-auto",
           index % 2 === 0 ? "border-amber/25" : "border-ice/30"
         )}
       >
@@ -81,7 +81,7 @@ function ChapterSection({
             index % 2 === 0 ? "border-amber/15 bg-amber/[0.025]" : "border-ice/15 bg-ice/[0.03]"
           )}
         />
-        <div className="relative grid min-h-0 grid-cols-[2.5rem_1fr] gap-5 overflow-y-auto px-6 py-7 sm:grid-cols-[3rem_1fr] sm:gap-7 sm:px-8 sm:py-8">
+        <div className="relative grid min-h-0 grid-cols-[2.5rem_1fr] gap-5 px-6 py-7 sm:grid-cols-[3rem_1fr] sm:gap-7 sm:px-8 sm:py-8">
           <div className="flex flex-col items-center gap-3 pt-0.5 text-[10px] uppercase tracking-[0.2em] text-text-lo/70">
             <span className={cn("font-mono", index % 2 === 0 ? "text-amber" : "text-ice")}>
               {String(index + 1).padStart(2, "0")}

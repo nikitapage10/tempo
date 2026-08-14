@@ -5,9 +5,15 @@ import { ChevronLeft, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { MorphingText } from "@/components/ui/morphing-text";
-import { OriginScrim } from "@/components/origin/origin-copy-layer";
+import {
+  ORIGIN_FIT_BODY,
+  ORIGIN_FIT_FOOTER,
+  ORIGIN_FIT_SHELL,
+  OriginScrim,
+} from "@/components/origin/origin-copy-layer";
 import { useOriginSpeech } from "@/hooks/use-origin-speech";
 import { MIN_INTRODUCTION_CHARS, validateIntroduction } from "@/lib/origin/validation";
+import { cn } from "@/lib/utils";
 
 /**
  * Frame 3 — the artist talks, and TEMPO listens.
@@ -104,12 +110,17 @@ export function OriginIntroductionStep({
   const remaining = Math.max(0, MIN_INTRODUCTION_CHARS - introduction.trim().length);
 
   return (
-    <OriginScrim className="pointer-events-auto relative flex w-full max-w-2xl flex-col gap-6 overflow-hidden p-0">
+    <OriginScrim
+      className={cn(
+        "pointer-events-auto relative flex w-full max-w-2xl flex-col gap-0 overflow-hidden p-0",
+        ORIGIN_FIT_SHELL
+      )}
+    >
       <span
         aria-hidden
         className="absolute inset-y-0 left-0 w-px bg-[linear-gradient(to_bottom,transparent,var(--amber),var(--ice),transparent)] opacity-70"
       />
-      <div className="relative flex flex-col gap-6 px-7 py-8 sm:px-9">
+      <div className={cn(ORIGIN_FIT_BODY, "flex flex-col gap-6 px-7 py-8 sm:px-9")}>
         <button
           type="button"
           onClick={onBack}
@@ -174,7 +185,7 @@ export function OriginIntroductionStep({
           placeholder={
             "Start with where the signal began…"
           }
-          className="min-h-40 resize-none rounded-none border-0 bg-transparent px-0 text-base leading-relaxed shadow-none focus-visible:ring-0"
+          className="min-h-24 resize-none rounded-none border-0 bg-transparent px-0 text-base leading-relaxed shadow-none focus-visible:ring-0 sm:min-h-36"
           aria-describedby="origin-intro-status origin-intro-privacy"
         />
 
@@ -200,43 +211,44 @@ export function OriginIntroductionStep({
           {error}
         </p>
       ) : null}
-
-      <div className="flex flex-wrap items-center gap-2">
-        {canSpeak ? (
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={handleDictation}
-            disabled={speech.transcribing}
-            aria-pressed={speech.listening}
-            className={speech.listening ? "border-ice/70 bg-ice/10 text-ice" : undefined}
-          >
-            <Mic className={speech.listening ? "animate-pulse motion-reduce:animate-none" : undefined} />
-            {speech.listening
-              ? "Listening…"
-              : speech.transcribing
-                ? "Finishing…"
-                : introduction.trim()
-                  ? "Dictate more"
-                  : "Dictate"}
-          </Button>
-        ) : null}
-
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={handleContinue}
-          disabled={busy || speech.listening || speech.transcribing}
-          className="ml-auto rounded-full border border-line/80 bg-white/[0.035] px-5 text-text-hi hover:border-ice/50 hover:bg-ice/[0.06] hover:text-text-hi"
-        >
-          {waiting ? "One moment…" : "Shape the signal →"}
-        </Button>
       </div>
 
-      <p id="origin-intro-privacy" className="text-xs leading-relaxed text-text-lo/80">
-        Your words are sent to be transcribed and interpreted. The recording itself is not
-        kept. Nothing is published without your confirmation.
-      </p>
+      <div className={ORIGIN_FIT_FOOTER}>
+        <div className="flex flex-wrap items-center gap-2">
+          {canSpeak ? (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleDictation}
+              disabled={speech.transcribing}
+              aria-pressed={speech.listening}
+              className={speech.listening ? "border-ice/70 bg-ice/10 text-ice" : undefined}
+            >
+              <Mic className={speech.listening ? "animate-pulse motion-reduce:animate-none" : undefined} />
+              {speech.listening
+                ? "Listening…"
+                : speech.transcribing
+                  ? "Finishing…"
+                  : introduction.trim()
+                    ? "Dictate more"
+                    : "Dictate"}
+            </Button>
+          ) : null}
+
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={handleContinue}
+            disabled={busy || speech.listening || speech.transcribing}
+            className="ml-auto rounded-full border border-line/80 bg-white/[0.035] px-5 text-text-hi hover:border-ice/50 hover:bg-ice/[0.06] hover:text-text-hi"
+          >
+            {waiting ? "One moment…" : "Shape the signal →"}
+          </Button>
+        </div>
+        <p id="origin-intro-privacy" className="mt-2.5 text-xs leading-relaxed text-text-lo/80">
+          Your words are sent to be transcribed and interpreted. The recording itself is not
+          kept. Nothing is published without your confirmation.
+        </p>
       </div>
     </OriginScrim>
   );

@@ -346,7 +346,7 @@ export function IntakeCanvas({
       className={cn(
         "flex flex-col overflow-hidden !rounded-panel !border-solid !border-line bg-gradient-to-b from-bg-1 to-bg-0 shadow-e3",
         embedded
-          ? "h-[min(66dvh,42rem)] min-h-[28rem]"
+          ? "h-[min(52dvh,36rem)] max-h-full min-h-0"
           : "h-[calc(100vh-13rem)] min-h-[30rem]"
       )}
       accept={`${IMPORT_IMAGE_ACCEPT},${IMPORT_DOCUMENT_ACCEPT}`}

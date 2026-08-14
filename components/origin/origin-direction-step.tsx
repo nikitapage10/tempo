@@ -5,9 +5,10 @@ import { ArrowRight, ChevronLeft, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { MorphingText } from "@/components/ui/morphing-text";
-import { OriginScrim } from "@/components/origin/origin-copy-layer";
+import { OriginScrim, ORIGIN_FIT_BODY, ORIGIN_FIT_FOOTER, ORIGIN_FIT_SHELL } from "@/components/origin/origin-copy-layer";
 import { useOriginSpeech } from "@/hooks/use-origin-speech";
 import { validateDirection } from "@/lib/origin/validation";
+import { cn } from "@/lib/utils";
 
 const PROMPTS = [
   "What are you creating or releasing now?",
@@ -75,13 +76,16 @@ export function OriginDirectionStep({
   return (
     <OriginScrim
       tone="story"
-      className="pointer-events-auto relative flex w-full max-w-2xl flex-col gap-6 overflow-hidden border-line bg-[linear-gradient(135deg,rgb(7_8_11/0.88),rgb(14_15_20/0.80))] p-0 shadow-[0_24px_80px_rgb(0_0_0/0.52)] backdrop-blur-2xl"
+      className={cn(
+        "pointer-events-auto relative flex w-full max-w-2xl flex-col overflow-hidden border-line bg-[linear-gradient(135deg,rgb(7_8_11/0.88),rgb(14_15_20/0.80))] p-0 shadow-[0_24px_80px_rgb(0_0_0/0.52)] backdrop-blur-2xl",
+        ORIGIN_FIT_SHELL
+      )}
     >
       <span
         aria-hidden
         className="absolute inset-y-0 left-0 w-px bg-[linear-gradient(to_bottom,transparent,var(--ice),var(--amber),transparent)] opacity-75"
       />
-      <div className="relative flex flex-col gap-6 px-7 py-8 sm:px-9">
+      <div className={cn(ORIGIN_FIT_BODY, "flex flex-col gap-6 px-7 py-8 sm:px-9")}>
         <button
           type="button"
           onClick={onBack}
@@ -135,7 +139,7 @@ export function OriginDirectionStep({
             placeholder="Start with what is taking shape now…"
             aria-label="What you are making now and what you want it to feel like"
             aria-describedby="origin-direction-status origin-direction-privacy"
-            className="min-h-36 resize-none rounded-none border-0 bg-transparent px-0 text-base leading-relaxed text-text-hi shadow-none placeholder:text-text-lo focus-visible:ring-0"
+            className="min-h-24 resize-none rounded-none border-0 bg-transparent px-0 text-base leading-relaxed text-text-hi shadow-none placeholder:text-text-lo focus-visible:ring-0 sm:min-h-32"
           />
           <p
             id="origin-direction-status"
@@ -153,7 +157,9 @@ export function OriginDirectionStep({
         {speech.error ? <p role="alert" className="text-xs text-warn">{speech.error}</p> : null}
 
         {error ? <p role="alert" className="text-xs text-warn">{error}</p> : null}
+      </div>
 
+      <div className={ORIGIN_FIT_FOOTER}>
         <div className="flex flex-wrap items-center gap-2">
           {canSpeak ? (
             <Button
@@ -184,8 +190,7 @@ export function OriginDirectionStep({
             <ArrowRight className="size-4" />
           </Button>
         </div>
-
-        <p id="origin-direction-privacy" className="text-xs leading-relaxed text-text-lo/80">
+        <p id="origin-direction-privacy" className="mt-2.5 text-xs leading-relaxed text-text-lo/80">
           Your words are sent to be transcribed and interpreted. The recording itself is not
           kept. Nothing is published without your confirmation.
         </p>

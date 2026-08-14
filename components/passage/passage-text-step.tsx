@@ -5,7 +5,12 @@ import { ChevronLeft, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { MorphingText } from "@/components/ui/morphing-text";
-import { OriginScrim } from "@/components/origin/origin-copy-layer";
+import {
+  ORIGIN_FIT_BODY,
+  ORIGIN_FIT_FOOTER,
+  ORIGIN_FIT_SHELL,
+  OriginScrim,
+} from "@/components/origin/origin-copy-layer";
 import {
   PASSAGE_PANEL,
   PASSAGE_PANEL_TOP_EDGE,
@@ -97,7 +102,8 @@ export function PassageTextStep({
   return (
     <OriginScrim
       className={cn(
-        "pointer-events-auto relative flex w-full max-w-2xl flex-col gap-6 overflow-hidden p-0",
+        "pointer-events-auto relative flex w-full max-w-2xl flex-col gap-0 overflow-hidden p-0",
+        ORIGIN_FIT_SHELL,
         PASSAGE_PANEL
       )}
     >
@@ -106,7 +112,7 @@ export function PassageTextStep({
         aria-hidden
         className="absolute inset-y-0 left-0 w-px bg-[linear-gradient(to_bottom,transparent,var(--amber),var(--ice),transparent)] opacity-70"
       />
-      <div className="relative flex flex-col gap-6 px-7 py-8 sm:px-9">
+      <div className={cn(ORIGIN_FIT_BODY, "flex flex-col gap-6 px-7 py-8 sm:px-9")}>
         <button
           type="button"
           onClick={onBack}
@@ -138,7 +144,7 @@ export function PassageTextStep({
             rows={5}
             maxLength={maxChars}
             placeholder={placeholder}
-            className="min-h-32 resize-none rounded-none border-0 bg-transparent px-0 text-base leading-relaxed text-text-hi shadow-none placeholder:text-text-lo/70 focus-visible:ring-0"
+            className="min-h-24 resize-none rounded-none border-0 bg-transparent px-0 text-base leading-relaxed text-text-hi shadow-none placeholder:text-text-lo/70 focus-visible:ring-0 sm:min-h-32"
             aria-describedby={`passage-status-${kicker}`}
           />
           {/* Restrained live region: state changes, not every word heard. */}
@@ -160,7 +166,9 @@ export function PassageTextStep({
             {speech.error}
           </p>
         ) : null}
+      </div>
 
+      <div className={ORIGIN_FIT_FOOTER}>
         <div className="flex flex-wrap items-center gap-2">
           {canSpeak ? (
             <Button

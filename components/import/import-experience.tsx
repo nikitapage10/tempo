@@ -434,7 +434,7 @@ export function ImportExperience({
   }
 
   return (
-    <div className={embedded ? "w-full" : "mx-auto max-w-5xl"}>
+    <div className={embedded ? "flex min-h-full w-full min-w-0 flex-col" : "mx-auto max-w-5xl"}>
       {/* Inside ORIGIN the story's own chapter heading already introduces this,
           and a page header floating over the film would break the spell. */}
       {embedded ? (
@@ -529,6 +529,7 @@ export function ImportExperience({
           onAnswerQuestions={(answers) => void handleAnswers(answers)}
           answering={answering}
           onContinue={() => setStep("spotify")}
+          embedded={embedded}
         />
       ) : step === "spotify" && plan && activeArtist && spotifyTargetSpace ? (
         <SpotifyCatalogStep
@@ -568,6 +569,7 @@ export function ImportExperience({
             setSpotifySelection(next);
             setStep("confirm");
           }}
+          embedded={embedded}
         />
       ) : step === "confirm" && plan ? (
         <CommitSummary

@@ -136,6 +136,19 @@ export function StepFade({
   );
 }
 
+/**
+ * Cap Origin/Passage glass to the film stage. Pair with ORIGIN_FIT_BODY on the
+ * scrolling inner so Continue never sits below the fold with no way to reach it.
+ * Vertically centering a non-scrolling overlay used to clip both ends equally; these
+ * keep the panel inside 100dvh and let the body scroll.
+ */
+export const ORIGIN_FIT_SHELL =
+  "flex max-h-[calc(100dvh-4.5rem)] flex-col overflow-hidden";
+export const ORIGIN_FIT_BODY =
+  "relative min-h-0 flex-1 overflow-y-auto overscroll-contain";
+export const ORIGIN_FIT_FOOTER =
+  "relative shrink-0 border-t border-line/40 px-7 py-3.5 sm:px-9";
+
 /** Body copy never sits directly on raw spectral movement — see §29. */
 export function OriginScrim({
   children,
@@ -264,16 +277,30 @@ export function OriginOverlay({
         // panel behind the film and made them look as though they had never
         // rendered. Anything layered over the stage needs an explicit z above 3
         // (the grain).
-        "pointer-events-none absolute inset-0 z-20 grid place-items-center",
-        "[&>*]:col-start-1 [&>*]:row-start-1 justify-items-stretch sm:justify-items-end",
-        // Middle-right: inset from the edge so the panel sits in the right half
-        // rather than hugging the frame.
-        "px-5 sm:pr-[14vw]",
-        "pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))]",
+        //
+        // Overflow-y is load-bearing too. Centering on a non-scrolling overlay
+        // clipped tall panels equally top and bottom,
+        // and pointer-events-none meant there was no way to reach Continue.
+        // Flex spacers keep short copy vertically centred; when a panel is
+        // taller than the stage the spacers collapse to their min-height and
+        // the overlay scrolls from the top.
+        "pointer-events-none absolute inset-0 z-20 overflow-x-hidden overflow-y-auto overscroll-contain",
         className
       )}
     >
-      {children}
+      <div className="flex min-h-full flex-col px-5 sm:pr-[14vw]">
+        <div
+          aria-hidden
+          className="min-h-[max(1.5rem,env(safe-area-inset-top))] shrink-0 grow basis-0"
+        />
+        <div className="grid w-full justify-items-stretch sm:justify-items-end [&>*]:col-start-1 [&>*]:row-start-1">
+          {children}
+        </div>
+        <div
+          aria-hidden
+          className="min-h-[max(1.5rem,env(safe-area-inset-bottom))] shrink-0 grow basis-0"
+        />
+      </div>
     </div>
   );
 }

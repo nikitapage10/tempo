@@ -4,7 +4,12 @@ import * as React from "react";
 import { ArrowRight, Check, ChevronLeft } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { MorphingText } from "@/components/ui/morphing-text";
-import { OriginScrim } from "@/components/origin/origin-copy-layer";
+import {
+  ORIGIN_FIT_BODY,
+  ORIGIN_FIT_FOOTER,
+  ORIGIN_FIT_SHELL,
+  OriginScrim,
+} from "@/components/origin/origin-copy-layer";
 import {
   PASSAGE_PANEL,
   PASSAGE_PANEL_TOP_EDGE,
@@ -58,7 +63,8 @@ export function PassageDescribeStep({
   return (
     <OriginScrim
       className={cn(
-        "pointer-events-auto relative w-full max-w-xl overflow-hidden p-0 text-left",
+        "pointer-events-auto relative flex w-full max-w-xl flex-col overflow-hidden p-0 text-left",
+        ORIGIN_FIT_SHELL,
         PASSAGE_PANEL
       )}
     >
@@ -70,8 +76,9 @@ export function PassageDescribeStep({
 
       <form
         onSubmit={handleSubmit}
-        className="relative flex max-h-[min(84vh,720px)] flex-col gap-6 overflow-y-auto px-7 py-8 sm:px-9 sm:py-10"
+        className="relative flex min-h-0 flex-1 flex-col"
       >
+      <div className={cn(ORIGIN_FIT_BODY, "flex flex-col gap-6 px-7 py-8 sm:px-9 sm:py-10")}>
         <div className="flex items-center justify-between gap-4 text-[11px] uppercase tracking-[0.28em] text-text-lo/70">
           <span>Passage / 02</span>
           <span className="h-px flex-1 bg-[linear-gradient(90deg,var(--line),transparent)]" />
@@ -130,7 +137,9 @@ export function PassageDescribeStep({
             className="h-auto rounded-none border-0 border-b border-line/70 bg-transparent px-0 py-2 text-base text-text-hi shadow-none focus-visible:border-amber/70 focus-visible:ring-0"
           />
         </div>
+      </div>
 
+      <div className={ORIGIN_FIT_FOOTER}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <button
@@ -164,6 +173,7 @@ export function PassageDescribeStep({
             </span>
           </button>
         </div>
+      </div>
       </form>
     </OriginScrim>
   );
