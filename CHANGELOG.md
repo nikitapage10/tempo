@@ -2,9 +2,14 @@
 
 Plain-English history of what changed in TEMPO, newest first.
 
+## 2026-08-15
+
+- Fixed (v0.161.1): Origin's lines no longer ride up to the top of the screen. Every question, panel and line of narration now sits in the same place, centered against the middle-right of the film, instead of some copy floating at the top and some drifting into the middle.
+- Fixed (v0.161.1): Bringing your music in no longer draws a huge empty panel around a small amount of content. The import panel is now only as tall and wide as what's actually in it, growing as needed and staying inside the screen.
+
 ## 2026-08-14
 
-- Changed (v0.161.0): Origin's welcome film now keeps every step centered on screen, matching where the very first line of text sits. The Story chapter no longer has its own inner scrollbar — scrolling the page carries you through its chapters the same way it does everywhere else.
+- Changed (v0.161.0): The Story chapter in Origin no longer has its own inner scrollbar. Scrolling the page carries you through its sections the same way it does everywhere else.
 - Added (v0.161.0): You can now sign out of Origin partway through, instead of being stuck once the film starts. A quiet sign-out button (next to the zoom control on desktop) fades in once you've tuned in.
 - Fixed (v0.160.4 / Desktop v0.100.25): Signing out and closing TEMPO no longer leaves the login music playing in the tray. The app still sits in the background; it just goes quiet until you open it again. Update the desktop app after Desktop Release publishes both installers (Windows and Mac).
 - Fixed (v0.160.3): Origin and Passage story chapters no longer clip their last cards or opening lines. If a chapter is taller than the screen, it scrolls inside the glass — including The Story — instead of cutting off with no bar, and decorative rings no longer overlap the words or fake a second scrollbar.

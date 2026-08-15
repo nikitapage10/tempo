@@ -481,19 +481,14 @@ export function OriginExperience({
           ) : null}
 
           {state.phase === "opening" ? (
-            // The one panel that opts out of centre-centre: it sits beside the
-            // streak of light in the opening film, so it stays pinned to that
-            // edge instead of following the rest of the steps to the middle.
-            <div className="w-full justify-self-end sm:pr-[14vw]">
-              <TimedCopy
-                lines={OPENING_LINES}
-                videoRef={activeVideoRef}
-                showAll={media.staticMode}
-                resetKey={state.phase}
-                matches={activeKeyRef.current === clip?.key}
-                tick={activeTick}
-              />
-            </div>
+            <TimedCopy
+              lines={OPENING_LINES}
+              videoRef={activeVideoRef}
+              showAll={media.staticMode}
+              resetKey={state.phase}
+              matches={activeKeyRef.current === clip?.key}
+              tick={activeTick}
+            />
           ) : null}
 
           {mountName ? (
@@ -530,7 +525,7 @@ export function OriginExperience({
                 delaySeconds={0.15}
                 holdSeconds={1.05}
                 morphSeconds={0.75}
-                className="font-display text-center text-2xl leading-snug text-text-hi sm:text-3xl [&>span]:text-center"
+                className="font-display text-right text-2xl leading-snug text-text-hi sm:text-3xl [&>span]:text-right"
               />
             </StepFade>
           ) : null}

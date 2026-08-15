@@ -255,12 +255,9 @@ export function TimedCopy({
 /**
  * The layer that holds interactive content above the film.
  *
- * Centre-centre by default — every step after the opening line reads as one
- * fixed anchor point regardless of what the footage behind it is doing. The
- * opening line is the one exception: it sits beside the streak of light in
- * the first film, so it opts out of this centring itself (see its own
- * `justify-self-end` wrapper in OriginExperience) rather than the shared
- * layout dragging every later step off to the side with it.
+ * Middle-right, every step: the supplied footage carries its subject on the
+ * left, so copy sitting centre-screen lands on top of it. On narrow screens it
+ * falls back to full width, where there is no room to sit to one side.
  */
 export function OriginOverlay({
   children,
@@ -291,12 +288,22 @@ export function OriginOverlay({
         className
       )}
     >
-      <div className="flex min-h-full flex-col px-5">
+      <div className="flex min-h-full flex-col px-5 sm:pr-[14vw]">
         <div
           aria-hidden
           className="min-h-[max(1.5rem,env(safe-area-inset-top))] shrink-0 grow basis-0"
         />
-        <div className="grid w-full justify-items-center [&>*]:col-start-1 [&>*]:row-start-1">
+        {/*
+          Every step shares one grid cell so they can crossfade in place. That
+          makes `items-center` load-bearing, not cosmetic: the default `stretch`
+          sizes each child to the *tallest* one in the cell, and steps stay
+          mounted at opacity 0 either side of their turn. A single line of copy
+          was therefore being stretched to the height of the invisible name or
+          introduction panel beside it and rendering at the top of that box —
+          which is what pinned the opening lines to the top of the screen while
+          the panels themselves looked correctly centred.
+        */}
+        <div className="grid w-full items-center justify-items-stretch sm:justify-items-end [&>*]:col-start-1 [&>*]:row-start-1">
           {children}
         </div>
         <div

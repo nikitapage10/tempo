@@ -219,7 +219,7 @@ function ChapterSection({
   return (
     <section
       aria-labelledby={`origin-chapter-${index}`}
-      className={cn(staticMode && "py-12", scrollBody && "flex h-full min-h-0 flex-col")}
+      className={cn(staticMode && "py-12", scrollBody && "flex min-h-0 flex-col")}
     >
       {/* Middle-left, opposite the earlier steps: the scroll footage opens out
           from the right, so the copy sits on the quieter side of the frame. */}
@@ -228,9 +228,14 @@ function ChapterSection({
           "origin-story-chapter relative flex w-full flex-col overflow-hidden rounded-[26px] border bg-[linear-gradient(125deg,rgb(9_10_13/0.9),rgb(21_25_32/0.76),rgb(10_10_13/0.86))] shadow-3 backdrop-blur-xl",
           // Outer overflow is hidden so decorative arcs cannot inflate the
           // scroll height. The body below is the real scroller — including The Story.
-          scrollBody
-            ? "h-full min-h-0 max-h-full flex-1"
-            : !staticMode && CHAPTER_MAX,
+          //
+          // Import is capped the same way every other chapter is rather than
+          // stretched to fill the stage. Pinning it top-to-bottom meant a step
+          // with one small card ("Reading what you brought", the Spotify
+          // search) drew a full-height sheet of glass around it; capped, the
+          // panel is exactly as tall as its own content until that content
+          // genuinely outgrows the screen, and only then does its body scroll.
+          !staticMode && CHAPTER_MAX,
           index % 2 === 0 ? "border-amber/25" : "border-ice/30",
           "transition-[max-width,transform] duration-700 motion-reduce:transition-none",
           wide ? "max-w-5xl" : "max-w-3xl",
@@ -353,6 +358,12 @@ export function OriginStoryScroll({
     importStep === "processing" || importStep === "spotify" || importStep === "confirm"
       ? "sm:ml-auto sm:mr-[4%]"
       : "sm:ml-[4%]";
+  /**
+   * Only the steps that actually carry wide content get the wider glass.
+   * Reading/Spotify/Done are a single small card each, and the widest setting
+   * left them floating in the middle of a sheet several times their size.
+   */
+  const importWide = importStep === "review" || importStep === "confirm";
 
   /**
    * Drive each chapter's transform straight from scroll progress.
@@ -376,19 +387,15 @@ export function OriginStoryScroll({
       if (importStarted) {
         const own = i === 4;
         el.style.opacity = own ? "1" : "0";
-        // Top-align the import panel so tall review content can scroll inside
-        // the stage instead of being centered and clipped by overflow:hidden.
-        el.style.transform = "translate3d(0, 0, 0) scale(1)";
-        el.style.top = own ? "1rem" : "";
-        el.style.bottom = own ? "1rem" : "";
-        el.style.height = own ? "auto" : "";
+        // Centred like every other chapter, and left to size itself. It used to
+        // be pinned top-to-bottom so tall review content could scroll, but the
+        // panel's own max-height already caps it — pinning only forced the
+        // short steps to draw a full-height sheet of glass around a small card.
+        el.style.transform = "translate3d(0, -50%, 0) scale(1)";
         el.style.pointerEvents = own ? "auto" : "none";
         el.style.zIndex = own ? "40" : "0";
         return;
       }
-      el.style.top = "";
-      el.style.bottom = "";
-      el.style.height = "";
       const start = stops[i];
       const end = i + 1 < stops.length ? stops[i + 1] : 1;
       const span = Math.max(0.0001, end - start);
@@ -881,7 +888,7 @@ export function OriginStoryScroll({
             index={i}
             staticMode
             title={i === 4 && importStarted ? importTitle[importStep] : undefined}
-            wide={i === STORY_CHAPTER || (i === 4 && importStarted)}
+            wide={i === STORY_CHAPTER || (i === 4 && importStarted && importWide)}
             alignClass={i === 4 && importStarted ? importAlign : undefined}
             // Static mode uses the page scroller — nested h-full scrollBody isn't needed.
             onBack={() => backForChapter(i)}
@@ -909,13 +916,8 @@ export function OriginStoryScroll({
       <div style={{ height: `${sections.length * VH_PER_CHAPTER + 100}vh` }} className="w-full">
         <div
           className={cn(
-            "sticky top-0 flex px-5",
-            importStarted ? "h-[100dvh]" : STORY_STAGE,
-            // Import fills the stage top-to-bottom; centering + overflow-hidden
-            // was clipping Shape the Workspace before Continue could be reached.
-            importStarted
-              ? "items-stretch overflow-hidden py-4 sm:py-5"
-              : "items-center overflow-hidden py-6 sm:py-8"
+            "sticky top-0 flex items-center overflow-hidden px-5",
+            importStarted ? "h-[100dvh] py-4 sm:py-5" : cn(STORY_STAGE, "py-6 sm:py-8")
           )}
         >
           {sections.map((content, i) => (
@@ -927,19 +929,16 @@ export function OriginStoryScroll({
               // Transforms are written by `paint` on every scroll frame. The
               // first chapter starts at zero and is faded up by the mount
               // effect below, so the story opens rather than appearing.
-              // `top-1/2` + paint's translateY(-50%) keeps panels middle-left
-              // (import mode overrides top/height in paint for a scroll body).
-              className={cn(
-                "absolute inset-x-5 will-change-[transform,opacity]",
-                importStarted && i === 4 ? "top-4 bottom-4 sm:top-5 sm:bottom-5" : "top-1/2"
-              )}
+              // `top-1/2` + paint's translateY(-50%) keeps panels middle-left,
+              // import included — it sizes to its content within its own cap.
+              className="absolute inset-x-5 top-1/2 will-change-[transform,opacity]"
               style={{ opacity: 0, transition: "opacity 520ms ease-out" }}
             >
               <ChapterSection
                 index={i}
                 staticMode={false}
                 title={i === 4 && importStarted ? importTitle[importStep] : undefined}
-                wide={i === STORY_CHAPTER || (i === 4 && importStarted)}
+                wide={i === STORY_CHAPTER || (i === 4 && importStarted && importWide)}
                 alignClass={i === 4 && importStarted ? importAlign : undefined}
                 scrollBody={i === 4 && importStarted}
                 panBody={i === STORY_CHAPTER}
