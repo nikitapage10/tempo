@@ -21,6 +21,8 @@ export type CreateMemberInviteInput = {
   handle?: string | null;
   profileId?: string | null;
   areaOverrides?: AreaGrants;
+  relationshipLabel?: string | null;
+  inviteMessage?: string | null;
 };
 
 export type CreatedMemberInvite = {
@@ -112,6 +114,9 @@ async function sendEmailIfConfigured(input: {
   rawToken: string;
   expiresAt: string;
   memberId: string;
+  areas: AreaGrants;
+  relationshipLabel?: string | null;
+  inviteMessage?: string | null;
 }): Promise<{ emailSent: boolean; emailReason?: string }> {
   if (!process.env.RESEND_API_KEY || !process.env.INVITE_FROM_EMAIL) {
     return { emailSent: false, emailReason: "not_configured" };
@@ -125,6 +130,9 @@ async function sendEmailIfConfigured(input: {
       inviteUrl: `${siteOrigin()}/team-invite/${input.rawToken}`,
       expiresAt: input.expiresAt,
       idempotencyKey: `team-invite/${input.memberId}/send/1`,
+      areas: input.areas,
+      relationshipLabel: input.relationshipLabel,
+      inviteMessage: input.inviteMessage,
     });
     return { emailSent: true };
   } catch (err) {
@@ -254,6 +262,12 @@ export async function createMemberInvite(
   if (existing?.status === "active") {
     throw Object.assign(new Error("They’re already on this team."), { status: 409 });
   }
+  if (existing?.status === "suspended") {
+    throw Object.assign(
+      new Error("They already belong to this team and are suspended. Resume their access instead."),
+      { status: 409 }
+    );
+  }
   if (existing?.status === "pending") {
     throw Object.assign(new Error("They already have a pending invite for this artist."), {
       status: 409,
@@ -275,10 +289,17 @@ export async function createMemberInvite(
     invited_by: input.invitedByUserId,
     invite_token_hash: tokenHash,
     expires_at: expiresAt,
+    relationship_label: input.relationshipLabel?.trim() || null,
+    invite_message: input.inviteMessage?.trim() || null,
+    suspended_at: null,
+    suspended_by_user_id: null,
+    revoked_at: null,
+    revoked_by_user_id: null,
+    ended_reason: null,
   };
 
   const revoked = (existingRows ?? []).find((row) => {
-    if (row.status !== "revoked") return false;
+    if (row.status !== "revoked" && row.status !== "declined") return false;
     if (targetUserId && row.user_id === targetUserId) return true;
     if (targetEmail && row.invited_email?.toLowerCase() === targetEmail) return true;
     return false;
@@ -305,6 +326,15 @@ export async function createMemberInvite(
     }
     throw Object.assign(new Error(message), { status: 500 });
   }
+
+  await admin.from("artist_membership_events").insert({
+    artist_id: input.artistId,
+    membership_id: saved.id,
+    subject_user_id: targetUserId,
+    actor_user_id: input.invitedByUserId,
+    event_type: "invited",
+    changes: { role: input.role, areas },
+  }).then(() => {}, () => {});
 
   const kind: "existing" | "email" = targetUserId ? "existing" : "email";
   const invitedByName = await displayNameForUser(
@@ -339,6 +369,9 @@ export async function createMemberInvite(
       rawToken,
       expiresAt,
       memberId: saved.id,
+      areas,
+      relationshipLabel: input.relationshipLabel,
+      inviteMessage: input.inviteMessage,
     });
     emailSent = sent.emailSent;
     emailReason = sent.emailReason;

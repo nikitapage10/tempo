@@ -40,8 +40,9 @@ export default function ArtistProfileByHandlePage() {
     queryFn: () => fetchArtistProfileByHandle(handle),
     enabled: !!handle,
   });
+  const isPro = query.data?.profile_kind === "pro";
   const { tracks: releasedTracks } = useProfileReleasedTracks(
-    query.data?.artist_id ?? null
+    !isPro ? (query.data?.artist_id ?? null) : null
   );
 
   if (query.isLoading) {
@@ -122,7 +123,7 @@ export default function ArtistProfileByHandlePage() {
 
         <div className="relative z-[2] flex items-start justify-between gap-3 px-6 py-8 sm:px-8 sm:py-10">
           <div className="min-w-0">
-            <p className="label-mono mb-1.5">Artist profile</p>
+            <p className="label-mono mb-1.5">{isPro ? "Pro profile" : "Artist profile"}</p>
             <h1 className="min-w-0 font-display text-3xl font-medium tracking-[0.025em] text-text-hi sm:text-[40px] sm:leading-[1.05]">
               {profile.display_name}
             </h1>
@@ -192,7 +193,11 @@ export default function ArtistProfileByHandlePage() {
         <FlareLine className="relative z-[1] mx-6 mb-6 max-w-[420px] opacity-60 sm:mx-8" />
       </div>
 
-      <ArtistProfileStoryView profile={profile} releasedTracks={releasedTracks} />
+      <ArtistProfileStoryView
+        profile={profile}
+        releasedTracks={releasedTracks}
+        variant={isPro ? "pro" : "artist"}
+      />
     </div>
   );
 }

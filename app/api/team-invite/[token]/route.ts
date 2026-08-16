@@ -49,6 +49,9 @@ export async function GET(
       role: ctx.member.role,
       invited_email: ctx.member.invited_email,
       account_exists: accountExists,
+      areas: ctx.member.areas,
+      relationship_label: ctx.member.relationship_label,
+      invite_message: ctx.member.invite_message,
     },
     { headers: noStoreHeaders() }
   );

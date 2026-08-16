@@ -12,6 +12,11 @@ them in addition to the design spec before building any feature:
 - `IMPLEMENTATION-PLAN.md` — work-package order, migration gates, verification
 - `SECURITY-AND-PERMISSIONS.md` — threat model and role matrix
 - `TESTING-STRATEGY.md` — manual regression and future automation notes
+- `TEAM-OPERATIONS-PRODUCT-SPEC.md`, `TEAM-OPERATIONS-UX-SPEC.md`,
+  `TEAM-OPERATIONS-TECHNICAL-DESIGN.md`,
+  `TEAM-OPERATIONS-SECURITY-AND-PERMISSIONS.md`, and
+  `TEAM-OPERATIONS-IMPLEMENTATION-TEST-ROLLOUT-PLAN.md` — the current next
+  initiative; specification only until individual packages ship
 `tempo-design-spec.md` plus these documents are the source of truth for scope,
 data model, screens, and visual design. `PRODUCT.md` describes only what exists
 today — never treat roadmap specs as shipped product.

@@ -53,6 +53,8 @@ export async function POST(req: NextRequest) {
         body?.areaOverrides && typeof body.areaOverrides === "object"
           ? (body.areaOverrides as AreaGrants)
           : undefined,
+      relationshipLabel: typeof body?.relationshipLabel === "string" ? body.relationshipLabel : null,
+      inviteMessage: typeof body?.inviteMessage === "string" ? body.inviteMessage : null,
     });
     return NextResponse.json(result, { status: 201, headers: noStoreHeaders() });
   } catch (err) {

@@ -7,6 +7,7 @@ import { createHash } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { connectTeamNetworkFollows } from "@/lib/social/connect-team-follows";
 import type { MemberRole } from "@/lib/team/roles";
+import { normalizeAreas, type AreaGrants } from "@/lib/team/areas";
 
 function sha256HexServer(value: string): string {
   return createHash("sha256").update(value, "utf8").digest("hex");
@@ -21,6 +22,9 @@ export type PendingTeamInviteContext = {
     status: string;
     invited_by: string;
     expires_at: string | null;
+    areas: AreaGrants;
+    relationship_label: string | null;
+    invite_message: string | null;
   };
   artist: {
     id: string;
@@ -48,7 +52,7 @@ export async function resolveTeamInvite(
 
   const { data: member, error } = await admin
     .from("artist_members")
-    .select("id, artist_id, invited_email, role, status, invited_by, expires_at")
+    .select("id, artist_id, invited_email, role, areas, relationship_label, invite_message, status, invited_by, expires_at")
     .eq("invite_token_hash", tokenHash)
     .maybeSingle();
 
@@ -74,6 +78,9 @@ export async function resolveTeamInvite(
       status: member.status,
       invited_by: member.invited_by,
       expires_at: member.expires_at,
+      areas: normalizeAreas(member.areas),
+      relationship_label: member.relationship_label ?? null,
+      invite_message: member.invite_message ?? null,
     },
     artist: { id: artist.id, name: artist.name },
   };
@@ -107,12 +114,15 @@ export async function listPendingTeamInvitesForUser(userId: string): Promise<
     role: MemberRole;
     createdAt: string;
     expiresAt: string | null;
+    areas: AreaGrants;
+    relationshipLabel: string | null;
+    inviteMessage: string | null;
   }[]
 > {
   const admin = createAdminClient();
   const { data: rows, error } = await admin
     .from("artist_members")
-    .select("id, artist_id, role, created_at, expires_at")
+    .select("id, artist_id, role, areas, relationship_label, invite_message, created_at, expires_at")
     .eq("user_id", userId)
     .eq("status", "pending")
     .order("created_at", { ascending: false });
@@ -137,6 +147,9 @@ export async function listPendingTeamInvitesForUser(userId: string): Promise<
         role: row.role as MemberRole,
         createdAt: row.created_at,
         expiresAt: row.expires_at,
+        areas: normalizeAreas(row.areas),
+        relationshipLabel: row.relationship_label ?? null,
+        inviteMessage: row.invite_message ?? null,
       };
     });
 }
@@ -149,13 +162,22 @@ export async function declinePendingTeamMember(input: {
   const admin = createAdminClient();
   const { data: updated, error } = await admin
     .from("artist_members")
-    .update({ status: "revoked" })
+    .update({ status: "declined", ended_reason: "invite_declined", invite_token_hash: null })
     .eq("id", input.memberId)
     .eq("user_id", input.userId)
     .eq("status", "pending")
     .select("id, artist_id, invited_by, role")
     .maybeSingle();
   if (error || !updated) return false;
+
+  await admin.from("artist_membership_events").insert({
+    artist_id: updated.artist_id,
+    membership_id: updated.id,
+    subject_user_id: input.userId,
+    actor_user_id: input.userId,
+    event_type: "declined",
+    changes: { status: "declined" },
+  }).then(() => {}, () => {});
 
   const { data: artist } = await admin
     .from("artists")
@@ -198,6 +220,7 @@ export async function activatePendingTeamMember(input: {
       user_id: input.userId,
       status: "active",
       accepted_at: new Date().toISOString(),
+      invite_token_hash: null,
     })
     .eq("id", input.memberId)
     .eq("status", "pending")
@@ -205,6 +228,15 @@ export async function activatePendingTeamMember(input: {
     .maybeSingle();
 
   if (error || !updated) return null;
+
+  await admin.from("artist_membership_events").insert({
+    artist_id: updated.artist_id,
+    membership_id: updated.id,
+    subject_user_id: input.userId,
+    actor_user_id: input.userId,
+    event_type: "accepted",
+    changes: { status: "active" },
+  }).then(() => {}, () => {});
 
   const { data: artist } = await admin
     .from("artists")

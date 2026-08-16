@@ -7,12 +7,16 @@ import { Button } from "@/components/ui/button";
 import { InviteAuthCta } from "@/components/auth/invite-auth-cta";
 import { createClient } from "@/lib/supabase/client";
 import { ROLE_LABELS, type MemberRole } from "@/lib/team/roles";
+import { AREA_KEYS, AREA_LABELS, areaLevel, type AreaGrants } from "@/lib/team/areas";
 
 type TeamInvitePreview = {
   artist: { name: string };
   role: MemberRole;
   invited_email: string;
   account_exists: boolean | null;
+  areas: AreaGrants;
+  relationship_label: string | null;
+  invite_message: string | null;
 };
 
 async function fetchPreview(token: string): Promise<TeamInvitePreview> {
@@ -63,7 +67,7 @@ export default function TeamInvitePage() {
     }
   }
 
-  const roleLabel = previewQuery.data ? ROLE_LABELS[previewQuery.data.role] : null;
+  const roleLabel = previewQuery.data ? previewQuery.data.relationship_label || ROLE_LABELS[previewQuery.data.role] : null;
 
   const emailMismatch =
     !!user &&
@@ -97,6 +101,11 @@ export default function TeamInvitePage() {
             <p className="mt-1 font-mono text-xs text-text-lo">
               Invited: {previewQuery.data.invited_email}
             </p>
+            {previewQuery.data.invite_message ? <p className="mt-4 rounded-input border-l-2 border-ice bg-bg-2 p-3 text-left text-sm text-text-hi">{previewQuery.data.invite_message}</p> : null}
+            <div className="mt-4 rounded-input border border-line bg-bg-2/50 p-3 text-left">
+              <p className="label-mono mb-2">What you can access</p>
+              <dl className="space-y-1.5">{AREA_KEYS.map((area) => <div key={area} className="flex justify-between gap-3 text-xs"><dt className="text-text-lo">{AREA_LABELS[area]}</dt><dd className="capitalize text-text-hi">{areaLevel(previewQuery.data.areas, area)}</dd></div>)}</dl>
+            </div>
 
             <div className="mt-6 space-y-2">
               {user === undefined ? (

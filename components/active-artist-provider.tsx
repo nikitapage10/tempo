@@ -16,7 +16,10 @@ import {
   uploadArtistEmblem,
   uploadArtistLogo,
 } from "@/lib/api/artists";
-import { PREFER_ORIGIN_ARTIST_KEY } from "@/lib/constants";
+import {
+  PREFER_DEMO_ARTIST_KEY,
+  PREFER_ORIGIN_ARTIST_KEY,
+} from "@/lib/constants";
 import {
   readStoredArtistId,
   writeStoredArtistId,
@@ -58,6 +61,15 @@ function readPreferOriginArtistId(): string | null {
   }
 }
 
+function readPreferDemoArtistId(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return sessionStorage.getItem(PREFER_DEMO_ARTIST_KEY);
+  } catch {
+    return null;
+  }
+}
+
 export function ActiveArtistProvider({
   children,
 }: {
@@ -67,13 +79,16 @@ export function ActiveArtistProvider({
     null
   );
   const [hydrated, setHydrated] = React.useState(false);
+  const explicitDemoActiveRef = React.useRef(false);
   const user = useCurrentUser();
+  const userResolved = user !== undefined;
 
   React.useEffect(() => {
-    if (user === undefined) return;
+    if (!userResolved) return;
+    explicitDemoActiveRef.current = false;
     setActiveArtistIdState(readStoredArtistId(user?.id ?? null));
     setHydrated(true);
-  }, [user?.id, user]);
+  }, [user?.id, userResolved]);
 
   const artistsQuery = useQuery({
     queryKey: ["artists"],
@@ -89,6 +104,18 @@ export function ActiveArtistProvider({
   React.useEffect(() => {
     if (!artists.length) return;
     const userId = user?.id ?? null;
+    const preferDemo = readPreferDemoArtistId();
+    if (preferDemo && artists.some((a) => a.id === preferDemo && a.demo_kind)) {
+      explicitDemoActiveRef.current = true;
+      try {
+        sessionStorage.removeItem(PREFER_DEMO_ARTIST_KEY);
+      } catch {
+        /* ignore */
+      }
+      setActiveArtistIdState(preferDemo);
+      writeStoredArtistId(userId, preferDemo);
+      return;
+    }
     let preferOrigin: string | null = readPreferOriginArtistId();
     if (preferOrigin && artists.some((a) => a.id === preferOrigin)) {
       setActiveArtistIdState(preferOrigin);
@@ -111,8 +138,21 @@ export function ActiveArtistProvider({
       writeStoredArtistId(userId, preferPersonal);
       return;
     }
-    const stillValid =
-      activeArtistId && artists.some((a) => a.id === activeArtistId);
+    const keeper = ownedPersonalWorkspace(artists, userId);
+    const active = artists.find((a) => a.id === activeArtistId);
+    // A demo that was explicitly opened is valid for this mounted session.
+    // A stored demo pointer restored by a later login is not: Pros wake in
+    // their own home and can choose the demo again from the switcher.
+    if (
+      keeper &&
+      active?.demo_kind &&
+      !explicitDemoActiveRef.current
+    ) {
+      setActiveArtistIdState(keeper.id);
+      writeStoredArtistId(userId, keeper.id);
+      return;
+    }
+    const stillValid = !!active;
     if (!stillValid) {
       const next =
         pickResumeArtistId(artists, userId, activeArtistId) ?? artists[0].id;
@@ -120,8 +160,6 @@ export function ActiveArtistProvider({
       writeStoredArtistId(userId, next);
       return;
     }
-    const keeper = ownedPersonalWorkspace(artists, userId);
-    const active = artists.find((a) => a.id === activeArtistId);
     const hasMembership = membershipArtists(artists, userId).length > 0;
     if (
       keeper &&
@@ -136,15 +174,21 @@ export function ActiveArtistProvider({
 
   const setActiveArtistId = React.useCallback(
     (id: string) => {
+      explicitDemoActiveRef.current = Boolean(
+        artists.find((artist) => artist.id === id)?.demo_kind
+      );
       setActiveArtistIdState(id);
       writeStoredArtistId(user?.id ?? null, id);
     },
-    [user?.id]
+    [artists, user?.id]
   );
 
+  const preferDemoId = hydrated ? readPreferDemoArtistId() : null;
   const preferOriginId = hydrated ? readPreferOriginArtistId() : null;
   const resolvedArtistId =
-    preferOriginId && artists.some((a) => a.id === preferOriginId)
+    preferDemoId && artists.some((a) => a.id === preferDemoId && a.demo_kind)
+      ? preferDemoId
+      : preferOriginId && artists.some((a) => a.id === preferOriginId)
       ? preferOriginId
       : activeArtistId;
   const activeArtist =

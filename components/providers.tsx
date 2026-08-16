@@ -48,7 +48,9 @@ function AuthSessionBoundary({ children }: { children: ReactNode }) {
         return;
       }
       if (previousId !== nextId) {
-        if (!nextId) clearAuthHandoffKeys();
+        // Preserve a brand-new signup's Origin handoff, but clear every
+        // account-scoped session flag on sign-out or a direct A -> B switch.
+        if (!nextId || (previousId && nextId)) clearAuthHandoffKeys();
         void resetClientSession(queryClient);
       }
     });

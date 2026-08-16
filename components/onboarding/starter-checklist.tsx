@@ -4,35 +4,46 @@ import * as React from "react";
 import Link from "next/link";
 import {
   BarChart3,
+  BellRing,
+  CalendarDays,
   Check,
   ChevronRight,
   ClipboardCheck,
   Columns3,
   Disc3,
+  FolderKanban,
+  ListTodo,
   Music2,
   Radio,
   UserRound,
+  UsersRound,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useMemberOnboarding } from "@/hooks/use-member-onboarding";
 import type { StarterChecklistId } from "@/lib/api/member-onboarding";
+import {
+  starterChecklistContent,
+  type StarterChecklistIcon,
+} from "@/lib/starter-checklist";
 import { cn } from "@/lib/utils";
 
-const STEPS: {
-  id: StarterChecklistId;
-  label: string;
-  detail: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-}[] = [
-  { id: "review_profile", label: "Review your artist profile", detail: "Make sure the story and identity feel like you.", href: "/artist", icon: UserRound },
-  { id: "add_track", label: "Add your first track", detail: "Start with something you’re actively making.", href: "/board?new=1", icon: Disc3 },
-  { id: "upload_tune", label: "Upload a tune", detail: "Put a first bounce inside a track workspace.", href: "/tracks", icon: Music2 },
-  { id: "shape_board", label: "Shape your board", detail: "Review the stages that match your process.", href: "/board", icon: Columns3 },
-  { id: "review_stats", label: "Review your stats", detail: "See what TEMPO can read from your work.", href: "/stats", icon: BarChart3 },
-  { id: "connect_spotify", label: "Connect Spotify", detail: "Add your artist link to bring your catalog into view.", href: "/stats#platforms", icon: Radio },
-];
+const ICONS: Record<
+  StarterChecklistIcon,
+  React.ComponentType<{ className?: string }>
+> = {
+  profile: UserRound,
+  track: Disc3,
+  audio: Music2,
+  board: Columns3,
+  stats: BarChart3,
+  spotify: Radio,
+  roster: UsersRound,
+  task: ListTodo,
+  calendar: CalendarDays,
+  projects: FolderKanban,
+  notifications: BellRing,
+};
 
 export function StarterChecklist() {
   const onboarding = useMemberOnboarding();
@@ -58,13 +69,15 @@ export function StarterChecklist() {
   }, [available, onboarding.update, state?.checklistOpenedAt]);
 
   if (!available || !state) return null;
-  const done = new Set(state.checklistSteps);
-  const progress = Math.round((done.size / STEPS.length) * 100);
+  const content = starterChecklistContent(state.memberRole, state.passageRoles);
+  const stepIds = new Set(content.steps.map((step) => step.id));
+  const done = new Set(state.checklistSteps.filter((id) => stepIds.has(id)));
+  const progress = Math.round((done.size / content.steps.length) * 100);
 
   function toggle(id: StarterChecklistId) {
     const next = done.has(id)
-      ? state!.checklistSteps.filter((step) => step !== id)
-      : [...state!.checklistSteps, id];
+      ? Array.from(done).filter((step) => step !== id)
+      : [...Array.from(done), id];
     onboarding.update.mutate({ checklistSteps: next });
   }
 
@@ -76,7 +89,7 @@ export function StarterChecklist() {
         className="fixed right-4 top-24 z-[55] flex items-center gap-2 rounded-full border border-ice/30 bg-bg-1 px-3 py-2 text-xs text-text-hi shadow-e3 transition-colors hover:bg-bg-2 max-md:bottom-20 max-md:top-auto"
       >
         <ClipboardCheck className="size-4 text-ice" />
-        Getting started · {done.size}/{STEPS.length}
+        Getting started · {done.size}/{content.steps.length}
       </button>
     );
   }
@@ -89,8 +102,9 @@ export function StarterChecklist() {
             <ClipboardCheck className="size-4" />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="label-mono text-ice">Your first moves</p>
-            <h2 className="mt-1 font-display text-lg font-semibold text-text-hi">Bring the workspace to life.</h2>
+            <p className="label-mono text-ice">{content.eyebrow}</p>
+            <h2 className="mt-1 font-display text-lg font-semibold text-text-hi">{content.heading}</h2>
+            {content.personalization ? <p className="mt-1 text-xs text-text-lo">{content.personalization}</p> : null}
           </div>
           <button type="button" onClick={() => setExpanded(false)} className="rounded-input p-1.5 text-text-lo hover:bg-bg-2 hover:text-text-hi" aria-label="Close getting started checklist">
             <X className="size-4" />
@@ -105,9 +119,9 @@ export function StarterChecklist() {
       </div>
 
       <div className="max-h-[min(28rem,58vh)] overflow-y-auto p-2">
-        {STEPS.map((step) => {
+        {content.steps.map((step) => {
           const complete = done.has(step.id);
-          const Icon = step.icon;
+          const Icon = ICONS[step.icon];
           return (
             <div key={step.id} className={cn("group flex items-center gap-2 rounded-input p-2 transition-colors hover:bg-bg-2", complete && "opacity-60")}>
               <button

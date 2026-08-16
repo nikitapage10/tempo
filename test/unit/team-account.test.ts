@@ -42,6 +42,23 @@ describe("team member accounts", () => {
     expect(read("lib/api/spaces.ts")).toContain('createSpace("Home"');
   });
 
+  it("lets Pros create and switch between multiple private Spaces", () => {
+    const switcher = read("components/space-switcher.tsx");
+    const settings = read("app/(app)/settings/page.tsx");
+    const manager = read("components/spaces/spaces-manager.tsx");
+    const spaces = read("lib/api/spaces.ts");
+
+    expect(switcher).toContain('const canManageSpaces = mode !== "entered"');
+    expect(switcher).toContain("Manage spaces");
+    expect(switcher).toContain("New space");
+    expect(settings).toContain('title={lookOnly ? "Your Pro home"');
+    expect(settings).toContain("<SpacesManager />");
+    expect(manager).toContain('const isProHome = mode === "work"');
+    expect(manager).toContain('focus: isProHome ? "tasks" : newFocus');
+    expect(manager).toContain("stay separate from the artists you work with");
+    expect(spaces).toContain('.map((space) => updateSpaceFocus(space.id, "tasks"))');
+  });
+
   it("fans rectangular team cards with the artist at the center", () => {
     const constellation = read("components/team/team-constellation.tsx");
     expect(constellation).toContain("rounded-xl");

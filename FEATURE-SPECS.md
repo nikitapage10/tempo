@@ -4,6 +4,22 @@
 
 **Status key:** Planned · Spec only (Prompt 0) · Implemented (update when shipped)
 
+## Current shipped initiative — Team Operations
+
+**Status:** Specification complete; implementation not started.
+
+The Prompt 0–12 feature sequence below describes the foundation that has since shipped. The next coordinated feature initiative is Team Operations: permission truth, informed membership lifecycle, assignments and a private cross-artist My Work queue, review requests, an Artist Team Brief, one private team room per artist, a multi-artist Pro operating home, and optional role-based starter kits that personalize a Pro's private workspace without changing artist access.
+
+The binding specification suite is:
+
+- `TEAM-OPERATIONS-PRODUCT-SPEC.md`
+- `TEAM-OPERATIONS-UX-SPEC.md`
+- `TEAM-OPERATIONS-TECHNICAL-DESIGN.md`
+- `TEAM-OPERATIONS-SECURITY-AND-PERMISSIONS.md`
+- `TEAM-OPERATIONS-IMPLEMENTATION-TEST-ROLLOUT-PLAN.md`
+
+Team Operations is implemented in migrations 101–105 and the shared web client. Production rollout still follows the package order and direct hosted RLS gates in the implementation plan. Logical migration labels in the original design suite map to the numbered additive migrations.
+
 **Product defaults (binding):**
 - Guest reviewers do not need an account.
 - Guest links are tied to one fixed version, expire after 14 days by default, and can be revoked anytime.

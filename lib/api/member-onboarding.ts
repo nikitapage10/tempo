@@ -1,4 +1,4 @@
-export const STARTER_CHECKLIST_IDS = [
+export const ARTIST_STARTER_CHECKLIST_IDS = [
   "review_profile",
   "add_track",
   "upload_tune",
@@ -7,13 +7,68 @@ export const STARTER_CHECKLIST_IDS = [
   "connect_spotify",
 ] as const;
 
+export const PRO_STARTER_CHECKLIST_IDS = [
+  "pro_review_profile",
+  "pro_review_roster",
+  "pro_first_followup",
+  "pro_key_date",
+  "pro_work_view",
+  "pro_notifications",
+] as const;
+
+export const STARTER_CHECKLIST_IDS = [
+  ...ARTIST_STARTER_CHECKLIST_IDS,
+  ...PRO_STARTER_CHECKLIST_IDS,
+] as const;
+
 export type StarterChecklistId = (typeof STARTER_CHECKLIST_IDS)[number];
+export type OnboardingMemberRole = "artist" | "team_member" | "administrator";
+
+export function starterChecklistIdsFor(role: OnboardingMemberRole) {
+  return role === "team_member"
+    ? PRO_STARTER_CHECKLIST_IDS
+    : ARTIST_STARTER_CHECKLIST_IDS;
+}
+
+export const ARTIST_PAGE_TOUR_IDS = [
+  "calendar",
+  "board",
+  "tracks",
+  "projects",
+  "tasks",
+  "artist",
+  "social",
+  "scenes",
+  "stats",
+  "settings",
+] as const;
+
+export const PRO_PAGE_TOUR_IDS = [
+  "pro-today",
+  "pro-calendar",
+  "pro-projects",
+  "pro-tasks",
+  "pro-team",
+  "pro-profile",
+  "pro-social",
+  "pro-scenes",
+  "pro-settings",
+] as const;
+
+export const PAGE_TOUR_IDS = [
+  ...ARTIST_PAGE_TOUR_IDS,
+  ...PRO_PAGE_TOUR_IDS,
+] as const;
 
 export type MemberOnboardingState = {
   eligible: boolean;
-  memberRole: "artist" | "team_member" | "administrator";
+  memberRole: OnboardingMemberRole;
+  /** Self-described Passage roles; personalization only, never authority. */
+  passageRoles: string[];
   startedAt: string;
   mainTourCompletedAt: string | null;
+  /** Durable, Pro-only choice. Kept separate from the artist Origin tour. */
+  proTourChoice: "guides" | "skip_all" | null;
   checklistOpenedAt: string | null;
   checklistSteps: StarterChecklistId[];
   checklistDismissedAt: string | null;
@@ -27,6 +82,7 @@ export type MemberOnboardingState = {
 
 export type MemberOnboardingPatch = {
   mainTourCompleted?: boolean;
+  proTourChoice?: "guides" | "skip_all";
   skipAllPageTours?: boolean;
   checklistOpened?: boolean;
   checklistDismissed?: boolean;

@@ -4,6 +4,7 @@ import * as React from "react";
 import { ArrowRight, Check, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useMemberOnboarding } from "@/hooks/use-member-onboarding";
+import { useWorkspaceMode } from "@/hooks/use-workspace-mode";
 import {
   completeGuidedTour,
   guidedTourIsPending,
@@ -78,6 +79,7 @@ function paddedRect(element: HTMLElement): DOMRect {
 
 export function GuidedTour() {
   const onboarding = useMemberOnboarding();
+  const { mode, isLoading } = useWorkspaceMode();
   const [phase, setPhase] = React.useState<TourPhase>("hidden");
   const [stepIndex, setStepIndex] = React.useState(0);
   const [targetRect, setTargetRect] = React.useState<DOMRect | null>(null);
@@ -106,26 +108,42 @@ export function GuidedTour() {
   }, []);
 
   React.useEffect(() => {
+    // Origin arms this artist-only introduction in session storage. Never let
+    // a stale handoff (including one left by another signed-in account) open
+    // over a professional home while workspace identity is settling.
+    if (isLoading || mode !== "artist") {
+      setPhase("hidden");
+      setTargetRect(null);
+      return;
+    }
     if (!guidedTourIsPending()) return;
 
+    let revealTimer: number | null = null;
     const open = () => {
-      window.setTimeout(() => {
+      revealTimer = window.setTimeout(() => {
         if (!guidedTourIsPending()) return;
         previousFocusRef.current = document.activeElement as HTMLElement | null;
         setPhase("welcome");
       }, 360);
+    };
+    const cleanup = () => {
+      window.removeEventListener(ORIGIN_ARRIVAL_COMPLETE_EVENT, open);
+      if (revealTimer !== null) window.clearTimeout(revealTimer);
     };
 
     // The pre-paint cover clears almost immediately once the dashboard mounts.
     // Wait on the marker that spans the full cinematic wipe instead.
     if (document.documentElement.classList.contains(ORIGIN_ARRIVAL_RUNNING_CLASS)) {
       window.addEventListener(ORIGIN_ARRIVAL_COMPLETE_EVENT, open, { once: true });
-      return () => window.removeEventListener(ORIGIN_ARRIVAL_COMPLETE_EVENT, open);
+      return cleanup;
     }
 
     const timer = window.setTimeout(open, 500);
-    return () => window.clearTimeout(timer);
-  }, []);
+    return () => {
+      window.clearTimeout(timer);
+      cleanup();
+    };
+  }, [isLoading, mode]);
 
   React.useEffect(() => {
     if (phase === "hidden") return;

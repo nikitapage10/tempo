@@ -35,7 +35,11 @@ export function hasDemoWorkspace(owned: OriginOwnedRow[]): boolean {
 }
 
 function isFinishedMusic(status: string | null | undefined): boolean {
-  return status === "complete" || status === "skipped";
+  return (
+    status === "complete" ||
+    status === "skipped" ||
+    status === "legacy_complete"
+  );
 }
 
 function isUnfinishedMusic(status: string | null | undefined): boolean {

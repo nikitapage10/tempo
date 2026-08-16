@@ -86,7 +86,7 @@ export function JoinNetworkDialog({
             </p>
           ) : null}
           <p className="text-xs leading-relaxed text-text-lo/80">
-            You can leave the network at any time from your Artist page, and
+            You can leave the network at any time from your Profile page, and
             your work stays exactly where it is either way.
           </p>
         </div>

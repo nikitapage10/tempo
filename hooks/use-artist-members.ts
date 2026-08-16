@@ -8,6 +8,8 @@ import {
   listArtistMembers,
   respondToTeamInvite,
   revokeMember,
+  resumeMember,
+  suspendMember,
   updateMemberAreas,
   updateMemberRole,
   type InviteMemberInput,
@@ -62,7 +64,10 @@ export function useArtistMemberMutations(artistId: string | null) {
     onSuccess: invalidate,
   });
 
-  return { invite, setAreas, setRole, revoke };
+  const suspend = useMutation({ mutationFn: suspendMember, onSuccess: invalidate });
+  const resume = useMutation({ mutationFn: resumeMember, onSuccess: invalidate });
+
+  return { invite, setAreas, setRole, revoke, suspend, resume };
 }
 
 export function usePendingTeamInvites() {

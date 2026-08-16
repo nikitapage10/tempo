@@ -1,4 +1,5 @@
 import { ROLE_LABELS, type MemberRole } from "@/lib/team/roles";
+import { AREA_KEYS, AREA_LABELS, areaLevel, type AreaGrants } from "@/lib/team/areas";
 
 type TeamInviteEmail = {
   email: string;
@@ -8,6 +9,9 @@ type TeamInviteEmail = {
   inviteUrl: string;
   expiresAt: string | null;
   idempotencyKey: string;
+  areas: AreaGrants;
+  relationshipLabel?: string | null;
+  inviteMessage?: string | null;
 };
 
 function escapeHtml(value: string) {
@@ -43,7 +47,12 @@ export function renderTeamInviteEmail(input: Omit<TeamInviteEmail, "idempotencyK
   const safeArtist = escapeHtml(input.artistName);
   const safeLink = escapeHtml(input.inviteUrl);
   const safeInviter = escapeHtml(input.invitedByEmail);
-  const label = ROLE_LABELS[input.role];
+  const label = input.relationshipLabel?.trim() || ROLE_LABELS[input.role];
+  const accessLines = AREA_KEYS.map((area) => `${AREA_LABELS[area]}: ${areaLevel(input.areas, area)}`);
+  const safeAccess = accessLines.map((line) => `<li style="margin:4px 0">${escapeHtml(line)}</li>`).join("");
+  const safeMessage = input.inviteMessage?.trim()
+    ? `<p style="margin:18px 0 0;padding:14px;border-left:2px solid #7FB4FF;color:#F2F0EB;font-size:14px;line-height:1.6">${escapeHtml(input.inviteMessage.trim())}</p>`
+    : "";
   const expiry = input.expiresAt
     ? new Intl.DateTimeFormat("en-US", { dateStyle: "long", timeZone: "UTC" }).format(new Date(input.expiresAt))
     : null;
@@ -67,6 +76,8 @@ export function renderTeamInviteEmail(input: Omit<TeamInviteEmail, "idempotencyK
               <div style="margin-top:28px;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#FFB56B">You’re invited to the team</div>
               <h1 style="margin:10px 0 12px;font-family:'Space Grotesk',Arial,sans-serif;font-size:28px;line-height:1.2;color:#F2F0EB">Work with ${safeArtist} as ${escapeHtml(label)}.</h1>
               <p style="margin:0;color:#B6B5BE;font-size:15px;line-height:1.65">${safeInviter} added you to their TEMPO team. You'll get access to exactly what they've granted you — calendar, catalog, performances, or stats, depending on your role. Create your TEMPO account the normal way; there's no artist setup to do, since this isn't your own catalog.</p>
+              ${safeMessage}
+              <div style="margin-top:20px;color:#B6B5BE;font-size:13px;line-height:1.5"><strong style="color:#F2F0EB">Access to review before approval</strong><ul style="margin:8px 0 0;padding-left:20px">${safeAccess}</ul></div>
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:26px 0 0">
                 <tr>
                   <td align="center" style="border-radius:10px;background:#7FB4FF">
@@ -88,6 +99,10 @@ export function renderTeamInviteEmail(input: Omit<TeamInviteEmail, "idempotencyK
   const text = `${input.invitedByEmail} added you to their TEMPO team, working with ${input.artistName} as ${label}.
 
 You'll get access to exactly what they've granted you. Create your TEMPO account the normal way — there's no artist setup to do, since this isn't your own catalog.
+
+Access to review before approval:
+${accessLines.join("\n")}
+${input.inviteMessage?.trim() ? `\nMessage: ${input.inviteMessage.trim()}\n` : ""}
 
 Accept invite: ${input.inviteUrl}
 

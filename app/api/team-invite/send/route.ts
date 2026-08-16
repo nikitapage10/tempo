@@ -5,6 +5,7 @@ import { createClient as createServerClient } from "@/lib/supabase/server";
 import { sendTeamInviteEmail } from "@/lib/team/invite-email";
 import { siteOrigin } from "@/lib/tokens";
 import type { MemberRole } from "@/lib/team/roles";
+import { normalizeAreas } from "@/lib/team/areas";
 
 export const dynamic = "force-dynamic";
 
@@ -43,7 +44,7 @@ export async function POST(req: NextRequest) {
   const admin = createAdminClient();
   const { data: member, error } = await admin
     .from("artist_members")
-    .select("id, artist_id, invited_email, role, status, invite_token_hash, expires_at")
+    .select("id, artist_id, invited_email, role, areas, relationship_label, invite_message, status, invite_token_hash, expires_at")
     .eq("id", memberId)
     .maybeSingle();
   if (error || !member) {
@@ -80,6 +81,9 @@ export async function POST(req: NextRequest) {
       inviteUrl: `${siteOrigin()}/team-invite/${rawToken}`,
       expiresAt: member.expires_at,
       idempotencyKey: `team-invite/${member.id}/send/1`,
+      areas: normalizeAreas(member.areas),
+      relationshipLabel: member.relationship_label,
+      inviteMessage: member.invite_message,
     });
     return NextResponse.json({ sent: true });
   } catch (err) {

@@ -1,6 +1,9 @@
 import { createClient } from "@/lib/supabase/client";
 import { enqueue } from "@/lib/offline/outbox";
 import type { Task, TaskInsert, TaskUpdate } from "@/lib/types";
+import { assignArtistTask } from "@/lib/api/team-operations";
+
+export { assignArtistTask };
 
 function isNetworkError(err: unknown): boolean {
   if (err instanceof TypeError) return true;

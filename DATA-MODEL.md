@@ -16,6 +16,29 @@ Single-user. Almost every root row has `user_id` defaulting to `auth.uid()`, or 
 
 ### Tables
 
+#### `artist_profiles` identity kind (migrations 028 + 098)
+
+Artist and Pro accounts share the same handle, visibility, messaging, and social identity table. `profile_kind` is `artist` or `pro`, defaults to `artist`, and is mirrored from `artists.workspace_kind` (`personal` becomes `pro`). This keeps public and member profile reads self-contained: they can choose artist/release language or professional/career language without joining the private workspace table. The field changes presentation only and never grants artist access.
+
+#### Dual artist + Pro identity (migrations 092 + 100)
+
+An auth user may own both `artists.workspace_kind = 'artist'` and a separate
+`workspace_kind = 'personal'` row. The former owns the musician's catalog,
+Origin, and artist profile; the latter is the person's private Pro home and
+professional profile. `artist_members` adds access to somebody else's artist
+without changing either owned row. `legacy_complete` is a finished musician
+state, not evidence of a placeholder. Migration 100 restores affected rows
+that provably predate their first Pro/team acceptance and creates a personal
+home if the repair leaves one missing; it moves or deletes no catalog data.
+
+#### Pro tour preference (migration 099)
+
+`member_onboarding.pro_tour_choice` stores the one-time professional guide
+decision as `guides`, `skip_all`, or `null` before the choice is made. It is
+deliberately separate from `main_tour_completed_at`, which belongs to the
+artist's post-Origin introduction. This prevents dual accounts and account
+switching from replaying or silently sharing tour decisions across identities.
+
 #### `spaces`
 | Column | Type | Notes |
 |--------|------|-------|
@@ -439,3 +462,28 @@ Only if Board/Today need aggregates (unresolved comment counts, etc.). Prefer vi
 | Workspace pref uniqueness | Track XOR stage XOR global rows | Decide in 010 |
 
 None of these block creating the living docs or starting Prompt 1 (layout-only, no DB).
+
+---
+
+## Part E — Team Operations schema (migrations 101–105)
+
+**Status:** Specification only. No tables or columns in this section should be treated as present until the corresponding migration ships.
+
+The detailed schema and constraints live in `TEAM-OPERATIONS-TECHNICAL-DESIGN.md`. Proposed additive changes are grouped logically so implementation can choose the next available migration numbers safely:
+
+1. **Permission contract:** extend the closed artist-team area vocabulary; add normalized effective-access and safe space-to-artist helpers.
+2. **Membership lifecycle:** extend `artist_members`; add append-only `artist_membership_events`; add guarded suspend/resume/leave/end RPCs.
+3. **Assignments:** add task assignee/assigner fields and `task_assignment_events`; add explicit `review_requests`; expose a secured My Work fan-in RPC.
+4. **Team Brief:** add `artist_team_briefs`, links, source pins, and user-private seen state.
+5. **Team room:** add a one-to-one `artist_team_rooms` binding over existing conversations plus safe work-link snapshots.
+6. **Pro operations:** add user-owned availability and per-artist preferences plus a private combined-schedule query.
+7. **Pro starter kits:** add a versioned curated catalog, Pro-home preferences/saved views, installation receipts, item provenance, and guarded preview/install/restore/removal RPCs.
+
+Cross-cutting rules:
+
+- Assignment never grants source access.
+- Existing `tasks.user_id` remains intact; assignee is a separate nullable field.
+- Existing team grants receive an explicit compatibility mapping before the permission vocabulary is split.
+- Cross-artist My Work/schedule results are derived for the signed-in Pro and never stored for artist owners to query.
+- Starter-kit role choices are preferences, not permissions. Install targets must be ordinary caller-owned records in `workspace_kind = 'personal'`, deduped by semantic content key and protected from destructive updates.
+- All migrations are additive; no reset/drop/truncate path is permitted.

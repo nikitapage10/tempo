@@ -86,6 +86,8 @@ export function isPlaceholderArtistName(name: string | null | undefined): boolea
 
 export const ACTIVE_ARTIST_KEY = "tempo.activeArtistId";
 export const PREFER_ORIGIN_ARTIST_KEY = "tempo.preferOriginArtist";
+/** One-navigation handoff after the user explicitly chooses the demo. */
+export const PREFER_DEMO_ARTIST_KEY = "tempo.preferDemoArtist";
 
 export const DEFAULT_SPACE_NAMES = ["Originals", "Edits & Remixes"] as const;
 

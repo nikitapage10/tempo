@@ -20,6 +20,7 @@ import type {
 } from "@/lib/types";
 
 export type PublicArtistProfile = {
+  profile_kind: "artist" | "pro";
   handle: string;
   display_name: string;
   emblem_url: string | null;
@@ -62,7 +63,7 @@ export async function resolvePublicArtistProfile(
   const { data, error } = await admin
     .from("artist_profiles")
     .select(
-      "artist_id, handle, display_name, emblem_url, banner_url, banner_color, banner_color_end, ice_color, amber_color, palette_id, tagline, bio, backstory, location, country_code, genres, roles, links, sound_markers, current_focus_title, current_focus_body, featured_music, story_sections, pronouns, visibility"
+      "artist_id, profile_kind, handle, display_name, emblem_url, banner_url, banner_color, banner_color_end, ice_color, amber_color, palette_id, tagline, bio, backstory, location, country_code, genres, roles, links, sound_markers, current_focus_title, current_focus_body, featured_music, story_sections, pronouns, visibility"
     )
     .eq("handle", handle)
     .maybeSingle();
@@ -83,10 +84,9 @@ export async function resolvePublicArtistProfile(
     )
   );
 
-  const releasedTracks = await loadArtistReleasedTracks(
-    admin,
-    artistId
-  );
+  const releasedTracks = data.profile_kind === "pro"
+    ? []
+    : await loadArtistReleasedTracks(admin, artistId);
 
   return {
     ...(profile as PublicArtistProfile),

@@ -11,6 +11,7 @@ import {
   replayGuidedTourForArtist,
   skipGuidedTourForArtist,
 } from "@/lib/guided-tour";
+import { useCurrentUser } from "@/hooks/use-current-user";
 
 /**
  * The strip that sits above the workspace whenever the demo artist is the one
@@ -23,6 +24,7 @@ import {
 export function DemoBanner() {
   const { activeArtist, artists } = useActiveArtist();
   const queryClient = useQueryClient();
+  const user = useCurrentUser();
   const [confirming, setConfirming] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -62,7 +64,7 @@ export function DemoBanner() {
     setError(null);
     try {
       const result = await seedDemo();
-      focusDemo(result);
+      focusDemo(result, user?.id);
       queryClient.clear();
       window.location.assign("/");
     } catch (err) {

@@ -145,3 +145,21 @@ Every package: `npm run build` must pass. Fix new errors before merge. Documenta
 
 ## 7. Bug report hygiene
 When something fails, capture: URL, role (owner/guest/etc.), expected vs actual, console/network if relevant, and whether reduced-motion or mobile.
+
+---
+
+## 8. Team Operations test track
+
+Team Operations uses the existing Vitest, Playwright, and RLS integration stack with no new test dependency. The complete package-by-package plan is in `TEAM-OPERATIONS-IMPLEMENTATION-TEST-ROLLOUT-PLAN.md`.
+
+Every security-sensitive package requires an isolated two-artist fixture with an artist owner for Alpha, an artist owner for Beta, one Pro shared by both with different grants, an Alpha-only Pro, a suspended former member, a track-only collaborator, an unrelated authenticated account, a guest, and a platform admin.
+
+Release blockers:
+
+- Direct database calls prove that Alpha cannot read the shared Pro's Beta work or schedule.
+- Assignment to an inactive, unauthorized, or other-artist person is rejected.
+- Suspension/revocation stops direct reads and team-room topic access immediately.
+- My Work and combined schedule can be queried only by the signed-in Pro.
+- Team Brief pins and room work links never grant underlying source access.
+- Role-kit preview/install is personal-workspace-only, idempotent under retry/concurrency, dedupes multi-role content, and preserves edited examples during restore/removal.
+- Existing owner, track collaborator, guest review, Social, Scene, Messages, Admin, and account-switch privacy tests remain green.

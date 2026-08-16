@@ -45,6 +45,9 @@ export const ROLE_DESCRIPTIONS: Record<MemberRole, string> = {
 export const ROLE_PRESETS: Record<MemberRole, AreaGrants> = {
   manager: {
     catalog: "write",
+    audio: "write",
+    feedback: "write",
+    tasks: "write",
     calendar: "write",
     stats: "read",
     releases: "write",
@@ -54,6 +57,9 @@ export const ROLE_PRESETS: Record<MemberRole, AreaGrants> = {
   },
   agent: {
     catalog: "read",
+    audio: "read",
+    feedback: "read",
+    tasks: "read",
     calendar: "write",
     stats: "read",
     releases: "read",
@@ -63,6 +69,9 @@ export const ROLE_PRESETS: Record<MemberRole, AreaGrants> = {
   },
   tour_manager: {
     catalog: "read",
+    audio: "read",
+    feedback: "read",
+    tasks: "read",
     calendar: "write",
     stats: "none",
     releases: "read",
@@ -72,6 +81,9 @@ export const ROLE_PRESETS: Record<MemberRole, AreaGrants> = {
   },
   label: {
     catalog: "read",
+    audio: "read",
+    feedback: "read",
+    tasks: "none",
     calendar: "none",
     stats: "read",
     releases: "read",
@@ -81,6 +93,9 @@ export const ROLE_PRESETS: Record<MemberRole, AreaGrants> = {
   },
   assistant: {
     catalog: "write",
+    audio: "write",
+    feedback: "read",
+    tasks: "write",
     calendar: "write",
     stats: "none",
     releases: "none",

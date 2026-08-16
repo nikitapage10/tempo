@@ -236,13 +236,11 @@ export function ContextualPageTour() {
   const seen = tour
     ? Boolean(onboarding.data?.pageToursCompleted.includes(tour.id) || onboarding.data?.pageToursSkipped.includes(tour.id))
     : true;
-  /**
-   * The artist path waits for the post-Origin main tour before offering page
-   * tours. A Pro never runs that tour, so `mainTourCompletedAt` stays null
-   * forever and they were silently never offered a single one. Passage is
-   * their equivalent, and reaching the app at all means it is behind them.
-   */
-  const introDone = isPro ? true : Boolean(onboarding.data?.mainTourCompletedAt);
+  /** Artist and Pro decisions are deliberately separate. A dual account can
+   * finish Origin without silently opting into professional page guides. */
+  const introDone = isPro
+    ? onboarding.data?.proTourChoice === "guides"
+    : Boolean(onboarding.data?.mainTourCompletedAt);
   const shouldOffer = Boolean(tour && onboarding.data?.eligible && introDone && !seen);
 
   React.useEffect(() => {

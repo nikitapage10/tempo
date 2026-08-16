@@ -198,10 +198,10 @@ function SettingsPageInner() {
                   )}
                 >
                   <span className="block text-sm font-medium">
-                    {lookOnly && item.id === "studio" ? "Look" : item.label}
+                    {lookOnly && item.id === "studio" ? "Workspace" : item.label}
                   </span>
                   <span className="mt-0.5 hidden text-xs text-text-lo lg:block">
-                    {lookOnly && item.id === "studio" ? "Name, photo, colors" : item.hint}
+                    {lookOnly && item.id === "studio" ? "Profile & spaces" : item.hint}
                   </span>
                 </button>
               );
@@ -218,19 +218,19 @@ function SettingsPageInner() {
               aria-labelledby="settings-tab-studio"
             >
               <SettingsPanel
-                eyebrow={lookOnly ? "Look" : "Studio"}
-                title={lookOnly ? "How you show up" : "Who you’re working as"}
+                eyebrow={lookOnly ? "Workspace" : "Studio"}
+                title={lookOnly ? "Your Pro home" : "Who you’re working as"}
                 description={
                   lookOnly
-                    ? "Your name, photo, logo, banner, and colors — the same look people see on Social and in the teams you join."
+                    ? "Manage how you show up, then divide your own projects, tasks, and dates into the Spaces that fit your work."
                     : "Artists and spaces shape the rail, board, and everything scoped to the name you release under."
                 }
               >
                 <div className="space-y-4">
                   <ArtistsManager />
+                  <SpacesManager />
                   {lookOnly ? null : (
                     <>
-                      <SpacesManager />
                       <ActionTile
                         href="/origin?revisit=1"
                         secondaryHref="/origin?replay=1"

@@ -50,6 +50,8 @@ export function MyMemberProfile({ variant = "page" }: { variant?: "page" | "comp
     mutationFn: (displayName: string) => updateMyMemberProfile({ displayName }),
     onSuccess: (profile) => {
       qc.setQueryData(["my-member-profile"], profile);
+      void qc.invalidateQueries({ queryKey: ["artists"] });
+      void qc.invalidateQueries({ queryKey: ["artist-profile"] });
       setEditingName(false);
     },
     onError: (err) =>
@@ -58,7 +60,11 @@ export function MyMemberProfile({ variant = "page" }: { variant?: "page" | "comp
 
   const uploadAvatar = useMutation({
     mutationFn: (file: File) => uploadMyMemberAvatar(file),
-    onSuccess: (profile) => qc.setQueryData(["my-member-profile"], profile),
+    onSuccess: (profile) => {
+      qc.setQueryData(["my-member-profile"], profile);
+      void qc.invalidateQueries({ queryKey: ["artists"] });
+      void qc.invalidateQueries({ queryKey: ["artist-profile"] });
+    },
     onError: (err) =>
       toast(err instanceof Error ? err.message : "Couldn’t upload that photo."),
   });

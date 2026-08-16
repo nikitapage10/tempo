@@ -1,11 +1,13 @@
-# TEMPO — Next Prompt for Cursor
+# TEMPO — Archived Social Build Prompt
+
+> **Do not execute this prompt as the next package.** The Social, feed, and messaging work below has shipped and is retained only as historical implementation context. The current next initiative is Team Operations; begin with `TEAM-OPERATIONS-IMPLEMENTATION-TEST-ROLLOUT-PLAN.md` and its related product, UX, technical, and security specifications.
 
 The prompts that built TEMPO from an empty repo up through v0.50.1 (scaffold,
 track workspace, comments, guest links, milestones, stage recipes, focus
 sessions, release workspace, collaboration, workspace presets, and the
 Today/Board polish pass) are done and shipped — that history lives in
 CHANGELOG.md and `git log`, not here. This file now holds only the one
-prompt that's actually next.
+historical prompt that was next at that time.
 
 Paste the whole block below into Cursor in one go.
 

@@ -31,12 +31,18 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
 import { useActiveSpace } from "@/components/active-space-provider";
+import { useActiveArtist } from "@/components/active-artist-provider";
 import { TaskDoneArchive } from "@/components/tasks/task-done-archive";
 import { TaskRescheduleDialog } from "@/components/tasks/task-reschedule-dialog";
 import { DraggableTaskRow } from "@/components/tasks/task-row";
 import { useProjects } from "@/hooks/use-projects";
 import { useTaskMutations, useTasks } from "@/hooks/use-tasks";
 import { useTracks } from "@/hooks/use-tracks";
+import { useActiveTeamRoster } from "@/hooks/use-artist-members";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { fetchMemberProfiles } from "@/lib/api/member-profile";
+import { canRead } from "@/lib/team/areas";
+import { useQuery } from "@tanstack/react-query";
 import { TASK_CATEGORIES, TASK_STATUSES } from "@/lib/constants";
 import { localDateString } from "@/lib/format";
 import {
@@ -72,8 +78,23 @@ function TasksContent() {
   const editTaskId = searchParams.get("edit");
   const { toast } = useToast();
   const { activeSpaceId } = useActiveSpace();
+  const { activeArtist } = useActiveArtist();
+  const currentUser = useCurrentUser();
   const { data: tasks = [], isLoading } = useTasks(activeSpaceId);
-  const { create, update, remove } = useTaskMutations(activeSpaceId);
+  const { create, update, remove, assign } = useTaskMutations(activeSpaceId);
+  const rosterQuery = useActiveTeamRoster(activeArtist?.id ?? null);
+  const eligibleMembers = React.useMemo(() => (rosterQuery.data ?? []).filter((member) => member.userId && canRead(member.areas, "tasks")), [rosterQuery.data]);
+  const eligibleIds = React.useMemo(() => eligibleMembers.map((member) => member.userId!), [eligibleMembers]);
+  const memberProfiles = useQuery({
+    queryKey: ["member-profiles", "task-assignees", eligibleIds.slice().sort()],
+    queryFn: () => fetchMemberProfiles(eligibleIds),
+    enabled: eligibleIds.length > 0,
+    staleTime: 30_000,
+  });
+  const assignees = React.useMemo(() => [
+    ...(currentUser ? [{ userId: currentUser.id, label: "Artist owner" }] : []),
+    ...eligibleMembers.map((member) => ({ userId: member.userId!, label: memberProfiles.data?.get(member.userId!)?.displayName || "Team member" })),
+  ], [currentUser, eligibleMembers, memberProfiles.data]);
   const tracksQuery = useTracks(activeSpaceId);
   const projectsQuery = useProjects(activeSpaceId);
 
@@ -270,6 +291,11 @@ function TasksContent() {
       onStatus: (next: TaskStatus) => patchTask(task.id, { status: next }),
       onDue: (next: string) => patchTask(task.id, { due_date: next || null }),
       onDelete: () => deleteTask(task.id),
+      assignees,
+      onAssign: async (userId: string | null) => {
+        try { await assign.mutateAsync({ id: task.id, userId }); toast(userId ? "Task assigned." : "Task unassigned.", "ok"); }
+        catch (err) { toast(err instanceof Error ? err.message : "Couldn’t change the assignee."); }
+      },
     };
   }
 

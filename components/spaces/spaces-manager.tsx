@@ -24,6 +24,7 @@ import {
 } from "@/components/active-space-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useWorkspaceMode } from "@/hooks/use-workspace-mode";
 import { SPACE_FOCUS_OPTIONS } from "@/lib/constants";
 import type { Space, SpaceFocus } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -32,6 +33,11 @@ export function SpacesManager() {
   const { spaces, activeSpaceId, setActiveSpaceId, isLoading } =
     useActiveSpace();
   const { activeArtistId, activeArtist } = useActiveArtist();
+  const { mode } = useWorkspaceMode();
+  const isProHome = mode === "work";
+  const focusOptions = isProHome
+    ? SPACE_FOCUS_OPTIONS.filter((option) => option.value === "tasks")
+    : SPACE_FOCUS_OPTIONS;
   const { create, rename, remove, reorder, updateFocus } =
     useSpaceMutations();
   const [newName, setNewName] = React.useState("");
@@ -54,10 +60,10 @@ export function SpacesManager() {
         name: newName.trim(),
         sort: spaces.length,
         artistId: activeArtistId,
-        focus: newFocus,
+        focus: isProHome ? "tasks" : newFocus,
       });
       setNewName("");
-      setNewFocus("music");
+      setNewFocus(isProHome ? "tasks" : "music");
       setActiveSpaceId(space.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create space.");
@@ -124,10 +130,9 @@ export function SpacesManager() {
         {activeArtist ? `Spaces — ${activeArtist.name}` : "Spaces"}
       </p>
       <p className="mt-2 text-sm text-text-lo">
-        Workspaces like Originals or Edits, each with its own board stages —
-        or a non-music space like Social Media, focused on tasks and
-        projects instead of a board. These belong to the artist you have
-        selected; switch artists to manage theirs.
+        {isProHome
+          ? "Separate your projects, tasks, and calendar work into focused rooms. These Spaces belong only to your Pro home and stay separate from the artists you work with."
+          : "Workspaces like Originals or Edits, each with its own board stages — or a non-music space like Social Media, focused on tasks and projects instead of a board. These belong to the artist you have selected; switch artists to manage theirs."}
       </p>
 
       {isLoading ? (
@@ -153,6 +158,8 @@ export function SpacesManager() {
                     canDelete={spaces.length > 1}
                     onRename={handleRename}
                     onFocusChange={handleFocusChange}
+                    focusOptions={focusOptions}
+                    isProHome={isProHome}
                     onAskDelete={() => setConfirmId(space.id)}
                     onCancelDelete={() => setConfirmId(null)}
                     onConfirmDelete={() => handleDelete(space.id)}
@@ -171,14 +178,14 @@ export function SpacesManager() {
               className="flex-1"
             />
             <div className="flex gap-1 rounded-input border border-line bg-bg-2 p-0.5">
-              {SPACE_FOCUS_OPTIONS.map((opt) => (
+              {focusOptions.map((opt) => (
                 <button
                   key={opt.value}
                   type="button"
                   onClick={() => setNewFocus(opt.value)}
                   className={cn(
                     "rounded-chip px-2.5 py-1 text-xs transition-colors duration-hover",
-                    newFocus === opt.value
+                    (isProHome ? "tasks" : newFocus) === opt.value
                       ? "bg-ice/15 text-ice"
                       : "text-text-lo hover:text-text-hi"
                   )}
@@ -207,6 +214,8 @@ function SortableSpaceRow({
   canDelete,
   onRename,
   onFocusChange,
+  focusOptions,
+  isProHome,
   onAskDelete,
   onCancelDelete,
   onConfirmDelete,
@@ -218,6 +227,8 @@ function SortableSpaceRow({
   canDelete: boolean;
   onRename: (id: string, name: string) => void;
   onFocusChange: (id: string, focus: SpaceFocus) => void;
+  focusOptions: readonly { value: SpaceFocus; label: string }[];
+  isProHome: boolean;
   onAskDelete: () => void;
   onCancelDelete: () => void;
   onConfirmDelete: () => void;
@@ -287,7 +298,7 @@ function SortableSpaceRow({
         </Button>
       </div>
       <div className="mt-1.5 flex items-center gap-1 pl-7">
-        {SPACE_FOCUS_OPTIONS.map((opt) => (
+        {focusOptions.map((opt) => (
           <button
             key={opt.value}
             type="button"
@@ -306,7 +317,9 @@ function SortableSpaceRow({
       {confirmDelete ? (
         <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-line px-1 pt-2 pb-1">
           <span className="text-xs text-warn">
-            Deletes this space, its stages, and all tracks inside. Sure?
+            {isProHome
+              ? "Deletes this Space and its space-only tasks and dates. Projects that can stand alone are kept. Sure?"
+              : "Deletes this space, its stages, and all tracks inside. Sure?"}
           </span>
           <Button
             type="button"

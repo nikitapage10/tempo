@@ -31,6 +31,12 @@ const managed = {
   workspace_kind: "artist" as const,
   origin_status: "complete",
 };
+const legacyArtist = {
+  id: "legacy-artist",
+  user_id: me,
+  workspace_kind: "artist" as const,
+  origin_status: "legacy_complete",
+};
 
 describe("artist invite Origin gate", () => {
   it("does not trap a team-only leftover in Origin", () => {
@@ -66,6 +72,19 @@ describe("artist invite Origin gate", () => {
       startOrigin: true,
       convertToPersonalIds: [],
     });
+  });
+
+  it("treats an established pre-Origin artist as finished after a team invite", () => {
+    expect(
+      planOriginArtistForInvite([legacyArtist], true)
+    ).toEqual({
+      reuseId: "legacy-artist",
+      startOrigin: false,
+      convertToPersonalIds: [],
+    });
+    expect(
+      shouldSendToOrigin({ owned: [legacyArtist], hasMembership: true })
+    ).toBe(false);
   });
 
   it("picks the owned unfinished artist, not a managed one or the home", () => {

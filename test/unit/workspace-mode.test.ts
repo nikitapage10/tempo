@@ -69,7 +69,7 @@ describe("workspace mode", () => {
     expect(pickDefaultArtistId([music], me)).toBe("a-music");
   });
 
-  it("resumes a stored artist, and a demo catalog instead of empty Home", () => {
+  it("never resumes demo data over a Pro's personal home", () => {
     const demo = artist({
       id: "a-demo",
       user_id: me,
@@ -78,14 +78,15 @@ describe("workspace mode", () => {
       origin_status: "complete",
     });
     expect(pickResumeArtistId([managed, personal, demo], me, "a-demo")).toBe(
-      "a-demo"
+      "a-work"
     );
     expect(pickResumeArtistId([managed, personal, demo], me, null)).toBe(
-      "a-demo"
+      "a-work"
     );
     expect(pickResumeArtistId([managed, personal, music], me, null)).toBe(
       "a-work"
     );
+    expect(pickResumeArtistId([demo], me, "a-demo")).toBe("a-demo");
   });
 
   it("does not treat a teammate's leftover email-named artist as My artist", () => {
@@ -115,6 +116,21 @@ describe("workspace mode", () => {
     expect(ownedMusicArtists([finished, managed, personal], me).map((a) => a.id)).toEqual([
       "a-real",
     ]);
+  });
+
+  it("preserves a pre-Origin legacy artist after they join a team", () => {
+    const legacy = artist({
+      id: "a-legacy",
+      user_id: me,
+      name: "Existing Artist",
+      workspace_kind: "artist",
+      origin_status: "legacy_complete",
+    });
+    expect(resolveWorkspaceMode(legacy, me, [legacy, managed])).toBe("artist");
+    expect(ownedMusicArtists([legacy, managed], me).map((a) => a.id)).toEqual([
+      "a-legacy",
+    ]);
+    expect(pickDefaultArtistId([managed, personal, legacy], me)).toBe("a-work");
   });
 
   it("posts as the personal workspace unless in My artist", () => {

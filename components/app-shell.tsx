@@ -57,6 +57,7 @@ import { GlobalPlayerBar } from "@/components/player/global-player-bar";
 import { GuidedTour } from "@/components/guided-tour";
 import { StarterChecklist } from "@/components/onboarding/starter-checklist";
 import { ContextualPageTour } from "@/components/onboarding/contextual-page-tour";
+import { ProTourChoice } from "@/components/onboarding/pro-tour-choice";
 import { DemoBanner } from "@/components/demo/demo-banner";
 import { DownloadButton } from "@/components/desktop/download-button";
 import {
@@ -521,6 +522,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <AssistantRoot />
       <ZoomControl />
       <GuidedTour />
+      <ProTourChoice />
       <StarterChecklist />
       <ContextualPageTour />
     </div>

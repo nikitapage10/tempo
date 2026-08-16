@@ -20,7 +20,11 @@ export function isOwnedWorkspace(
 function finishedAsMusician(
   status: Artist["origin_status"] | null | undefined
 ): boolean {
-  return status === "complete" || status === "skipped";
+  return (
+    status === "complete" ||
+    status === "skipped" ||
+    status === "legacy_complete"
+  );
 }
 
 /**
@@ -122,28 +126,20 @@ export function pickDefaultArtistId(
 }
 
 /**
- * Resume this account's last artist. If that pointer is gone (sign-out used
- * to wipe it), don't dump a demo catalog account onto an empty Home — open
- * the demo artist so the board still has its tracks.
+ * Resume this account's last real workspace. A demo may be opened explicitly,
+ * but it must never become the login default while a Pro has a personal home.
  */
 export function pickResumeArtistId(
   artists: Artist[],
   userId: string | null | undefined,
   storedId: string | null | undefined
 ): string | null {
-  if (storedId && artists.some((a) => a.id === storedId)) return storedId;
-  const fallback = pickDefaultArtistId(artists, userId);
-  const demo = artists.find((a) => a.demo_kind) ?? null;
-  if (!demo || !fallback || demo.id === fallback) return fallback;
-  const fallbackArtist = artists.find((a) => a.id === fallback);
-  const hasMembership = membershipArtists(artists, userId).length > 0;
-  if (
-    fallbackArtist &&
-    classifyOwnedKind(fallbackArtist, userId, hasMembership) === "personal"
-  ) {
-    return demo.id;
-  }
-  return fallback;
+  const personal = ownedPersonalWorkspace(artists, userId);
+  const stored = storedId
+    ? artists.find((artist) => artist.id === storedId) ?? null
+    : null;
+  if (stored && (!stored.demo_kind || !personal)) return stored.id;
+  return pickDefaultArtistId(artists, userId);
 }
 
 /**

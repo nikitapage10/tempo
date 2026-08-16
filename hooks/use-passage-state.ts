@@ -85,6 +85,10 @@ export function usePassageState(): PassageController {
 
   React.useEffect(() => {
     if (!hydrated) return;
+    // Do not turn merely viewing the waking screen into a resumable draft.
+    // A row created here would reopen at the name step and bypass the Tune in
+    // gesture that starts Passage's soundtrack in web browsers.
+    if (state.phase === "awaiting_start") return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
 
     saveTimerRef.current = setTimeout(() => {
@@ -99,6 +103,7 @@ export function usePassageState(): PassageController {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     hydrated,
+    state.phase,
     state.savedStep,
     state.displayName,
     state.roleTitles,

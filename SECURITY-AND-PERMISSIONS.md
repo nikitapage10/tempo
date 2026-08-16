@@ -221,3 +221,21 @@ During beta, a member may invite team members and track collaborators directly. 
 | Invite single-use vs multi-open before accept | Token theft window | Prompt 10 only |
 
 Prompt 4 guest work can proceed with the matrix above for Guest column.
+
+---
+
+## 7. Team Operations security boundary
+
+The shipped artist-team model is extended by migrations 101–105. Its binding threat model, expanded area matrix, cross-artist isolation rules, assignment eligibility, lifecycle rules, team-room identity requirements, and adversarial account plan live in `TEAM-OPERATIONS-SECURITY-AND-PERMISSIONS.md`.
+
+The following rules are enforced by the database and remain rollout blockers in direct hosted tests:
+
+- Assignment does not grant access.
+- Suspended/revoked memberships have no delegated access.
+- Social Write and Team Write remain owner-only, even if their keys appear in stored grants or older UI.
+- No artist may read a Pro's combined work, schedule, conflicts, private notification preferences, or relationships with other artists.
+- Team-room participants always speak as themselves, never silently as the managed artist.
+- A Pro starter kit may write only to that Pro's personal workspace; kit/Passage role choices never establish team membership or artist permission.
+- Starter-kit installs accept closed catalog keys/options only, are transactional and idempotent, and never overwrite or remove edited user content.
+
+The Team Operations matrix supplements the shipped track-collaboration matrix above; it does not widen guest or track-collaborator access.

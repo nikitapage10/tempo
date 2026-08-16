@@ -1,9 +1,9 @@
 import { createClient } from "@/lib/supabase/client";
 import { siteOrigin } from "@/lib/tokens";
 import { normalizeAreas, type AreaGrants } from "@/lib/team/areas";
-import { presetForRole, type MemberRole } from "@/lib/team/roles";
+import type { MemberRole } from "@/lib/team/roles";
 
-export type ArtistMemberStatus = "pending" | "active" | "revoked";
+export type ArtistMemberStatus = "pending" | "active" | "suspended" | "revoked" | "declined";
 
 export type ArtistMember = {
   id: string;
@@ -17,6 +17,11 @@ export type ArtistMember = {
   expiresAt: string | null;
   acceptedAt: string | null;
   createdAt: string;
+  relationshipLabel: string | null;
+  inviteMessage: string | null;
+  suspendedAt: string | null;
+  revokedAt: string | null;
+  updatedAt: string | null;
 };
 
 type ArtistMemberRow = {
@@ -31,6 +36,11 @@ type ArtistMemberRow = {
   expires_at: string | null;
   accepted_at: string | null;
   created_at: string;
+  relationship_label?: string | null;
+  invite_message?: string | null;
+  suspended_at?: string | null;
+  revoked_at?: string | null;
+  updated_at?: string | null;
 };
 
 function fromRow(r: ArtistMemberRow): ArtistMember {
@@ -46,6 +56,11 @@ function fromRow(r: ArtistMemberRow): ArtistMember {
     expiresAt: r.expires_at,
     acceptedAt: r.accepted_at,
     createdAt: r.created_at,
+    relationshipLabel: r.relationship_label ?? null,
+    inviteMessage: r.invite_message ?? null,
+    suspendedAt: r.suspended_at ?? null,
+    revokedAt: r.revoked_at ?? null,
+    updatedAt: r.updated_at ?? null,
   };
 }
 
@@ -71,11 +86,11 @@ export async function listArtistMembers(artistId: string): Promise<ArtistMember[
 /** Active teammates of an artist — safe columns only (no invite token/email). */
 export async function listActiveTeamRoster(
   artistId: string
-): Promise<Pick<ArtistMember, "id" | "artistId" | "userId" | "role" | "status">[]> {
+): Promise<Pick<ArtistMember, "id" | "artistId" | "userId" | "role" | "status" | "areas">[]> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("artist_members")
-    .select("id, artist_id, user_id, role, status")
+    .select("id, artist_id, user_id, role, status, areas")
     .eq("artist_id", artistId)
     .eq("status", "active")
     .order("created_at", { ascending: true });
@@ -89,6 +104,7 @@ export async function listActiveTeamRoster(
     userId: r.user_id,
     role: r.role as MemberRole,
     status: r.status as ArtistMemberStatus,
+    areas: normalizeAreas(r.areas),
   }));
 }
 
@@ -121,6 +137,8 @@ export type InviteMemberInput = {
   /** Overrides for the role's stock preset; unset keys fall back to the preset. */
   areaOverrides?: AreaGrants;
   expiresAt?: string | null;
+  relationshipLabel?: string;
+  inviteMessage?: string;
 };
 
 export type CreatedTeamInvite = {
@@ -144,6 +162,8 @@ export async function inviteMember(input: InviteMemberInput): Promise<CreatedTea
       handle: input.handle?.trim() || null,
       profileId: input.profileId || null,
       areaOverrides: input.areaOverrides,
+      relationshipLabel: input.relationshipLabel?.trim() || null,
+      inviteMessage: input.inviteMessage?.trim() || null,
     }),
   });
   const body = await res.json().catch(() => ({}));
@@ -167,6 +187,9 @@ export type PendingTeamInvite = {
   role: MemberRole;
   createdAt: string;
   expiresAt: string | null;
+  areas: AreaGrants;
+  relationshipLabel: string | null;
+  inviteMessage: string | null;
 };
 
 export async function fetchPendingTeamInvites(): Promise<PendingTeamInvite[]> {
@@ -210,7 +233,7 @@ export async function updateMemberRole(id: string, role: MemberRole): Promise<Ar
   const supabase = createClient();
   const { data, error } = await supabase
     .from("artist_members")
-    .update({ role, areas: presetForRole(role) })
+    .update({ role })
     .eq("id", id)
     .select()
     .single();
@@ -220,14 +243,46 @@ export async function updateMemberRole(id: string, role: MemberRole): Promise<Ar
 
 export async function revokeMember(id: string): Promise<ArtistMember> {
   const supabase = createClient();
-  const { data, error } = await supabase
-    .from("artist_members")
-    .update({ status: "revoked" })
-    .eq("id", id)
-    .select()
-    .single();
+  const { data, error } = await supabase.rpc("end_artist_member_access", {
+    p_membership_id: id,
+    p_assignment_plan: {},
+  });
   if (error) throw error;
-  return fromRow(data);
+  const { data: row, error: readError } = await supabase.from("artist_members").select("*").eq("id", id).single();
+  if (readError) throw readError;
+  void data;
+  return fromRow(row);
+}
+
+export type MemberOffboardingPreview = { tasks: number; reviews: number; events: number };
+
+export async function previewMemberOffboarding(id: string): Promise<MemberOffboardingPreview> {
+  const { data, error } = await createClient().rpc("preview_artist_member_offboarding", {
+    p_membership_id: id,
+  });
+  if (error) throw error;
+  const row = data as Record<string, unknown>;
+  return { tasks: Number(row.tasks ?? 0), reviews: Number(row.reviews ?? 0), events: Number(row.events ?? 0) };
+}
+
+export type MembershipEvent = { id: string; eventType: string; changes: Record<string, unknown>; createdAt: string };
+export async function listMembershipEvents(artistId: string, membershipId: string): Promise<MembershipEvent[]> {
+  const { data, error } = await createClient().from("artist_membership_events").select("id,event_type,changes,created_at").eq("artist_id", artistId).eq("membership_id", membershipId).order("created_at", { ascending: false }).limit(50);
+  if (error) {
+    if (/artist_membership_events|schema cache/i.test(error.message)) return [];
+    throw error;
+  }
+  return (data ?? []).map((row) => ({ id: row.id, eventType: row.event_type, changes: row.changes as Record<string, unknown>, createdAt: row.created_at }));
+}
+
+export async function suspendMember(id: string): Promise<void> {
+  const { error } = await createClient().rpc("suspend_artist_member", { p_membership_id: id });
+  if (error) throw error;
+}
+
+export async function resumeMember(id: string): Promise<void> {
+  const { error } = await createClient().rpc("resume_artist_member", { p_membership_id: id });
+  if (error) throw error;
 }
 
 export function teamInviteUrl(rawToken: string): string {

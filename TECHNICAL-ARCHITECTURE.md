@@ -173,13 +173,13 @@ Preserve: all `is_pinned` versions + two newest unpinned + never delete `is_curr
 | `/tracks`, `/track/[id]` | Yes | Catalog + workspace |
 | `/track/[id]/focus` | Yes | Focus session (planned) |
 | `/tasks`, `/projects`, `/projects/[id]` | Yes | Tasks / projects |
-| `/settings` | Yes | Spaces, sign-out, version. Team members see Account only. |
+| `/settings` | Yes | Owned artist homes manage artists and Spaces; owned Pro homes manage their profile and private task/project Spaces. People currently inside someone else's artist workspace see Account only. |
 | `/artist` | Yes | Musician identity. Read-only when you have entered someone else's workspace. `/artist/[handle]` is the in-app network profile and is allowed from My work. |
 | `/team` | Yes | Artist roster + invite by handle or email, or (in My work) a manager roster overview, pending team invites to approve, plus enter-workspace cards. `/artist/team` redirects here. |
-| `/profile` | Yes | Signed-in person's name and photo. |
+| `/profile` | Yes | A Pro's editable professional identity: synchronized name/photo, handle, introduction, roles, location, links, current focus, career story, messaging preference, and visibility. Passage answers may seed empty draft fields but are not auto-published. |
 | `/login`, `/register` | Public | Auth. `/register` from a team/track invite token skips the platform invite code and locks the email to the invite. |
 | `/review/[token]` | Public | Guest review (planned) |
-| `/invite/[token]`, `/team-invite/[token]` | Public→Auth | Collaborator / team invite accept |
+| `/invite/[token]`, `/team-invite/[token]` | Public→Auth | Collaborator / team invite accept. Acceptance adds membership to the existing auth user; an owned artist remains `workspace_kind = artist`, while Pro onboarding provisions a separate `personal` home. |
 | `/api/review/*` | Public + server validation | Guest APIs (planned) |
 
 ---
@@ -206,3 +206,24 @@ Every work package bumps `package.json` + `lib/version.ts` identically, updates 
 - No new dependencies without asking
 - No resetting the production database
 - No email provider in the first notification system
+
+---
+
+## 10. Team Operations architecture
+
+Team Operations is implemented by migrations 101–105 and `lib/api/team-operations.ts`. It extends the existing team, task, calendar, notification, messaging, and Pro-home systems rather than creating parallel replacements.
+
+Binding decisions:
+
+- `artist_members` remains the artist-to-Pro relationship and permission source.
+- `artist_member_profiles` and Passage roles remain person-owned identity, not per-artist copies.
+- `tasks` gains a separate assignee; `user_id` is not repurposed.
+- My Work is a secured fan-in query over tasks, assigned comments, and explicit review requests—not a duplicate mutable inbox.
+- Team Brief stores only authored orientation content and pins; artist identity, roster, releases, and work remain derived from their sources.
+- One artist team room binds to the existing conversation system.
+- A Pro's cross-artist queue and schedule are private to that Pro and never persisted into an artist-readable aggregate.
+- Optional role-based starter kits use a versioned, server-authoritative catalog and transactional installer to create ordinary records in the Pro's personal workspace only; selections never grant artist access.
+- Starter-kit receipts and semantic content keys make retry/restore idempotent, while fingerprints protect edited examples from automated removal or overwrite.
+- Logical migration labels in planning documents do not reserve numbered files.
+
+See `TEAM-OPERATIONS-TECHNICAL-DESIGN.md` and `TEAM-OPERATIONS-SECURITY-AND-PERMISSIONS.md` before changing any package or enabling it against a new database.

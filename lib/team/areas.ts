@@ -16,9 +16,12 @@
 
 export type AreaKey =
   | "catalog"
+  | "audio"
+  | "feedback"
+  | "tasks"
   | "calendar"
-  | "stats"
   | "releases"
+  | "stats"
   | "performances"
   | "social"
   | "team";
@@ -29,9 +32,12 @@ export type AreaGrants = Partial<Record<AreaKey, AreaLevel>>;
 
 export const AREA_KEYS: AreaKey[] = [
   "catalog",
+  "audio",
+  "feedback",
+  "tasks",
   "calendar",
-  "stats",
   "releases",
+  "stats",
   "performances",
   "social",
   "team",
@@ -39,6 +45,9 @@ export const AREA_KEYS: AreaKey[] = [
 
 export const AREA_LABELS: Record<AreaKey, string> = {
   catalog: "Catalog",
+  audio: "Audio & files",
+  feedback: "Feedback",
+  tasks: "Tasks",
   calendar: "Calendar",
   stats: "Stats",
   releases: "Releases",
@@ -48,7 +57,10 @@ export const AREA_LABELS: Record<AreaKey, string> = {
 };
 
 export const AREA_DESCRIPTIONS: Record<AreaKey, string> = {
-  catalog: "Spaces, tracks and projects.",
+  catalog: "Track and project metadata, without opening files or feedback.",
+  audio: "Versions, playback, downloads and supporting files.",
+  feedback: "Comments, decisions and review requests.",
+  tasks: "Tasks, assignments and status handoffs.",
   calendar: "Calendar events — sessions, meetings, shows.",
   stats: "Streaming numbers and custom stats. Never includes personal attributes, points, or achievements.",
   releases: "Release plans and dates.",

@@ -1,9 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
 import { buildMemberAvatarPath, deleteFile, uploadFile } from "@/lib/storage";
-import {
-  isPlaceholderPersonName,
-  normalizePersonDisplayName,
-} from "@/lib/auth/person-name";
+import { normalizePersonDisplayName } from "@/lib/auth/person-name";
 
 export type MemberProfile = {
   userId: string;
@@ -56,11 +53,10 @@ export async function fetchMemberProfiles(userIds: string[]): Promise<Map<string
   return map;
 }
 
-/** Replace leftover Home / email labels on the personal workspace and Social identity. */
+/** Keep the person's team card and private Pro/network identity as one name. */
 async function syncPersonNameToPersonalIdentity(
   userId: string,
-  displayName: string,
-  email: string | null | undefined
+  displayName: string
 ): Promise<void> {
   const supabase = createClient();
   const { data: owned } = await supabase
@@ -69,16 +65,14 @@ async function syncPersonNameToPersonalIdentity(
     .eq("user_id", userId);
   const personal = (owned ?? []).filter((row) => row.workspace_kind === "personal");
   for (const artist of personal) {
-    if (isPlaceholderPersonName(artist.name, email)) {
-      await supabase.from("artists").update({ name: displayName }).eq("id", artist.id);
-    }
+    await supabase.from("artists").update({ name: displayName }).eq("id", artist.id);
     const { data: profile } = await supabase
       .from("artist_profiles")
       .select("id, display_name")
       .eq("artist_id", artist.id)
       .eq("owner_user_id", userId)
       .maybeSingle();
-    if (profile && isPlaceholderPersonName(profile.display_name, email)) {
+    if (profile && profile.display_name !== displayName) {
       await supabase
         .from("artist_profiles")
         .update({ display_name: displayName })
@@ -111,8 +105,7 @@ export async function updateMyMemberProfile(patch: {
   if (displayName) {
     await syncPersonNameToPersonalIdentity(
       userData.user.id,
-      displayName,
-      userData.user.email
+      displayName
     );
   }
   return { userId: data.user_id, displayName: data.display_name, avatarUrl: data.avatar_url };
@@ -133,6 +126,15 @@ export async function uploadMyMemberAvatar(file: File): Promise<MemberProfile> {
     .select("user_id, display_name, avatar_url")
     .single();
   if (error) throw new Error(error.message);
+
+  // The personal workspace is also the Pro's network identity. Updating the
+  // shared artist row lets the existing identity-mirror trigger carry the
+  // same image into artist_profiles without touching managed artists.
+  await supabase
+    .from("artists")
+    .update({ emblem_url: path })
+    .eq("user_id", userData.user.id)
+    .eq("workspace_kind", "personal");
 
   if (existing?.avatarUrl && existing.avatarUrl !== path) {
     void deleteFile(existing.avatarUrl).catch(() => {});

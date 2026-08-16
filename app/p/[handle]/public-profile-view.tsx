@@ -110,6 +110,7 @@ function ProfileContent({ profile }: { profile: PublicArtistProfile }) {
       <ArtistProfileStoryView
         profile={profile}
         releasedTracks={profile.released_tracks}
+        variant={profile.profile_kind === "pro" ? "pro" : "artist"}
       />
 
       <FlareLine className="max-w-[240px] opacity-50" />

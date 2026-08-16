@@ -1,5 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { STARTER_CHECKLIST_IDS } from "@/lib/api/member-onboarding";
+import {
+  PAGE_TOUR_IDS,
+  PRO_PAGE_TOUR_IDS,
+  starterChecklistIdsFor,
+} from "@/lib/api/member-onboarding";
 import {
   hasRealArtistProfile,
   isRealArtistOnNetwork,
@@ -10,19 +14,7 @@ import { createClient as createServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 const headers: HeadersInit = { "Cache-Control": "no-store" };
-const allowedChecklistIds = new Set<string>(STARTER_CHECKLIST_IDS);
-const allowedPageTours = new Set([
-  "calendar",
-  "board",
-  "tracks",
-  "projects",
-  "tasks",
-  "artist",
-  "social",
-  "scenes",
-  "stats",
-  "settings",
-]);
+const allowedPageTours = new Set<string>(PAGE_TOUR_IDS);
 
 type Row = {
   user_id: string;
@@ -31,6 +23,7 @@ type Row = {
   eligible: boolean;
   started_at: string;
   main_tour_completed_at: string | null;
+  pro_tour_choice: "guides" | "skip_all" | null;
   checklist_opened_at: string | null;
   checklist_steps: string[];
   checklist_dismissed_at: string | null;
@@ -125,21 +118,43 @@ async function ensureStarterCommunity(
   }
 }
 
+async function passageRolesFor(
+  service: ReturnType<typeof createAdminClient>,
+  userId: string,
+  memberRole: Row["member_role"]
+) {
+  if (memberRole !== "team_member") return [];
+  const { data, error } = await service
+    .from("member_passages")
+    .select("role_titles, role_title_other")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error || !data) return [];
+  const roles = [
+    ...((data.role_titles as string[] | null) ?? []),
+    typeof data.role_title_other === "string" ? data.role_title_other : "",
+  ];
+  return Array.from(new Set(roles.map((role) => role.trim()).filter(Boolean)));
+}
+
 async function stateFor(userId: string) {
   const service = createAdminClient();
   const row = await readState(service, userId);
   await ensureStarterCommunity(service, row, userId);
-  return serialize(row);
+  return serialize(row, await passageRolesFor(service, userId, row.member_role));
 }
 
-function serialize(row: Row) {
+function serialize(row: Row, passageRoles: string[] = []) {
+  const checklistIds = new Set<string>(starterChecklistIdsFor(row.member_role));
   return {
     eligible: row.eligible,
     memberRole: row.member_role ?? "artist",
     startedAt: row.started_at,
     mainTourCompletedAt: row.main_tour_completed_at,
+    proTourChoice: row.pro_tour_choice ?? null,
     checklistOpenedAt: row.checklist_opened_at,
-    checklistSteps: (row.checklist_steps ?? []).filter((id) => allowedChecklistIds.has(id)),
+    passageRoles,
+    checklistSteps: (row.checklist_steps ?? []).filter((id) => checklistIds.has(id)),
     checklistDismissedAt: row.checklist_dismissed_at,
     checklistCompletedAt: row.checklist_completed_at,
     pageToursCompleted: row.page_tours_completed ?? [],
@@ -177,8 +192,21 @@ export async function PATCH(request: NextRequest) {
     if (body.mainTourCompleted === true && !existing.main_tour_completed_at) {
       patch.main_tour_completed_at = now;
     }
+    if (
+      existing.member_role === "team_member" &&
+      !existing.pro_tour_choice &&
+      (body.proTourChoice === "guides" || body.proTourChoice === "skip_all")
+    ) {
+      patch.pro_tour_choice = body.proTourChoice;
+    }
     if (body.skipAllPageTours === true) {
-      patch.page_tours_skipped = Array.from(allowedPageTours);
+      const ids = existing.member_role === "team_member"
+        ? PRO_PAGE_TOUR_IDS
+        : PAGE_TOUR_IDS;
+      patch.page_tours_skipped = Array.from(new Set([
+        ...(existing.page_tours_skipped ?? []),
+        ...ids,
+      ]));
     }
     if (body.checklistOpened === true && !existing.checklist_opened_at) {
       patch.checklist_opened_at = now;
@@ -188,6 +216,8 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (Array.isArray(body.checklistSteps)) {
+      const requiredChecklistIds = starterChecklistIdsFor(existing.member_role);
+      const allowedChecklistIds = new Set<string>(requiredChecklistIds);
       const steps = Array.from(new Set(
         body.checklistSteps.filter((id: unknown): id is string =>
           typeof id === "string" && allowedChecklistIds.has(id),
@@ -195,7 +225,7 @@ export async function PATCH(request: NextRequest) {
       ));
       patch.checklist_steps = steps;
       patch.checklist_completed_at =
-        steps.length === STARTER_CHECKLIST_IDS.length ? now : null;
+        requiredChecklistIds.every((id) => steps.includes(id)) ? now : null;
     }
 
     if (typeof body.completedPageTour === "string" && allowedPageTours.has(body.completedPageTour)) {
@@ -227,7 +257,8 @@ export async function PATCH(request: NextRequest) {
 
     const row = updated as Row;
     await ensureStarterCommunity(service, row, user.id);
-    return NextResponse.json(serialize(row), { headers });
+    const passageRoles = await passageRolesFor(service, user.id, row.member_role);
+    return NextResponse.json(serialize(row, passageRoles), { headers });
   } catch {
     return NextResponse.json({ error: "Couldn’t save onboarding progress." }, { status: 500, headers });
   }

@@ -12,6 +12,12 @@ import { TeamConstellation, type ConstellationPerson } from "@/components/team/t
 import { TeamManager } from "@/components/team/team-manager";
 import { PendingTeamInvites } from "@/components/team/pending-team-invites";
 import { WorkHub } from "@/components/team/work-hub";
+import { TeamTabs } from "@/components/team/team-tabs";
+import { MyWorkPanel } from "@/components/team/my-work-panel";
+import { ProSchedulePanel } from "@/components/team/pro-schedule-panel";
+import { TeamBriefPanel } from "@/components/team/team-brief-panel";
+import { ArtistWaitingPanel } from "@/components/team/artist-waiting-panel";
+import { StarterKitSetup } from "@/components/team/starter-kit-setup";
 import { fetchMemberProfiles } from "@/lib/api/member-profile";
 import { listMemberOfArtists } from "@/lib/api/artist-members";
 import { AREA_DESCRIPTIONS, AREA_KEYS, AREA_LABELS, type AreaLevel } from "@/lib/team/areas";
@@ -24,6 +30,20 @@ export default function TeamPage() {
   const { artists, activeArtist, isLoading: artistLoading } = useActiveArtist();
   const user = useCurrentUser();
   const { mode, isOwner, areas, isLoading: membershipLoading } = useWorkspaceMode();
+  const [proTab, setProTab] = React.useState<"work" | "schedule" | "roster">("work");
+  const [artistTab, setArtistTab] = React.useState<"people" | "brief" | "waiting">("people");
+
+  React.useEffect(() => {
+    const tab = new URLSearchParams(window.location.search).get("tab");
+    if (tab === "work" || tab === "schedule" || tab === "roster") setProTab(tab);
+    if (tab === "people" || tab === "brief" || tab === "waiting") setArtistTab(tab);
+  }, []);
+
+  function selectTab(tab: string) {
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", tab);
+    window.history.replaceState({}, "", url);
+  }
   const rosterQuery = useActiveTeamRoster(
     mode === "work" ? null : (activeArtist?.id ?? null)
   );
@@ -49,14 +69,19 @@ export default function TeamPage() {
     return (
       <div className="space-y-6">
         <PageHeader
-          title="Artists you work with"
-          subtitle="A roster of the artists who’ve brought you on — overdue work, what’s coming, and the numbers you can see — plus a door into each workspace."
+          title="Team operations"
+          subtitle="Your work, schedule, and artist relationships in one private Pro home."
         />
         <PendingTeamInvites />
-        <WorkHub
-          artists={membershipArtists(artists, user?.id)}
-          memberships={membershipsQuery.data ?? []}
+        <TeamTabs
+          tabs={[{ key: "work", label: "My Work" }, { key: "schedule", label: "Schedule" }, { key: "roster", label: "Roster" }] as const}
+          active={proTab}
+          onChange={(tab) => { setProTab(tab); selectTab(tab); }}
         />
+        {proTab === "work" ? <MyWorkPanel /> : null}
+        {proTab === "schedule" ? <ProSchedulePanel /> : null}
+        {proTab === "roster" ? <WorkHub artists={membershipArtists(artists, user?.id)} memberships={membershipsQuery.data ?? []} /> : null}
+        <StarterKitSetup />
       </div>
     );
   }
@@ -84,12 +109,15 @@ export default function TeamPage() {
     <div className="space-y-6">
       <PageHeader
         title="Team"
-        subtitle="Everyone who works with this artist, and exactly what they can reach."
+        subtitle="People, shared context, and work waiting on this artist’s team."
+      />
+      <TeamTabs
+        tabs={[{ key: "people", label: "People" }, { key: "brief", label: "Brief" }, { key: "waiting", label: "Waiting" }] as const}
+        active={artistTab}
+        onChange={(tab) => { setArtistTab(tab); selectTab(tab); }}
       />
 
-      <PendingTeamInvites />
-
-      <div className="glass-hero prism-edge relative overflow-hidden">
+      {artistTab === "people" ? <><div className="glass-hero prism-edge relative overflow-hidden">
         <div className="absolute inset-0">
           <LfWindow field className="absolute inset-0 opacity-60" aria-hidden />
           <div className="scrim-reveal absolute inset-0" aria-hidden />
@@ -128,7 +156,11 @@ export default function TeamPage() {
             ))}
           </dl>
         </div>
-      )}
+      )}</> : null}
+      {artistTab === "brief" && activeArtist ? (
+        <TeamBriefPanel artistId={activeArtist.id} artistName={activeArtist.name} isOwner={isOwner} />
+      ) : null}
+      {artistTab === "waiting" && activeArtist ? <ArtistWaitingPanel artistId={activeArtist.id} /> : null}
     </div>
   );
 }

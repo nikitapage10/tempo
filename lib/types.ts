@@ -117,6 +117,8 @@ export type ArtistProfile = {
   id: string;
   artist_id: string;
   owner_user_id: string;
+  /** Shared network substrate, with role-appropriate profile language. */
+  profile_kind: "artist" | "pro";
   /** Secondary identity (Discord model) — for share links and @mentions only. */
   handle: string | null;
   display_name: string;
@@ -151,6 +153,7 @@ export type ArtistProfile = {
 };
 
 export type ArtistProfileUpdate = Partial<{
+  profile_kind: "artist" | "pro";
   handle: string | null;
   tagline: string | null;
   bio: string | null;
@@ -322,6 +325,7 @@ export type Conversation = {
   archived_at?: string | null;
   muted?: boolean;
   manually_unread_at?: string | null;
+  team_artist_id?: string | null;
 };
 
 export type MessageAttachment = {
@@ -680,6 +684,13 @@ export type Task = {
   due_date: string | null;
   notes: string | null;
   created_at: string;
+  created_by_user_id?: string | null;
+  assigned_to_user_id?: string | null;
+  assigned_by_user_id?: string | null;
+  assigned_at?: string | null;
+  updated_at?: string;
+  starter_content_key?: string | null;
+  is_starter_example?: boolean;
 };
 
 export type TaskInsert = {

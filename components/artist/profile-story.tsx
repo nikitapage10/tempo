@@ -27,13 +27,16 @@ export function ArtistProfileStoryView({
   profile,
   releasedTracks = [],
   emptyAction,
+  variant = "artist",
 }: {
   profile: ArtistProfileStory | null;
   releasedTracks?: ProfileReleasedTrack[];
   emptyAction?: React.ReactNode;
+  variant?: "artist" | "pro";
 }) {
-  const markers = profile?.sound_markers ?? [];
-  const released = releasedTracks
+  const isPro = variant === "pro";
+  const markers = isPro ? [] : (profile?.sound_markers ?? []);
+  const released = (isPro ? [] : releasedTracks)
     .filter((track) => resolveSpotifyTrackId(track.spotify_track_id, track.spotify_url))
     .slice(0, 4);
   const links = (profile?.links ?? []).filter((link) => isSafeWebUrl(link.url));
@@ -66,8 +69,9 @@ export function ArtistProfileStoryView({
             <p className="label-mono text-ice">Waiting for a first signal</p>
           </div>
           <p className="text-sm leading-relaxed text-text-lo">
-            Add an introduction, the sounds that keep returning, what is taking shape
-            now, and a few pieces of music you want people to hear first.
+            {isPro
+              ? "Add an introduction, the roles you carry, what you are focused on now, and the career turns that brought you here."
+              : "Add an introduction, the sounds that keep returning, what is taking shape now, and a few pieces of music you want people to hear first."}
           </p>
           {emptyAction}
         </div>
@@ -79,19 +83,22 @@ export function ArtistProfileStoryView({
     <div className="grid gap-4 lg:grid-cols-12">
       {hasIdentity ? (
         <section className="panel-quiet relative overflow-hidden p-6 sm:p-7 lg:col-span-8">
-          <ProfileSectionHeading kicker="About" title="Who they are and what they make" />
+          <ProfileSectionHeading
+            kicker="About"
+            title={isPro ? "Who they are and how they work" : "Who they are and what they make"}
+          />
           {profile?.bio ? (
             <p className="mt-5 whitespace-pre-wrap text-sm leading-7 text-text-hi/90">
               {profile.bio}
             </p>
           ) : null}
-          {profile?.genres.length || profile?.roles.length ? (
+          {(!isPro && profile?.genres.length) || profile?.roles.length ? (
             <div className="mt-5 flex flex-wrap gap-1.5 border-t border-line/60 pt-4">
-              {profile.genres.map((genre) => (
+              {!isPro ? profile.genres.map((genre) => (
                 <span key={genre} className="rounded-chip border border-line px-2.5 py-1 text-xs text-text-lo">
                   {genre}
                 </span>
-              ))}
+              )) : null}
               {profile.roles.map((role) => (
                 <span key={role} className="rounded-chip border border-ice/30 bg-ice/10 px-2.5 py-1 text-xs text-ice">
                   {role}
@@ -156,7 +163,10 @@ export function ArtistProfileStoryView({
 
       {links.length ? (
         <section className={cn("panel-quiet p-6 sm:p-7", markers.length ? "lg:col-span-4" : "lg:col-span-12")}>
-          <ProfileSectionHeading kicker="Listen and connect" title="Find the signal elsewhere" />
+          <ProfileSectionHeading
+            kicker={isPro ? "Connect" : "Listen and connect"}
+            title={isPro ? "Find them elsewhere" : "Find the signal elsewhere"}
+          />
           <ul className="mt-5 space-y-2">
             {links.map((link, index) => (
               <li key={`${link.label}-${index}`}>
@@ -177,7 +187,10 @@ export function ArtistProfileStoryView({
 
       {story.length ? (
         <section className="panel-quiet overflow-hidden p-6 sm:p-7 lg:col-span-12">
-          <ProfileSectionHeading kicker="The story" title="How the work arrived here" />
+          <ProfileSectionHeading
+            kicker={isPro ? "Career story" : "The story"}
+            title={isPro ? "The path that brought them here" : "How the work arrived here"}
+          />
           <div className="mt-6 grid gap-3 lg:grid-cols-2">
             {story.map((section, index) => (
               <article

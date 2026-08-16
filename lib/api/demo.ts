@@ -7,6 +7,7 @@
  * isn't there yet or has just been deleted.
  */
 
+import { PREFER_DEMO_ARTIST_KEY } from "@/lib/constants";
 import { writeStoredArtistId, writeStoredSpaceId, clearLegacyWorkspaceMemory } from "@/lib/auth/workspace-memory";
 
 export type DemoArtist = {
@@ -58,10 +59,20 @@ export async function removeDemoWorkspace(
   if (!res.ok) throw new Error(await readError(res, "Couldn't remove the demo workspace."));
 }
 
-/** Point the app at the demo before navigating into the workspace. */
-export function focusDemo(result: { artistId: string; spaceId: string }): void {
-  writeStoredArtistId(null, result.artistId);
-  if (result.spaceId) writeStoredSpaceId(null, result.spaceId);
+/** Point this account at the demo for the navigation the user just requested. */
+export function focusDemo(
+  result: { artistId: string; spaceId: string },
+  userId: string | null | undefined
+): void {
+  writeStoredArtistId(userId, result.artistId);
+  if (result.spaceId) writeStoredSpaceId(userId, result.spaceId);
+  try {
+    // The provider consumes this once after the hard reload. Without an
+    // explicit handoff, a Pro always resumes their own personal home.
+    sessionStorage.setItem(PREFER_DEMO_ARTIST_KEY, result.artistId);
+  } catch {
+    /* The stored account pointer still lets this navigation proceed. */
+  }
 }
 
 /**

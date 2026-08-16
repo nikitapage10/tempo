@@ -19,6 +19,8 @@ type TaskRowProps = {
   onStatus: (s: TaskStatus) => Promise<void>;
   onDue: (date: string) => Promise<void>;
   onDelete: () => Promise<void>;
+  assignees?: { userId: string; label: string }[];
+  onAssign?: (userId: string | null) => Promise<void>;
 };
 
 export function DraggableTaskRow(props: TaskRowProps) {
@@ -47,6 +49,8 @@ export function TaskRow({
   onStatus,
   onDue,
   onDelete,
+  assignees = [],
+  onAssign,
   rowRef,
   rowProps,
   className,
@@ -143,6 +147,18 @@ export function TaskRow({
               >
                 {projectTitle}
               </Link>
+            ) : null}
+            {onAssign ? (
+              <select
+                aria-label={`Assignee for ${task.title}`}
+                value={task.assigned_to_user_id ?? ""}
+                onChange={(e) => void onAssign(e.target.value || null)}
+                onPointerDown={(e) => e.stopPropagation()}
+                className="h-6 max-w-40 rounded-chip border border-line bg-bg-2 px-2 font-mono text-[11px] text-text-lo"
+              >
+                <option value="">Unassigned</option>
+                {assignees.map((person) => <option key={person.userId} value={person.userId}>{person.label}</option>)}
+              </select>
             ) : null}
           </div>
           {task.notes ? (

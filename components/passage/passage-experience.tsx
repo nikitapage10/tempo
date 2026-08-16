@@ -15,6 +15,7 @@ import { MorphingText } from "@/components/ui/morphing-text";
 import { PASSAGE_PHASE_GATES, usePassageMedia } from "@/hooks/use-passage-media";
 import { usePassageState } from "@/hooks/use-passage-state";
 import { SOUNDTRACK_SRC, useOriginSoundtrack } from "@/hooks/use-origin-soundtrack";
+import { isDesktopApp } from "@/lib/desktop/bridge";
 import { clipForPassagePhase } from "@/lib/passage/reducer";
 import { originAsset, type OriginMediaKey } from "@/lib/origin/media";
 
@@ -44,8 +45,47 @@ export function PassageExperience() {
   } = usePassageState();
   const media = usePassageMedia(state.phase);
   const soundtrack = useOriginSoundtrack();
+  const {
+    ref: soundtrackRef,
+    start: startSoundtrack,
+    fade: fadeSoundtrack,
+    reset: resetSoundtrack,
+  } = soundtrack;
 
   const [soundOn, setSoundOn] = React.useState(false);
+  const startPassageSound = React.useCallback(() => {
+    setSoundOn(true);
+    startSoundtrack();
+  }, [startSoundtrack]);
+
+  /**
+   * A saved Passage draft resumes at its last question, so there is no waking
+   * screen to supply the browser gesture that normally starts the theme. Arm
+   * the first resumed interaction instead; TEMPO Desktop can begin at once.
+   */
+  React.useEffect(() => {
+    if (!hydrated || soundOn || state.phase === "awaiting_start") return;
+
+    if (isDesktopApp()) {
+      startPassageSound();
+      return;
+    }
+
+    const startOnInteraction = () => startPassageSound();
+    window.addEventListener("pointerdown", startOnInteraction, {
+      capture: true,
+      once: true,
+    });
+    window.addEventListener("keydown", startOnInteraction, {
+      capture: true,
+      once: true,
+    });
+    return () => {
+      window.removeEventListener("pointerdown", startOnInteraction, true);
+      window.removeEventListener("keydown", startOnInteraction, true);
+    };
+  }, [hydrated, soundOn, state.phase, startPassageSound]);
+
   const activeVideoRef = React.useRef<HTMLVideoElement | null>(null);
   const activeKeyRef = React.useRef<OriginMediaKey | null>(null);
   const [, setActiveTick] = React.useState(0);
@@ -110,13 +150,13 @@ export function PassageExperience() {
   async function handleEnter() {
     const ok = await complete();
     if (!ok) return;
-    soundtrack.fade();
+    fadeSoundtrack();
     router.replace(HOME_ROUTE);
   }
 
   /** Available from every question. Nobody is held here by a form. */
   async function handleSkip() {
-    soundtrack.fade();
+    fadeSoundtrack();
     await skip();
     router.replace(HOME_ROUTE);
   }
@@ -141,7 +181,7 @@ export function PassageExperience() {
       onError={handleMediaError}
       onActiveElement={handleActiveElement}
     >
-      <audio ref={soundtrack.ref} src={SOUNDTRACK_SRC} preload="auto" loop aria-hidden="true" />
+      <audio ref={soundtrackRef} src={SOUNDTRACK_SRC} preload="auto" loop aria-hidden="true" />
       {storyPhase ? (
         <div className="absolute inset-0">
           <PassageStoryScroll
@@ -174,8 +214,7 @@ export function PassageExperience() {
               onTuneIn={() => {
                 // Order matters: sound is enabled in the same tick as the
                 // gesture, so the first play() call is already allowed audio.
-                setSoundOn(true);
-                soundtrack.start();
+                startPassageSound();
               }}
               onBegin={() => dispatch({ type: "begin" })}
             />
@@ -197,7 +236,7 @@ export function PassageExperience() {
                 name={state.displayName}
                 onNameChange={(name) => dispatch({ type: "set_name", name })}
                 onBack={() => {
-                  soundtrack.reset();
+                  resetSoundtrack();
                   setSoundOn(false);
                   dispatch({ type: "back_to_awaken" });
                 }}
@@ -296,7 +335,7 @@ export function PassageExperience() {
               <OriginLookStep
                 kicker="Passage / your space"
                 heading="Make the space yours"
-                blurb="Colors, mark, and banner for your own workspace. All optional, and all changeable later in Settings."
+                blurb="Colors, mark, and banner for your own workspace, plus the choice to claim your TEMPO handle. All optional, and all changeable later."
                 onBack={() => dispatch({ type: "back_to_function" })}
                 onFinish={() => dispatch({ type: "finish_look" })}
                 busy={state.busy}

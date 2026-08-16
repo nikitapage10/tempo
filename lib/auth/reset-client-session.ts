@@ -2,12 +2,16 @@
 
 import type { QueryClient } from "@tanstack/react-query";
 import { isSafeRedirect } from "@/lib/auth/invite-signup";
-import { PREFER_ORIGIN_ARTIST_KEY } from "@/lib/constants";
+import {
+  PREFER_DEMO_ARTIST_KEY,
+  PREFER_ORIGIN_ARTIST_KEY,
+} from "@/lib/constants";
 import { clearCurrentUserCache } from "@/lib/auth/current-user-cache";
 import { clearLegacyWorkspaceMemory } from "@/lib/auth/workspace-memory";
 import { clearOfflineOutbox } from "@/lib/offline/query-persistence";
 import { createClient } from "@/lib/supabase/client";
 import { clearSignedUrlCache } from "@/lib/storage";
+import { GUIDED_TOUR_PENDING_KEY } from "@/lib/guided-tour";
 
 const PREFER_PERSONAL_HOME_KEY = "tempo.preferPersonalHome";
 
@@ -19,7 +23,12 @@ export function registerQueryClient(client: QueryClient) {
 }
 
 export function accountScopedSessionKeys(): string[] {
-  return [PREFER_ORIGIN_ARTIST_KEY, PREFER_PERSONAL_HOME_KEY];
+  return [
+    PREFER_ORIGIN_ARTIST_KEY,
+    PREFER_DEMO_ARTIST_KEY,
+    PREFER_PERSONAL_HOME_KEY,
+    GUIDED_TOUR_PENDING_KEY,
+  ];
 }
 
 export function clearAuthHandoffKeys() {

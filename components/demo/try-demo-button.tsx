@@ -7,6 +7,7 @@ import { PlayCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { focusDemo, seedDemo } from "@/lib/api/demo";
 import { armGuidedTour } from "@/lib/guided-tour";
+import { useCurrentUser } from "@/hooks/use-current-user";
 
 /**
  * "See TEMPO with a demo artist" — builds the PRESIDENT sample workspace and
@@ -35,6 +36,7 @@ export function TryDemoButton({
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const user = useCurrentUser();
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -43,7 +45,7 @@ export function TryDemoButton({
     setError(null);
     try {
       const result = await seedDemo();
-      focusDemo(result);
+      focusDemo(result, user?.id);
       // The demo is its own artist, so it gets a complete first-workspace tour
       // even when this member already toured their real workspace.
       armGuidedTour(result.artistId, { force: true });

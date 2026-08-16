@@ -17,7 +17,7 @@ function initials(name: string): string {
 export function SpaceSwitcher() {
   const { spaces, activeSpace, setActiveSpaceId, isLoading } = useActiveSpace();
   const { mode } = useWorkspaceMode();
-  const canManageSpaces = mode === "artist";
+  const canManageSpaces = mode !== "entered";
   const [open, setOpen] = React.useState(false);
   const ref = React.useRef<HTMLDivElement>(null);
   const label = activeSpace?.name ?? "No space";

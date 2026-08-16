@@ -94,11 +94,16 @@ export async function ensureDefaultSpaces(
   const existing = await fetchSpaces(artistId);
   if (existing.length > 0) {
     if (kind === "personal") {
+      await Promise.all(
+        existing
+          .filter((space) => space.focus !== "tasks")
+          .map((space) => updateSpaceFocus(space.id, "tasks"))
+      );
       const leftover = existing.find((space) => space.name === "Work");
       if (leftover) {
         await renameSpace(leftover.id, "Home");
-        return fetchSpaces(artistId);
       }
+      return fetchSpaces(artistId);
     }
     return existing;
   }

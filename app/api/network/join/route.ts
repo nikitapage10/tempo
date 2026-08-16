@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
 
   const { data: artist, error: artistError } = await supabase
     .from("artists")
-    .select("name, emblem_url, banner_url, banner_color, banner_color_end, ice_color, amber_color, palette_id, demo_kind")
+    .select("name, emblem_url, banner_url, banner_color, banner_color_end, ice_color, amber_color, palette_id, demo_kind, workspace_kind")
     .eq("id", artistId)
     .eq("user_id", user.id)
     .maybeSingle();
@@ -145,6 +145,7 @@ export async function POST(request: NextRequest) {
       .insert({
         artist_id: artistId,
         owner_user_id: user.id,
+        profile_kind: artist.workspace_kind === "personal" ? "pro" : "artist",
         handle,
         display_name: displayName.slice(0, 80),
         emblem_url: memberProfile?.avatar_url ?? artist.emblem_url ?? null,

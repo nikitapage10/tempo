@@ -56,3 +56,33 @@ describe("Passage voice input", () => {
     expect(step).toContain('aria-live="polite"');
   });
 });
+
+describe("Passage Tempo Theme bed", () => {
+  const experience = read("components/passage/passage-experience.tsx");
+  const stateHook = read("hooks/use-passage-state.ts");
+
+  it("uses the shared onboarding soundtrack and starts it from Tune in", () => {
+    expect(experience).toContain("SOUNDTRACK_SRC");
+    expect(experience).toContain(
+      '<audio ref={soundtrackRef} src={SOUNDTRACK_SRC}'
+    );
+    expect(experience).toContain("startPassageSound();");
+  });
+
+  it("starts resumed Passage audio on the first browser interaction or immediately on desktop", () => {
+    expect(experience).toContain("if (isDesktopApp())");
+    expect(experience).toContain(
+      'window.addEventListener("pointerdown", startOnInteraction'
+    );
+    expect(experience).toContain(
+      'window.addEventListener("keydown", startOnInteraction'
+    );
+    expect(experience).toContain('state.phase === "awaiting_start"');
+  });
+
+  it("does not create an empty draft that bypasses the Tune in screen", () => {
+    expect(stateHook).toContain(
+      'if (state.phase === "awaiting_start") return;'
+    );
+  });
+});

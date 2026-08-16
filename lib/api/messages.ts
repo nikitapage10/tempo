@@ -54,27 +54,39 @@ export async function fetchConversations(
   const ids = parts.map((p) => p.conversation_id);
   const readMap = new Map(parts.map((p) => [p.conversation_id, p.last_read_at]));
 
-  const { data: convos, error: cErr } = await supabase
+  const { data: roomRows } = await supabase
+    .from("artist_team_rooms")
+    .select("artist_id, conversation_id")
+    .in("conversation_id", ids);
+  const roomByConversation = new Map((roomRows ?? []).map((row) => [row.conversation_id, row.artist_id]));
+
+  const { data: allConvos, error: cErr } = await supabase
     .from("conversations")
     .select("*")
     // Scene rooms are 'group' conversations too (migration 053), but this
     // inbox's `peer` model assumes exactly one other participant — a scene
     // room is reached from its own Chat tab instead, not this list.
-    .eq("kind", "direct")
     .in("id", ids)
     .order("last_message_at", { ascending: false, nullsFirst: false });
   if (cErr) throw cErr;
+  const convos = (allConvos ?? []).filter(
+    (conversation) => conversation.kind === "direct" || roomByConversation.has(conversation.id)
+  );
 
   const { data: allParts } = await supabase
     .from("conversation_participants")
-    .select(`conversation_id, profile_id, profile:artist_profiles!conversation_participants_profile_id_fkey(${PEER_SELECT})`)
+    .select(`conversation_id, profile_id, user_id, profile:artist_profiles!conversation_participants_profile_id_fkey(${PEER_SELECT})`)
     .in("conversation_id", ids)
     .is("left_at", null);
 
   const result: Conversation[] = [];
   for (const c of convos ?? []) {
     const peers = (allParts ?? []).filter(
-      (p) => p.conversation_id === c.id && p.profile_id !== myProfileId
+      // The inbox belongs to the signed-in account, not whichever artist or
+      // Pro workspace happens to be open. A thread may have been provisioned
+      // against another profile owned by this same account, so profile-based
+      // comparison can mistake the member's own artist for the other person.
+      (p) => p.conversation_id === c.id && p.user_id !== user.id
     );
     const peerRaw = peers[0]?.profile as unknown;
     const peer = (
@@ -89,7 +101,7 @@ export async function fetchConversations(
         .select("id", { count: "exact", head: true })
         .eq("conversation_id", c.id)
         .is("deleted_at", null)
-        .neq("sender_profile_id", myProfileId)
+        .neq("sender_user_id", user.id)
         .gt("created_at", lastRead ?? "1970-01-01");
       unread = count ?? 0;
     }
@@ -103,6 +115,7 @@ export async function fetchConversations(
       archived_at: participant?.archived_at ?? null,
       muted: Boolean(participant?.muted),
       manually_unread_at: manuallyUnread,
+      team_artist_id: roomByConversation.get(c.id) ?? null,
     });
   }
   return result;

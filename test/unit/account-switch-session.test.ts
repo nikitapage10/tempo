@@ -110,11 +110,15 @@ describe("account switch session reset", () => {
     expect(callback).toContain("finishAuthNavigation");
     expect(providers).toContain("resetClientSession");
     expect(providers).toContain("onAuthStateChange");
+    expect(providers).toContain("previousId && nextId");
     expect(admin).toContain('queryKey: ["admin", "access", user?.id ?? null]');
     expect(artists).toContain("enabled: hydrated && !!user?.id");
     expect(artists).toContain("pickResumeArtistId");
     expect(read("lib/auth/reset-client-session.ts")).toContain(
       "clearLegacyWorkspaceMemory"
+    );
+    expect(read("lib/auth/reset-client-session.ts")).toContain(
+      "GUIDED_TOUR_PENDING_KEY"
     );
     expect(read("lib/auth/workspace-memory.ts")).toContain("artistMemoryKey");
   });

@@ -10,7 +10,7 @@ import { useToast } from "@/components/ui/toast";
 import { QuietEmpty } from "@/components/ui/section-header";
 import { useArtistMemberMutations, useArtistMembers } from "@/hooks/use-artist-members";
 import { searchArtistProfiles, type ProfileSearchResult } from "@/lib/api/artist-profile";
-import { teamInviteUrl, type ArtistMember } from "@/lib/api/artist-members";
+import { listMembershipEvents, previewMemberOffboarding, teamInviteUrl, type ArtistMember } from "@/lib/api/artist-members";
 import {
   AREA_DESCRIPTIONS,
   AREA_KEYS,
@@ -49,6 +49,10 @@ export function TeamManager({ artistId }: { artistId: string }) {
   const [debounced, setDebounced] = React.useState("");
   const [picked, setPicked] = React.useState<ProfileSearchResult | null>(null);
   const [role, setRole] = React.useState<MemberRole>("manager");
+  const [relationshipLabel, setRelationshipLabel] = React.useState("");
+  const [inviteMessage, setInviteMessage] = React.useState("");
+  const [inviteAreas, setInviteAreas] = React.useState<AreaGrants>(() => presetForRole("manager"));
+  const [reviewReady, setReviewReady] = React.useState(false);
   const [lastInviteUrl, setLastInviteUrl] = React.useState<string | null>(null);
   const [lastEmailSent, setLastEmailSent] = React.useState<boolean | null>(null);
   const [expandedId, setExpandedId] = React.useState<string | null>(null);
@@ -71,6 +75,10 @@ export function TeamManager({ artistId }: { artistId: string }) {
     const email = looksLikeEmail(query) ? query.trim() : "";
     const handle = picked?.handle || (!email ? normalizeHandle(query) : "");
     if (!email && !handle && !picked) return;
+    if (!reviewReady) {
+      setReviewReady(true);
+      return;
+    }
     try {
       const result = await mutations.invite.mutateAsync({
         artistId,
@@ -78,6 +86,9 @@ export function TeamManager({ artistId }: { artistId: string }) {
         invitedEmail: email || undefined,
         handle: picked ? undefined : handle || undefined,
         profileId: picked?.id,
+        areaOverrides: inviteAreas,
+        relationshipLabel,
+        inviteMessage,
       });
       if (result.kind === "existing") {
         setLastInviteUrl(null);
@@ -96,6 +107,9 @@ export function TeamManager({ artistId }: { artistId: string }) {
       setQuery("");
       setPicked(null);
       setInviting(false);
+      setReviewReady(false);
+      setRelationshipLabel("");
+      setInviteMessage("");
     } catch (err) {
       toast(err instanceof Error ? err.message : "Couldn’t send that invite.");
     }
@@ -110,7 +124,7 @@ export function TeamManager({ artistId }: { artistId: string }) {
     }
   }
 
-  const active = (members ?? []).filter((m) => m.status !== "revoked");
+  const active = (members ?? []).filter((m) => ["pending", "active", "suspended"].includes(m.status));
   const canSubmit = Boolean(picked || query.trim());
 
   return (
@@ -212,7 +226,12 @@ export function TeamManager({ artistId }: { artistId: string }) {
             <select
               id="team-invite-role"
               value={role}
-              onChange={(e) => setRole(e.target.value as MemberRole)}
+              onChange={(e) => {
+                const next = e.target.value as MemberRole;
+                setRole(next);
+                setInviteAreas(presetForRole(next));
+                setReviewReady(false);
+              }}
               className="h-9 w-full rounded-input border border-line bg-bg-2 px-2.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
             >
               {MEMBER_ROLES.map((r) => (
@@ -223,6 +242,36 @@ export function TeamManager({ artistId }: { artistId: string }) {
             </select>
             <p className="mt-1 text-xs text-text-lo">{ROLE_DESCRIPTIONS[role]}</p>
           </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="label-mono mb-1 block" htmlFor="team-relationship">Relationship label</label>
+              <Input id="team-relationship" value={relationshipLabel} maxLength={80} onChange={(e) => { setRelationshipLabel(e.target.value); setReviewReady(false); }} placeholder={ROLE_LABELS[role]} />
+            </div>
+            <div>
+              <label className="label-mono mb-1 block" htmlFor="team-invite-message">Invite message</label>
+              <Input id="team-invite-message" value={inviteMessage} maxLength={1000} onChange={(e) => { setInviteMessage(e.target.value); setReviewReady(false); }} placeholder="A short note about the work" />
+            </div>
+          </div>
+          <div className="space-y-2 border-t border-line/50 pt-3">
+            <p className="label-mono">What they can access</p>
+            {AREA_KEYS.map((area) => (
+              <div key={area} className="flex items-center justify-between gap-2">
+                <div><p className="text-xs text-text-hi">{AREA_LABELS[area]}</p><p className="text-[11px] text-text-lo">{AREA_DESCRIPTIONS[area]}</p></div>
+                <div className="flex shrink-0 rounded-chip border border-line p-0.5">
+                  {(["none", "read", "write"] as const).map((level) => {
+                    const unsupported = level === "write" && (area === "stats" || area === "social" || area === "team");
+                    return (
+                      <button key={level} type="button" disabled={unsupported} onClick={() => { setInviteAreas({ ...inviteAreas, [area]: level === "none" ? undefined : level }); setReviewReady(false); }} className={cn("rounded-chip px-2 py-0.5 text-[11px] disabled:opacity-30",(inviteAreas[area] ?? "none") === level ? "bg-bg-2 text-ice" : "text-text-lo")}>
+                        {LEVEL_LABELS[level]}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+            <p className="text-[11px] text-text-lo">Stats is read-only. Social and Team administration remain owner-only.</p>
+          </div>
+          {reviewReady ? <div className="well p-3 text-xs text-text-lo">Ready to send: {relationshipLabel || ROLE_LABELS[role]} · exact access shown above. The invitee must review it before approval.</div> : null}
           <div className="flex justify-end gap-2">
             <Button
               type="button"
@@ -231,12 +280,13 @@ export function TeamManager({ artistId }: { artistId: string }) {
                 setInviting(false);
                 setQuery("");
                 setPicked(null);
+                setReviewReady(false);
               }}
             >
               Cancel
             </Button>
             <Button type="submit" disabled={mutations.invite.isPending || !canSubmit}>
-              {mutations.invite.isPending ? "Sending…" : "Send invite"}
+              {mutations.invite.isPending ? "Sending…" : reviewReady ? "Send invite" : "Review invitation"}
             </Button>
           </div>
         </form>
@@ -259,7 +309,15 @@ export function TeamManager({ artistId }: { artistId: string }) {
               onToggle={() => setExpandedId((prev) => (prev === m.id ? null : m.id))}
               onSetAreas={(areas) => mutations.setAreas.mutate({ id: m.id, areas })}
               onSetRole={(role) => mutations.setRole.mutate({ id: m.id, role })}
-              onRevoke={() => mutations.revoke.mutate(m.id)}
+              onRevoke={async () => {
+                try {
+                  const preview = await previewMemberOffboarding(m.id);
+                  const impact = `${preview.tasks} open task${preview.tasks === 1 ? "" : "s"}, ${preview.reviews} review request${preview.reviews === 1 ? "" : "s"}, and ${preview.events} upcoming event${preview.events === 1 ? "" : "s"}`;
+                  if (window.confirm(`End access? TEMPO will leave their open work unassigned.\n\n${impact}. Messages and authored work remain attributed.`)) mutations.revoke.mutate(m.id);
+                } catch (error) { toast(error instanceof Error ? error.message : "Couldn’t review offboarding."); }
+              }}
+              onSuspend={() => mutations.suspend.mutate(m.id)}
+              onResume={() => mutations.resume.mutate(m.id)}
             />
           ))}
         </ul>
@@ -281,6 +339,8 @@ function MemberRow({
   onSetAreas,
   onSetRole,
   onRevoke,
+  onSuspend,
+  onResume,
 }: {
   member: ArtistMember;
   expanded: boolean;
@@ -288,6 +348,8 @@ function MemberRow({
   onSetAreas: (areas: AreaGrants) => void;
   onSetRole: (role: MemberRole) => void;
   onRevoke: () => void;
+  onSuspend: () => void;
+  onResume: () => void;
 }) {
   const customized = isCustomizedFromRole(member.role, member.areas);
   const label = member.invitedEmail ?? "On TEMPO";
@@ -321,14 +383,9 @@ function MemberRow({
         >
           {expanded ? "Hide access" : "Edit access"}
         </button>
-        <button
-          type="button"
-          onClick={onRevoke}
-          className="shrink-0 rounded-input p-1.5 text-text-lo transition-colors duration-hover hover:bg-warn/15 hover:text-warn"
-          aria-label={`Revoke ${member.invitedEmail ?? "this member"}`}
-        >
-          <Trash2 className="size-3.5" />
-        </button>
+        {member.status === "active" ? <button type="button" onClick={onSuspend} className="shrink-0 rounded-input px-2 py-1 text-xs text-text-lo hover:text-amber">Suspend</button> : null}
+        {member.status === "suspended" ? <button type="button" onClick={onResume} className="shrink-0 rounded-input px-2 py-1 text-xs text-ice">Resume</button> : null}
+        <button type="button" onClick={onRevoke} className="shrink-0 rounded-input p-1.5 text-text-lo transition-colors duration-hover hover:bg-warn/15 hover:text-warn" aria-label={`End access for ${member.invitedEmail ?? "this member"}`}><Trash2 className="size-3.5" /></button>
       </div>
 
       {expanded ? (
@@ -353,6 +410,7 @@ function MemberRow({
                   <button
                     key={level}
                     type="button"
+                    disabled={level === "write" && (area === "stats" || area === "social" || area === "team")}
                     onClick={() =>
                       onSetAreas({
                         ...member.areas,
@@ -372,8 +430,15 @@ function MemberRow({
               </div>
             </div>
           ))}
+          <MemberHistory artistId={member.artistId} membershipId={member.id} />
         </div>
       ) : null}
     </li>
   );
+}
+
+function MemberHistory({ artistId, membershipId }: { artistId: string; membershipId: string }) {
+  const history = useQuery({ queryKey: ["artist-membership-events", membershipId], queryFn: () => listMembershipEvents(artistId, membershipId), staleTime: 15_000 });
+  if (!history.data?.length) return null;
+  return <div className="border-t border-line/50 pt-3"><p className="label-mono mb-2">History</p><ul className="space-y-1">{history.data.slice(0, 8).map((event) => <li key={event.id} className="flex justify-between gap-3 text-[11px] text-text-lo"><span className="capitalize">{event.eventType.replaceAll("_", " ")}</span><time>{new Date(event.createdAt).toLocaleDateString()}</time></li>)}</ul></div>;
 }

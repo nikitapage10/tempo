@@ -11,6 +11,10 @@ describe("Nikita welcome inbox visibility", () => {
     join(process.cwd(), "lib/api/messages.ts"),
     "utf8"
   );
+  const messagesView = readFileSync(
+    join(process.cwd(), "app/(app)/messages/messages-view.tsx"),
+    "utf8"
+  );
 
   it("hides the automated welcome sender until another user replies", () => {
     expect(migration).toContain("archived_at = 'infinity'::timestamptz");
@@ -20,5 +24,14 @@ describe("Nikita welcome inbox visibility", () => {
 
   it("keeps the hidden sentinel out of the Archived inbox", () => {
     expect(messagesApi).toContain('.neq("archived_at", "infinity")');
+  });
+
+  it("resolves direct-message identity by account when the active workspace changes", () => {
+    expect(messagesApi).toContain("conversation_id, profile_id, user_id, profile:artist_profiles");
+    expect(messagesApi).toContain("p.user_id !== user.id");
+    expect(messagesApi).toContain('.neq("sender_user_id", user.id)');
+    expect(messagesApi).not.toContain("p.profile_id !== myProfileId");
+    expect(messagesView).toContain("message.sender_user_id === currentUser?.id");
+    expect(messagesView).not.toContain("message.sender_profile_id === myProfileId");
   });
 });

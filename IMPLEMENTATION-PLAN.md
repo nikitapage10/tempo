@@ -1,9 +1,24 @@
 # TEMPO — Implementation Plan
 
-*Living document. Work-package order matches the Future Feature Prompt Pack. Do not combine packages. Do not skip migration gates.*
+*Living document. Do not combine packages. Do not skip migration gates.*
 
-**Current product baseline:** v0.6.x solo musician app (spaces, board, track workspace, versions≤2, assets, sessions, tasks, projects, PWA).  
-**This plan starts at Prompt 0 (docs) → Prompt 12 (integration). Optional Prompt 13 = tests after stabilization.**
+**Current execution track:** Team Operations v1 is implemented in migrations 101–105 and the shared web client. Follow `TEAM-OPERATIONS-IMPLEMENTATION-TEST-ROLLOUT-PLAN.md` for staged schema rollout and the direct hosted RLS gate.
+**Historical track:** The Prompt 0 → Prompt 12 sequence below built the earlier track-workspace foundation and is retained for dependency history, not as the next backlog.
+
+### Team Operations package order
+
+1. Permission truth
+2. Membership lifecycle and informed invitations
+3. Task assignments
+4. My Work v1
+5. Review requests
+6. Artist Team Brief
+7. Artist team room
+8. Pro operations home
+8A. Optional role-based Pro starter kits
+9. Delegated Team/Social administration only after separate approval
+
+The five binding documents are `TEAM-OPERATIONS-PRODUCT-SPEC.md`, `TEAM-OPERATIONS-UX-SPEC.md`, `TEAM-OPERATIONS-TECHNICAL-DESIGN.md`, `TEAM-OPERATIONS-SECURITY-AND-PERMISSIONS.md`, and `TEAM-OPERATIONS-IMPLEMENTATION-TEST-ROLLOUT-PLAN.md`.
 
 ---
 

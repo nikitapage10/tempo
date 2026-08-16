@@ -6,6 +6,7 @@ import {
   deleteTask,
   fetchTasks,
   updateTask,
+  assignArtistTask,
 } from "@/lib/api/tasks";
 import type { Task, TaskInsert, TaskUpdate } from "@/lib/types";
 
@@ -59,5 +60,10 @@ export function useTaskMutations(spaceId: string | null) {
     onSuccess: invalidate,
   });
 
-  return { create, update, remove };
+  const assign = useMutation({
+    mutationFn: ({ id, userId }: { id: string; userId: string | null }) => assignArtistTask(id, userId),
+    onSuccess: invalidate,
+  });
+
+  return { create, update, remove, assign };
 }
