@@ -15,8 +15,14 @@ import {
   ORIGIN_FIT_SHELL,
   OriginScrim,
 } from "@/components/origin/origin-copy-layer";
+import type { HandleState } from "@/components/social/handle-field";
+import {
+  NetworkChoicePanel,
+  type NetworkChoice,
+} from "@/components/social/network-choice-panel";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { useArtistProfile } from "@/hooks/use-artist-profile";
 import { SignedImage } from "@/components/ui/signed-image";
 import { useToast } from "@/components/ui/toast";
 import {
@@ -67,6 +73,21 @@ export function OriginLookStep({
   const { toast } = useToast();
   const [error, setError] = React.useState<string | null>(null);
 
+  /**
+   * The network choice rides along with the look because it is the same kind
+   * of decision: how this workspace presents itself, and to whom. Private is
+   * the default, so Continue and Skip behave identically for anyone who does
+   * not touch it.
+   */
+  const { publish } = useArtistProfile(activeArtist?.id ?? null);
+  const [networkChoice, setNetworkChoice] = React.useState<NetworkChoice>("private");
+  const [handle, setHandle] = React.useState("");
+  const [handleState, setHandleState] = React.useState<HandleState>({
+    value: "",
+    ready: false,
+  });
+  const [joining, setJoining] = React.useState(false);
+
   const logoInputRef = React.useRef<HTMLInputElement>(null);
   const emblemInputRef = React.useRef<HTMLInputElement>(null);
   const bannerInputRef = React.useRef<HTMLInputElement>(null);
@@ -113,6 +134,34 @@ export function OriginLookStep({
     (clearEmblem.isPending && clearEmblem.variables?.id === artist.id) ||
     (uploadBanner.isPending && uploadBanner.variables?.artist.id === artist.id) ||
     (setBannerColor.isPending && setBannerColor.variables?.artist.id === artist.id);
+
+  /**
+   * Continue, doing whatever the network choice asked for first.
+   *
+   * A failed join stops the step rather than being swallowed: someone who
+   * chose to be on the network and was silently left off it would have no
+   * reason to look again.
+   */
+  async function completeLook() {
+    if (networkChoice !== "join") {
+      onFinish();
+      return;
+    }
+    if (!handleState.ready || !handleState.value) return;
+    setJoining(true);
+    try {
+      await publish.mutateAsync({ visibility: "members", handle: handleState.value });
+      toast(`You’re on the network as @${handleState.value}.`, "ok");
+      setError(null);
+      onFinish();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Couldn’t join the network just now."
+      );
+    } finally {
+      setJoining(false);
+    }
+  }
 
   async function withImage(
     files: FileList | null,
@@ -412,6 +461,19 @@ export function OriginLookStep({
           </div>
         </div>
 
+        <div className="h-px w-full bg-line/60" aria-hidden />
+
+        <NetworkChoicePanel
+          choice={networkChoice}
+          onChoiceChange={setNetworkChoice}
+          handle={handle}
+          onHandleChange={setHandle}
+          onHandleStateChange={setHandleState}
+          artistId={artist.id}
+          artistName={artist.name}
+          disabled={busy || joining}
+        />
+
         {error ? <p role="alert" className="text-xs text-warn">{error}</p> : null}
       </div>
 
@@ -422,22 +484,28 @@ export function OriginLookStep({
             variant="ghost"
             size="sm"
             onClick={onFinish}
-            disabled={busy || imageBusy}
+            disabled={busy || imageBusy || joining}
             className="text-text-lo"
           >
             Skip for now
           </Button>
           <Button
             type="button"
-            onClick={onFinish}
-            disabled={busy || imageBusy}
+            onClick={() => void completeLook()}
+            disabled={
+              busy ||
+              imageBusy ||
+              joining ||
+              (networkChoice === "join" && !handleState.ready)
+            }
             className="ml-auto rounded-full px-5"
           >
-            Continue <ArrowRight className="size-4" />
+            {joining ? "Joining…" : "Continue"} <ArrowRight className="size-4" />
           </Button>
         </div>
         <p className="mt-2.5 text-xs leading-relaxed text-text-lo/80">
-          Skip keeps Spectra for now. You can set a look any time in Settings.
+          Skip keeps Spectra and stays private. You can set a look, or join the
+          network, any time afterwards.
         </p>
       </div>
     </OriginScrim>

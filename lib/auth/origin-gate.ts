@@ -8,10 +8,30 @@ export type OriginOwnedRow = {
   user_id?: string | null;
   workspace_kind?: string | null;
   origin_status?: string | null;
+  demo_kind?: string | null;
 };
 
 function isPersonal(row: OriginOwnedRow): boolean {
   return row.workspace_kind === "personal";
+}
+
+/** The sample workspace, not one of this account's own artists. */
+function isDemo(row: OriginOwnedRow): boolean {
+  return Boolean(row.demo_kind);
+}
+
+/**
+ * True when the account currently has the sample workspace built.
+ *
+ * Asking to look at the demo is a deliberate "not yet" to handing over a
+ * catalog, and it is offered from inside Origin itself. Onboarding therefore
+ * has to stand down while it exists — otherwise building the demo bounced
+ * straight back to the first Origin chapter and the demo was never seen.
+ * Removing the demo hands the gate back to their own artist, unfinished
+ * Origin and all.
+ */
+export function hasDemoWorkspace(owned: OriginOwnedRow[]): boolean {
+  return owned.some(isDemo);
 }
 
 function isFinishedMusic(status: string | null | undefined): boolean {
@@ -23,7 +43,7 @@ function isUnfinishedMusic(status: string | null | undefined): boolean {
 }
 
 export function musicOwnedRows(owned: OriginOwnedRow[]): OriginOwnedRow[] {
-  return owned.filter((row) => !isPersonal(row));
+  return owned.filter((row) => !isPersonal(row) && !isDemo(row));
 }
 
 /**
@@ -48,6 +68,7 @@ export function shouldSendToOrigin(input: {
   owned: OriginOwnedRow[];
   hasMembership: boolean;
 }): boolean {
+  if (hasDemoWorkspace(input.owned)) return false;
   const music = musicOwnedRows(input.owned);
   const unfinished = music.filter((row) => isUnfinishedMusic(row.origin_status ?? null));
   const hasPersonalHome = input.owned.some(isPersonal);

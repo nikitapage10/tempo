@@ -105,17 +105,34 @@ export async function upsertArtistProfile(
   return data as ArtistProfile;
 }
 
+/**
+ * Thrown when the network refuses the join because the handle is missing or
+ * taken. Carries a flag so callers can reopen the handle field instead of
+ * showing a dead-end toast.
+ */
+export class HandleRequiredError extends Error {
+  readonly needsHandle = true;
+}
+
 export async function publishArtistProfile(
   artistId: string | null,
-  visibility: "members" | "public"
+  visibility: "members" | "public",
+  handle?: string
 ): Promise<ArtistProfile> {
   const response = await fetch("/api/network/join", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ artistId: artistId || undefined, visibility }),
+    body: JSON.stringify({
+      artistId: artistId || undefined,
+      visibility,
+      handle: handle || undefined,
+    }),
   });
   const body = await response.json().catch(() => null);
-  if (!response.ok) throw new Error(body?.error ?? "Couldn’t join the network.");
+  if (!response.ok) {
+    const message = body?.error ?? "Couldn’t join the network.";
+    throw body?.needsHandle ? new HandleRequiredError(message) : new Error(message);
+  }
   return body as ArtistProfile;
 }
 

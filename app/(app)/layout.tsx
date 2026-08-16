@@ -31,22 +31,23 @@ export default async function AppLayout({
   let ownedArtists: OriginOwnedRow[] | null = null;
   let ownedError: { message?: string } | null = null;
   if (user) {
-    const first = await supabase
-      .from("artists")
-      .select("id, origin_status, workspace_kind")
-      .eq("user_id", user.id)
-      .order("sort", { ascending: true });
-    if (first.error && /workspace_kind/i.test(first.error.message)) {
-      const retry = await supabase
+    // Narrowing selects, most informative first. `workspace_kind` (migration
+    // 094/095) and `demo_kind` (073) may not exist yet on an older database,
+    // and a missing column fails the whole read rather than returning null.
+    const columnSets = [
+      "id, origin_status, workspace_kind, demo_kind",
+      "id, origin_status, workspace_kind",
+      "id, origin_status",
+    ];
+    for (const columns of columnSets) {
+      const attempt = await supabase
         .from("artists")
-        .select("id, origin_status")
+        .select(columns)
         .eq("user_id", user.id)
         .order("sort", { ascending: true });
-      ownedArtists = retry.data;
-      ownedError = retry.error;
-    } else {
-      ownedArtists = first.data;
-      ownedError = first.error;
+      ownedArtists = attempt.data as OriginOwnedRow[] | null;
+      ownedError = attempt.error;
+      if (!attempt.error || !/workspace_kind|demo_kind/i.test(attempt.error.message)) break;
     }
   }
 

@@ -2,6 +2,20 @@
 
 Plain-English history of what changed in TEMPO, newest first.
 
+## 2026-08-16
+
+- Changed (v0.162.1): Designed optional role-based starter kits for Pro accounts. Manager, label, publicist, tour manager, agent, assistant, and custom paths can preconfigure a private Pro home with role-relevant views and reusable templates after an itemized confirmation; multi-role kits combine safely, never grant artist access, and never overwrite edited work. This is architecture and product design only—the starter kits are not live yet.
+- Added (v0.162.0): Onboarding now asks whether you want to be on the member network, on the same screen where you pick your colors, logo and profile image. Private is the default and stays a real answer: nothing is shared, and you can join later from Social whenever you feel like it.
+- Added (v0.162.0): Choosing to join the network now asks you to pick your handle right then, wherever you join from. The handle is checked as you type, so you find out a name is taken while you're still choosing rather than after pressing Join. Handles were previously only required for a public link, which left members on the network that nobody could @mention or link to.
+- Fixed (v0.162.0): "Explore a demo artist" now actually opens the demo. Building it used to drop you straight back at the first Origin chapter, because onboarding did not recognise the sample workspace and sent you back to finish your own. Removing the demo puts you back where you were, unfinished Origin and all.
+- Fixed (v0.162.0): The dark blocky patch around the light at the very start of Origin is gone. The opening film's black was very slightly lifted off true black, so the compression blocks around the bright line showed as hard-edged squares on high contrast screens, Macs especially. The clip and its still have been re-mastered to true black.
+- Fixed (v0.162.0): Origin no longer arrives with "Artist Name" already typed into the name field. It now sits behind the field as a prompt and disappears as soon as you type, instead of being something you have to delete first.
+- Changed (v0.162.0): Origin is noticeably lighter to scroll, especially through The Story. Chapters you have scrolled past are now dropped from the screen properly rather than left invisible but still being drawn, and the film grain is moved a cheaper way. This was the bulk of the lag on the scrolling chapter.
+- Changed (v0.162.0): Dictation puts your words on screen much sooner. The first phrase now lands in about a second instead of after several, and later phrases are sent off in shorter stretches. This mostly affects the desktop app, which records and transcribes rather than using the browser's own live dictation.
+- Changed (v0.162.0): Invitations and the welcome screen now present the desktop app and the browser as two full versions of TEMPO rather than one real option and a fallback. Desktop is still listed first and says what it's better at, but the browser is offered at the same weight, with the same account either way.
+- Fixed (v0.161.3): Pro invitation emails now welcome the recipient through Passage and their professional home instead of telling them to introduce an artist through Origin. Artist invitations still keep their Origin onboarding language, and the admin preview now reflects the selected role.
+- Changed (v0.161.2): Planned the next Team Operations layer in full before building it. The plan now covers clearer Pro and team-role language, honest access controls, assigned work across artists, safer joining and leaving, an artist Team Brief, a private team room, and a multi-artist work and schedule home. These are designs for the next build packages; no new team behavior or database step ships in this version.
+
 ## 2026-08-15
 
 - Fixed (v0.161.1): Origin's lines no longer ride up to the top of the screen. Every question, panel and line of narration now sits in the same place, centered against the middle-right of the film, instead of some copy floating at the top and some drifting into the middle.

@@ -591,7 +591,10 @@ export function OriginFilmGrain() {
       // Overlay alone barely registers on footage this dark — most of the frame
       // is near black, where overlay leaves the base untouched. The second
       // soft-light pass in the shadow of this one is what makes it read.
-      className="pointer-events-none absolute inset-0 z-[3] opacity-[0.55] mix-blend-soft-light motion-reduce:animate-none"
+      // Inset past every edge because the hop is a transform now (see the
+      // origin-grain keyframes) — the tile has to overhang by more than the
+      // largest offset or the move would drag an empty edge into frame.
+      className="pointer-events-none absolute -inset-[120px] z-[3] opacity-[0.55] mix-blend-soft-light motion-reduce:animate-none"
       style={{
         backgroundImage: `url("${GRAIN_URI}")`,
         backgroundRepeat: "repeat",
@@ -601,7 +604,7 @@ export function OriginFilmGrain() {
     />
     <div
       aria-hidden
-      className="pointer-events-none absolute inset-0 z-[3] opacity-[0.16] mix-blend-screen"
+      className="pointer-events-none absolute -inset-[120px] z-[3] opacity-[0.16] mix-blend-screen"
       style={{
         backgroundImage: `url("${GRAIN_URI}")`,
         backgroundRepeat: "repeat",

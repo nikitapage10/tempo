@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  hasUnfinishedMusicArtist,
   pickOriginArtistId,
   planOriginArtistForInvite,
   shouldSendToOrigin,
@@ -70,5 +71,38 @@ describe("artist invite Origin gate", () => {
   it("picks the owned unfinished artist, not a managed one or the home", () => {
     expect(pickOriginArtistId([personal, managed, minted], me)).toBe("music");
     expect(pickOriginArtistId([personal, managed], me)).toBe(null);
+  });
+});
+
+/**
+ * Trying the demo is offered from inside Origin's import chapter, so the gate
+ * has to stand down while a demo exists. Without this the demo was built and
+ * the redirect immediately threw the member back to Origin's first chapter,
+ * which is exactly what "the demo button does nothing" looked like.
+ */
+describe("demo workspace and the Origin gate", () => {
+  const demo = {
+    id: "demo",
+    user_id: me,
+    workspace_kind: "artist" as const,
+    origin_status: "legacy_complete",
+    demo_kind: "president",
+  };
+
+  it("stands down while a demo workspace exists", () => {
+    expect(
+      shouldSendToOrigin({ owned: [minted, demo], hasMembership: false })
+    ).toBe(false);
+  });
+
+  it("hands the gate back once the demo is removed", () => {
+    expect(
+      shouldSendToOrigin({ owned: [minted], hasMembership: false })
+    ).toBe(true);
+  });
+
+  it("never treats the demo as this account's own unfinished artist", () => {
+    expect(hasUnfinishedMusicArtist([demo])).toBe(false);
+    expect(pickOriginArtistId([demo, minted], me)).toBe("music");
   });
 });

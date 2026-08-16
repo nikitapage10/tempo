@@ -102,8 +102,8 @@ function WelcomeChooser() {
   const desktopHref = preferMac ? MAC_INSTALLER_URL : WINDOWS_INSTALLER_URL;
   const desktopLabel = preferMac ? "Download for Mac" : "Download for Windows";
   const desktopHint = preferMac
-    ? "Unsigned universal build — right-click → Open the first time Gatekeeper warns."
-    : "Install the desktop app, then come back to finish Origin in either place.";
+    ? "Opens instantly, keeps every bounce, works offline. Unsigned universal build, so right-click and choose Open the first time Gatekeeper warns."
+    : "Opens instantly, keeps every bounce, works offline. Install it, then finish Origin in either place.";
 
   return (
     <AuthShell>
@@ -113,24 +113,17 @@ function WelcomeChooser() {
             <Wordmark size={32} />
           </h1>
           <p className="mt-4 text-sm text-text-lo">
-            You’re in. How do you want to use TEMPO?
+            You’re in. TEMPO runs on your computer and in the browser, and both
+            are the full thing. Pick whichever you want to start in.
           </p>
         </div>
 
+        {/* Two real choices, not an offer and a fallback. Desktop is listed
+            first because it is the better long-term home for a catalog, but
+            the browser sits beside it at the same weight rather than reading
+            as the thing you settle for. */}
         <div className="grid gap-3">
           <Button asChild variant="default" size="lg" className="h-auto justify-start gap-3 py-4 text-left">
-            <Link href="/origin">
-              <Globe className="size-5 shrink-0" strokeWidth={1.75} />
-              <span>
-                <span className="block text-sm font-medium">Continue in the browser</span>
-                <span className="mt-0.5 block text-xs font-normal text-text-lo/80">
-                  Start Origin here — you can install desktop any time from Settings.
-                </span>
-              </span>
-            </Link>
-          </Button>
-
-          <Button asChild variant="secondary" size="lg" className="h-auto justify-start gap-3 py-4 text-left">
             <a href={desktopHref}>
               <Download className="size-5 shrink-0" strokeWidth={1.75} />
               <span>
@@ -141,15 +134,24 @@ function WelcomeChooser() {
               </span>
             </a>
           </Button>
+
+          <Button asChild variant="secondary" size="lg" className="h-auto justify-start gap-3 py-4 text-left">
+            <Link href="/origin">
+              <Globe className="size-5 shrink-0" strokeWidth={1.75} />
+              <span>
+                <span className="block text-sm font-medium">Continue in the browser</span>
+                <span className="mt-0.5 block text-xs font-normal text-text-lo/80">
+                  Nothing to install. Start Origin right now, on any computer you sign in from.
+                </span>
+              </span>
+            </Link>
+          </Button>
         </div>
 
         <p className="text-xs text-text-lo/70">
-          After the installer finishes, open TEMPO and sign in with the
-          same account — or keep going in the browser with{" "}
-          <Link href="/origin" className="text-ice hover:underline">
-            Continue in the browser
-          </Link>
-          .
+          It’s the same account either way, and you can add the other one
+          whenever you like. If you install the app, open it and sign in with
+          this account.
         </p>
       </div>
     </AuthShell>

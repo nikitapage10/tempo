@@ -70,6 +70,20 @@ export function normalizeDefaultArtistName(name: string): string {
   return name === LEGACY_DEFAULT_ARTIST_NAME ? DEFAULT_ARTIST_NAME : name;
 }
 
+/**
+ * True when the stored name is only the stand-in a brand new account was given,
+ * not something the artist chose.
+ *
+ * Origin seeds its name field from the artist row, and the row starts life as
+ * "Artist Name". Seeding that in as a real value meant the very first thing the
+ * artist had to do was select and delete it. It belongs in the placeholder,
+ * where it reads as a prompt and clears itself.
+ */
+export function isPlaceholderArtistName(name: string | null | undefined): boolean {
+  const trimmed = (name ?? "").trim();
+  return trimmed === DEFAULT_ARTIST_NAME || trimmed === LEGACY_DEFAULT_ARTIST_NAME;
+}
+
 export const ACTIVE_ARTIST_KEY = "tempo.activeArtistId";
 export const PREFER_ORIGIN_ARTIST_KEY = "tempo.preferOriginArtist";
 

@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { connectTeamNetworkFollows } from "@/lib/social/connect-team-follows";
 import { isPlaceholderPersonName } from "@/lib/auth/person-name";
+import { validateHandle } from "@/lib/social/handle";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +30,7 @@ export async function POST(request: NextRequest) {
   if (visibility !== "members" && visibility !== "public") {
     return NextResponse.json({ error: "Choose a valid network visibility." }, { status: 400, headers });
   }
+  const requestedHandle = typeof body?.handle === "string" ? body.handle : "";
 
   if (!artistId) {
     const { data: owned } = await supabase
@@ -79,6 +81,45 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  /**
+   * A handle is not optional once someone is on the network.
+   *
+   * Every other field can be filled in later, but @mentions and the
+   * /artist/[handle] address both need this one, and a member who joined
+   * without it showed up in Discover as someone nobody could actually link to.
+   * Enforced here rather than only in the form, because this is the single
+   * door onto the network: onboarding, Social, and the Artist page all come
+   * through it.
+   */
+  const existingHandle = typeof existing?.handle === "string" ? existing.handle : "";
+  let handle = existingHandle;
+  if (requestedHandle) {
+    const checked = validateHandle(requestedHandle);
+    if (!checked.ok) {
+      return NextResponse.json({ error: checked.message }, { status: 400, headers });
+    }
+    handle = checked.handle;
+  }
+  if (!handle) {
+    return NextResponse.json(
+      { error: "Pick a handle to join the network.", needsHandle: true },
+      { status: 400, headers }
+    );
+  }
+  if (handle !== existingHandle) {
+    const { data: taken } = await supabase
+      .from("artist_profiles")
+      .select("artist_id")
+      .eq("handle", handle)
+      .maybeSingle();
+    if (taken && taken.artist_id !== artistId) {
+      return NextResponse.json(
+        { error: `@${handle} is already taken.`, needsHandle: true },
+        { status: 409, headers }
+      );
+    }
+  }
+
   let profileId = existing?.id as string | undefined;
   if (!existing) {
     const { data: memberProfile } = await supabase
@@ -104,6 +145,7 @@ export async function POST(request: NextRequest) {
       .insert({
         artist_id: artistId,
         owner_user_id: user.id,
+        handle,
         display_name: displayName.slice(0, 80),
         emblem_url: memberProfile?.avatar_url ?? artist.emblem_url ?? null,
         banner_url: artist.banner_url ?? null,
@@ -128,7 +170,7 @@ export async function POST(request: NextRequest) {
   const publishedAt = existing?.published_at ?? new Date().toISOString();
   const { data: profile, error: publishError } = await supabase
     .from("artist_profiles")
-    .update({ visibility, published_at: publishedAt })
+    .update({ visibility, published_at: publishedAt, handle })
     .eq("id", profileId)
     .select("*")
     .single();

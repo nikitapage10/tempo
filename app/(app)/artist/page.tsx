@@ -32,6 +32,7 @@ import { useArtistProfile } from "@/hooks/use-artist-profile";
 import { useProfileReleasedTracks } from "@/hooks/use-profile-released-tracks";
 import { useWorkspaceMode } from "@/hooks/use-workspace-mode";
 import { checkHandleAvailable } from "@/lib/api/artist-profile";
+import { JoinNetworkDialog } from "@/components/social/join-network-dialog";
 import type {
   ArtistProfileUpdate,
   ProfileDmPolicy,
@@ -91,6 +92,10 @@ export default function ArtistProfilePage() {
 
   const [editing, setEditing] = React.useState(false);
   const [draft, setDraft] = React.useState<Draft | null>(null);
+  const [joinOpen, setJoinOpen] = React.useState(false);
+  const [joinVisibility, setJoinVisibility] = React.useState<"members" | "public">(
+    "members"
+  );
 
   function startEditing() {
     setDraft({
@@ -172,9 +177,12 @@ export default function ArtistProfilePage() {
       startEditing();
       return;
     }
-    if (visibility === "public" && !profile?.handle) {
-      toast("Add a handle before making the profile public.");
-      startEditing();
+    // A handle is required for the network at all now, not only for a public
+    // link. Ask for it in the shared dialog rather than sending them into the
+    // profile editor to hunt for the field.
+    if (visibility !== "private" && !profile?.handle) {
+      setJoinVisibility(visibility);
+      setJoinOpen(true);
       return;
     }
     try {
@@ -200,6 +208,22 @@ export default function ArtistProfilePage() {
 
   return (
     <div className="space-y-5">
+      <JoinNetworkDialog
+        open={joinOpen}
+        onOpenChange={setJoinOpen}
+        artistId={activeArtist?.id ?? null}
+        artistName={activeArtist?.name}
+        currentHandle={profile?.handle}
+        visibility={joinVisibility}
+        onJoined={() =>
+          toast(
+            joinVisibility === "public"
+              ? "You’re on the network with a public link."
+              : "You’re on the network, visible to TEMPO members.",
+            "ok"
+          )
+        }
+      />
       <div className="glass-hero prism-edge relative overflow-hidden">
         <div className="absolute inset-0">
           <LfWindow field className="absolute inset-0" aria-hidden />

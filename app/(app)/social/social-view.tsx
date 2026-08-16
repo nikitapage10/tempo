@@ -14,6 +14,7 @@ import { searchArtistProfiles } from "@/lib/api/people";
 import { ArtistMark } from "@/components/artists/artist-mark";
 import { ContactSheet } from "@/components/social/contact-sheet";
 import { InviteArtistFriend } from "@/components/social/invite-artist-friend";
+import { JoinNetworkDialog } from "@/components/social/join-network-dialog";
 import { ConnectionGlobe } from "@/components/social/connection-globe";
 import type { GlobePerson } from "@/components/social/connection-globe";
 import { FeedComposer } from "@/components/social/feed-composer";
@@ -318,14 +319,9 @@ export default function SocialView() {
     { id: "discover", label: "Discover", needsNetwork: true },
   ];
 
-  async function joinNetwork() {
-    try {
-      await publish.mutateAsync("members");
-      toast("You’re on the network — visible to TEMPO members.", "ok");
-    } catch (err) {
-      toast(err instanceof Error ? err.message : "Couldn’t join the network.");
-    }
-  }
+  // Joining always asks for a handle first, so it opens the shared dialog
+  // rather than publishing straight from the button.
+  const [joinOpen, setJoinOpen] = React.useState(false);
 
   // The shared demo has a curated, explicitly non-interactive network preview.
   // Never leak arbitrary test or member profiles into PRESIDENT's sample feed.
@@ -341,7 +337,7 @@ export default function SocialView() {
             type="button"
             size="sm"
             disabled={publish.isPending || profileLoading}
-            onClick={() => void joinNetwork()}
+            onClick={() => setJoinOpen(true)}
           >
             <Users className="size-3.5" />
             Join as TEMPO member
@@ -359,6 +355,16 @@ export default function SocialView() {
 
   return (
     <div className="space-y-5">
+      <JoinNetworkDialog
+        open={joinOpen}
+        onOpenChange={setJoinOpen}
+        artistId={authorArtistId}
+        artistName={activeArtist?.name}
+        currentHandle={profile?.handle}
+        onJoined={() =>
+          toast("You’re on the network, visible to TEMPO members.", "ok")
+        }
+      />
       <PageHeader
         title="Social"
         subtitle={

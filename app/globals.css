@@ -1076,12 +1076,19 @@
   transform: translateY(var(--origin-media-offset-y));
 }
 
-/* ORIGIN film grain — the tile hops each step so the noise shimmers. */
+/* ORIGIN film grain — the tile hops each step so the noise shimmers.
+
+   Moved by transform rather than background-position: a background-position
+   step repaints the whole viewport-sized tiled layer on the main thread, three
+   to five times a second, underneath a scrubbing video and blurred glass. As a
+   transform the same hop is compositor work on an already-rasterised layer.
+   The grain elements are inset past the viewport edges so the hop never
+   exposes a seam. */
 @keyframes origin-grain {
-  0% { background-position: 0 0; }
-  33% { background-position: -80px 40px; }
-  66% { background-position: 60px -70px; }
-  100% { background-position: 0 0; }
+  0% { transform: translate3d(0, 0, 0); }
+  33% { transform: translate3d(-80px, 40px, 0); }
+  66% { transform: translate3d(60px, -70px, 0); }
+  100% { transform: translate3d(0, 0, 0); }
 }
 
 /* Scrollable without the bar. Used by the ORIGIN story, where a visible

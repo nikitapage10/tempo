@@ -48,9 +48,25 @@ const INITIAL_SILENCE_MS = 8_000;
 const MAX_DICTATION_MS = 10 * 60 * 1_000;
 const SPEECH_LEVEL = 0.025;
 /** After a pause in speech, flush the current recording segment for live text. */
-const SEGMENT_FLUSH_MS = 1_100;
+const SEGMENT_FLUSH_MS = 600;
 /** Force a flush during continuous talk so phrases don't wait for a long pause. */
-const MAX_SEGMENT_MS = 4_500;
+const MAX_SEGMENT_MS = 2_400;
+/**
+ * The first segment is cut short deliberately.
+ *
+ * On the recording path nothing can appear until a segment has been closed,
+ * uploaded and transcribed, so the opening words set the impression of whether
+ * dictation is working at all. A short first cut puts something on screen in
+ * about a second; every segment after it can be long enough to give the
+ * transcriber proper phrases to work with.
+ */
+const FIRST_SEGMENT_MS = 1_200;
+/**
+ * Silence is sampled on a timer, not every animation frame. At 60fps this loop
+ * ran an RMS pass over 2048 samples on the same main thread as ORIGIN's film,
+ * and it only has to notice speech within a fraction of the flush window.
+ */
+const LEVEL_SAMPLE_MS = 60;
 
 export type SpeechMode = "live" | "record" | "unavailable";
 
@@ -90,10 +106,11 @@ export function useOriginSpeech(opts: {
   const segmentFlushTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const segmentMaxTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const maxTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-  const analyserFrameRef = React.useRef<number | null>(null);
+  const analyserTimerRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
   const audioContextRef = React.useRef<AudioContext | null>(null);
   const audioSourceRef = React.useRef<MediaStreamAudioSourceNode | null>(null);
   const hadSpeechInSegmentRef = React.useRef(false);
+  const firstSegmentRef = React.useRef(true);
   const flushingSegmentRef = React.useRef(false);
   const listeningRef = React.useRef(false);
   const segmentSeqRef = React.useRef(0);
@@ -177,8 +194,8 @@ export function useOriginSpeech(opts: {
   );
 
   const stopAudioMonitor = React.useCallback(() => {
-    if (analyserFrameRef.current !== null) cancelAnimationFrame(analyserFrameRef.current);
-    analyserFrameRef.current = null;
+    if (analyserTimerRef.current !== null) clearInterval(analyserTimerRef.current);
+    analyserTimerRef.current = null;
     audioSourceRef.current?.disconnect();
     audioSourceRef.current = null;
     const context = audioContextRef.current;
@@ -223,9 +240,11 @@ export function useOriginSpeech(opts: {
       // Timeslice so a quick stop still has bytes to transcribe.
       recorder.start(250);
       if (segmentMaxTimerRef.current) clearTimeout(segmentMaxTimerRef.current);
+      const cap = firstSegmentRef.current ? FIRST_SEGMENT_MS : MAX_SEGMENT_MS;
+      firstSegmentRef.current = false;
       segmentMaxTimerRef.current = setTimeout(() => {
         if (hadSpeechInSegmentRef.current) void flushSegmentRef.current();
-      }, MAX_SEGMENT_MS);
+      }, cap);
       return true;
     } catch {
       return false;
@@ -291,9 +310,9 @@ export function useOriginSpeech(opts: {
           finishAfter(SILENCE_MS);
           scheduleSegmentFlush();
         }
-        analyserFrameRef.current = requestAnimationFrame(sample);
       };
       sample();
+      analyserTimerRef.current = setInterval(sample, LEVEL_SAMPLE_MS);
     },
     [finishAfter, scheduleSegmentFlush]
   );
@@ -390,6 +409,7 @@ export function useOriginSpeech(opts: {
     applySeqRef.current = 0;
     pendingTextRef.current.clear();
     inFlightRef.current = 0;
+    firstSegmentRef.current = true;
     clearStopTimers();
 
     const ok = mode === "live" ? startLive() : mode === "record" ? await startRecording() : false;

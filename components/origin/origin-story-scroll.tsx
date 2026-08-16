@@ -337,9 +337,37 @@ export function OriginStoryScroll({
   /** The Story chapter's own body/content, panned by outer scroll — see `paint`. */
   const storyBodyRef = React.useRef<HTMLDivElement>(null);
   const storyTrackRef = React.useRef<HTMLDivElement>(null);
+  /**
+   * How far The Story's content can pan, measured outside the scroll loop.
+   *
+   * `scrollHeight`/`clientHeight` are layout reads. Taking them inside `paint`
+   * — which has already written transforms to the chapters above — forced a
+   * synchronous reflow of the whole story on every single scroll frame, and
+   * that was the bulk of the scrubbing jank. The number only changes when the
+   * panel or its content is resized, so an observer keeps it current instead.
+   */
+  const storyPanRef = React.useRef(0);
   const [importStarted, setImportStarted] = React.useState(false);
   const [importStep, setImportStep] = React.useState<ImportStep>("intake");
   const [editingChapter, setEditingChapter] = React.useState<number | null>(null);
+
+  React.useEffect(() => {
+    const body = storyBodyRef.current;
+    const track = storyTrackRef.current;
+    if (!body || !track) return;
+    const measure = () => {
+      storyPanRef.current = Math.max(0, track.scrollHeight - body.clientHeight);
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", measure);
+      return () => window.removeEventListener("resize", measure);
+    }
+    const observer = new ResizeObserver(measure);
+    observer.observe(body);
+    observer.observe(track);
+    return () => observer.disconnect();
+  }, [staticMode, editingChapter, interpretation.storySections]);
 
   React.useEffect(() => {
     onImportActiveChange?.(importStarted);
@@ -387,6 +415,11 @@ export function OriginStoryScroll({
       if (importStarted) {
         const own = i === 4;
         el.style.opacity = own ? "1" : "0";
+        // Taken out of the compositor entirely, not just made transparent.
+        // Each chapter is a backdrop-blurred panel, and a transparent one still
+        // costs a full-screen backdrop sample every frame.
+        el.style.visibility = own ? "visible" : "hidden";
+        el.style.willChange = own ? "transform, opacity" : "auto";
         // Centred like every other chapter, and left to size itself. It used to
         // be pinned top-to-bottom so tall review content could scroll, but the
         // panel's own max-height already caps it — pinning only forced the
@@ -408,12 +441,10 @@ export function OriginStoryScroll({
       // content, so one continuous page-scroll gesture both brings the chapter
       // in and moves through what's inside it.
       if (i === STORY_CHAPTER) {
-        const body = storyBodyRef.current;
         const track = storyTrackRef.current;
-        if (body && track) {
-          const maxPan = Math.max(0, track.scrollHeight - body.clientHeight);
+        if (track) {
           const storyLocal = Math.max(0, Math.min(1, local));
-          track.style.transform = `translate3d(0, ${-storyLocal * maxPan}px, 0)`;
+          track.style.transform = `translate3d(0, ${-storyLocal * storyPanRef.current}px, 0)`;
         }
       }
 
@@ -446,6 +477,14 @@ export function OriginStoryScroll({
 
       const clamped = Math.max(0, Math.min(1, opacity));
       el.style.opacity = String(clamped);
+      // A chapter that has fully left is dropped out of the compositor rather
+      // than left at zero opacity. Four blurred glass panels the viewer cannot
+      // see were still being sampled and blended on every scroll frame, which
+      // is most of what made this section feel heavy — especially on a Mac,
+      // where backdrop-filter runs at full Retina resolution.
+      const shown = clamped > 0;
+      el.style.visibility = shown ? "visible" : "hidden";
+      el.style.willChange = shown ? "transform, opacity" : "auto";
       el.style.transform = `translate3d(${x}%, -50%, 0) scale(${scale})`;
       // Only the chapter in focus should be clickable, and a chapter that is
       // all but invisible must never intercept a click meant for the one above.

@@ -65,6 +65,19 @@ export function renderInviteEmail(input: Omit<InviteEmail, "idempotencyKey">) {
   const safeLink = escapeHtml(link);
   const safeDownload = escapeHtml(downloadLink);
   const label = roleLabel(input.memberRole);
+  const isPro = input.memberRole === "team_member";
+  const headline = isPro
+    ? "Step into the work around the music."
+    : "Bring your music into focus.";
+  const introduction = isPro
+    ? "TEMPO is a private workspace for the people moving music forward. It runs two ways, and both are the full thing: as an app on your Mac or PC, or in your browser. Create your account with the invite code below in whichever one you open. The desktop app is worth it if you want your workspace to open instantly and keep working offline."
+    : "TEMPO is a private studio for moving music from first idea through release. It runs two ways, and both are the full thing: as an app on your Mac or PC, or in your browser. Create your account with the invite code below in whichever one you open. The desktop app is worth it if you want your workspace to open instantly, keep every bounce, and keep working offline.";
+  const joinStepsHtml = isPro
+    ? "01 &middot; Introduce yourself through Passage<br>02 &middot; Set up your professional home<br>03 &middot; Take a one-minute tour built for your work<br>04 &middot; Message Nikita directly whenever you need help"
+    : "01 &middot; Introduce your artist through Origin<br>02 &middot; Take a one-minute workspace tour<br>03 &middot; Follow a starter checklist at your own pace<br>04 &middot; Message Nikita directly whenever you need help";
+  const joinStepsText = isPro
+    ? "1. Introduce yourself through Passage\n2. Set up your professional home\n3. Take a one-minute tour built for your work\n4. Message Nikita directly whenever you need help"
+    : "1. Introduce your artist through Origin\n2. Take a one-minute workspace tour\n3. Follow a starter checklist at your own pace\n4. Message Nikita directly whenever you need help";
   const expiryCopy = expiry
     ? `This invitation is available through ${escapeHtml(expiry)}.`
     : "This invitation does not have a scheduled expiry.";
@@ -88,12 +101,12 @@ export function renderInviteEmail(input: Omit<InviteEmail, "idempotencyKey">) {
             <td style="padding:34px 32px 30px">
               <div style="font-family:'Space Grotesk',Arial,sans-serif;font-size:26px;font-weight:700;letter-spacing:-1px">TEMPO</div>
               <div style="margin-top:28px;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#FFB56B">You’re invited · ${label}</div>
-              <h1 style="margin:10px 0 12px;font-family:'Space Grotesk',Arial,sans-serif;font-size:30px;line-height:1.15;color:#F2F0EB">Bring your music into focus.</h1>
-              <p style="margin:0;color:#B6B5BE;font-size:15px;line-height:1.65">TEMPO is a private studio for moving music from first idea through release. Start by installing TEMPO on your computer — then create your account there with the invite code below. The web app is ready too if you prefer the browser first.</p>
+              <h1 style="margin:10px 0 12px;font-family:'Space Grotesk',Arial,sans-serif;font-size:30px;line-height:1.15;color:#F2F0EB">${headline}</h1>
+              <p style="margin:0;color:#B6B5BE;font-size:15px;line-height:1.65">${introduction}</p>
               ${welcomeHtml}
               <div style="margin:24px 0 0;padding:18px;border:1px solid rgba(242,240,235,0.08);border-radius:14px;background:rgba(10,10,12,0.45)">
                 <div style="font-size:10px;letter-spacing:1.3px;text-transform:uppercase;color:#8B8B96">What happens when you join</div>
-                <div style="margin-top:12px;color:#B6B5BE;font-size:13px;line-height:1.85">01 · Introduce your artist through Origin<br>02 · Take a one-minute workspace tour<br>03 · Follow a starter checklist at your own pace<br>04 · Message Nikita directly whenever you need help</div>
+                <div style="margin-top:12px;color:#B6B5BE;font-size:13px;line-height:1.85">${joinStepsHtml}</div>
               </div>
               <div style="margin:18px 0 0;padding:18px;border:1px solid rgba(242,240,235,0.08);border-radius:14px;background:rgba(10,10,12,0.45);text-align:center">
                 <div style="font-size:10px;letter-spacing:1.3px;text-transform:uppercase;color:#8B8B96">Your invite code</div>
@@ -102,17 +115,18 @@ export function renderInviteEmail(input: Omit<InviteEmail, "idempotencyKey">) {
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:26px 0 0">
                 <tr>
                   <td align="center" style="border-radius:10px;background:#7FB4FF">
-                    <a href="${safeDownload}" style="display:block;padding:14px 22px;color:#0A0A0C;font-size:14px;font-weight:600;text-decoration:none">Download TEMPO</a>
+                    <a href="${safeDownload}" style="display:block;padding:14px 22px;color:#0A0A0C;font-size:14px;font-weight:600;text-decoration:none">Get the desktop app</a>
                   </td>
                 </tr>
                 <tr><td height="12" style="font-size:0;line-height:0">&nbsp;</td></tr>
                 <tr>
-                  <td align="center" style="border-radius:10px;border:1px solid rgba(242,240,235,0.14);background:rgba(26,26,33,0.72)">
-                    <a href="${safeLink}" style="display:block;padding:13px 22px;color:#F2F0EB;font-size:14px;font-weight:600;text-decoration:none">Use the web app</a>
+                  <td align="center" style="border-radius:10px;border:1px solid rgba(242,240,235,0.34);background:rgba(242,240,235,0.10)">
+                    <a href="${safeLink}" style="display:block;padding:14px 22px;color:#F2F0EB;font-size:14px;font-weight:600;text-decoration:none">Open TEMPO in your browser</a>
                   </td>
                 </tr>
               </table>
-              <p style="margin:22px 0 0;color:#8B8B96;font-size:12px;line-height:1.65">${expiryCopy}<br><br>If a button doesn’t work, copy one of these addresses:<br>Download: <a href="${safeDownload}" style="color:#7FB4FF;word-break:break-all">${safeDownload}</a><br>Web app: <a href="${safeLink}" style="color:#7FB4FF;word-break:break-all">${safeLink}</a></p>
+              <p style="margin:12px 0 0;text-align:center;color:#8B8B96;font-size:12px;line-height:1.6">Same account either way. You can add the other one whenever you like.</p>
+              <p style="margin:22px 0 0;color:#8B8B96;font-size:12px;line-height:1.65">${expiryCopy}<br><br>If a button doesn’t work, copy one of these addresses:<br>Desktop app: <a href="${safeDownload}" style="color:#7FB4FF;word-break:break-all">${safeDownload}</a><br>In your browser: <a href="${safeLink}" style="color:#7FB4FF;word-break:break-all">${safeLink}</a></p>
             </td>
           </tr>
         </table>
@@ -125,18 +139,17 @@ export function renderInviteEmail(input: Omit<InviteEmail, "idempotencyKey">) {
 
   const text = `You’re invited to TEMPO as ${label}.
 
-TEMPO is a private studio for moving music from first idea through release. Start by downloading TEMPO, then create your account there with your invite code. Or use the web app if you prefer the browser first.${input.welcomeNote ? `\n\nA note from Nikita:\n${input.welcomeNote}` : ""}
+${introduction.replace("the invite code below", "your invite code")}${input.welcomeNote ? `\n\nA note from Nikita:\n${input.welcomeNote}` : ""}
 
 When you join:
-1. Introduce your artist through Origin
-2. Take a one-minute workspace tour
-3. Follow a starter checklist at your own pace
-4. Message Nikita directly whenever you need help
+${joinStepsText}
 
 Your invite code: ${input.code}
 
-Download TEMPO: ${downloadLink}
-Use the web app: ${link}
+Get the desktop app: ${downloadLink}
+Open TEMPO in your browser: ${link}
+
+Same account either way. You can add the other one whenever you like.
 
 ${expiryCopy}
 

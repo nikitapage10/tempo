@@ -21,7 +21,10 @@ import type {
   OriginStep,
 } from "@/lib/origin/types";
 import { prefersReducedMotion, networkProfile } from "@/lib/origin/readiness";
-import { normalizeDefaultArtistName } from "@/lib/constants";
+import {
+  isPlaceholderArtistName,
+  normalizeDefaultArtistName,
+} from "@/lib/constants";
 
 /**
  * Wires the ORIGIN state machine to the artist record and to draft persistence.
@@ -186,7 +189,15 @@ export function useOriginState(revisit = false, replay = false): OriginControlle
             : null,
       });
       // Seed the name from the artist record when there is no draft yet.
-      if (!resume?.artistNameDraft && activeArtist?.name) {
+      //
+      // "Artist Name" is the stand-in every new row is created with, never a
+      // choice — seeding it made the artist delete it before they could type.
+      // Left empty, the same words show as the field's placeholder instead.
+      if (
+        !resume?.artistNameDraft &&
+        activeArtist?.name &&
+        !isPlaceholderArtistName(activeArtist.name)
+      ) {
         dispatch({
           type: "set_name",
           name: normalizeDefaultArtistName(activeArtist.name),
