@@ -9,6 +9,7 @@ type ChipProps = {
   /** Dense chips for filter toolbars. */
   size?: "md" | "sm";
   disabled?: boolean;
+  style?: React.CSSProperties;
 };
 
 export function Chip({
@@ -19,6 +20,7 @@ export function Chip({
   as = onClick ? "button" : "span",
   size = "md",
   disabled = false,
+  style,
 }: ChipProps) {
   const Comp = as;
   return (
@@ -26,6 +28,7 @@ export function Chip({
       type={as === "button" ? "button" : undefined}
       disabled={as === "button" ? disabled : undefined}
       onClick={disabled ? undefined : onClick}
+      style={style}
       className={cn(
         "inline-flex items-center rounded-chip border transition-colors duration-hover",
         size === "sm" ? "px-2 py-0.5 text-xs" : "px-2.5 py-1 text-sm",

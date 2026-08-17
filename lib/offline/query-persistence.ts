@@ -33,6 +33,7 @@ const OFFLINE_KEY_PREFIXES = [
   "project-tasks",
   "calendar",
   "calendar-categories",
+  "task-categories",
   "board-notes",
 ];
 

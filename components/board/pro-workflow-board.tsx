@@ -18,6 +18,7 @@ import {
   CircleDashed,
   FolderKanban,
   GripVertical,
+  Palette,
   Plus,
   Search,
 } from "lucide-react";
@@ -29,9 +30,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
 import { useToast } from "@/components/ui/toast";
+import { TaskCategoryManager } from "@/components/tasks/task-category-manager";
+import { useTaskCategoryPalette } from "@/components/tasks/task-category-provider";
 import { useProjects } from "@/hooks/use-projects";
 import { useTaskMutations, useTasks } from "@/hooks/use-tasks";
-import { TASK_CATEGORIES } from "@/lib/constants";
 import { localDateString } from "@/lib/format";
 import {
   PRO_WORKFLOW_COLUMNS,
@@ -40,6 +42,7 @@ import {
 } from "@/lib/tasks/workflow-board";
 import type { Project, Task, TaskCategory, TaskStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { taskCategoryChipStyle, taskCategorySurfaceStyle } from "@/lib/tasks/categories";
 
 const selectClass =
   "h-9 rounded-input border border-line bg-bg-2 px-3 text-sm text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice";
@@ -61,9 +64,9 @@ function WorkflowCard({
       disabled: overlay,
       data: { kind: "pro-task", task, status: task.status },
     });
-  const category =
-    TASK_CATEGORIES.find((item) => item.value === task.category)?.label ??
-    task.category;
+  const { categories } = useTaskCategoryPalette();
+  const category = categories.find((item) => item.key === task.category);
+  const categoryLabel = category?.label ?? task.category;
   const overdue =
     task.status !== "done" &&
     Boolean(task.due_date && task.due_date < localDateString());
@@ -76,6 +79,7 @@ function WorkflowCard({
         isDragging && "opacity-35",
         overlay && "w-[min(340px,82vw)] rotate-1 border-ice/50 shadow-raise"
       )}
+      style={!overlay ? taskCategorySurfaceStyle(category) : undefined}
     >
       <div className="flex items-start gap-2">
         <button
@@ -107,8 +111,11 @@ function WorkflowCard({
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-1.5">
-        <span className="rounded-chip bg-bg-2 px-2 py-0.5 text-[11px] text-text-lo">
-          {category}
+        <span
+          className="rounded-chip border border-line bg-bg-2 px-2 py-0.5 text-[11px] text-text-lo"
+          style={taskCategoryChipStyle(category)}
+        >
+          {categoryLabel}
         </span>
         {project ? (
           <Link
@@ -235,6 +242,7 @@ export function ProWorkflowBoard() {
   const { toast } = useToast();
   const titleRef = React.useRef<HTMLInputElement>(null);
   const [title, setTitle] = React.useState("");
+  const { categories } = useTaskCategoryPalette();
   const [category, setCategory] = React.useState<TaskCategory>("other");
   const [projectId, setProjectId] = React.useState("");
   const [dueDate, setDueDate] = React.useState("");
@@ -243,6 +251,7 @@ export function ProWorkflowBoard() {
   const [categoryFilter, setCategoryFilter] = React.useState<TaskCategory | "all">("all");
   const [projectFilter, setProjectFilter] = React.useState<string | "all">("all");
   const [activeTask, setActiveTask] = React.useState<Task | null>(null);
+  const [categoryManagerOpen, setCategoryManagerOpen] = React.useState(false);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
   );
@@ -250,6 +259,16 @@ export function ProWorkflowBoard() {
   React.useEffect(() => {
     if (searchParams.get("new") === "1") titleRef.current?.focus();
   }, [searchParams]);
+
+  React.useEffect(() => {
+    if (!categories.some((item) => item.key === category)) setCategory("other");
+    if (
+      categoryFilter !== "all" &&
+      !categories.some((item) => item.key === categoryFilter)
+    ) {
+      setCategoryFilter("all");
+    }
+  }, [categories, category, categoryFilter]);
 
   const tasks = React.useMemo(() => tasksQuery.data ?? [], [tasksQuery.data]);
   const projects = React.useMemo(
@@ -335,6 +354,11 @@ export function ProWorkflowBoard() {
       <PageHeader
         title="Workflow board"
         subtitle={`Move professional work through the flow in ${activeSpace?.name ?? "this Pro Space"}.`}
+        actions={
+          <Button type="button" variant="secondary" onClick={() => setCategoryManagerOpen(true)}>
+            <Palette /> Categories
+          </Button>
+        }
       />
 
       <form onSubmit={addTask} className="panel-quiet mb-4 p-3" aria-label="Quick add task">
@@ -350,7 +374,7 @@ export function ProWorkflowBoard() {
             {PRO_WORKFLOW_COLUMNS.map((column) => <option key={column.status} value={column.status}>{column.label}</option>)}
           </select>
           <select value={category} onChange={(event) => setCategory(event.target.value as TaskCategory)} className={selectClass} aria-label="Task category">
-            {TASK_CATEGORIES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+            {categories.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}
           </select>
           <select value={projectId} onChange={(event) => setProjectId(event.target.value)} className={selectClass} aria-label="Task project">
             <option value="">No project</option>
@@ -368,7 +392,7 @@ export function ProWorkflowBoard() {
         </div>
         <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value as TaskCategory | "all")} className={selectClass} aria-label="Filter by category">
           <option value="all">All categories</option>
-          {TASK_CATEGORIES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+          {categories.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}
         </select>
         <select value={projectFilter} onChange={(event) => setProjectFilter(event.target.value)} className={selectClass} aria-label="Filter by project">
           <option value="all">All projects</option>
@@ -391,6 +415,7 @@ export function ProWorkflowBoard() {
         </div>
         <DragOverlay>{activeTask ? <WorkflowCard task={activeTask} project={activeTask.project_id ? projectsById.get(activeTask.project_id) : undefined} overlay /> : null}</DragOverlay>
       </DndContext>
+      <TaskCategoryManager open={categoryManagerOpen} onClose={() => setCategoryManagerOpen(false)} />
     </div>
   );
 }

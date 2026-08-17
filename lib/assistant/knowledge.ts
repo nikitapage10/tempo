@@ -13,7 +13,7 @@ export const PRODUCT_KNOWLEDGE = `CORE OBJECTS
 - Track: a musical work. Fields include type, momentum, deadline, next move, blocked/waiting, BPM, key, tags, notes. Optional list group on Tracks (album/EP/playlist bucket) — independent of projects.
 - Version: a bounce/upload on a track. Every version stays in the track's history forever. Cloud storage keeps only the current version and the one before it (older ones are evicted from the cloud once a desktop copy is confirmed — never before, so nothing is lost); the desktop app keeps the complete history locally. version_no and is_current are DB-managed.
 - Project: a work container you define (not one-track-per-project). Optional type: general / single / ep / album / edit_pack. May attach many tracks and tasks, or none. Release types unlock the release workspace. Not the same as Tracks-page groups.
-- Task: actionable item. category: social/outreach/pitching/admin/production/other. status: todo/doing/done. Optional track or project link.
+- Task: actionable item. status: todo/doing/done. Optional track or project link. Categories start as social/outreach/pitching/admin/production/other, but each artist or Pro home can rename, recolor, and add shared categories from Tasks or the Pro Board.
 - Session: focus or logged studio time on a track (goal, duration, outcome).
 - Comment: feedback on a bounce, optionally timestamped; can be resolved.
 
@@ -21,7 +21,7 @@ ENUMS (exact values)
 - space focus: music / tasks
 - momentum: active / simmering / stalled / parked
 - track type: original / remix / edit (collaboration is a credit/people relationship, not a track type)
-- task category: social / outreach / pitching / admin / production / other
+- built-in task categories: social / outreach / pitching / admin / production / other; custom category keys are also valid after migration 108
 - task status: todo / doing / done
 - project type: general / single / ep / album / edit_pack
 - collaborator roles: editor (edit metadata/workflow, upload, resolve comments), uploader (upload only), commenter (play + comment), viewer (play + read-only)
@@ -40,7 +40,7 @@ WHERE THINGS LIVE
 - Track workspace (/track/[id]): player, versions, guest links, checklist, comments, files, people, layout modules.
 - Focus (/track/[id]/focus): distraction-free session — timer, waveform, checklist, scratch notes.
 - Projects (/projects): card grid, scoped to the active space; attach any number of tracks/tasks (or none) — not a per-track wrapper; release types get release workspace.
-- Tasks (/tasks): Overdue / Today / This week / Later columns, scoped to the active space. Drag a task between columns to change its due date — the column you’re over reads Move to today / this week / later / overdue (Today sets today; This week / Later / Overdue asks which day). Completed work lives in Closed out under the board.
+- Tasks (/tasks): Overdue / Today / This week / Later columns, scoped to the active space. Drag a task between columns to change its due date — the column you’re over reads Move to today / this week / later / overdue (Today sets today; This week / Later / Overdue asks which day). Categories opens a shared palette where Tasks writers can rename/recolor built-ins or add/remove custom categories; removing one moves its tasks to Other. Completed work lives in Closed out under the board.
 - Artist (/artist): artist-wide rollup ACROSS EVERY SPACE (the only screen that is not space-scoped) — headline counts (tracks, bounces, in progress, released, focus time), 12-month bounces vs tracks-started chart, pipeline per space, all spaces side by side, "your sound" (BPM spread, top keys, genres, track types), work rhythm by day/hour + busiest day/hour + weeks-in-a-row streak, longest-in-progress tracks, release countdowns, feedback received (guest vs own, open threads, decisions), and streaming platforms (Spotify/Apple catalog only, SoundCloud real numbers with a daily-snapshot trend — paste a profile link once per platform to link it). Modular: "Edit layout" in the banner's top-right drags sections between two columns, combines them into tabs, or hides them; saved per artist on the account, so it's the same wherever you sign in. From there you can also start from a layout template (Overview, Minimal, Statistics, Platforms) or create your own custom module — a titled card you fill with any hand-tracked stat (label + optional unit), logging a value for any date and seeing a filled area chart once it has two or more readings; undo a bad entry from its history. Always in the rail, whatever the space focus. All numbers come from existing TEMPO data — nothing estimated except what you log by hand in a custom module.
 - Import (/import): conversational catalog intake (also Settings → Import).
 - Settings (/settings): artists (name, palette, logo, banner), spaces (name + focus) for the selected artist, stages, templates, import link, sign out.

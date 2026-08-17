@@ -34,7 +34,8 @@ import {
   localDateString,
   startOfLocalDay,
 } from "@/lib/format";
-import { TASK_CATEGORIES } from "@/lib/constants";
+import { useTaskCategoryPalette } from "@/components/tasks/task-category-provider";
+import { taskCategoryChipStyle } from "@/lib/tasks/categories";
 import type { ProjectWithStats, Task, Track, TrackInsert } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import {
@@ -790,9 +791,9 @@ function TodayTaskRow({
   onToggle: () => Promise<void>;
 }) {
   const overdue = !!task.due_date && task.due_date < today;
-  const cat =
-    TASK_CATEGORIES.find((c) => c.value === task.category)?.label ??
-    task.category;
+  const { categories } = useTaskCategoryPalette();
+  const category = categories.find((item) => item.key === task.category);
+  const cat = category?.label ?? task.category;
   return (
     <li className="lift flex items-start gap-2.5 rounded-input border border-transparent px-2 py-2">
       <input
@@ -806,7 +807,10 @@ function TodayTaskRow({
           {task.title}
         </p>
         <div className="mt-1 flex flex-wrap gap-1.5">
-          <span className="rounded-chip bg-bg-2 px-2 py-0.5 text-[11px] text-text-lo">
+          <span
+            className="rounded-chip border border-line bg-bg-2 px-2 py-0.5 text-[11px] text-text-lo"
+            style={taskCategoryChipStyle(category)}
+          >
             {cat}
           </span>
           {task.due_date ? (

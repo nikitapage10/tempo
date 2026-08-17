@@ -4,6 +4,8 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-16
 
+- Added (v0.169.0): Task categories are now customizable and color-coded. Each artist or Pro home shares one category palette; people with Tasks write access can rename or recolor the six built-ins, add their own categories, and remove custom ones. The colors follow tasks across Today, project task lists, Tasks, and the Pro Board, while deleting a category safely moves its tasks to Other. Run additive migration 108 in the Supabase SQL editor after 107.
+
 - Added (v0.168.0): Pro accounts now have a Board built for professional workflow instead of songs. Every private Pro Space can move its existing tasks through To do, In progress, and Done, with drag-and-drop, quick add, search, category filters, and project filters; every change stays in sync with the Tasks page. Artist Boards keep their existing track stages and notes.
 
 - Changed (v0.167.0): Pro starter kits are now substantial working setups instead of one-template placeholders. Every Manager, label, publicist, tour manager, agent, assistant, and custom kit now includes two focused views, four detailed role-specific templates or checklists, and two optional example tasks. The richer preview explains every item and lets you open each full checklist before adding it; newly added templates and tasks also appear immediately. People who tried the first kits can add v2 without overwriting anything they kept or edited. Run additive migration 107 in the Supabase SQL editor after 106.

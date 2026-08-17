@@ -662,13 +662,8 @@ export type Session = {
   created_at: string | null;
 };
 
-export type TaskCategory =
-  | "social"
-  | "outreach"
-  | "pitching"
-  | "admin"
-  | "production"
-  | "other";
+/** Built-in or workspace-defined task category key. */
+export type TaskCategory = string;
 
 export type TaskStatus = "todo" | "doing" | "done";
 

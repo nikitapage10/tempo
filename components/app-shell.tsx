@@ -69,6 +69,7 @@ import {
 } from "@/components/rail-nav-item";
 import { ZoomControl } from "@/components/desktop/zoom-control";
 import { OfflineBanner } from "@/components/offline-banner";
+import { TaskCategoryProvider } from "@/components/tasks/task-category-provider";
 import { DesktopUpdateBanner } from "@/components/desktop/update-banner";
 import { AppVideoBackdrop } from "@/components/app-video-backdrop";
 import { useContentZoom } from "@/hooks/use-content-zoom";
@@ -434,7 +435,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             ) : null}
             <DesktopUpdateBanner />
             <OfflineBanner />
-            <div className="pb-6 pt-0">{children}</div>
+            <div className="pb-6 pt-0">
+              <TaskCategoryProvider artistId={activeArtist?.id ?? null}>
+                {children}
+              </TaskCategoryProvider>
+            </div>
           </div>
           </div>
         </main>

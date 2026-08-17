@@ -23,9 +23,21 @@ describe("tasks page drag and closed-out", () => {
     expect(page).toContain("Closed out");
     expect(page).toContain("TaskDoneArchive");
     expect(page).toContain("What you’ve checked off in this space.");
-    expect(page).not.toContain("actions={");
+    expect(page).toContain("<Palette /> Categories");
+    expect(page).not.toContain('actions={<Button type="button" onClick={() => setStatusFilter("done")}');
     expect(page).not.toContain("grouped.done.length > 0 && statusFilter !== \"todo\"");
     expect(archive).toContain("checked off in this space");
     expect(archive).toContain("Back to the board");
+  });
+
+  it("keeps core task planning fields visible before More details", () => {
+    const moreDetails = page.indexOf('{showMore ? "Hide details" : "More details"}');
+    expect(moreDetails).toBeGreaterThan(-1);
+    expect(page.indexOf('htmlFor="task-status"')).toBeLessThan(moreDetails);
+    expect(page.indexOf('htmlFor="task-due"')).toBeLessThan(moreDetails);
+    expect(page.indexOf('htmlFor="task-assignee"')).toBeLessThan(moreDetails);
+    expect(page.indexOf('htmlFor="task-track"')).toBeGreaterThan(moreDetails);
+    expect(page.indexOf('htmlFor="task-project"')).toBeGreaterThan(moreDetails);
+    expect(page).toContain("await assign.mutateAsync({ id: task.id, userId: assigneeId })");
   });
 });

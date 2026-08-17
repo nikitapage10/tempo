@@ -4,8 +4,10 @@ import { useDraggable } from "@dnd-kit/core";
 import Link from "next/link";
 import * as React from "react";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
-import { TASK_CATEGORIES, TASK_STATUSES } from "@/lib/constants";
+import { useTaskCategoryPalette } from "@/components/tasks/task-category-provider";
+import { TASK_STATUSES } from "@/lib/constants";
 import { taskDragId } from "@/lib/tasks/buckets";
+import { taskCategoryChipStyle, taskCategorySurfaceStyle } from "@/lib/tasks/categories";
 import type { Task, TaskStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -60,9 +62,9 @@ export function TaskRow({
   className?: string;
 }) {
   const [confirm, setConfirm] = React.useState(false);
-  const cat =
-    TASK_CATEGORIES.find((c) => c.value === task.category)?.label ??
-    task.category;
+  const { categories } = useTaskCategoryPalette();
+  const category = categories.find((item) => item.key === task.category);
+  const cat = category?.label ?? task.category;
 
   return (
     <li
@@ -73,8 +75,10 @@ export function TaskRow({
     >
       <SpotlightCard
         tone={overdue ? "warn" : task.status === "done" ? "ok" : "ice"}
+        accent={!overdue && task.status !== "done" ? category?.color : undefined}
         radius={10}
         size={180}
+        style={!overdue && task.status !== "done" ? taskCategorySurfaceStyle(category) : undefined}
         className={cn(
           "flex items-start gap-3 rounded-card border border-line bg-bg-1 px-3 py-2.5",
           focused && "ring-2 ring-ice shadow-e2"
@@ -102,7 +106,10 @@ export function TaskRow({
             {task.title}
           </p>
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-            <span className="rounded-chip bg-bg-2 px-2 py-0.5 text-xs text-text-lo">
+            <span
+              className="rounded-chip border border-line bg-bg-2 px-2 py-0.5 text-xs text-text-lo"
+              style={taskCategoryChipStyle(category)}
+            >
               {cat}
             </span>
             <select

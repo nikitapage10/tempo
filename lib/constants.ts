@@ -13,6 +13,7 @@ import type {
   TrackType,
   WorkspacePreset,
 } from "@/lib/types";
+import { DEFAULT_TASK_CATEGORIES } from "@/lib/tasks/categories";
 
 /** Client-side upload cap for versions and assets. */
 export const MAX_UPLOAD_BYTES = 200 * 1024 * 1024;
@@ -48,14 +49,12 @@ export const ASSET_KINDS: { value: AssetKind; label: string }[] = [
   { value: "other", label: "Other" },
 ];
 
-export const TASK_CATEGORIES: { value: TaskCategory; label: string }[] = [
-  { value: "social", label: "Social" },
-  { value: "outreach", label: "Outreach" },
-  { value: "pitching", label: "Pitching" },
-  { value: "admin", label: "Admin" },
-  { value: "production", label: "Production" },
-  { value: "other", label: "Other" },
-];
+export const TASK_CATEGORIES: { value: TaskCategory; label: string; color: string }[] =
+  DEFAULT_TASK_CATEGORIES.map((category) => ({
+    value: category.key,
+    label: category.label,
+    color: category.color,
+  }));
 
 export const TASK_STATUSES: { value: TaskStatus; label: string }[] = [
   { value: "todo", label: "Todo" },

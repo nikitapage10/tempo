@@ -21,7 +21,9 @@ import { useTracks } from "@/hooks/use-tracks";
 import { formatShortDate } from "@/lib/format";
 import { SpectraCoverArt } from "@/components/spectra/spectra-cover-art";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
-import { PROJECT_TYPES, TASK_CATEGORIES } from "@/lib/constants";
+import { PROJECT_TYPES } from "@/lib/constants";
+import { useTaskCategoryPalette } from "@/components/tasks/task-category-provider";
+import { taskCategoryChipStyle } from "@/lib/tasks/categories";
 import { ReleaseWorkspace } from "@/components/projects/release-workspace";
 import type { ProjectType } from "@/lib/types";
 
@@ -33,6 +35,7 @@ export default function ProjectDetailPage() {
   const calendarEdit = searchParams.get("edit");
   const { toast } = useToast();
   const { activeSpaceId } = useActiveSpace();
+  const { categories } = useTaskCategoryPalette();
 
   const projectQuery = useProject(id);
   const tracksQuery = useProjectTracks(id);
@@ -359,9 +362,8 @@ export default function ProjectDetailPage() {
             </li>
           ) : (
             tasks.map((t) => {
-              const cat =
-                TASK_CATEGORIES.find((c) => c.value === t.category)?.label ??
-                t.category;
+              const category = categories.find((item) => item.key === t.category);
+              const cat = category?.label ?? t.category;
               return (
                 <li
                   key={t.id}
@@ -373,7 +375,10 @@ export default function ProjectDetailPage() {
                   >
                     {t.title}
                   </Link>
-                  <span className="font-mono text-[11px] text-text-lo">
+                  <span
+                    className="rounded-chip border border-line px-2 py-0.5 font-mono text-[11px] text-text-lo"
+                    style={taskCategoryChipStyle(category)}
+                  >
                     {cat}
                     {t.due_date
                       ? ` · ${formatShortDate(t.due_date + "T12:00:00")}`

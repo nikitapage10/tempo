@@ -16,6 +16,7 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { useSearchParams } from "next/navigation";
+import { Palette } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { Chip } from "@/components/ui/chip";
@@ -35,15 +36,18 @@ import { useActiveArtist } from "@/components/active-artist-provider";
 import { TaskDoneArchive } from "@/components/tasks/task-done-archive";
 import { TaskRescheduleDialog } from "@/components/tasks/task-reschedule-dialog";
 import { DraggableTaskRow } from "@/components/tasks/task-row";
+import { TaskCategoryManager } from "@/components/tasks/task-category-manager";
+import { useTaskCategoryPalette } from "@/components/tasks/task-category-provider";
 import { useProjects } from "@/hooks/use-projects";
 import { useTaskMutations, useTasks } from "@/hooks/use-tasks";
 import { useTracks } from "@/hooks/use-tracks";
 import { useActiveTeamRoster } from "@/hooks/use-artist-members";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { fetchMemberProfiles } from "@/lib/api/member-profile";
-import { canRead } from "@/lib/team/areas";
+import { canRead, canWrite } from "@/lib/team/areas";
+import { useWorkspaceMode } from "@/hooks/use-workspace-mode";
 import { useQuery } from "@tanstack/react-query";
-import { TASK_CATEGORIES, TASK_STATUSES } from "@/lib/constants";
+import { TASK_STATUSES } from "@/lib/constants";
 import { localDateString } from "@/lib/format";
 import {
   TASK_BUCKETS,
@@ -58,6 +62,7 @@ import {
 } from "@/lib/tasks/buckets";
 import type { Task, TaskCategory, TaskStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { taskCategoryChipStyle } from "@/lib/tasks/categories";
 
 const bucketCollision: CollisionDetection = (args) => {
   const pointer = pointerWithin(args);
@@ -79,6 +84,8 @@ function TasksContent() {
   const { toast } = useToast();
   const { activeSpaceId } = useActiveSpace();
   const { activeArtist } = useActiveArtist();
+  const { categories } = useTaskCategoryPalette();
+  const workspace = useWorkspaceMode();
   const currentUser = useCurrentUser();
   const { data: tasks = [], isLoading } = useTasks(activeSpaceId);
   const { create, update, remove, assign } = useTaskMutations(activeSpaceId);
@@ -118,11 +125,13 @@ function TasksContent() {
   const [category, setCategory] = React.useState<TaskCategory>("other");
   const [status, setStatus] = React.useState<TaskStatus>("todo");
   const [dueDate, setDueDate] = React.useState("");
+  const [assigneeId, setAssigneeId] = React.useState("");
   const [trackId, setTrackId] = React.useState("");
   const [projectId, setProjectId] = React.useState("");
   const [notes, setNotes] = React.useState("");
   const [showMore, setShowMore] = React.useState(false);
   const [activeTask, setActiveTask] = React.useState<Task | null>(null);
+  const [categoryManagerOpen, setCategoryManagerOpen] = React.useState(false);
   const [overBucket, setOverBucket] = React.useState<TaskBucket | null>(null);
   const [pendingMove, setPendingMove] = React.useState<{
     task: Task;
@@ -134,6 +143,16 @@ function TasksContent() {
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
   const reducedMotion = usePrefersReducedMotion();
+
+  React.useEffect(() => {
+    if (!categories.some((item) => item.key === category)) setCategory("other");
+    if (
+      categoryFilter !== "all" &&
+      !categories.some((item) => item.key === categoryFilter)
+    ) {
+      setCategoryFilter("all");
+    }
+  }, [categories, category, categoryFilter]);
 
   React.useEffect(() => {
     if (!editTaskId || isLoading) return;
@@ -206,7 +225,7 @@ function TasksContent() {
     e.preventDefault();
     if (!title.trim()) return;
     try {
-      await create.mutateAsync({
+      const task = await create.mutateAsync({
         title,
         category,
         status,
@@ -215,13 +234,27 @@ function TasksContent() {
         project_id: projectId || null,
         notes: notes || null,
       });
+      let assignmentFailed = false;
+      if (assigneeId) {
+        try {
+          await assign.mutateAsync({ id: task.id, userId: assigneeId });
+        } catch {
+          assignmentFailed = true;
+        }
+      }
       setTitle("");
       setNotes("");
       setDueDate("");
+      setAssigneeId("");
       setTrackId("");
       setProjectId("");
       setShowMore(false);
-      toast("Task added", "ok");
+      toast(
+        assignmentFailed
+          ? "Task added, but the assignee couldn’t be set."
+          : "Task added",
+        assignmentFailed ? undefined : "ok"
+      );
     } catch (err) {
       toast(
         err instanceof Error ? err.message : "Couldn’t add task — try again."
@@ -303,6 +336,11 @@ function TasksContent() {
     <div className="space-y-5">
       <PageHeader
         title="Tasks"
+        actions={
+          <Button type="button" variant="secondary" onClick={() => setCategoryManagerOpen(true)}>
+            <Palette /> Categories
+          </Button>
+        }
         subtitle="Actionable stuff outside a single track — pitching, social, admin."
       />
 
@@ -320,15 +358,59 @@ function TasksContent() {
           </Button>
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
-          {TASK_CATEGORIES.map((c) => (
+          {categories.map((c) => (
             <Chip
-              key={c.value}
-              active={category === c.value}
-              onClick={() => setCategory(c.value)}
+              key={c.key}
+              active={category === c.key}
+              style={taskCategoryChipStyle(c, category === c.key)}
+              onClick={() => setCategory(c.key)}
             >
               {c.label}
             </Chip>
           ))}
+        </div>
+        <div className="mt-3 grid gap-3 sm:grid-cols-3">
+          <div>
+            <Label htmlFor="task-status">Status</Label>
+            <select
+              id="task-status"
+              className="mt-1 h-9 w-full rounded-input border border-line bg-bg-2 px-2 text-sm"
+              value={status}
+              onChange={(e) => setStatus(e.target.value as TaskStatus)}
+            >
+              {TASK_STATUSES.map((s) => (
+                <option key={s.value} value={s.value}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <Label htmlFor="task-due">Due date</Label>
+            <Input
+              id="task-due"
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <Label htmlFor="task-assignee">Assignee</Label>
+            <select
+              id="task-assignee"
+              className="mt-1 h-9 w-full rounded-input border border-line bg-bg-2 px-2 text-sm"
+              value={assigneeId}
+              onChange={(e) => setAssigneeId(e.target.value)}
+            >
+              <option value="">Unassigned</option>
+              {assignees.map((person) => (
+                <option key={person.userId} value={person.userId}>
+                  {person.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
         <button
           type="button"
@@ -339,31 +421,6 @@ function TasksContent() {
         </button>
         {showMore ? (
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <div>
-              <Label htmlFor="task-status">Status</Label>
-              <select
-                id="task-status"
-                className="mt-1 h-9 w-full rounded-input border border-line bg-bg-2 px-2 text-sm"
-                value={status}
-                onChange={(e) => setStatus(e.target.value as TaskStatus)}
-              >
-                {TASK_STATUSES.map((s) => (
-                  <option key={s.value} value={s.value}>
-                    {s.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <Label htmlFor="task-due">Due date</Label>
-              <Input
-                id="task-due"
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="mt-1"
-              />
-            </div>
             <div>
               <Label htmlFor="task-track">Link track</Label>
               <select
@@ -419,12 +476,13 @@ function TasksContent() {
           >
             All
           </Chip>
-          {TASK_CATEGORIES.map((c) => (
+          {categories.map((c) => (
             <Chip
-              key={c.value}
+              key={c.key}
               size="sm"
-              active={categoryFilter === c.value}
-              onClick={() => setCategoryFilter(c.value)}
+              active={categoryFilter === c.key}
+              style={taskCategoryChipStyle(c, categoryFilter === c.key)}
+              onClick={() => setCategoryFilter(c.key)}
             >
               {c.label}
             </Chip>
@@ -569,6 +627,11 @@ function TasksContent() {
           if (!move) return;
           void patchTask(move.task.id, { due_date: due });
         }}
+      />
+      <TaskCategoryManager
+        open={categoryManagerOpen}
+        onClose={() => setCategoryManagerOpen(false)}
+        canManage={workspace.mode !== "entered" || canWrite(workspace.areas, "tasks")}
       />
     </div>
   );
