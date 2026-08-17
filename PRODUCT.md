@@ -16,6 +16,8 @@ Three kinds of things sit at the center of TEMPO: **tracks** (a musical work wit
 
 ## Current feature set
 
+**Onboarding motion.** The closing Origin and Passage story follows native trackpad and wheel movement while its film frames and glass panels are paced to remain fluid on Retina displays.
+
 **Tracks catalog surface.** A populated Tracks list sits on a darker glass
 surface over the shared moving wash. Group tints and cursor lighting remain
 visible above it, but the catalog keeps the same grounded depth as Calendar.

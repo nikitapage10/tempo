@@ -4,6 +4,8 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-16
 
+- Fixed (v0.172.0): The closing Origin and Passage story scroll is substantially smoother on Mac trackpads and Retina displays. Video frames are decoded one at a time at the source frame rate instead of piling up seeks, invisible panels leave the compositor, and expensive glass blur pauses only during active scrolling before returning when the gesture settles.
+
 - Fixed (v0.171.0): Automatic founder-follow notifications now use the artist or Pro name confirmed during onboarding instead of an email-derived placeholder. The confirmed name reaches the network profile before any onboarding follows or social notifications are created.
 
 - Changed (v0.170.0): Creating a task now keeps status, due date, and assignee in the main form so the essentials never hide behind another click. More details is reserved for linking a track or project and adding notes.
