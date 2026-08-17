@@ -56,8 +56,11 @@ describe("first-class Pro profiles", () => {
   });
 
   it("keeps handle creation in Passage and syncs the Pro name and image", () => {
-    expect(read("components/passage/passage-experience.tsx")).toContain(
-      "claim your TEMPO handle"
+    const passage = read("components/passage/passage-experience.tsx");
+    expect(passage).toContain("OriginLookStep");
+    expect(passage).toContain("networkDisplayName={state.displayName}");
+    expect(read("components/origin/origin-look-step.tsx")).toContain(
+      "NetworkChoicePanel"
     );
     const memberProfile = read("lib/api/member-profile.ts");
     expect(memberProfile).toContain('.eq("workspace_kind", "personal")');
