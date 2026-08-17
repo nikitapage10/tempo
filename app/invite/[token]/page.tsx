@@ -4,6 +4,7 @@ import * as React from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { Wordmark } from "@/components/wordmark";
 import { InviteAuthCta } from "@/components/auth/invite-auth-cta";
 import { createClient } from "@/lib/supabase/client";
 import { COLLABORATOR_ROLES } from "@/lib/constants";
@@ -74,7 +75,7 @@ export default function InvitePage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-bg-0 px-4">
       <div className="w-full max-w-md rounded-card border border-line bg-bg-1 p-6 text-center">
-        <p className="font-display text-lg font-bold tracking-tight text-text-hi">TEMPO</p>
+        <Wordmark size={28} className="justify-center" />
 
         {previewQuery.isLoading ? (
           <div className="mt-6 h-24 animate-pulse rounded-card bg-bg-2" />

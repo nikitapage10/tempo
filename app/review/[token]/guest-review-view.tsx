@@ -4,6 +4,7 @@ import * as React from "react";
 import WaveSurfer from "wavesurfer.js";
 import { Download, Pause, Play } from "lucide-react";
 import { FlareLine } from "@/components/flare-line";
+import { Wordmark } from "@/components/wordmark";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { formatDuration, formatShortDate } from "@/lib/format";
@@ -90,7 +91,7 @@ export function GuestReviewView({ token }: { token: string }) {
     return (
       <div className="flex min-h-screen items-center justify-center px-6 text-center">
         <div className="max-w-sm">
-          <h1 className="font-display text-xl font-semibold text-text-hi">TEMPO</h1>
+          <Wordmark size={28} className="justify-center" />
           <FlareLine className="mx-auto mt-3 max-w-[100px]" />
           <p className="mt-6 text-sm text-text-lo">{UNAVAILABLE_MESSAGE}</p>
         </div>
@@ -108,7 +109,7 @@ function ReadyView({ token, info }: { token: string; info: ReviewInfo }) {
   return (
     <div className="mx-auto flex min-h-screen max-w-2xl flex-col px-4 py-10 sm:px-6">
       <header className="mb-6 text-center">
-        <p className="font-display text-sm font-semibold tracking-wide text-text-lo">TEMPO</p>
+        <Wordmark size={22} className="justify-center" />
         <FlareLine className="mx-auto mt-2 max-w-[100px]" />
       </header>
 

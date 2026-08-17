@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { FlareLine } from "@/components/flare-line";
+import { Wordmark } from "@/components/wordmark";
 import { ArtistProfileImage } from "@/components/artists/artist-mark";
 import { ArtistProfileStoryView } from "@/components/artist/profile-story";
 import type { PublicArtistProfile } from "@/lib/public-profile-server";
@@ -24,7 +25,7 @@ export function PublicProfileView({ handle }: { handle: string }) {
   return (
     <main className="min-h-screen bg-bg-0 px-4 py-10 sm:py-16">
       <div className="mx-auto w-full max-w-5xl">
-        <p className="font-display text-lg font-bold tracking-tight text-text-hi">TEMPO</p>
+        <Wordmark size={28} />
 
         {query.isLoading ? (
           <div className="mt-8 space-y-4">
