@@ -4,6 +4,8 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-16
 
+- Fixed (v0.173.0): The Tempo Theme now starts reliably during both artist Origin and Pro Passage on Mac. Onboarding keeps a rejected or not-yet-ready playback request armed, retries when the file or window becomes ready, and only begins its fade after audio is genuinely playing instead of silently giving up after one attempt.
+
 - Fixed (v0.172.0): The closing Origin and Passage story scroll is substantially smoother on Mac trackpads and Retina displays. Video frames are decoded one at a time at the source frame rate instead of piling up seeks, invisible panels leave the compositor, and expensive glass blur pauses only during active scrolling before returning when the gesture settles.
 
 - Fixed (v0.171.0): Automatic founder-follow notifications now use the artist or Pro name confirmed during onboarding instead of an email-derived placeholder. The confirmed name reaches the network profile before any onboarding follows or social notifications are created.
