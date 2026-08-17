@@ -52,6 +52,16 @@ describe("Team Operations 1.0", () => {
     expect(read(paths[6])).toContain("v2:manager:template:weekly-review");
   });
 
+  it("upserts team-room participants on the live conversation unique key", () => {
+    const original = read("migrations/103_team_brief_and_room.sql");
+    const fix = read("migrations/110_fix_team_room_participant_conflict.sql");
+    expect(original).toContain("on conflict(conversation_id,profile_id)");
+    expect(fix).toContain("on conflict(conversation_id,user_id)");
+    expect(fix).not.toContain("on conflict(conversation_id,profile_id)");
+    expect(fix).toContain("schema_migrations");
+    expect(fix).not.toMatch(/\b(drop\s+table|truncate|reset\s+database)\b/i);
+  });
+
   it("replays the calendar creator backfill atomically without the legacy owner trigger", () => {
     const sql = read("migrations/104_pro_operations.sql");
     const dropValidator = sql.indexOf("drop trigger if exists trg_validate_calendar_event on calendar_events;");

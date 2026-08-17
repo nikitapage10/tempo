@@ -4,6 +4,9 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-16
 
+- Fixed (v0.178.1): Opening **Team room** from an artist's Brief no longer fails with a database conflict error. The room can be created and members added as intended.
+  Under the hood: run migration 110 in the Supabase SQL editor after 109.
+
 - Changed (v0.178.0): After Tune in, Sign out and the desktop zoom controls wait a moment, then fade in so they never jump over the opening. The Origin and Passage look step is wider, with the preview beside color, logo, profile, banner, and the network choice, so it stays on one screen. Settings groups those same look controls the same way.
 
 - Changed (v0.177.0): The once-daily post-login intro now uses the new supplied TEMPO film in full. Its built-in logo and soundtrack play as authored, with no duplicate wordmark, grain, or separate theme layered over it, and the workspace transition waits for the film to finish.
