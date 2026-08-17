@@ -68,8 +68,8 @@ new replies do not pull you away while you are reading. Private realtime
 delivery powers messages and short-lived typing indicators without exposing
 read receipts, online status, or last seen information. Failed sends can be
 retried, and an unsent draft is kept separately for every conversation.
-Artists can reply to, react to, edit, delete, search, and pin direct messages;
-deleted messages remain as placeholders and edits are marked. Scene chat uses
+Artists can reply to, react to, edit, delete, search, and pin direct messages
+and group chats; deleted messages remain as placeholders and edits are marked. Scene chat uses
 the same experience, with shared pins limited to Scene owners and moderators.
 Support keeps replies, edits, search, voice, and media while omitting reactions
 and pins. Inbox controls include mute, mark unread, archive, and shared media.
@@ -83,7 +83,11 @@ reply view for that conversation. A **New message** action in both the
 mini-inbox and the Messages page finds any artist on the network by name or
 handle and opens a conversation with them, so a first message no longer has to
 start from someone's profile page; artists with DMs closed are declined with a
-plain explanation. Incoming direct replies update the mini-inbox, full thread,
+plain explanation. The same New message flow can start a **group chat**: add
+several artists, optionally name the group, and it lands in a Groups section
+of the inbox, separate from 1:1 artist messages and from team rooms. The
+person who starts a group can rename it and add or remove people; anyone can
+leave. Scene chats still live on the Scene page, not in this inbox. Incoming direct replies update the mini-inbox, full thread,
 and Messages unread badge in realtime without creating a duplicate bell
 notification. Away from Messages, a new message raises a glass toast in the bottom-right (above Get help on the web; the same glass card on desktop when the window is in the background), tinted to your active artist's Cool / Warm colours. On the Messages page itself the toast stays off — the conversation updates in place, and if a deep link is available TEMPO opens that thread instead of stacking another popup over the chat.
 Support replies also update the notification center. Reconnects

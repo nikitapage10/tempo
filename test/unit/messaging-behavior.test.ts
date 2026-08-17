@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isNearConversationBottom, messageDraftStorageKey, preservedScrollTop, resolvePreferredAudioInput, shouldAutoFollowConversation, typingExpiry } from "@/lib/messages/behavior";
+import { conversationHeading, conversationMemberLabel, isArtistGroupConversation, isMessagesInboxConversation, isNearConversationBottom, messageDraftStorageKey, preservedScrollTop, resolvePreferredAudioInput, shouldAutoFollowConversation, suggestedGroupTitle, typingExpiry } from "@/lib/messages/behavior";
 import { audioConstraints } from "@/hooks/use-audio-inputs";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -39,5 +39,18 @@ describe("messaging workspace behavior", () => {
     expect(isMediaRequestAllowed({ ...base, mediaTypes: ["audio", "video"] })).toBe(false);
     expect(isMediaRequestAllowed({ ...base, requestUrl: "https://evil.example", mediaTypes: ["audio"] })).toBe(false);
     expect(isMediaRequestAllowed({ ...base, permission: "camera", mediaTypes: ["audio"] })).toBe(false);
+  });
+
+  it("keeps Scene rooms out of the Messages inbox while including artist groups", () => {
+    expect(isMessagesInboxConversation({ kind: "direct", sceneId: null, isTeamRoom: false })).toBe(true);
+    expect(isMessagesInboxConversation({ kind: "group", sceneId: "scene-1", isTeamRoom: false })).toBe(false);
+    expect(isMessagesInboxConversation({ kind: "group", sceneId: null, isTeamRoom: true })).toBe(true);
+    expect(isMessagesInboxConversation({ kind: "group", sceneId: null, isTeamRoom: false })).toBe(true);
+    expect(isArtistGroupConversation({ kind: "group", teamArtistId: null })).toBe(true);
+    expect(isArtistGroupConversation({ kind: "group", teamArtistId: "artist-1" })).toBe(false);
+    expect(isArtistGroupConversation({ kind: "direct", teamArtistId: null })).toBe(false);
+    expect(suggestedGroupTitle(["Alex", "Jordan", "Sam", "Riley"])).toBe("Alex, Jordan +2");
+    expect(conversationHeading({ kind: "group", title: "Studio crew" })).toBe("Studio crew");
+    expect(conversationMemberLabel(["Alex", "Jordan", "Sam", "Riley"])).toBe("Alex, Jordan, Sam +1");
   });
 });

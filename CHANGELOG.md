@@ -4,6 +4,9 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-17
 
+- Added (v0.183.0): From New message you can start a group chat with several artists, not just a 1:1. Groups sit in their own inbox section, separate from team rooms and Scene chat. The person who starts a group can name it and add or remove people; anyone in it can leave.
+  Under the hood: run additive migration 111 in the Supabase SQL editor after 110.
+
 - Changed (v0.182.0): TEMPO Desktop now opens a little larger on high-resolution Windows screens (1440p and ultrawide at normal scaling), so type and controls aren't tiny. Mac Retina stays at 100% because the Mac already enlarges the interface. If you had already picked a zoom other than 100%, that choice is kept; click the percentage or press Ctrl/Cmd+0 to jump back to the new display default.
 
 - Fixed (v0.182.0): On Tasks, the assignee menu now shows the person's name — so assigning a task to yourself in a Pro workspace reads as that name, not **Artist owner**.

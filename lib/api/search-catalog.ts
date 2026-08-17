@@ -5,6 +5,7 @@ import { fetchArtistProfile } from "@/lib/api/artist-profile";
 import { fetchConversations } from "@/lib/api/messages";
 import { fetchSupportThreads, type SupportThread } from "@/lib/api/support-messages";
 import { fetchMyScenes } from "@/lib/api/scenes";
+import { conversationHeading } from "@/lib/messages/behavior";
 import { normalizeTrackType } from "@/lib/track-style";
 import type {
   BoardNote,
@@ -157,10 +158,18 @@ async function fetchMessageThreads(artistId: string): Promise<SearchMessageThrea
       threads.push({
         id: conversation.id,
         kind: "direct",
-        title: conversation.peer?.display_name ?? conversation.title ?? "Conversation",
+        title: conversationHeading({
+          kind: conversation.kind,
+          title: conversation.title,
+          teamArtistId: conversation.team_artist_id,
+          peerName: conversation.peer?.display_name,
+        }),
         handle: conversation.peer?.handle ?? null,
         preview: conversation.last_message_preview ?? "No messages yet",
-        transcript: (bodies.get(conversation.id) ?? []).join(" · "),
+        transcript: [
+          ...(conversation.members ?? []).map((member) => member.display_name),
+          ...(bodies.get(conversation.id) ?? []),
+        ].join(" · "),
         emblem_url: conversation.peer?.emblem_url ?? null,
         archived,
       });

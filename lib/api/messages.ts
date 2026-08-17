@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/client";
 import { deleteFile } from "@/lib/storage";
-import type { Conversation, ConversationMessage, MessageAttachment } from "@/lib/types";
+import { isMessagesInboxConversation } from "@/lib/messages/behavior";
+import type { Conversation, ConversationMessage, ConversationPeer, MessageAttachment } from "@/lib/types";
 
 export type MessageCursor = { createdAt: string; id: string };
 
@@ -25,6 +26,65 @@ export async function startDirectConversation(
   return data as string;
 }
 
+export async function startGroupConversation(
+  fromProfileId: string,
+  memberProfileIds: string[],
+  title?: string | null,
+): Promise<string> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("start_group_conversation", {
+    p_from_profile: fromProfileId,
+    p_member_profile_ids: memberProfileIds,
+    p_title: title?.trim() || null,
+  });
+  if (error) throw error;
+  return data as string;
+}
+
+export async function addGroupConversationMembers(
+  conversationId: string,
+  fromProfileId: string,
+  memberProfileIds: string[],
+): Promise<number> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("add_group_conversation_members", {
+    p_conversation_id: conversationId,
+    p_from_profile: fromProfileId,
+    p_member_profile_ids: memberProfileIds,
+  });
+  if (error) throw error;
+  return Number(data ?? 0);
+}
+
+export async function removeGroupConversationMember(
+  conversationId: string,
+  profileId: string,
+): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("remove_group_conversation_member", {
+    p_conversation_id: conversationId,
+    p_profile_id: profileId,
+  });
+  if (error) throw error;
+}
+
+export async function leaveGroupConversation(conversationId: string): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("leave_group_conversation", {
+    p_conversation_id: conversationId,
+  });
+  if (error) throw error;
+}
+
+export async function renameGroupConversation(conversationId: string, title: string): Promise<void> {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("rename_group_conversation", {
+    p_conversation_id: conversationId,
+    p_title: title,
+  });
+  if (error) throw error;
+}
+
 export async function fetchConversations(
   myProfileId: string,
   archived = false,
@@ -37,7 +97,7 @@ export async function fetchConversations(
 
   let participantQuery = supabase
     .from("conversation_participants")
-    .select("conversation_id, last_read_at, left_at, archived_at, muted, manually_unread_at")
+    .select("conversation_id, last_read_at, left_at, archived_at, muted, manually_unread_at, role")
     .eq("user_id", user.id)
     .is("left_at", null);
   participantQuery = archived
@@ -63,35 +123,44 @@ export async function fetchConversations(
   const { data: allConvos, error: cErr } = await supabase
     .from("conversations")
     .select("*")
-    // Scene rooms are 'group' conversations too (migration 053), but this
-    // inbox's `peer` model assumes exactly one other participant — a scene
-    // room is reached from its own Chat tab instead, not this list.
+    // Scene rooms are 'group' conversations too (migration 053). They stay on
+    // the Scene Chat tab. Artist group chats and team rooms belong here.
     .in("id", ids)
     .order("last_message_at", { ascending: false, nullsFirst: false });
   if (cErr) throw cErr;
-  const convos = (allConvos ?? []).filter(
-    (conversation) => conversation.kind === "direct" || roomByConversation.has(conversation.id)
+  const convos = (allConvos ?? []).filter((conversation) =>
+    isMessagesInboxConversation({
+      kind: conversation.kind,
+      sceneId: conversation.scene_id,
+      isTeamRoom: roomByConversation.has(conversation.id),
+    }),
   );
 
   const { data: allParts } = await supabase
     .from("conversation_participants")
-    .select(`conversation_id, profile_id, user_id, profile:artist_profiles!conversation_participants_profile_id_fkey(${PEER_SELECT})`)
+    .select(`conversation_id, profile_id, user_id, role, profile:artist_profiles!conversation_participants_profile_id_fkey(${PEER_SELECT})`)
     .in("conversation_id", ids)
     .is("left_at", null);
 
   const result: Conversation[] = [];
   for (const c of convos ?? []) {
-    const peers = (allParts ?? []).filter(
+    const participants = (allParts ?? []).filter((p) => p.conversation_id === c.id);
+    const peers = participants.filter(
       // The inbox belongs to the signed-in account, not whichever artist or
       // Pro workspace happens to be open. A thread may have been provisioned
       // against another profile owned by this same account, so profile-based
       // comparison can mistake the member's own artist for the other person.
-      (p) => p.conversation_id === c.id && p.user_id !== user.id
+      (p) => p.user_id !== user.id
     );
-    const peerRaw = peers[0]?.profile as unknown;
-    const peer = (
-      Array.isArray(peerRaw) ? peerRaw[0] : peerRaw
-    ) as Conversation["peer"];
+    const asPeer = (raw: unknown): ConversationPeer | null => {
+      const value = (Array.isArray(raw) ? raw[0] : raw) as ConversationPeer | null;
+      return value ?? null;
+    };
+    const peer = asPeer(peers[0]?.profile as unknown);
+    const members = participants
+      .map((part) => asPeer(part.profile as unknown))
+      .filter((member): member is ConversationPeer => Boolean(member));
+    const mine = participants.find((part) => part.user_id === user.id);
 
     const lastRead = readMap.get(c.id);
     let unread = 0;
@@ -111,6 +180,8 @@ export async function fetchConversations(
     result.push({
       ...(c as Conversation),
       peer,
+      members,
+      my_role: (participant?.role ?? mine?.role) === "admin" ? "admin" : "member",
       unread_count: manuallyUnread ? Math.max(1, unread) : unread,
       archived_at: participant?.archived_at ?? null,
       muted: Boolean(participant?.muted),

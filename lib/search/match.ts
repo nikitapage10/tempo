@@ -119,9 +119,9 @@ export const SEARCH_PAGES: SearchPageDef[] = [
   {
     id: "page-messages",
     title: "Messages",
-    subtitle: "Direct messages",
+    subtitle: "Direct messages and group chats",
     href: "/messages",
-    keywords: ["messages", "dm", "chat", "inbox"],
+    keywords: ["messages", "dm", "chat", "inbox", "group"],
   },
   {
     id: "page-stats",
@@ -592,7 +592,7 @@ function messageHit(
       { value: thread.handle ?? "", weight: 26 },
       { value: thread.preview, weight: 16 },
       { value: thread.transcript, weight: 10 },
-      { value: thread.kind === "support" ? "support ticket help tempo" : "message dm conversation", weight: 8 },
+      { value: thread.kind === "support" ? "support ticket help tempo" : "message dm conversation group chat", weight: 8 },
     ],
     tokens
   );

@@ -14,6 +14,11 @@ import {
   setConversationArchived,
   sendMessage,
   startDirectConversation,
+  startGroupConversation,
+  addGroupConversationMembers,
+  removeGroupConversationMember,
+  leaveGroupConversation,
+  renameGroupConversation,
   toggleMessagePin,
   toggleMessageReaction,
   toggleSceneMessageReaction,
@@ -118,6 +123,36 @@ export function useMessageMutations(myProfileId: string | null, myScenePersonaId
     },
   });
 
+  const invalidateConversations = () => {
+    qc.invalidateQueries({ queryKey: ["conversations", myProfileId] });
+    qc.invalidateQueries({ queryKey: ["dm-unread", myProfileId] });
+  };
+
+  const startGroup = useMutation({
+    mutationFn: (input: { memberProfileIds: string[]; title?: string | null }) =>
+      startGroupConversation(myProfileId!, input.memberProfileIds, input.title),
+    onSuccess: invalidateConversations,
+  });
+  const addGroupMembers = useMutation({
+    mutationFn: (input: { conversationId: string; memberProfileIds: string[] }) =>
+      addGroupConversationMembers(input.conversationId, myProfileId!, input.memberProfileIds),
+    onSuccess: invalidateConversations,
+  });
+  const removeGroupMember = useMutation({
+    mutationFn: (input: { conversationId: string; profileId: string }) =>
+      removeGroupConversationMember(input.conversationId, input.profileId),
+    onSuccess: invalidateConversations,
+  });
+  const leaveGroup = useMutation({
+    mutationFn: leaveGroupConversation,
+    onSuccess: invalidateConversations,
+  });
+  const renameGroup = useMutation({
+    mutationFn: (input: { conversationId: string; title: string }) =>
+      renameGroupConversation(input.conversationId, input.title),
+    onSuccess: invalidateConversations,
+  });
+
   const send = useMutation({
     mutationFn: (input: { conversationId: string; body: string; media?: MessageAttachment[]; replyToMessageId?: string | null; optimisticId?: string }) =>
       sendMessage({
@@ -211,7 +246,7 @@ export function useMessageMutations(myProfileId: string | null, myScenePersonaId
   const markUnread = useMutation({ mutationFn: markConversationUnread, onSuccess: () => { qc.invalidateQueries({ queryKey: ["conversations", myProfileId] }); qc.invalidateQueries({ queryKey: ["dm-unread", myProfileId] }); } });
   const archive = useMutation({ mutationFn: ({ conversationId, archived }: { conversationId: string; archived: boolean }) => setConversationArchived(conversationId, archived), onSuccess: () => qc.invalidateQueries({ queryKey: ["conversations", myProfileId] }) });
 
-  return { startDm, send, markRead, markUnread, removeMessage, edit, reaction, sceneReaction, pin, mute, archive };
+  return { startDm, startGroup, addGroupMembers, removeGroupMember, leaveGroup, renameGroup, send, markRead, markUnread, removeMessage, edit, reaction, sceneReaction, pin, mute, archive };
 }
 
 export function useMessageSearch(conversationId: string | null, query: string) {

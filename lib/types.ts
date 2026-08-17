@@ -301,26 +301,32 @@ export type PostComment = {
   > | null;
 };
 
+export type ConversationPeer = Pick<
+  ArtistProfile,
+  | "id"
+  | "handle"
+  | "display_name"
+  | "emblem_url"
+  | "palette_id"
+  | "ice_color"
+  | "amber_color"
+>;
+
 export type Conversation = {
   id: string;
   kind: "direct" | "group";
   direct_key: string | null;
   title: string | null;
   created_by_profile_id: string;
+  scene_id?: string | null;
   last_message_at: string | null;
   last_message_preview: string | null;
   created_at: string;
-  /** Other participant(s) for direct threads — filled by the API. */
-  peer?: Pick<
-    ArtistProfile,
-    | "id"
-    | "handle"
-    | "display_name"
-    | "emblem_url"
-    | "palette_id"
-    | "ice_color"
-    | "amber_color"
-  > | null;
+  /** Other participant for a 1:1 thread — filled by the API. */
+  peer?: ConversationPeer | null;
+  /** Active members, including you. Used for group chats. */
+  members?: ConversationPeer[];
+  my_role?: "member" | "admin";
   unread_count?: number;
   archived_at?: string | null;
   muted?: boolean;

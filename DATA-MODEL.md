@@ -20,6 +20,18 @@ Single-user. Almost every root row has `user_id` defaulting to `auth.uid()`, or 
 
 Artist and Pro accounts share the same handle, visibility, messaging, and social identity table. `profile_kind` is `artist` or `pro`, defaults to `artist`, and is mirrored from `artists.workspace_kind` (`personal` becomes `pro`). This keeps public and member profile reads self-contained: they can choose artist/release language or professional/career language without joining the private workspace table. The field changes presentation only and never grants artist access.
 
+#### Artist group chats (migration 111)
+
+`conversations.kind` has been `direct` or `group` since messaging shipped.
+Scene rooms and artist team rooms already use `group`. An **artist group chat**
+is a `group` row with `scene_id` null and no `artist_team_rooms` binding.
+`start_group_conversation` creates it; the caller is `admin` and each invited
+profile must pass `can_dm_profile`. Later member changes go through
+`add_group_conversation_members`, `remove_group_conversation_member`,
+`leave_group_conversation`, and `rename_group_conversation`. Max 20 people.
+Client inserts into `conversation_participants` are denied; definers still
+write membership for DMs, Scenes, team rooms, and these groups.
+
 #### Dual artist + Pro identity (migrations 092 + 100)
 
 An auth user may own both `artists.workspace_kind = 'artist'` and a separate

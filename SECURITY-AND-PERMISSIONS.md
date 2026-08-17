@@ -110,6 +110,14 @@ also sit under that message sender's private storage prefix. Archive state is
 per participant. Message deletion is sender-only and soft-deletes the database
 row; owned attachment objects are removed on a best-effort basis.
 
+Artist group chats reuse the existing `conversations` / `messages` tables with
+`kind = 'group'`, no `scene_id`, and no `artist_team_rooms` binding. Create,
+add, remove, leave, and rename go through security-definer RPCs. Each invited
+profile must pass `can_dm_profile` (the same block and DM-policy gate as a
+1:1 thread). Client inserts into `conversation_participants` are closed;
+membership writes are RPC-only. Scene rooms remain on the Scene Chat tab and
+are excluded from the Messages inbox.
+
 Support conversations use a dedicated `support_messages` table rather than the
 artist messaging tables. It has RLS enabled with no browser-facing policies.
 Member support APIs first authenticate the caller and verify that the ticket's
