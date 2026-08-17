@@ -426,7 +426,14 @@ export function OriginExperience({
       onError={handleMediaError}
       onActiveElement={handleActiveElement}
     >
-      <audio ref={soundtrack.ref} src={SOUNDTRACK_SRC} preload="auto" loop aria-hidden="true" />
+      <audio
+        ref={soundtrack.ref}
+        src={SOUNDTRACK_SRC}
+        preload="auto"
+        loop
+        playsInline
+        aria-hidden="true"
+      />
       {/* Desktop zoom control — bottom-left; scales the copy/panels, not the film.
           Hidden until the artist has tuned in: appearing over the still opening
           frame read as a stray piece of UI before there was anything to zoom. */}

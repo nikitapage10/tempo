@@ -34,39 +34,112 @@ export type OriginSoundtrack = {
 export function useOriginSoundtrack(): OriginSoundtrack {
   const ref = React.useRef<HTMLAudioElement | null>(null);
   const fadeRef = React.useRef<number | null>(null);
+  const wantedRef = React.useRef(false);
+  const startedRef = React.useRef(false);
+  const playPendingRef = React.useRef(false);
 
-  React.useEffect(() => {
-    ref.current?.load();
+  const beginFade = React.useCallback(() => {
+    const soundtrack = ref.current;
+    if (!soundtrack || !wantedRef.current || startedRef.current) return;
+
+    startedRef.current = true;
+    playPendingRef.current = false;
+    if (fadeRef.current !== null) cancelAnimationFrame(fadeRef.current);
+
+    const startedAt = performance.now();
+    const fadeIn = (now: number) => {
+      if (!wantedRef.current) return;
+      const progress = Math.min(1, (now - startedAt) / SOUNDTRACK_FADE_IN_MS);
+      soundtrack.volume = SOUNDTRACK_VOLUME * progress;
+      if (progress < 1) {
+        fadeRef.current = requestAnimationFrame(fadeIn);
+      } else {
+        fadeRef.current = null;
+      }
+    };
+    fadeRef.current = requestAnimationFrame(fadeIn);
   }, []);
 
-  const start = React.useCallback(() => {
+  const tryPlay = React.useCallback(() => {
+    const soundtrack = ref.current;
+    if (
+      !soundtrack ||
+      !wantedRef.current ||
+      startedRef.current ||
+      playPendingRef.current
+    ) {
+      return;
+    }
+    if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+      return;
+    }
+
+    soundtrack.loop = true;
+    soundtrack.muted = false;
+    soundtrack.defaultMuted = false;
+    soundtrack.volume = 0;
+    playPendingRef.current = true;
+
+    const play = soundtrack.play();
+    if (play && typeof play.then === "function") {
+      void play.then(beginFade).catch(() => {
+        // A cold media element can reject once on macOS. Keep the request
+        // armed so canplay, focus, or the next interaction can retry it.
+        playPendingRef.current = false;
+      });
+    } else {
+      beginFade();
+    }
+  }, [beginFade]);
+
+  React.useEffect(() => {
     const soundtrack = ref.current;
     if (!soundtrack) return;
+
+    const retry = () => tryPlay();
+    soundtrack.addEventListener("playing", beginFade);
+    soundtrack.addEventListener("canplay", retry);
+    soundtrack.addEventListener("canplaythrough", retry);
+    soundtrack.addEventListener("loadeddata", retry);
+    window.addEventListener("pointerdown", retry, { passive: true });
+    window.addEventListener("keydown", retry);
+    window.addEventListener("focus", retry);
+    document.addEventListener("visibilitychange", retry);
+
+    try {
+      soundtrack.preload = "auto";
+      soundtrack.load();
+    } catch {
+      /* The opening gesture and readiness listeners still provide retries. */
+    }
+
+    // Electron on macOS can miss a readiness event while its window is being
+    // restored. A short retry loop covers that race and stops once sound plays.
+    const retryTimer = window.setInterval(() => {
+      if (wantedRef.current && !startedRef.current) tryPlay();
+    }, 350);
+
+    return () => {
+      window.clearInterval(retryTimer);
+      soundtrack.removeEventListener("playing", beginFade);
+      soundtrack.removeEventListener("canplay", retry);
+      soundtrack.removeEventListener("canplaythrough", retry);
+      soundtrack.removeEventListener("loadeddata", retry);
+      window.removeEventListener("pointerdown", retry);
+      window.removeEventListener("keydown", retry);
+      window.removeEventListener("focus", retry);
+      document.removeEventListener("visibilitychange", retry);
+    };
+  }, [beginFade, tryPlay]);
+
+  const start = React.useCallback(() => {
+    wantedRef.current = true;
     if (fadeRef.current !== null) {
       cancelAnimationFrame(fadeRef.current);
       fadeRef.current = null;
     }
-    soundtrack.loop = true;
-    soundtrack.volume = 0;
-    void soundtrack
-      .play()
-      .then(() => {
-        const startedAt = performance.now();
-        const fadeIn = (now: number) => {
-          const progress = Math.min(1, (now - startedAt) / SOUNDTRACK_FADE_IN_MS);
-          soundtrack.volume = SOUNDTRACK_VOLUME * progress;
-          if (progress < 1) {
-            fadeRef.current = requestAnimationFrame(fadeIn);
-          } else {
-            fadeRef.current = null;
-          }
-        };
-        fadeRef.current = requestAnimationFrame(fadeIn);
-      })
-      .catch(() => {
-        // If a browser still refuses playback, the visual flow remains usable.
-      });
-  }, []);
+    tryPlay();
+  }, [tryPlay]);
 
   const fade = React.useCallback(() => {
     const soundtrack = ref.current;
@@ -89,6 +162,9 @@ export function useOriginSoundtrack(): OriginSoundtrack {
   }, []);
 
   const reset = React.useCallback(() => {
+    wantedRef.current = false;
+    startedRef.current = false;
+    playPendingRef.current = false;
     if (fadeRef.current !== null) {
       cancelAnimationFrame(fadeRef.current);
       fadeRef.current = null;
@@ -103,6 +179,9 @@ export function useOriginSoundtrack(): OriginSoundtrack {
 
   React.useEffect(
     () => () => {
+      wantedRef.current = false;
+      startedRef.current = false;
+      playPendingRef.current = false;
       if (fadeRef.current !== null) cancelAnimationFrame(fadeRef.current);
       ref.current?.pause();
     },

@@ -185,7 +185,14 @@ export function PassageExperience() {
       onError={handleMediaError}
       onActiveElement={handleActiveElement}
     >
-      <audio ref={soundtrackRef} src={SOUNDTRACK_SRC} preload="auto" loop aria-hidden="true" />
+      <audio
+        ref={soundtrackRef}
+        src={SOUNDTRACK_SRC}
+        preload="auto"
+        loop
+        playsInline
+        aria-hidden="true"
+      />
       {isDesktopApp() ? <ZoomControl placement="corner" visible={soundOn} /> : null}
       <OriginExitControl visible={soundOn} />
       <div

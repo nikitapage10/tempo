@@ -63,9 +63,9 @@ describe("Passage Tempo Theme bed", () => {
 
   it("uses the shared onboarding soundtrack and starts it from Tune in", () => {
     expect(experience).toContain("SOUNDTRACK_SRC");
-    expect(experience).toContain(
-      '<audio ref={soundtrackRef} src={SOUNDTRACK_SRC}'
-    );
+    expect(experience).toContain("<audio");
+    expect(experience).toContain("ref={soundtrackRef}");
+    expect(experience).toContain("src={SOUNDTRACK_SRC}");
     expect(experience).toContain("startPassageSound();");
   });
 
