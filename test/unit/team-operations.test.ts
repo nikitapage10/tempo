@@ -48,6 +48,23 @@ describe("Team Operations 1.0", () => {
     expect(read(paths[4])).toContain("install_pro_starter_kits");
   });
 
+  it("replays the calendar creator backfill atomically without the legacy owner trigger", () => {
+    const sql = read("migrations/104_pro_operations.sql");
+    const dropValidator = sql.indexOf("drop trigger if exists trg_validate_calendar_event on calendar_events;");
+    const dropTimestamp = sql.indexOf("drop trigger if exists trg_calendar_event_updated_at on calendar_events;");
+    const backfill = sql.indexOf("update calendar_events set created_by_user_id=user_id");
+    const restoreValidator = sql.indexOf("create trigger trg_validate_calendar_event", backfill);
+    const restoreTimestamp = sql.indexOf("create trigger trg_calendar_event_updated_at", backfill);
+
+    expect(sql).toMatch(/^--[\s\S]*\nbegin;/);
+    expect(dropValidator).toBeGreaterThan(-1);
+    expect(dropTimestamp).toBeGreaterThan(dropValidator);
+    expect(backfill).toBeGreaterThan(dropTimestamp);
+    expect(restoreValidator).toBeGreaterThan(backfill);
+    expect(restoreTimestamp).toBeGreaterThan(restoreValidator);
+    expect(sql.trimEnd()).toMatch(/commit;$/);
+  });
+
   it("puts exact access in Pro invitations without artist-origin language", () => {
     const message = renderTeamInviteEmail({
       email: "maya@example.com",

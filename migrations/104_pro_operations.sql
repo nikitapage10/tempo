@@ -1,6 +1,11 @@
 -- TEMPO migration 104: private Pro availability, per-artist preferences, and
 -- a cross-artist schedule that only the signed-in Pro can query.
 
+-- The calendar creator backfill temporarily replaces existing triggers. Keep
+-- that replacement atomic so a failed or interrupted replay restores the
+-- pre-migration trigger state instead of leaving calendar writes unguarded.
+begin;
+
 create or replace function valid_working_days(p_days smallint[]) returns boolean
 language sql immutable as $$
   select p_days <@ array[1,2,3,4,5,6,7]::smallint[]
@@ -44,6 +49,14 @@ create policy own_artist_member_preferences on artist_member_preferences for all
 -- Keep the artist owner in the legacy user_id field while recording the human
 -- creator separately. This makes the existing calendar model team-safe.
 alter table calendar_events add column if not exists created_by_user_id uuid references auth.users(id) on delete set null;
+
+-- Migration 037's validator requires auth.uid() to match every row owner. A
+-- database migration has no signed-in user, so the deterministic backfill must
+-- run without that legacy validator. The updated_at trigger is also removed so
+-- adding bookkeeping data does not make old events look freshly edited. Both
+-- triggers are restored below before this transaction can commit.
+drop trigger if exists trg_validate_calendar_event on calendar_events;
+drop trigger if exists trg_calendar_event_updated_at on calendar_events;
 update calendar_events set created_by_user_id=user_id where created_by_user_id is null;
 create or replace function validate_calendar_event()
 returns trigger language plpgsql security definer set search_path=public as $$
@@ -65,6 +78,12 @@ begin
   if not new.all_day and not exists(select 1 from pg_timezone_names where name=new.timezone) then raise exception 'calendar event timezone is invalid'; end if;
   return new;
 end; $$;
+create trigger trg_validate_calendar_event
+before insert or update on calendar_events
+for each row execute function validate_calendar_event();
+create trigger trg_calendar_event_updated_at
+before update on calendar_events
+for each row execute function touch_calendar_event_updated_at();
 drop policy if exists member_delete_own_calendar_events on calendar_events;
 create policy member_delete_own_calendar_events on calendar_events for delete using(
   created_by_user_id=auth.uid() and can_write_space_area(space_id,'calendar')
@@ -111,3 +130,5 @@ grant execute on function my_artist_schedule(timestamptz,timestamptz,uuid[]) to 
 insert into schema_migrations(version,name,checksum,applied_by)
 values(104,'104_pro_operations','initial','migration-self-register')
 on conflict(version) do nothing;
+
+commit;
