@@ -68,3 +68,15 @@ next-env.d.ts
 
 # electron-builder output (TEMPO Desktop)
 /dist-desktop/
+
+# Local catalog/media dumps and verify leftovers (never commit)
+/.desktop-verify-*/
+/artists/
+/tracks/
+/members/
+/scenes/
+/track-groups/
+/TEMPO THEME.mp3
+/index.json
+/.tmp-stage/
+.tmp-stage-*.js
