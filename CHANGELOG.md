@@ -4,6 +4,8 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-16
 
+- Fixed (v0.174.0): **Explore a demo artist first** now completes its handoff reliably in the Mac app. It enters through a distinct server route instead of relying on a direct Origin reload, and an interrupted or partial PRESIDENT build is detected, safely removed, and rebuilt rather than being mistaken for a finished demo on every later attempt.
+
 - Fixed (v0.173.0): The Tempo Theme now starts reliably during both artist Origin and Pro Passage on Mac. Onboarding keeps a rejected or not-yet-ready playback request armed, retries when the file or window becomes ready, and only begins its fade after audio is genuinely playing instead of silently giving up after one attempt.
 
 - Fixed (v0.172.0): The closing Origin and Passage story scroll is substantially smoother on Mac trackpads and Retina displays. Video frames are decoded one at a time at the source frame rate instead of piling up seeks, invisible panels leave the compositor, and expensive glass blur pauses only during active scrolling before returning when the gesture settles.
