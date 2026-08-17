@@ -3,16 +3,27 @@
 import * as React from "react";
 import { audioConstraints } from "@/hooks/use-audio-inputs";
 import {
+  TARGET_SAMPLE_RATE,
+  downsampleToRate,
+  floatToPcm16,
+  pcm16ToBase64,
+} from "@/lib/dictation/pcm";
+import {
   EMPTY_TRANSCRIPT_STATE,
   orderTranscriptItem,
   transcriptText,
   updateTranscript,
   type TranscriptState,
 } from "@/lib/dictation/realtime-transcript";
+import { transcriptionSessionConfig } from "@/lib/dictation/session";
 
 const MAX_DICTATION_MS = 10 * 60 * 1_000;
 const FINAL_TRANSCRIPT_QUIET_MS = 500;
 const FINAL_TRANSCRIPT_WAIT_MS = 2_500;
+const SOCKET_OPEN_MS = 10_000;
+const PROCESSOR_BUFFER = 4096;
+const REALTIME_SOCKET_URL =
+  "wss://api.openai.com/v1/realtime?intent=transcription";
 
 export type RealtimeDictationStart =
   | "started"
@@ -30,35 +41,87 @@ type RealtimeEvent = {
   error?: { code?: string; message?: string };
 };
 
-function waitForDataChannel(channel: RTCDataChannel): Promise<void> {
-  if (channel.readyState === "open") return Promise.resolve();
+type CaptureHandle = { stop: () => void };
+
+function audioContextCtor(): typeof AudioContext | null {
+  if (typeof window === "undefined") return null;
+  const fromWindow = window.AudioContext;
+  if (fromWindow) return fromWindow;
+  const webkit = (
+    window as unknown as { webkitAudioContext?: typeof AudioContext }
+  ).webkitAudioContext;
+  return webkit ?? null;
+}
+
+function waitForSocketOpen(socket: WebSocket): Promise<void> {
+  if (socket.readyState === WebSocket.OPEN) return Promise.resolve();
   return new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => {
+    const timeout = window.setTimeout(() => {
       cleanup();
-      reject(new Error("Realtime data channel timed out."));
-    }, 8_000);
+      reject(new Error("Live dictation timed out."));
+    }, SOCKET_OPEN_MS);
     const cleanup = () => {
-      clearTimeout(timeout);
-      channel.removeEventListener("open", handleOpen);
-      channel.removeEventListener("close", handleClose);
-      channel.removeEventListener("error", handleError);
+      window.clearTimeout(timeout);
+      socket.removeEventListener("open", handleOpen);
+      socket.removeEventListener("error", handleError);
+      socket.removeEventListener("close", handleClose);
     };
     const handleOpen = () => {
       cleanup();
       resolve();
     };
-    const handleClose = () => {
-      cleanup();
-      reject(new Error("Realtime data channel closed."));
-    };
     const handleError = () => {
       cleanup();
-      reject(new Error("Realtime data channel failed."));
+      reject(new Error("Live dictation couldn't connect."));
     };
-    channel.addEventListener("open", handleOpen);
-    channel.addEventListener("close", handleClose);
-    channel.addEventListener("error", handleError);
+    const handleClose = () => {
+      cleanup();
+      reject(new Error("Live dictation closed before it opened."));
+    };
+    socket.addEventListener("open", handleOpen);
+    socket.addEventListener("error", handleError);
+    socket.addEventListener("close", handleClose);
   });
+}
+
+function startPcmCapture(
+  stream: MediaStream,
+  onChunk: (base64: string) => void,
+): CaptureHandle {
+  const Ctor = audioContextCtor();
+  if (!Ctor) throw new Error("Audio capture isn't available here.");
+
+  const context = new Ctor();
+  const source = context.createMediaStreamSource(stream);
+  const processor = context.createScriptProcessor(PROCESSOR_BUFFER, 1, 1);
+  const silent = context.createGain();
+  silent.gain.value = 0;
+
+  processor.onaudioprocess = (event) => {
+    const input = event.inputBuffer.getChannelData(0);
+    const resampled = downsampleToRate(
+      input,
+      context.sampleRate,
+      TARGET_SAMPLE_RATE,
+    );
+    if (resampled.length === 0) return;
+    onChunk(pcm16ToBase64(floatToPcm16(resampled)));
+  };
+
+  source.connect(processor);
+  processor.connect(silent);
+  silent.connect(context.destination);
+  void context.resume();
+
+  return {
+    stop: () => {
+      processor.onaudioprocess = null;
+      processor.disconnect();
+      source.disconnect();
+      silent.disconnect();
+      void context.close();
+    },
+  };
 }
 
 export function useRealtimeDictation({
@@ -75,9 +138,9 @@ export function useRealtimeDictation({
 
   const callbackRef = React.useRef(onTranscript);
   callbackRef.current = onTranscript;
-  const peerRef = React.useRef<RTCPeerConnection | null>(null);
-  const channelRef = React.useRef<RTCDataChannel | null>(null);
+  const socketRef = React.useRef<WebSocket | null>(null);
   const streamRef = React.useRef<MediaStream | null>(null);
+  const captureRef = React.useRef<CaptureHandle | null>(null);
   const transcriptRef = React.useRef<TranscriptState>(EMPTY_TRANSCRIPT_STATE);
   const previousItemsRef = React.useRef(new Map<string, string | null>());
   const lastTranscriptAtRef = React.useRef(0);
@@ -88,8 +151,9 @@ export function useRealtimeDictation({
 
   React.useEffect(() => {
     setSupported(
-      typeof RTCPeerConnection !== "undefined" &&
-        Boolean(navigator.mediaDevices?.getUserMedia),
+      typeof WebSocket !== "undefined" &&
+        Boolean(navigator.mediaDevices?.getUserMedia) &&
+        Boolean(audioContextCtor()),
     );
   }, []);
 
@@ -100,14 +164,13 @@ export function useRealtimeDictation({
 
   const releaseConnection = React.useCallback(() => {
     clearMaxTimer();
+    captureRef.current?.stop();
+    captureRef.current = null;
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
-    const channel = channelRef.current;
-    channelRef.current = null;
-    if (channel && channel.readyState !== "closed") channel.close();
-    const peer = peerRef.current;
-    peerRef.current = null;
-    if (peer && peer.connectionState !== "closed") peer.close();
+    const socket = socketRef.current;
+    socketRef.current = null;
+    if (socket && socket.readyState < WebSocket.CLOSING) socket.close();
   }, [clearMaxTimer]);
 
   const publish = React.useCallback(() => {
@@ -116,10 +179,10 @@ export function useRealtimeDictation({
   }, []);
 
   const handleRealtimeEvent = React.useCallback(
-    (event: MessageEvent<string>) => {
+    (raw: string) => {
       let message: RealtimeEvent;
       try {
-        message = JSON.parse(event.data) as RealtimeEvent;
+        message = JSON.parse(raw) as RealtimeEvent;
       } catch {
         return;
       }
@@ -184,10 +247,10 @@ export function useRealtimeDictation({
       }
 
       if (message.type === "error") {
-        // A final commit after server VAD has already committed the phrase is
-        // harmless; the Realtime API reports it as an empty-buffer error.
         if (message.error?.code === "input_audio_buffer_commit_empty") return;
-        setError("Live dictation hit a connection problem. What you already said is kept.");
+        setError(
+          "Live dictation hit a connection problem. What you already said is kept.",
+        );
       }
     },
     [publish],
@@ -195,8 +258,9 @@ export function useRealtimeDictation({
 
   const start = React.useCallback(async (): Promise<RealtimeDictationStart> => {
     if (
-      typeof RTCPeerConnection === "undefined" ||
-      !navigator.mediaDevices?.getUserMedia
+      typeof WebSocket === "undefined" ||
+      !navigator.mediaDevices?.getUserMedia ||
+      !audioContextCtor()
     ) {
       return "unavailable";
     }
@@ -231,40 +295,60 @@ export function useRealtimeDictation({
     }
 
     try {
-      const peer = new RTCPeerConnection();
-      const channel = peer.createDataChannel("oai-events");
-      peerRef.current = peer;
-      channelRef.current = channel;
-      streamRef.current = stream;
-      channel.addEventListener("message", handleRealtimeEvent);
-      stream.getTracks().forEach((track) => peer.addTrack(track, stream));
+      const response = await fetch("/api/assistant/realtime-transcription", {
+        method: "POST",
+        headers: { Accept: "application/json" },
+        cache: "no-store",
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        clientSecret?: string;
+      } | null;
+      if (!response.ok || !payload?.clientSecret) {
+        throw new Error("Realtime session rejected.");
+      }
 
-      peer.addEventListener("connectionstatechange", () => {
-        if (
-          session === activeSessionRef.current &&
-          (peer.connectionState === "failed" ||
-            peer.connectionState === "disconnected")
-        ) {
-          setError("Live dictation lost its connection. What you already said is kept.");
+      if (session !== activeSessionRef.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        return "failed";
+      }
+
+      const socket = new WebSocket(REALTIME_SOCKET_URL, [
+        "realtime",
+        `openai-insecure-api-key.${payload.clientSecret}`,
+      ]);
+      socketRef.current = socket;
+      streamRef.current = stream;
+      socket.addEventListener("message", (event) => {
+        if (typeof event.data === "string") handleRealtimeEvent(event.data);
+      });
+      socket.addEventListener("close", () => {
+        if (session === activeSessionRef.current && listeningRef.current) {
+          setError(
+            "Live dictation lost its connection. What you already said is kept.",
+          );
         }
       });
 
-      const offer = await peer.createOffer();
-      await peer.setLocalDescription(offer);
-      const response = await fetch("/api/assistant/realtime-transcription", {
-        method: "POST",
-        headers: { "Content-Type": "application/sdp" },
-        body: offer.sdp ?? "",
-      });
-      if (!response.ok) throw new Error("Realtime session rejected.");
-      const answerSdp = await response.text();
-      await peer.setRemoteDescription({ type: "answer", sdp: answerSdp });
-      await waitForDataChannel(channel);
-
+      await waitForSocketOpen(socket);
       if (session !== activeSessionRef.current) {
         releaseConnection();
         return "failed";
       }
+
+      socket.send(
+        JSON.stringify({
+          type: "session.update",
+          session: transcriptionSessionConfig(),
+        }),
+      );
+
+      captureRef.current = startPcmCapture(stream, (audio) => {
+        if (socket.readyState === WebSocket.OPEN) {
+          socket.send(
+            JSON.stringify({ type: "input_audio_buffer.append", audio }),
+          );
+        }
+      });
 
       listeningRef.current = true;
       setListening(true);
@@ -281,17 +365,20 @@ export function useRealtimeDictation({
   }, [deviceId, handleRealtimeEvent, releaseConnection]);
 
   const finish = React.useCallback(async () => {
-    if (!peerRef.current || finalizing) return;
+    if (!socketRef.current || finalizing) return;
     listeningRef.current = false;
     setListening(false);
     setFinalizing(true);
     clearMaxTimer();
 
-    const channel = channelRef.current;
-    if (channel?.readyState === "open") {
-      channel.send(JSON.stringify({ type: "input_audio_buffer.commit" }));
-    }
+    captureRef.current?.stop();
+    captureRef.current = null;
     streamRef.current?.getTracks().forEach((track) => track.stop());
+
+    const socket = socketRef.current;
+    if (socket?.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({ type: "input_audio_buffer.commit" }));
+    }
 
     const started = Date.now();
     while (

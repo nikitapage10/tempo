@@ -59,6 +59,16 @@ export function AssistantPanel({
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [turns, thinking]);
 
+  React.useEffect(() => {
+    const el = textRef.current;
+    if (!el) return;
+    const max = 10 * 20;
+    el.style.height = "0px";
+    const content = el.scrollHeight;
+    el.style.height = `${Math.min(max, Math.max(content, 72))}px`;
+    el.style.overflowY = content > max ? "auto" : "hidden";
+  }, [text, open]);
+
   if (!open) return null;
 
   const disabled = thinking || acting || transcribing;
@@ -147,7 +157,7 @@ export function AssistantPanel({
           "md:inset-x-auto md:bottom-[5.5rem] md:right-5 md:h-[min(70vh,34rem)] md:w-[min(100vw-2.5rem,25rem)] md:rounded-panel",
         )}
       >
-        <header className="flex items-center justify-between border-b border-line px-4 py-3">
+        <header className="flex shrink-0 items-center justify-between border-b border-line px-4 py-3">
           <p className="label-mono">ASSISTANT</p>
           <button
             type="button"
@@ -245,7 +255,7 @@ export function AssistantPanel({
           )}
         </div>
 
-        <div className="border-t border-line px-3 py-3">
+        <div className="shrink-0 border-t border-line px-3 py-3">
           {attachments.length > 0 ? (
             <div className="mb-2 flex flex-wrap gap-1.5">
               {attachments.map((att, i) => (
@@ -271,7 +281,7 @@ export function AssistantPanel({
             </div>
           ) : null}
 
-          <div className="flex items-end gap-1 rounded-card border border-line bg-bg-2 p-2 shadow-e2 transition-colors duration-hover focus-within:border-ice/50">
+          <div className="rounded-card border border-line bg-bg-2 p-2 shadow-e2 transition-colors duration-hover focus-within:border-ice/50">
             <input
               ref={fileRef}
               type="file"
@@ -280,17 +290,6 @@ export function AssistantPanel({
               className="hidden"
               onChange={(e) => void handleFiles(e.target.files)}
             />
-            <button
-              type="button"
-              aria-label="Attach files"
-              title="Attach a screenshot, PDF, or text file"
-              disabled={disabled || attachments.length >= ASSISTANT_MAX_ATTACHMENTS}
-              onClick={() => fileRef.current?.click()}
-              className="rounded-input p-2 text-text-lo transition-colors duration-hover hover:text-ice focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice disabled:opacity-40"
-            >
-              <Paperclip className="size-4" />
-            </button>
-
             <textarea
               ref={textRef}
               value={text}
@@ -303,38 +302,50 @@ export function AssistantPanel({
                 }
               }}
               disabled={disabled}
-              rows={1}
+              rows={3}
               placeholder="Ask about TEMPO or your catalog…"
-              className="max-h-28 min-h-[2.25rem] flex-1 resize-none bg-transparent py-2 text-sm text-text-hi placeholder:text-text-lo focus-visible:outline-none"
+              className="block w-full min-h-[4.5rem] resize-none overflow-hidden bg-transparent px-1 py-1.5 text-sm leading-5 text-text-hi placeholder:text-text-lo focus-visible:outline-none [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-line"
             />
-
-            <VoiceInput
-              disabled={disabled}
-              onStart={() => {
-                dictationBaseRef.current = text.trim();
-              }}
-              onTranscript={(spoken) => {
-                const base = dictationBaseRef.current;
-                const merged = base ? `${base} ${spoken}` : spoken;
-                setText(merged.slice(0, MAX_MESSAGE_CHARS));
-              }}
-              onRecorded={(file) => void handleVoiceRecording(file)}
-            />
-
-            <button
-              type="button"
-              aria-label="Send"
-              disabled={disabled || !canSend}
-              onClick={() => handleSend()}
-              className={cn(
-                "rounded-input p-2 transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
-                canSend
-                  ? "text-ice hover:text-text-hi"
-                  : "text-text-lo opacity-40",
-              )}
-            >
-              <Send className="size-4" />
-            </button>
+            <div className="mt-1 flex items-center justify-between gap-1">
+              <button
+                type="button"
+                aria-label="Attach files"
+                title="Attach a screenshot, PDF, or text file"
+                disabled={disabled || attachments.length >= ASSISTANT_MAX_ATTACHMENTS}
+                onClick={() => fileRef.current?.click()}
+                className="rounded-input p-2 text-text-lo transition-colors duration-hover hover:text-ice focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice disabled:opacity-40"
+              >
+                <Paperclip className="size-4" />
+              </button>
+              <div className="flex items-center">
+                <VoiceInput
+                  disabled={disabled}
+                  onStart={() => {
+                    dictationBaseRef.current = text.trim();
+                  }}
+                  onTranscript={(spoken) => {
+                    const base = dictationBaseRef.current;
+                    const merged = base ? `${base} ${spoken}` : spoken;
+                    setText(merged.slice(0, MAX_MESSAGE_CHARS));
+                  }}
+                  onRecorded={(file) => void handleVoiceRecording(file)}
+                />
+                <button
+                  type="button"
+                  aria-label="Send"
+                  disabled={disabled || !canSend}
+                  onClick={() => handleSend()}
+                  className={cn(
+                    "rounded-input p-2 transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice",
+                    canSend
+                      ? "text-ice hover:text-text-hi"
+                      : "text-text-lo opacity-40",
+                  )}
+                >
+                  <Send className="size-4" />
+                </button>
+              </div>
+            </div>
           </div>
           <div className="mt-2 flex items-start justify-between gap-2">
             <p className="text-xs leading-relaxed text-text-lo">

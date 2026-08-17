@@ -24,9 +24,10 @@ function formatElapsed(seconds: number): string {
 }
 
 /**
- * Shared dictation control for Import, Messages, and the assistant. Realtime
- * WebRTC is the normal path on both browsers and desktop. If it cannot connect,
- * one uninterrupted recording is transcribed after Stop.
+ * Shared dictation control for Import, Messages, and the assistant. OpenAI
+ * live transcription over a WebSocket is the normal path on both browsers and
+ * desktop. If it cannot connect, one uninterrupted recording is transcribed
+ * after Stop.
  */
 export function VoiceInput({
   onTranscript,

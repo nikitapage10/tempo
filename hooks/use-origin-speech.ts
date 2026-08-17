@@ -21,7 +21,7 @@ export type OriginSpeech = {
 
 /**
  * Dictation shared by Origin, Passage, and Calendar. Server VAD creates phrase
- * boundaries without stopping the continuous WebRTC microphone session. If a
+ * boundaries without stopping the continuous live-transcription session. If a
  * live session cannot connect, one complete recording is transcribed on Stop.
  */
 export function useOriginSpeech(opts: {

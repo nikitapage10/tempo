@@ -72,7 +72,7 @@ export async function askAssistant(
   };
 }
 
-/** Recorded voice-memo fallback when live Web Speech isn't available. */
+/** Recorded voice-memo fallback when live transcription cannot connect. */
 export async function transcribeAssistantVoice(file: File): Promise<string> {
   const body = new FormData();
   body.append("file", file);
