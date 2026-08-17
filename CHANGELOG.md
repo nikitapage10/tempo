@@ -4,6 +4,8 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-16
 
+- Changed (v0.170.0): Creating a task now keeps status, due date, and assignee in the main form so the essentials never hide behind another click. More details is reserved for linking a track or project and adding notes.
+
 - Added (v0.169.0): Task categories are now customizable and color-coded. Each artist or Pro home shares one category palette; people with Tasks write access can rename or recolor the six built-ins, add their own categories, and remove custom ones. The colors follow tasks across Today, project task lists, Tasks, and the Pro Board, while deleting a category safely moves its tasks to Other. Run additive migration 108 in the Supabase SQL editor after 107.
 
 - Added (v0.168.0): Pro accounts now have a Board built for professional workflow instead of songs. Every private Pro Space can move its existing tasks through To do, In progress, and Done, with drag-and-drop, quick add, search, category filters, and project filters; every change stays in sync with the Tasks page. Artist Boards keep their existing track stages and notes.
