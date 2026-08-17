@@ -355,12 +355,12 @@ export function PassageExperience() {
           ) : null}
 
           {state.phase === "look_idle" ? (
-            <StepFade show className="w-full max-w-2xl">
+            <StepFade show className="w-full max-w-3xl">
               <OriginLookStep
                 networkDisplayName={state.displayName}
                 kicker="Passage / your space"
                 heading="Make the space yours"
-                blurb="Colors, mark, and banner for your own workspace, plus the choice to claim your TEMPO handle. All optional, and all changeable later."
+                blurb="A color, a mark, a banner — all optional, all changeable later."
                 onBack={() => dispatch({ type: "back_to_function" })}
                 onFinish={() => dispatch({ type: "finish_look" })}
                 busy={state.busy}

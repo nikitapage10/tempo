@@ -94,6 +94,7 @@ describe("Origin and Passage overlay fit", () => {
       expect(source).toContain("ORIGIN_FIT_BODY");
       expect(source).toContain("ORIGIN_FIT_FOOTER");
     }
+    expect(overlay).toContain("--origin-zoom,1");
   });
 
   it("lets Passage story chapters scroll inside the stage", () => {

@@ -26,13 +26,21 @@ describe("Origin Look step preview", () => {
   it("keeps the logo clear of the profile mark", () => {
     // Logo pinned top-right over the banner, profile overlapping bottom-left.
     expect(preview).toContain("right-4 top-3");
-    expect(preview).toContain("-mt-7");
+    expect(preview).toContain("-mt-6");
   });
 
   it("shows logo and profile thumbnails on the left of the upload rows", () => {
     expect(look).toContain("preview=");
     expect(look).toContain('label="Profile"');
     expect(look).toContain("preview?: React.ReactNode");
+  });
+
+  it("lays look controls beside the preview so the panel can stay on one screen", () => {
+    expect(look).toContain("max-w-3xl");
+    expect(look).toContain("lg:grid-cols-2");
+    expect(look).toContain("LookBannerControls");
+    expect(look).toContain('label="Logo"');
+    expect(look).toContain('label="Profile"');
   });
 
   it("lets Passage reuse it with its own words", () => {

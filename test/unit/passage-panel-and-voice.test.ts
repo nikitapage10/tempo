@@ -94,4 +94,11 @@ describe("Passage onboarding controls", () => {
     expect(experience).toContain("OriginExitControl");
     expect(experience).toContain("<OriginExitControl visible={soundOn} />");
   });
+
+  it("holds sign-out until the opening has taken the frame", () => {
+    const exit = read("components/origin/origin-exit-control.tsx");
+    expect(exit).toContain("useOnboardingChromeReveal");
+    expect(exit).toContain("ONBOARDING_CHROME_REVEAL_DELAY_MS = 2800");
+    expect(exit).toContain("ONBOARDING_CHROME_FADE_IN_MS = 2000");
+  });
 });

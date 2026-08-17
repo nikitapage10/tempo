@@ -50,7 +50,7 @@ export function OriginLookStep({
   busy,
   kicker = "Look / 03",
   heading = "Give the signal a look",
-  blurb = "Colors, mark, and banner, all optional. You can change any of this later in Settings.",
+  blurb = "Colors, mark, and banner — all optional. You can change any of this later.",
   networkDisplayName,
 }: {
   onBack: () => void;
@@ -100,7 +100,7 @@ export function OriginLookStep({
       <OriginScrim
         tone="story"
         className={cn(
-          "pointer-events-auto relative flex w-full max-w-2xl flex-col gap-4 overflow-hidden border-line bg-[linear-gradient(135deg,rgb(7_8_11/0.88),rgb(14_15_20/0.80))] p-7 shadow-[0_24px_80px_rgb(0_0_0/0.52)] backdrop-blur-2xl sm:px-9 sm:py-8",
+          "pointer-events-auto relative flex w-full max-w-3xl flex-col gap-4 overflow-hidden border-line bg-[linear-gradient(135deg,rgb(7_8_11/0.88),rgb(14_15_20/0.80))] p-6 shadow-[0_24px_80px_rgb(0_0_0/0.52)] backdrop-blur-2xl sm:px-7 sm:py-6",
           ORIGIN_FIT_SHELL
         )}
       >
@@ -198,7 +198,7 @@ export function OriginLookStep({
     <OriginScrim
       tone="story"
       className={cn(
-        "origin-look-step pointer-events-auto relative flex w-full max-w-2xl flex-col gap-0 overflow-hidden border-line bg-[linear-gradient(135deg,rgb(7_8_11/0.88),rgb(14_15_20/0.80))] p-0 shadow-[0_24px_80px_rgb(0_0_0/0.52)] backdrop-blur-2xl",
+        "origin-look-step pointer-events-auto relative flex w-full max-w-3xl flex-col gap-0 overflow-hidden border-line bg-[linear-gradient(135deg,rgb(7_8_11/0.88),rgb(14_15_20/0.80))] p-0 shadow-[0_24px_80px_rgb(0_0_0/0.52)] backdrop-blur-2xl",
         ORIGIN_FIT_SHELL
       )}
     >
@@ -206,285 +206,224 @@ export function OriginLookStep({
         aria-hidden
         className="absolute inset-y-0 left-0 w-px bg-[linear-gradient(to_bottom,transparent,var(--ice),var(--amber),transparent)] opacity-75"
       />
-      <div className={cn(ORIGIN_FIT_BODY, "flex flex-col gap-5 px-7 py-8 sm:px-9")}>
-        <button
-          type="button"
-          onClick={onBack}
-          className="flex w-fit items-center gap-1 text-xs text-text-lo transition-colors hover:text-text-hi"
-        >
-          <ChevronLeft className="size-3.5" /> Back
-        </button>
-
-        <div className="flex flex-col gap-2">
+      <div className={cn(ORIGIN_FIT_BODY, "flex flex-col gap-4 px-6 py-5 sm:px-7")}>
+        <div className="flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={onBack}
+            className="flex w-fit items-center gap-1 text-xs text-text-lo transition-colors hover:text-text-hi"
+          >
+            <ChevronLeft className="size-3.5" /> Back
+          </button>
           <p className="text-[11px] uppercase tracking-[0.28em] text-text-lo/70">
             {kicker}
           </p>
-          <h1 className="font-display text-3xl leading-tight text-text-hi sm:text-4xl">
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <h1 className="font-display text-2xl leading-tight text-text-hi sm:text-3xl">
             {heading}
           </h1>
-          <p className="max-w-xl text-sm leading-relaxed text-text-hi/75">
-            {blurb}
-          </p>
+          <p className="text-sm leading-snug text-text-hi/70">{blurb}</p>
         </div>
 
-        <LookPreview artist={artist} />
-
-        <div className="flex flex-col gap-2">
-          <span className="font-mono text-[11px] uppercase tracking-wider text-text-lo">
-            Color scheme
-          </span>
-          <div className="flex flex-wrap items-center gap-1.5">
-            {ARTIST_PALETTES.map((palette) => {
-              const selected =
-                !hasCustomAccent(artist) && artist.palette_id === palette.id;
-              return (
-                <button
-                  key={palette.id}
-                  type="button"
-                  title={palette.label}
-                  aria-label={palette.label}
-                  aria-pressed={selected}
-                  onClick={() =>
-                    updatePalette.mutate({ id: artist.id, paletteId: palette.id })
-                  }
-                  className={cn(
-                    "size-6 rounded-full border transition-[border-color,box-shadow] duration-500",
-                    selected
-                      ? "border-text-hi/70 shadow-[0_0_0_1px_rgb(var(--ice-rgb)/0.35)]"
-                      : "border-line hover:border-text-lo"
-                  )}
-                  style={{
-                    background: `linear-gradient(135deg, ${palette.ice} 0%, #ffffff 50%, ${palette.amber} 100%)`,
-                  }}
-                />
-              );
-            })}
-            <LookCustomAccentButton
+        <div className="grid items-start gap-4 lg:grid-cols-2">
+          <div className="flex min-w-0 flex-col gap-3">
+            <LookPreview artist={artist} />
+            <LookBannerControls
               artist={artist}
-              onCommit={(ice, amber) =>
-                setCustomAccent.mutateAsync({ artist, ice, amber })
+              imageBusy={imageBusy}
+              bannerInputRef={bannerInputRef}
+              uploading={
+                uploadBanner.isPending &&
+                uploadBanner.variables?.artist.id === artist.id
               }
-              onError={setError}
-            />
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-3">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <LookUploadRow
-              label="Logo"
-              hint="wide mark"
-              inputRef={logoInputRef}
-              busy={
-                uploadLogo.isPending &&
-                uploadLogo.variables?.artist.id === artist.id
-              }
-              clearing={
-                clearLogo.isPending && clearLogo.variables?.id === artist.id
-              }
-              hasValue={!!artist.logo_url}
-              disabled={imageBusy}
-              onPick={() => logoInputRef.current?.click()}
-              preview={
-                artist.logo_url ? (
-                  <div className="flex h-11 w-[4.5rem] shrink-0 items-center justify-center overflow-hidden rounded-input border border-line/60 bg-bg-0/35 px-1.5">
-                    <SignedImage
-                      path={artist.logo_url}
-                      alt=""
-                      className="max-h-8 max-w-full object-contain"
-                    />
-                  </div>
-                ) : (
-                  <div
-                    className="flex h-11 w-[4.5rem] shrink-0 items-center justify-center rounded-input border border-dashed border-line/50 bg-bg-0/20"
-                    aria-hidden
-                  >
-                    <ImagePlus className="size-3.5 text-text-lo/50" />
-                  </div>
-                )
-              }
-              onFile={(files) =>
+              onPick={() => bannerInputRef.current?.click()}
+              onFile={(files) => {
                 void withImage(
                   files,
-                  (file) => uploadLogo.mutateAsync({ artist, file }),
-                  "Logo updated"
-                )
-              }
-              onClear={() =>
-                void (async () => {
-                  try {
-                    await clearLogo.mutateAsync(artist);
-                    toast("Logo removed", "ok");
-                  } catch (err) {
-                    setError(
-                      err instanceof Error ? err.message : "Could not remove logo."
-                    );
-                  }
-                })()
-              }
-            />
-            <LookUploadRow
-              label="Profile"
-              hint="photo or emblem"
-              inputRef={emblemInputRef}
-              busy={
-                uploadEmblem.isPending &&
-                uploadEmblem.variables?.artist.id === artist.id
-              }
-              clearing={
-                clearEmblem.isPending && clearEmblem.variables?.id === artist.id
-              }
-              hasValue={!!artist.emblem_url}
-              disabled={imageBusy}
-              onPick={() => emblemInputRef.current?.click()}
-              preview={
-                <ArtistMark
-                  emblemUrl={artist.emblem_url}
-                  paletteId={artist.palette_id}
-                  iceColor={artist.ice_color}
-                  amberColor={artist.amber_color}
-                  name={artist.name}
-                  size={44}
-                  className="size-11 shrink-0 shadow-e1 ring-1 ring-line/70"
-                />
-              }
-              onFile={(files) =>
-                void withImage(
-                  files,
-                  (file) => uploadEmblem.mutateAsync({ artist, file }),
-                  "Profile image updated"
-                )
-              }
-              onClear={() =>
-                void (async () => {
-                  try {
-                    await clearEmblem.mutateAsync(artist);
-                    toast("Profile image removed", "ok");
-                  } catch (err) {
-                    setError(
-                      err instanceof Error
-                        ? err.message
-                        : "Could not remove profile image."
-                    );
-                  }
-                })()
-              }
-            />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="mr-1 font-mono text-[11px] uppercase tracking-wider text-text-lo">
-              Banner
-            </span>
-            <input
-              ref={bannerInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                void withImage(
-                  e.target.files,
                   (file) => uploadBanner.mutateAsync({ artist, file }),
                   "Banner updated"
                 );
-                e.target.value = "";
               }}
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              disabled={imageBusy}
-              onClick={() => bannerInputRef.current?.click()}
-            >
-              {uploadBanner.isPending &&
-              uploadBanner.variables?.artist.id === artist.id ? (
-                <Loader2 className="size-3.5 animate-spin" />
-              ) : (
-                <ImagePlus className="size-3.5" />
-              )}
-              Image
-            </Button>
-            {BANNER_COLORS.map((color) => (
-              <button
-                key={color}
-                type="button"
-                aria-label={`Use ${color} banner`}
-                aria-pressed={
-                  artist.banner_color === color && !artist.banner_color_end
-                }
-                disabled={imageBusy}
-                onClick={() => {
-                  void setBannerColor
-                    .mutateAsync({ artist, color, colorEnd: null })
-                    .catch((err) =>
-                      setError(
-                        err instanceof Error ? err.message : "Could not set banner."
-                      )
-                    );
-                }}
-                className={cn(
-                  "size-5 rounded-[4px] border transition-colors",
-                  artist.banner_color === color && !artist.banner_color_end
-                    ? "border-text-hi/70"
-                    : "border-line hover:border-text-lo",
-                  imageBusy && "opacity-50"
-                )}
-                style={{ background: color }}
-              />
-            ))}
-            <LookCustomBannerButton
-              artist={artist}
-              disabled={imageBusy}
-              onCommit={(color, colorEnd) =>
+              onColor={(color, colorEnd) =>
                 setBannerColor.mutateAsync({ artist, color, colorEnd })
               }
+              onClear={() =>
+                setBannerColor.mutateAsync({ artist, color: null })
+              }
               onError={setError}
+              onToast={toast}
             />
-            {artist.banner_url || artist.banner_color ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="text-text-lo hover:text-warn"
+          </div>
+
+          <div className="flex min-w-0 flex-col gap-3">
+            <div className="flex flex-col gap-1.5">
+              <span className="font-mono text-[11px] uppercase tracking-wider text-text-lo">
+                Color
+              </span>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {ARTIST_PALETTES.map((palette) => {
+                  const selected =
+                    !hasCustomAccent(artist) && artist.palette_id === palette.id;
+                  return (
+                    <button
+                      key={palette.id}
+                      type="button"
+                      title={palette.label}
+                      aria-label={palette.label}
+                      aria-pressed={selected}
+                      onClick={() =>
+                        updatePalette.mutate({
+                          id: artist.id,
+                          paletteId: palette.id,
+                        })
+                      }
+                      className={cn(
+                        "size-5 rounded-full border transition-[border-color,box-shadow] duration-500",
+                        selected
+                          ? "border-text-hi/70 shadow-[0_0_0_1px_rgb(var(--ice-rgb)/0.35)]"
+                          : "border-line hover:border-text-lo"
+                      )}
+                      style={{
+                        background: `linear-gradient(135deg, ${palette.ice} 0%, #ffffff 50%, ${palette.amber} 100%)`,
+                      }}
+                    />
+                  );
+                })}
+                <LookCustomAccentButton
+                  artist={artist}
+                  onCommit={(ice, amber) =>
+                    setCustomAccent.mutateAsync({ artist, ice, amber })
+                  }
+                  onError={setError}
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-2 sm:grid-cols-2">
+              <LookUploadRow
+                label="Logo"
+                hint="wide mark"
+                inputRef={logoInputRef}
+                busy={
+                  uploadLogo.isPending &&
+                  uploadLogo.variables?.artist.id === artist.id
+                }
+                clearing={
+                  clearLogo.isPending && clearLogo.variables?.id === artist.id
+                }
+                hasValue={!!artist.logo_url}
                 disabled={imageBusy}
-                onClick={() => {
-                  void setBannerColor
-                    .mutateAsync({ artist, color: null })
-                    .then(() => toast("Banner cleared", "ok"))
-                    .catch((err) =>
+                onPick={() => logoInputRef.current?.click()}
+                preview={
+                  artist.logo_url ? (
+                    <div className="flex h-9 w-14 shrink-0 items-center justify-center overflow-hidden rounded-input border border-line/60 bg-bg-0/35 px-1">
+                      <SignedImage
+                        path={artist.logo_url}
+                        alt=""
+                        className="max-h-6 max-w-full object-contain"
+                      />
+                    </div>
+                  ) : (
+                    <div
+                      className="flex h-9 w-14 shrink-0 items-center justify-center rounded-input border border-dashed border-line/50 bg-bg-0/20"
+                      aria-hidden
+                    >
+                      <ImagePlus className="size-3.5 text-text-lo/50" />
+                    </div>
+                  )
+                }
+                onFile={(files) =>
+                  void withImage(
+                    files,
+                    (file) => uploadLogo.mutateAsync({ artist, file }),
+                    "Logo updated"
+                  )
+                }
+                onClear={() =>
+                  void (async () => {
+                    try {
+                      await clearLogo.mutateAsync(artist);
+                      toast("Logo removed", "ok");
+                    } catch (err) {
                       setError(
                         err instanceof Error
                           ? err.message
-                          : "Could not clear banner."
-                      )
-                    );
-                }}
-              >
-                <X className="size-3.5" />
-                Clear
-              </Button>
-            ) : null}
+                          : "Could not remove logo."
+                      );
+                    }
+                  })()
+                }
+              />
+              <LookUploadRow
+                label="Profile"
+                hint="photo"
+                inputRef={emblemInputRef}
+                busy={
+                  uploadEmblem.isPending &&
+                  uploadEmblem.variables?.artist.id === artist.id
+                }
+                clearing={
+                  clearEmblem.isPending && clearEmblem.variables?.id === artist.id
+                }
+                hasValue={!!artist.emblem_url}
+                disabled={imageBusy}
+                onPick={() => emblemInputRef.current?.click()}
+                preview={
+                  <ArtistMark
+                    emblemUrl={artist.emblem_url}
+                    paletteId={artist.palette_id}
+                    iceColor={artist.ice_color}
+                    amberColor={artist.amber_color}
+                    name={artist.name}
+                    size={36}
+                    className="size-9 shrink-0 shadow-e1 ring-1 ring-line/70"
+                  />
+                }
+                onFile={(files) =>
+                  void withImage(
+                    files,
+                    (file) => uploadEmblem.mutateAsync({ artist, file }),
+                    "Profile image updated"
+                  )
+                }
+                onClear={() =>
+                  void (async () => {
+                    try {
+                      await clearEmblem.mutateAsync(artist);
+                      toast("Profile image removed", "ok");
+                    } catch (err) {
+                      setError(
+                        err instanceof Error
+                          ? err.message
+                          : "Could not remove profile image."
+                      );
+                    }
+                  })()
+                }
+              />
+            </div>
+
+            <div className="h-px w-full bg-line/50" aria-hidden />
+
+            <NetworkChoicePanel
+              choice={networkChoice}
+              onChoiceChange={setNetworkChoice}
+              handle={handle}
+              onHandleChange={setHandle}
+              onHandleStateChange={setHandleState}
+              artistId={artist.id}
+              artistName={artist.name}
+              disabled={busy || joining}
+            />
           </div>
         </div>
-
-        <div className="h-px w-full bg-line/60" aria-hidden />
-
-        <NetworkChoicePanel
-          choice={networkChoice}
-          onChoiceChange={setNetworkChoice}
-          handle={handle}
-          onHandleChange={setHandle}
-          onHandleStateChange={setHandleState}
-          artistId={artist.id}
-          artistName={artist.name}
-          disabled={busy || joining}
-        />
 
         {error ? <p role="alert" className="text-xs text-warn">{error}</p> : null}
       </div>
 
-      <div className={ORIGIN_FIT_FOOTER}>
+      <div className={cn(ORIGIN_FIT_FOOTER, "px-6 py-3 sm:px-7")}>
         <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"
@@ -510,10 +449,6 @@ export function OriginLookStep({
             {joining ? "Joining…" : "Continue"} <ArrowRight className="size-4" />
           </Button>
         </div>
-        <p className="mt-2.5 text-xs leading-relaxed text-text-lo/80">
-          Skip keeps Spectra and stays private. You can set a look, or join the
-          network, any time afterwards.
-        </p>
       </div>
     </OriginScrim>
   );
@@ -533,7 +468,7 @@ export function OriginLookStep({
 function LookPreview({ artist }: { artist: Artist }) {
   return (
     <div className="shrink-0 overflow-hidden rounded-[12px] border border-line/70 bg-bg-2/25">
-      <div className="relative h-28 w-full overflow-hidden sm:h-32">
+      <div className="relative h-24 w-full overflow-hidden sm:h-28">
         {artist.banner_url || artist.banner_color ? (
           <ArtistBanner artist={artist} className="absolute inset-0 size-full" />
         ) : (
@@ -562,16 +497,16 @@ function LookPreview({ artist }: { artist: Artist }) {
       </div>
 
       {/* Profile overlaps the banner edge, exactly as it does on the real page. */}
-      <div className="relative flex items-end gap-3 px-3 pb-3">
-        <div className="-mt-7 shrink-0">
+      <div className="relative flex items-end gap-3 px-3 pb-2.5">
+        <div className="-mt-6 shrink-0">
           <ArtistMark
             emblemUrl={artist.emblem_url}
             paletteId={artist.palette_id}
             iceColor={artist.ice_color}
             amberColor={artist.amber_color}
             name={artist.name}
-            size={56}
-            className="size-14 shadow-e2 ring-2 ring-bg-0/90"
+            size={48}
+            className="size-12 shadow-e2 ring-2 ring-bg-0/90"
           />
         </div>
         <div className="min-w-0 pb-0.5">
@@ -580,6 +515,119 @@ function LookPreview({ artist }: { artist: Artist }) {
           </p>
           <p className="text-[11px] text-text-lo">Preview</p>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function LookBannerControls({
+  artist,
+  imageBusy,
+  bannerInputRef,
+  uploading,
+  onPick,
+  onFile,
+  onColor,
+  onClear,
+  onError,
+  onToast,
+}: {
+  artist: Artist;
+  imageBusy: boolean;
+  bannerInputRef: React.RefObject<HTMLInputElement>;
+  uploading: boolean;
+  onPick: () => void;
+  onFile: (files: FileList | null) => void;
+  onColor: (color: string | null, colorEnd?: string | null) => Promise<unknown>;
+  onClear: () => Promise<unknown>;
+  onError: (message: string) => void;
+  onToast: (message: string, tone?: "error" | "ok" | "info") => void;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="font-mono text-[11px] uppercase tracking-wider text-text-lo">
+        Banner
+      </span>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <input
+          ref={bannerInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            onFile(e.target.files);
+            e.target.value = "";
+          }}
+        />
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          disabled={imageBusy}
+          onClick={onPick}
+        >
+          {uploading ? (
+            <Loader2 className="size-3.5 animate-spin" />
+          ) : (
+            <ImagePlus className="size-3.5" />
+          )}
+          Image
+        </Button>
+        {BANNER_COLORS.map((color) => (
+          <button
+            key={color}
+            type="button"
+            aria-label={`Use ${color} banner`}
+            aria-pressed={
+              artist.banner_color === color && !artist.banner_color_end
+            }
+            disabled={imageBusy}
+            onClick={() => {
+              void onColor(color, null).catch((err) =>
+                onError(
+                  err instanceof Error ? err.message : "Could not set banner."
+                )
+              );
+            }}
+            className={cn(
+              "size-5 rounded-[4px] border transition-colors",
+              artist.banner_color === color && !artist.banner_color_end
+                ? "border-text-hi/70"
+                : "border-line hover:border-text-lo",
+              imageBusy && "opacity-50"
+            )}
+            style={{ background: color }}
+          />
+        ))}
+        <LookCustomBannerButton
+          artist={artist}
+          disabled={imageBusy}
+          onCommit={onColor}
+          onError={onError}
+        />
+        {artist.banner_url || artist.banner_color ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="text-text-lo hover:text-warn"
+            disabled={imageBusy}
+            onClick={() => {
+              void onClear()
+                .then(() => onToast("Banner cleared", "ok"))
+                .catch((err) =>
+                  onError(
+                    err instanceof Error
+                      ? err.message
+                      : "Could not clear banner."
+                  )
+                );
+            }}
+          >
+            <X className="size-3.5" />
+            Clear
+          </Button>
+        ) : null}
       </div>
     </div>
   );
@@ -611,7 +659,7 @@ function LookUploadRow({
   preview?: React.ReactNode;
 }) {
   return (
-    <div className="flex min-w-0 items-center gap-3 rounded-[10px] border border-line/50 bg-bg-0/20 px-3 py-2.5">
+    <div className="flex min-w-0 items-center gap-2.5 rounded-[10px] border border-line/50 bg-bg-0/20 px-2.5 py-2">
       {preview ? <div className="shrink-0">{preview}</div> : null}
       <div className="min-w-0 flex-1">
         <div className="min-w-0">

@@ -60,6 +60,12 @@ describe("desktop content zoom wiring", () => {
     expect(zoom).toContain('placement?: "rail" | "corner" | "admin"');
   });
 
+  it("delays corner zoom so it does not arrive with Tune in", () => {
+    expect(zoom).toContain("useOnboardingChromeReveal");
+    expect(zoom).toContain("ONBOARDING_CHROME_FADE_IN_MS");
+    expect(zoom).toContain("corner && visible");
+  });
+
   it("offers bottom-left zoom during both onboarding films", () => {
     const origin = read("components/origin/origin-experience.tsx");
     const passage = read("components/passage/passage-experience.tsx");

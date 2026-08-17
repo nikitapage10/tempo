@@ -51,14 +51,14 @@ export function NetworkChoicePanel({
   }, [choice, handle, artistName, onHandleChange]);
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-2">
       <div className="flex flex-col gap-0.5">
         <span className="font-mono text-[11px] uppercase tracking-wider text-text-lo">
           Other people
         </span>
-        <p className="text-xs leading-relaxed text-text-lo/80">
-          TEMPO works completely on its own. There is also a member network, if
-          you want follows, a feed, and to be findable by other artists.
+        <p className="text-xs leading-snug text-text-lo/80">
+          Stay private, or join so other members can find you. Work stays
+          private either way.
         </p>
       </div>
 
@@ -69,7 +69,7 @@ export function NetworkChoicePanel({
           onSelect={() => onChoiceChange("private")}
           icon={<Lock className="size-3.5" />}
           title="Keep it private"
-          body="Nobody sees your workspace or profile. You can join from Social whenever you want to."
+          body="Nobody sees this workspace. You can join later from Social."
         />
         <NetworkOption
           selected={choice === "join"}
@@ -77,7 +77,7 @@ export function NetworkChoicePanel({
           onSelect={() => onChoiceChange("join")}
           icon={<Users className="size-3.5" />}
           title="Join the network"
-          body="Other TEMPO members can find your profile and follow you. Your work stays private either way."
+          body="Members can find your profile and follow you."
         />
       </div>
 
@@ -119,7 +119,7 @@ function NetworkOption({
       disabled={disabled}
       aria-pressed={selected}
       className={cn(
-        "flex flex-col gap-1 rounded-[10px] border px-3 py-2.5 text-left transition-colors",
+        "flex flex-col gap-0.5 rounded-[10px] border px-3 py-2 text-left transition-colors",
         selected
           ? "border-ice/55 bg-ice/[0.07]"
           : "border-line/50 bg-bg-0/20 hover:border-text-lo/60",

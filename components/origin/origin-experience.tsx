@@ -435,11 +435,10 @@ export function OriginExperience({
         aria-hidden="true"
       />
       {/* Desktop zoom control — bottom-left; scales the copy/panels, not the film.
-          Hidden until the artist has tuned in: appearing over the still opening
-          frame read as a stray piece of UI before there was anything to zoom. */}
+          Held until Tune in, then delayed so it never rides in with the opening. */}
       {isDesktopApp() ? <ZoomControl placement="corner" visible={soundOn} /> : null}
       {/* Top-left way out of ORIGIN, on both web and desktop — desktop has no
-          browser chrome to fall back on. Same fade-in gate as the zoom control. */}
+          browser chrome to fall back on. Same delayed fade as the zoom control. */}
       <OriginExitControl visible={soundOn} />
       <div
         className="absolute inset-0"
@@ -568,7 +567,7 @@ export function OriginExperience({
           ) : null}
 
           {mountLook ? (
-            <StepFade show={showLook} className="w-full max-w-2xl">
+            <StepFade show={showLook} className="w-full max-w-3xl">
               <OriginLookStep
                 networkDisplayName={state.name}
                 onBack={() => dispatch({ type: "back_to_direction" })}

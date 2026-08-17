@@ -449,273 +449,273 @@ function SortableArtistRow({
           </Button>
         </div>
 
-        <div className="mt-2 flex flex-wrap items-center gap-1 pl-7">
-          <span className="mr-1 font-mono text-[11px] uppercase tracking-wider text-text-lo">
-            Color
-          </span>
-          {ARTIST_PALETTES.map((palette) => {
-            const selected =
-              !hasCustomAccent(artist) && artist.palette_id === palette.id;
-            return (
-              <button
-                key={palette.id}
-                type="button"
-                title={palette.label}
-                aria-label={palette.label}
-                aria-pressed={selected}
-                onClick={() => onPaletteChange(artist.id, palette.id)}
-                className={cn(
-                  "size-5 rounded-full border transition-colors duration-hover",
-                  selected
-                    ? "border-text-hi/70"
-                    : "border-line hover:border-text-lo"
-                )}
-                style={{
-                  background: `linear-gradient(135deg, ${palette.ice} 0%, #ffffff 50%, ${palette.amber} 100%)`,
-                }}
-              />
-            );
-          })}
-          <CustomAccentDialogButton
-            artist={artist}
-            onCommit={onCustomAccent}
-            onError={onError}
-          />
-        </div>
-
         <div className="mt-2 flex flex-col gap-2 pl-7">
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-            <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="mr-1 font-mono text-[11px] uppercase tracking-wider text-text-lo">
+              Color
+            </span>
+            {ARTIST_PALETTES.map((palette) => {
+              const selected =
+                !hasCustomAccent(artist) && artist.palette_id === palette.id;
+              return (
+                <button
+                  key={palette.id}
+                  type="button"
+                  title={palette.label}
+                  aria-label={palette.label}
+                  aria-pressed={selected}
+                  onClick={() => onPaletteChange(artist.id, palette.id)}
+                  className={cn(
+                    "size-5 rounded-full border transition-colors duration-hover",
+                    selected
+                      ? "border-text-hi/70"
+                      : "border-line hover:border-text-lo"
+                  )}
+                  style={{
+                    background: `linear-gradient(135deg, ${palette.ice} 0%, #ffffff 50%, ${palette.amber} 100%)`,
+                  }}
+                />
+              );
+            })}
+            <CustomAccentDialogButton
+              artist={artist}
+              onCommit={onCustomAccent}
+              onError={onError}
+            />
+          </div>
+
+          <div className="grid gap-2 sm:grid-cols-3">
+            <div className="flex min-w-0 flex-col gap-1">
               <span className="font-mono text-[11px] uppercase tracking-wider text-text-lo">
                 Logo
               </span>
-              <span className="hidden text-xs text-text-lo sm:inline">
-                (wide — Today)
-              </span>
-              <input
-                ref={logoInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  void withImage(e.target.files, onUploadLogo, "Logo updated");
-                  e.target.value = "";
-                }}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                disabled={imageBusy}
-                onClick={() => logoInputRef.current?.click()}
-              >
-                {logoBusy ? (
-                  <Loader2 className="size-3.5 animate-spin" />
-                ) : (
-                  <ImagePlus className="size-3.5" />
-                )}
-                {logoBusy
-                  ? "Uploading…"
-                  : artist.logo_url
-                    ? "Replace"
-                    : "Upload"}
-              </Button>
-              {artist.logo_url ? (
+              <div className="flex flex-wrap items-center gap-1">
+                <input
+                  ref={logoInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    void withImage(e.target.files, onUploadLogo, "Logo updated");
+                    e.target.value = "";
+                  }}
+                />
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="text-text-lo hover:text-warn"
                   disabled={imageBusy}
-                  onClick={() => {
-                    void (async () => {
-                      try {
-                        await onClearLogo();
-                        toast("Logo removed", "ok");
-                      } catch (err) {
-                        onError(
-                          err instanceof Error
-                            ? err.message
-                            : "Could not remove logo."
-                        );
-                      }
-                    })();
-                  }}
+                  onClick={() => logoInputRef.current?.click()}
                 >
-                  {clearLogoBusy ? (
+                  {logoBusy ? (
                     <Loader2 className="size-3.5 animate-spin" />
                   ) : (
-                    <X className="size-3.5" />
+                    <ImagePlus className="size-3.5" />
                   )}
-                  {clearLogoBusy ? "Removing…" : "Remove"}
+                  {logoBusy
+                    ? "Uploading…"
+                    : artist.logo_url
+                      ? "Replace"
+                      : "Upload"}
                 </Button>
-              ) : null}
+                {artist.logo_url ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-text-lo hover:text-warn"
+                    disabled={imageBusy}
+                    onClick={() => {
+                      void (async () => {
+                        try {
+                          await onClearLogo();
+                          toast("Logo removed", "ok");
+                        } catch (err) {
+                          onError(
+                            err instanceof Error
+                              ? err.message
+                              : "Could not remove logo."
+                          );
+                        }
+                      })();
+                    }}
+                  >
+                    {clearLogoBusy ? (
+                      <Loader2 className="size-3.5 animate-spin" />
+                    ) : (
+                      <X className="size-3.5" />
+                    )}
+                    {clearLogoBusy ? "Removing…" : "Remove"}
+                  </Button>
+                ) : null}
+              </div>
             </div>
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex min-w-0 flex-col gap-1">
               <span className="font-mono text-[11px] uppercase tracking-wider text-text-lo">
-                Profile image
+                Profile
               </span>
-              <span className="hidden text-xs text-text-lo sm:inline">
-                (photo or emblem)
-              </span>
-              <input
-                ref={emblemInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  void withImage(
-                    e.target.files,
-                    onUploadEmblem,
-                    "Profile image updated"
-                  );
-                  e.target.value = "";
-                }}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                disabled={imageBusy}
-                onClick={() => emblemInputRef.current?.click()}
-              >
-                {emblemBusy ? (
-                  <Loader2 className="size-3.5 animate-spin" />
-                ) : (
-                  <ImagePlus className="size-3.5" />
-                )}
-                {emblemBusy
-                  ? "Uploading…"
-                  : artist.emblem_url
-                    ? "Replace"
-                    : "Upload"}
-              </Button>
-              {artist.emblem_url ? (
+              <div className="flex flex-wrap items-center gap-1">
+                <input
+                  ref={emblemInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    void withImage(
+                      e.target.files,
+                      onUploadEmblem,
+                      "Profile image updated"
+                    );
+                    e.target.value = "";
+                  }}
+                />
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="text-text-lo hover:text-warn"
                   disabled={imageBusy}
-                  onClick={() => {
-                    void (async () => {
-                      try {
-                        await onClearEmblem();
-                        toast("Profile image removed", "ok");
-                      } catch (err) {
-                        onError(
-                          err instanceof Error
-                            ? err.message
-                            : "Could not remove profile image."
-                        );
-                      }
-                    })();
-                  }}
+                  onClick={() => emblemInputRef.current?.click()}
                 >
-                  <X className="size-3.5" />
-                  Remove
+                  {emblemBusy ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <ImagePlus className="size-3.5" />
+                  )}
+                  {emblemBusy
+                    ? "Uploading…"
+                    : artist.emblem_url
+                      ? "Replace"
+                      : "Upload"}
                 </Button>
-              ) : null}
+                {artist.emblem_url ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-text-lo hover:text-warn"
+                    disabled={imageBusy}
+                    onClick={() => {
+                      void (async () => {
+                        try {
+                          await onClearEmblem();
+                          toast("Profile image removed", "ok");
+                        } catch (err) {
+                          onError(
+                            err instanceof Error
+                              ? err.message
+                              : "Could not remove profile image."
+                          );
+                        }
+                      })();
+                    }}
+                  >
+                    <X className="size-3.5" />
+                    Remove
+                  </Button>
+                ) : null}
+              </div>
             </div>
-          </div>
 
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="font-mono text-[11px] uppercase tracking-wider text-text-lo">
-              Banner
-            </span>
-            <input
-              ref={bannerInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                void withImage(
-                  e.target.files,
-                  onUploadBanner,
-                  "Banner updated"
-                );
-                e.target.value = "";
-              }}
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              disabled={imageBusy}
-              onClick={() => bannerInputRef.current?.click()}
-            >
-              {bannerUploading ? (
-                <Loader2 className="size-3.5 animate-spin" />
-              ) : (
-                <ImagePlus className="size-3.5" />
-              )}
-              {bannerUploading ? "Uploading…" : "Image"}
-            </Button>
-            {BANNER_COLORS.map((color) => (
-              <button
-                key={color}
-                type="button"
-                aria-label={`Use ${color} banner`}
-                aria-pressed={
-                  artist.banner_color === color && !artist.banner_color_end
-                }
-                disabled={imageBusy}
-                onClick={() => {
-                  void (async () => {
-                    try {
-                      await onSetBannerColor(color, null);
-                    } catch (err) {
-                      onError(
-                        err instanceof Error
-                          ? err.message
-                          : "Could not set banner."
-                      );
+            <div className="flex min-w-0 flex-col gap-1 sm:col-span-1">
+              <span className="font-mono text-[11px] uppercase tracking-wider text-text-lo">
+                Banner
+              </span>
+              <div className="flex flex-wrap items-center gap-1">
+                <input
+                  ref={bannerInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    void withImage(
+                      e.target.files,
+                      onUploadBanner,
+                      "Banner updated"
+                    );
+                    e.target.value = "";
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={imageBusy}
+                  onClick={() => bannerInputRef.current?.click()}
+                >
+                  {bannerUploading ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <ImagePlus className="size-3.5" />
+                  )}
+                  {bannerUploading ? "Uploading…" : "Image"}
+                </Button>
+                {BANNER_COLORS.map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    aria-label={`Use ${color} banner`}
+                    aria-pressed={
+                      artist.banner_color === color && !artist.banner_color_end
                     }
-                  })();
-                }}
-                className={cn(
-                  "size-5 rounded-[4px] border transition-colors duration-hover",
-                  artist.banner_color === color && !artist.banner_color_end
-                    ? "border-text-hi/70"
-                    : "border-line hover:border-text-lo",
-                  imageBusy && "opacity-50"
-                )}
-                style={{ background: color }}
-              />
-            ))}
-            <CustomBannerDialogButton
-              artist={artist}
-              disabled={imageBusy}
-              onCommit={onSetBannerColor}
-              onError={onError}
-            />
-            {artist.banner_url || artist.banner_color ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="text-text-lo hover:text-warn"
-                disabled={imageBusy}
-                onClick={() => {
-                  void (async () => {
-                    try {
-                      await onSetBannerColor(null);
-                      toast("Banner cleared", "ok");
-                    } catch (err) {
-                      onError(
-                        err instanceof Error
-                          ? err.message
-                          : "Could not clear banner."
-                      );
-                    }
-                  })();
-                }}
-              >
-                <X className="size-3.5" />
-                Clear
-              </Button>
-            ) : null}
+                    disabled={imageBusy}
+                    onClick={() => {
+                      void (async () => {
+                        try {
+                          await onSetBannerColor(color, null);
+                        } catch (err) {
+                          onError(
+                            err instanceof Error
+                              ? err.message
+                              : "Could not set banner."
+                          );
+                        }
+                      })();
+                    }}
+                    className={cn(
+                      "size-5 rounded-[4px] border transition-colors duration-hover",
+                      artist.banner_color === color && !artist.banner_color_end
+                        ? "border-text-hi/70"
+                        : "border-line hover:border-text-lo",
+                      imageBusy && "opacity-50"
+                    )}
+                    style={{ background: color }}
+                  />
+                ))}
+                <CustomBannerDialogButton
+                  artist={artist}
+                  disabled={imageBusy}
+                  onCommit={onSetBannerColor}
+                  onError={onError}
+                />
+                {artist.banner_url || artist.banner_color ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-text-lo hover:text-warn"
+                    disabled={imageBusy}
+                    onClick={() => {
+                      void (async () => {
+                        try {
+                          await onSetBannerColor(null);
+                          toast("Banner cleared", "ok");
+                        } catch (err) {
+                          onError(
+                            err instanceof Error
+                              ? err.message
+                              : "Could not clear banner."
+                          );
+                        }
+                      })();
+                    }}
+                  >
+                    <X className="size-3.5" />
+                    Clear
+                  </Button>
+                ) : null}
+              </div>
+            </div>
           </div>
         </div>
 

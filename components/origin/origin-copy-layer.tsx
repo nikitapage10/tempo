@@ -143,7 +143,7 @@ export function StepFade({
  * keep the panel inside 100dvh and let the body scroll.
  */
 export const ORIGIN_FIT_SHELL =
-  "flex max-h-[calc(100dvh-4.5rem)] flex-col overflow-hidden";
+  "flex max-h-[calc((100dvh-3.5rem)/var(--origin-zoom,1))] flex-col overflow-hidden";
 export const ORIGIN_FIT_BODY =
   "relative min-h-0 flex-1 overflow-y-auto overscroll-contain";
 export const ORIGIN_FIT_FOOTER =
