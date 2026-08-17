@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import {
   PAGE_TOUR_IDS,
   PRO_PAGE_TOUR_IDS,
+  clearedProTourProgress,
   starterChecklistIdsFor,
 } from "@/lib/api/member-onboarding";
 import {
@@ -199,12 +200,24 @@ export async function PATCH(request: NextRequest) {
     ) {
       patch.pro_tour_choice = body.proTourChoice;
     }
+    if (body.resetProTour === true && existing.member_role === "team_member") {
+      const cleared = clearedProTourProgress({
+        pageToursCompleted: existing.page_tours_completed ?? [],
+        pageToursSkipped: existing.page_tours_skipped ?? [],
+      });
+      patch.pro_tour_choice = null;
+      patch.page_tours_completed = cleared.pageToursCompleted;
+      patch.page_tours_skipped = cleared.pageToursSkipped;
+    }
     if (body.skipAllPageTours === true) {
       const ids = existing.member_role === "team_member"
         ? PRO_PAGE_TOUR_IDS
         : PAGE_TOUR_IDS;
+      const currentSkipped = Array.isArray(patch.page_tours_skipped)
+        ? (patch.page_tours_skipped as string[])
+        : (existing.page_tours_skipped ?? []);
       patch.page_tours_skipped = Array.from(new Set([
-        ...(existing.page_tours_skipped ?? []),
+        ...currentSkipped,
         ...ids,
       ]));
     }

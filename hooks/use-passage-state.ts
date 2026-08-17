@@ -20,6 +20,7 @@ import { normalizePersonDisplayName } from "@/lib/auth/person-name";
 import { updateMyMemberProfile } from "@/lib/api/member-profile";
 import { prefersReducedMotion, networkProfile } from "@/lib/origin/readiness";
 import { applyPassageToProfile } from "@/lib/passage/profile-mapping";
+import { passageResumeForVisit } from "@/lib/passage/resume";
 
 /**
  * Wires the PASSAGE state machine to draft persistence. Mirrors
@@ -47,7 +48,10 @@ export type PassageController = {
   skip: () => Promise<void>;
 };
 
-export function usePassageState(): PassageController {
+export function usePassageState(
+  revisit = false,
+  replay = false,
+): PassageController {
   const { activeArtist } = useActiveArtist();
   const [state, dispatch] = React.useReducer(passageReducer, INITIAL_PASSAGE_STATE);
   const [hydrated, setHydrated] = React.useState(false);
@@ -63,17 +67,22 @@ export function usePassageState(): PassageController {
     const staticMode = prefersReducedMotion() || networkProfile() === "save-data";
 
     void (async () => {
-      let resume: MemberPassage | null = null;
+      let row: MemberPassage | null = null;
       try {
-        const row = await fetchMemberPassage();
-        if (row && row.status === "in_progress") resume = row;
+        row = await fetchMemberPassage();
       } catch {
         // Falls back to starting fresh. Nothing has been lost yet.
       }
+      const resume = passageResumeForVisit(row, { revisit, replay });
       dispatch({ type: "boot", staticMode, resume });
+      // Replay ignores the draft so the film starts at Tune in, but the name
+      // they already confirmed still belongs in the first field.
+      if (replay && !resume && row?.displayName) {
+        dispatch({ type: "set_name", name: row.displayName });
+      }
       setHydrated(true);
     })();
-  }, []);
+  }, [revisit, replay]);
 
   const draftOf = (s: PassageState) => ({
     currentStep: s.savedStep,

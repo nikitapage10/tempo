@@ -27,7 +27,8 @@ describe("Nikita welcome inbox visibility", () => {
   });
 
   it("resolves direct-message identity by account when the active workspace changes", () => {
-    expect(messagesApi).toContain("conversation_id, profile_id, user_id, profile:artist_profiles");
+    expect(messagesApi).toContain("conversation_id, profile_id, user_id");
+    expect(messagesApi).toContain("profile:artist_profiles");
     expect(messagesApi).toContain("p.user_id !== user.id");
     expect(messagesApi).toContain('.neq("sender_user_id", user.id)');
     expect(messagesApi).not.toContain("p.profile_id !== myProfileId");

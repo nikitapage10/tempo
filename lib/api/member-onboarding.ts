@@ -81,9 +81,22 @@ export type MemberOnboardingState = {
   lastSeenAt: string;
 };
 
+export function clearedProTourProgress(input: {
+  pageToursCompleted: string[];
+  pageToursSkipped: string[];
+}): { pageToursCompleted: string[]; pageToursSkipped: string[] } {
+  const pro = new Set<string>(PRO_PAGE_TOUR_IDS);
+  return {
+    pageToursCompleted: input.pageToursCompleted.filter((id) => !pro.has(id)),
+    pageToursSkipped: input.pageToursSkipped.filter((id) => !pro.has(id)),
+  };
+}
+
 export type MemberOnboardingPatch = {
   mainTourCompleted?: boolean;
   proTourChoice?: "guides" | "skip_all";
+  /** Replay Passage: forget the Pro guide choice without touching artist tours. */
+  resetProTour?: boolean;
   skipAllPageTours?: boolean;
   checklistOpened?: boolean;
   checklistDismissed?: boolean;

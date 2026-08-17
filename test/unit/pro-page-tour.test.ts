@@ -47,6 +47,7 @@ describe("Pro page tours", () => {
     expect(migration).toContain("member_onboarding_pro_tour_choice_check");
     expect(migration).toContain("where member_role = 'team_member'");
     expect(onboardingRoute).toContain("patch.pro_tour_choice = body.proTourChoice");
+    expect(onboardingRoute).toContain("body.resetProTour === true");
     expect(onboardingRoute).toContain("PRO_PAGE_TOUR_IDS");
   });
 

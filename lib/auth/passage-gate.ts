@@ -40,6 +40,22 @@ export function passageFinished(status: string | null | undefined): boolean {
 }
 
 /**
+ * Whether /passage may render for this visit. Finished Pros are kept out of
+ * the film unless they asked for it from Settings, the same way Origin keeps
+ * finished artists out unless they reopen it.
+ */
+export function passageVisitAllowed(input: {
+  isTeamMember: boolean;
+  passageStatus?: string | null;
+  revisit?: boolean;
+  replay?: boolean;
+}): boolean {
+  if (!input.isTeamMember) return false;
+  if (input.revisit || input.replay) return true;
+  return !passageFinished(input.passageStatus);
+}
+
+/**
  * Whether the Origin gate is allowed to claim this account at all.
  *
  * The Origin gate treats "owns no artist rows" as a brand new musician, which

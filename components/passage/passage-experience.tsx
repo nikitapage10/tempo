@@ -16,6 +16,7 @@ import { PassageStoryScroll } from "@/components/passage/passage-story-scroll";
 import { MorphingText } from "@/components/ui/morphing-text";
 import { PASSAGE_PHASE_GATES, usePassageMedia } from "@/hooks/use-passage-media";
 import { usePassageState } from "@/hooks/use-passage-state";
+import { updateMemberOnboarding } from "@/lib/api/member-onboarding";
 import { SOUNDTRACK_SRC, useOriginSoundtrack } from "@/hooks/use-origin-soundtrack";
 import { useContentZoom } from "@/hooks/use-content-zoom";
 import { isDesktopApp } from "@/lib/desktop/bridge";
@@ -35,7 +36,13 @@ const OPENING_LINES = [
   { text: "tell us who you are.", at: 0.42, until: 0.72 },
 ];
 
-export function PassageExperience() {
+export function PassageExperience({
+  revisit = false,
+  replay = false,
+}: {
+  revisit?: boolean;
+  replay?: boolean;
+}) {
   const router = useRouter();
   const {
     state,
@@ -45,7 +52,7 @@ export function PassageExperience() {
     setInterpretation,
     complete,
     skip,
-  } = usePassageState();
+  } = usePassageState(revisit, replay);
   const media = usePassageMedia(state.phase);
   const { factor: contentZoom } = useContentZoom();
   const soundtrack = useOriginSoundtrack();
@@ -155,6 +162,11 @@ export function PassageExperience() {
     const ok = await complete();
     if (!ok) return;
     fadeSoundtrack();
+    // A full Replay is the deliberate way to experience the first-run
+    // sequence again, so the Pro guide choice is offered once more.
+    if (replay) {
+      await updateMemberOnboarding({ resetProTour: true }).catch(() => {});
+    }
     router.replace(HOME_ROUTE);
   }
 

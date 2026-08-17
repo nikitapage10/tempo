@@ -229,7 +229,17 @@ function SettingsPageInner() {
                 <div className="space-y-4">
                   <ArtistsManager />
                   <SpacesManager />
-                  {lookOnly ? null : (
+                  {lookOnly ? (
+                    <ActionTile
+                      href="/passage?revisit=1"
+                      secondaryHref="/passage?replay=1"
+                      icon={Sparkles}
+                      title="Passage"
+                      body="The welcome TEMPO wrote from how you described your work — roles, the story, and the look of your home. Revisit or rewrite anytime."
+                      cta="Open Passage"
+                      secondaryCta="Replay introduction"
+                    />
+                  ) : (
                     <>
                       <ActionTile
                         href="/origin?revisit=1"

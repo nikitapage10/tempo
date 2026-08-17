@@ -465,12 +465,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </main>
       </div>
 
-      {/* A restrained bottom-edge echo; the former top shader strip is gone. */}
-      <LfWindow
-        className="hidden h-[6px] w-full shrink-0 md:block"
-        aria-hidden
-      />
-
       <nav data-tour="workspace-nav" className="fixed bottom-0 left-0 right-0 z-40 flex items-stretch bg-bg-1 md:hidden">
         <SlitDivider className="absolute inset-x-0 top-0" />
         {mobileNav.map(({ href, label, icon: Icon }) => {
