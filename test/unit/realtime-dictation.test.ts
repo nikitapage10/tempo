@@ -95,11 +95,12 @@ describe("Realtime dictation session minting", () => {
     expect(clientSecretFromPayload({ error: "nope" })).toBeNull();
   });
 
-  it("asks for live transcription with server VAD", () => {
+  it("asks for live transcription without turn detection", () => {
     const minted = transcriptionSessionConfig("gpt-live-transcribe");
     expect(minted.type).toBe("transcription");
     expect(minted.audio.input.transcription.model).toBe("gpt-live-transcribe");
-    expect(minted.audio.input.turn_detection.type).toBe("server_vad");
+    // gpt-live-transcribe rejects the session outright if this is present.
+    expect("turn_detection" in minted.audio.input).toBe(false);
     expect(minted.audio.input.format).toBeUndefined();
 
     const streaming = transcriptionSessionConfig("gpt-live-transcribe", {
@@ -118,7 +119,6 @@ describe("Realtime dictation wiring", () => {
     expect(route).toContain("supabase.auth.getUser()");
     expect(route).toContain("https://api.openai.com/v1/realtime/client_secrets");
     expect(session).toContain('type: "transcription"');
-    expect(session).toContain('type: "server_vad"');
     expect(hook).toContain("new WebSocket(");
     expect(hook).toContain("intent=transcription");
     expect(hook).toContain("tempoDesktop?.dictation");
@@ -134,9 +134,10 @@ describe("Realtime dictation wiring", () => {
     expect(startFn.indexOf("new WebSocket(")).toBeLessThan(
       startFn.indexOf("openLiveDictationRelay"),
     );
-    expect(startFn).toContain("isDesktopShell()");
     expect(hook).not.toContain("RTCPeerConnection");
     expect(hook).not.toContain("OPENAI_API_KEY");
+    // The GA Realtime API rejects the old beta handshake outright.
+    expect(route).not.toContain("OpenAI-Beta");
   });
 
   it("relays live audio through an authenticated server socket", () => {
@@ -161,9 +162,12 @@ describe("Realtime dictation wiring", () => {
     expect(preload).toContain("dictation:");
     expect(preload).toContain("dictation:start");
     expect(native).toContain("Authorization");
-    expect(native).toContain("OpenAI-Beta");
+    expect(native).not.toContain("OpenAI-Beta");
     expect(native).toContain("/v1/realtime?intent=transcription");
     expect(bridge).toContain("dictation?:");
+
+    const serverSocket = read("lib/dictation/openai-realtime-socket.ts");
+    expect(serverSocket).not.toContain("OpenAI-Beta");
   });
 
   it("uses one continuous session and one-shot recorded fallback", () => {

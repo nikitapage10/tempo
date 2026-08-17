@@ -51,7 +51,6 @@ export async function POST(_req: NextRequest) {
         headers: {
           Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
           "Content-Type": "application/json",
-          "OpenAI-Beta": "realtime=v1",
           "OpenAI-Safety-Identifier": createHash("sha256")
             .update(user.id)
             .digest("hex"),

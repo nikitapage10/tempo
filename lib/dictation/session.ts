@@ -36,6 +36,9 @@ export function clientSecretFromPayload(payload: unknown): string | null {
 /**
  * Shared gpt-live-transcribe session. Used when minting a client secret and
  * again as session.update after the WebSocket opens.
+ *
+ * No turn_detection: gpt-live-transcribe rejects it outright, and it streams
+ * deltas as speech arrives anyway. TEMPO commits the buffer itself on Stop.
  */
 export function transcriptionSessionConfig(
   model = LIVE_TRANSCRIBE_MODEL,
@@ -54,12 +57,6 @@ export function transcriptionSessionConfig(
           prompt: TRANSCRIPTION_PROMPT,
           keywords: TRANSCRIPTION_KEYWORDS,
           delay: "low" as const,
-        },
-        turn_detection: {
-          type: "server_vad" as const,
-          threshold: 0.5,
-          prefix_padding_ms: 500,
-          silence_duration_ms: 1_000,
         },
       },
     },

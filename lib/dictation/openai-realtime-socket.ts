@@ -47,7 +47,6 @@ export function connectOpenAiRealtime(
         Upgrade: "websocket",
         Connection: "Upgrade",
         Authorization: `Bearer ${bearerToken}`,
-        "OpenAI-Beta": "realtime=v1",
         "Sec-WebSocket-Version": "13",
         "Sec-WebSocket-Key": key,
         ...extraHeaders,

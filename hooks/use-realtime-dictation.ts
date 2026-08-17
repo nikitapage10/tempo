@@ -113,10 +113,6 @@ async function readSseStream(
   }
 }
 
-function isDesktopShell(): boolean {
-  return typeof window !== "undefined" && Boolean(window.tempoDesktop);
-}
-
 async function mintClientSecret(): Promise<string> {
   const response = await fetch("/api/assistant/realtime-transcription", {
     method: "POST",
@@ -491,10 +487,10 @@ export function useRealtimeDictation({
       return "started" as const;
     };
 
+    // Runs in the desktop shell too: an outbound WSS upgrade never raises the
+    // Windows Defender prompt that WebRTC's UDP listeners did, and older
+    // installs still carry a native path that OpenAI now rejects.
     const tryBrowserSocket = async () => {
-      // Desktop Chromium talking to OpenAI directly is what triggered the
-      // Windows firewall prompt. Skip it in the shell; native or relay instead.
-      if (isDesktopShell()) return false;
       const clientSecret = await mintClientSecret();
       if (session !== activeSessionRef.current) return sessionGone();
       const socket = new WebSocket(REALTIME_SOCKET_URL, [
