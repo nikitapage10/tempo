@@ -22,7 +22,7 @@ type WordmarkProps = {
   size?: number;
   /** Compact light-bar mark for controls too narrow for the full wordmark. */
   markOnly?: boolean;
-  /** Rail lockup: bars, a hairline divider, then TEMPO in display type. */
+  /** Rail lockup: bars, a hairline divider, then the supplied TEMPO type. */
   withMark?: boolean;
   className?: string;
 };
@@ -59,20 +59,18 @@ function LightBarMark({ size }: { size: number }) {
   );
 }
 
-function TypeWordmark({ size }: { size: number }) {
+function RailWordmark({ size }: { size: number }) {
   return (
-    <span
-      className="font-display font-light leading-none text-text-hi/90"
-      style={{
-        fontSize: size * 0.72,
-        letterSpacing: `${size * 0.2}px`,
-        // Tracking leaves a gap after the final O — pull it back so the
-        // lockup stays optically centred.
-        marginRight: `-${size * 0.2}px`,
-      }}
-    >
-      TEMPO
-    </span>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/tempo-wordmark.png"
+      alt=""
+      width={1008}
+      height={140}
+      draggable={false}
+      className="block max-w-none shrink-0 select-none object-contain"
+      style={{ height: Math.max(12, size * 0.72), width: "auto" }}
+    />
   );
 }
 
@@ -95,14 +93,14 @@ export function Wordmark({
           <LightBarMark size={size} />
           <span
             aria-hidden
-            className="mx-3 w-px shrink-0"
+            className="mx-2 w-px shrink-0"
             style={{
               height: size * 0.92,
               background:
                 "linear-gradient(180deg, transparent, rgb(242 240 235 / 0.35), transparent)",
             }}
           />
-          <TypeWordmark size={size} />
+          <RailWordmark size={size} />
         </>
       ) : (
         <>

@@ -17,10 +17,11 @@ describe("TEMPO supplied wordmark", () => {
     expect(wordmark).toContain("BARS.map");
   });
 
-  it("pairs the light-bar mark with typeset TEMPO and a divider in the labeled rail", () => {
+  it("pairs the light-bar mark with the supplied TEMPO type and a divider in the labeled rail", () => {
+    expect(existsSync(resolve("public/tempo-wordmark.png"))).toBe(true);
     expect(wordmark).toContain("withMark");
-    expect(wordmark).toContain("TypeWordmark");
-    expect(wordmark).toMatch(/>\s*TEMPO\s*</);
+    expect(wordmark).toContain('src="/tempo-wordmark.png"');
+    expect(wordmark).not.toContain("TypeWordmark");
     expect(wordmark).toContain("w-px");
     expect(read("components/app-shell.tsx")).toContain(
       '<Wordmark size={26} withMark className="hidden xl:inline-flex" />'
@@ -34,5 +35,17 @@ describe("TEMPO supplied wordmark", () => {
     ]) {
       expect(read(path)).toContain("<Wordmark");
     }
+  });
+});
+
+describe("workspace header alignment", () => {
+  it("keeps Search on the same 1440 column as the page panels", () => {
+    const shell = read("components/app-shell.tsx");
+    expect(shell).toContain(
+      'relative z-10 mx-auto flex w-full max-w-[1440px] items-center justify-end gap-1.5 px-4 pb-2 pt-5 md:px-8'
+    );
+    expect(shell).toContain(
+      'relative z-[1] mx-auto w-full max-w-[1440px] px-4 md:px-8'
+    );
   });
 });
