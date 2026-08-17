@@ -48,6 +48,7 @@ export async function mintSessionLiveKitToken(input: {
     canPublish: input.canPublish,
     canSubscribe: true,
     canPublishData: true,
+    canUpdateOwnMetadata: true,
   });
   return { token: await token.toJwt(), url, roomName };
 }
