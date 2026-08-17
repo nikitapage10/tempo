@@ -37,6 +37,10 @@ export const ASSISTANT_DAILY_ESCALATIONS = 10;
 /** Voice memos. 25 MB cap per request on this endpoint. */
 export const TRANSCRIBE_MODEL = process.env.OPENAI_TRANSCRIBE_MODEL || "gpt-4o-transcribe";
 
+/** Continuous microphone dictation over the Realtime transcription API. */
+export const REALTIME_TRANSCRIBE_MODEL =
+  process.env.OPENAI_REALTIME_TRANSCRIBE_MODEL || "gpt-live-transcribe";
+
 /** Voice notes larger than this can't be transcribed in one request. */
 export const MAX_TRANSCRIBE_BYTES = 25 * 1024 * 1024;
 

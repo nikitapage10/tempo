@@ -3,242 +3,171 @@
 import * as React from "react";
 import { Mic, Square } from "lucide-react";
 import { audioConstraints } from "@/hooks/use-audio-inputs";
-import { isDesktopApp } from "@/lib/desktop/bridge";
+import { useRealtimeDictation } from "@/hooks/use-realtime-dictation";
 import { cn } from "@/lib/utils";
 
-/**
- * Minimal shape of the Web Speech API. It isn't in lib.dom, and Chrome still
- * only exposes the webkit-prefixed constructor.
- */
-type SpeechRecognitionResultLike = {
-  isFinal: boolean;
-  0: { transcript: string };
-};
-type SpeechRecognitionEventLike = {
-  resultIndex: number;
-  results: { length: number } & Record<number, SpeechRecognitionResultLike>;
-};
-type SpeechRecognitionLike = {
-  continuous: boolean;
-  interimResults: boolean;
-  lang: string;
-  start: () => void;
-  stop: () => void;
-  abort: () => void;
-  onresult: ((e: SpeechRecognitionEventLike) => void) | null;
-  onerror: ((e: { error: string }) => void) | null;
-  onend: (() => void) | null;
-};
-
-function getRecognitionCtor(): (new () => SpeechRecognitionLike) | null {
-  if (typeof window === "undefined") return null;
-  const w = window as unknown as {
-    SpeechRecognition?: new () => SpeechRecognitionLike;
-    webkitSpeechRecognition?: new () => SpeechRecognitionLike;
-  };
-  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
-}
-
 type VoiceInputProps = {
-  /** Called as speech is recognised, with everything heard in this dictation. */
+  /** Called continuously with everything heard in this dictation. */
   onTranscript: (accumulated: string) => void;
   /** Fired when dictation begins, so the composer can snapshot what's typed. */
   onStart: () => void;
-  /** Fallback path: browsers without Web Speech still record and upload. */
+  /** Safety fallback when a Realtime session cannot be opened. */
   onRecorded: (file: File) => void;
   disabled?: boolean;
   deviceId?: string | null;
 };
 
 function formatElapsed(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
+  const minutes = Math.floor(seconds / 60);
+  const remainder = seconds % 60;
+  return `${minutes}:${String(remainder).padStart(2, "0")}`;
 }
 
 /**
- * Talking into the import chat.
- *
- * Where the browser supports it, speech goes straight into the composer as text
- * so the artist can fix a mangled song title before sending — the thing that
- * matters most here, since names are exactly what gets misheard. Browsers
- * without the API fall back to recording a note and transcribing it server-side.
+ * Shared dictation control for Import, Messages, and the assistant. Realtime
+ * WebRTC is the normal path on both browsers and desktop. If it cannot connect,
+ * one uninterrupted recording is transcribed after Stop.
  */
-export function VoiceInput({ onTranscript, onStart, onRecorded, disabled, deviceId = null }: VoiceInputProps) {
-  const [listening, setListening] = React.useState(false);
+export function VoiceInput({
+  onTranscript,
+  onStart,
+  onRecorded,
+  disabled,
+  deviceId = null,
+}: VoiceInputProps) {
+  const [recording, setRecording] = React.useState(false);
+  const [starting, setStarting] = React.useState(false);
   const [elapsed, setElapsed] = React.useState(0);
   const [error, setError] = React.useState<string | null>(null);
-  const [supportsLive, setSupportsLive] = React.useState(false);
+  const [activeMode, setActiveMode] = React.useState<"live" | "record" | null>(null);
 
-  const recognitionRef = React.useRef<SpeechRecognitionLike | null>(null);
+  const realtime = useRealtimeDictation({ onTranscript, deviceId });
   const recorderRef = React.useRef<MediaRecorder | null>(null);
   const chunksRef = React.useRef<Blob[]>([]);
-  const finalRef = React.useRef("");
-  const stoppingRef = React.useRef(false);
   const timerRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
   const startedAtRef = React.useRef(0);
 
-  // Detected on mount, not at module scope — this only runs in the browser.
-  React.useEffect(() => {
-    setSupportsLive(!isDesktopApp() && getRecognitionCtor() !== null);
-  }, []);
-
   const stopTimer = React.useCallback(() => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = null;
   }, []);
 
-  // Releasing the mic matters — the browser shows a recording indicator until
-  // every track is stopped.
-  React.useEffect(() => {
-    return () => {
-      stopTimer();
-      stoppingRef.current = true;
-      recognitionRef.current?.abort();
-      const recorder = recorderRef.current;
-      if (recorder && recorder.state !== "inactive") {
-        recorder.stream.getTracks().forEach((t) => t.stop());
-        recorder.stop();
-      }
-    };
-  }, [stopTimer]);
-
-  function beginTimer() {
+  const beginTimer = React.useCallback(() => {
     startedAtRef.current = Date.now();
     setElapsed(0);
+    stopTimer();
     timerRef.current = setInterval(() => {
-      setElapsed(Math.round((Date.now() - startedAtRef.current) / 1000));
-    }, 1000);
-  }
+      setElapsed(Math.round((Date.now() - startedAtRef.current) / 1_000));
+    }, 1_000);
+  }, [stopTimer]);
 
-  function startLive() {
-    const Ctor = getRecognitionCtor();
-    if (!Ctor) return false;
-
-    const recognition = new Ctor();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = navigator.language || "en-US";
-    finalRef.current = "";
-    stoppingRef.current = false;
-
-    recognition.onresult = (event) => {
-      let interim = "";
-      for (let i = event.resultIndex; i < event.results.length; i += 1) {
-        const result = event.results[i];
-        const chunk = result[0].transcript;
-        if (result.isFinal) finalRef.current += chunk;
-        else interim += chunk;
-      }
-      // Interim words are shown too, so it feels live rather than laggy — they
-      // get replaced as soon as the engine settles on them.
-      onTranscript((finalRef.current + interim).trim());
-    };
-
-    recognition.onerror = (e) => {
-      if (e.error === "not-allowed" || e.error === "service-not-allowed") {
-        setError("TEMPO couldn’t reach your microphone. Check the browser’s permission.");
-        stoppingRef.current = true;
-        setListening(false);
-        stopTimer();
-      }
-      // "no-speech" and "aborted" are normal; onend handles restarting.
-    };
-
-    recognition.onend = () => {
-      // Chrome ends the session on a pause. Restart until the artist stops.
-      if (!stoppingRef.current) {
-        try {
-          recognition.start();
-          return;
-        } catch {
-          /* fall through to stopping */
-        }
-      }
-      setListening(false);
-      stopTimer();
-    };
-
-    recognitionRef.current = recognition;
-    recognition.start();
-    return true;
-  }
-
-  async function startFallback() {
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setError("This browser can’t record audio. Type it out instead.");
+  const startFallback = React.useCallback(async () => {
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+      setError("Voice input isn't available here. Type it out instead.");
       return false;
     }
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints(deviceId) });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: audioConstraints(deviceId),
+      });
       const recorder = new MediaRecorder(stream);
       chunksRef.current = [];
-
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) chunksRef.current.push(event.data);
       };
       recorder.onstop = () => {
-        stream.getTracks().forEach((t) => t.stop());
-        const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "audio/webm" });
+        stream.getTracks().forEach((track) => track.stop());
+        const blob = new Blob(chunksRef.current, {
+          type: recorder.mimeType || "audio/webm",
+        });
+        chunksRef.current = [];
+        recorderRef.current = null;
         if (blob.size > 0) {
           onRecorded(
             new File([blob], `voice-note-${Date.now()}.webm`, { type: blob.type }),
           );
         }
-        chunksRef.current = [];
-        recorderRef.current = null;
       };
-
       recorderRef.current = recorder;
       recorder.start();
+      setRecording(true);
+      setActiveMode("record");
       return true;
     } catch {
-      setError("TEMPO couldn’t reach your microphone. Check the browser’s permission.");
+      setError("TEMPO couldn't reach your microphone. Check its permission.");
       return false;
     }
-  }
+  }, [deviceId, onRecorded]);
 
-  async function start() {
+  const start = React.useCallback(async () => {
+    setStarting(true);
     setError(null);
+    realtime.clearError();
     onStart();
 
-    const started = supportsLive ? startLive() : await startFallback();
-    if (started) {
-      setListening(true);
+    const result = await realtime.start();
+    if (result === "started") {
+      setActiveMode("live");
       beginTimer();
+      setStarting(false);
+      return;
     }
-  }
+    if (result === "mic-denied") {
+      setStarting(false);
+      return;
+    }
 
-  function stop() {
-    stoppingRef.current = true;
+    realtime.clearError();
+    const fallbackStarted = await startFallback();
+    if (fallbackStarted) beginTimer();
+    setStarting(false);
+  }, [beginTimer, onStart, realtime, startFallback]);
+
+  const stop = React.useCallback(async () => {
     stopTimer();
-    setListening(false);
-    recognitionRef.current?.stop();
-    recorderRef.current?.stop();
-  }
+    if (activeMode === "live") await realtime.finish();
+    else {
+      setRecording(false);
+      recorderRef.current?.stop();
+    }
+    setActiveMode(null);
+  }, [activeMode, realtime, stopTimer]);
+
+  React.useEffect(
+    () => () => {
+      stopTimer();
+      const recorder = recorderRef.current;
+      if (recorder && recorder.state !== "inactive") {
+        recorder.stream.getTracks().forEach((track) => track.stop());
+        recorder.stop();
+      }
+    },
+    [stopTimer],
+  );
+
+  const listening = realtime.listening || recording;
+  const displayError = error ?? realtime.error;
+  const liveActive = activeMode === "live";
 
   return (
     <button
       type="button"
       aria-label={
         listening
-          ? `Stop ${supportsLive ? "dictation" : "recording"} (${formatElapsed(elapsed)})`
-          : supportsLive
-            ? "Talk instead of typing"
-            : "Record a voice note"
+          ? `Stop ${liveActive ? "dictation" : "recording"} (${formatElapsed(elapsed)})`
+          : "Talk instead of typing"
       }
       title={
-        error ||
+        displayError ||
         (listening
           ? "Stop"
-          : supportsLive
-            ? "Talk — your words appear in the box so you can fix them"
+          : realtime.supported
+            ? "Talk — your words appear here as you speak"
             : "Record a voice note")
       }
-      disabled={disabled}
-      onClick={listening ? stop : () => void start()}
+      disabled={disabled || starting || realtime.finalizing}
+      onClick={listening ? () => void stop() : () => void start()}
       className={cn(
         "flex items-center gap-1.5 rounded-input p-2 transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice disabled:opacity-40",
         listening ? "text-warn" : "text-text-lo hover:text-ice",

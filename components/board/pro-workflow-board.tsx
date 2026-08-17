@@ -340,7 +340,7 @@ export function ProWorkflowBoard() {
   }
 
   if (bundleQuery.error) {
-    return <div className="panel p-6"><h1 className="font-display text-xl text-text-hi">Workflow boards aren't ready yet</h1><p className="mt-2 text-sm text-text-lo">{bundleQuery.error instanceof Error ? bundleQuery.error.message : "Run the latest database migration, then reload."}</p></div>;
+    return <div className="panel p-6"><h1 className="font-display text-xl text-text-hi">Workflow boards are not ready yet</h1><p className="mt-2 text-sm text-text-lo">{bundleQuery.error instanceof Error ? bundleQuery.error.message : "Run the latest database migration, then reload."}</p></div>;
   }
 
   const stages = activeWorkflow?.stages ?? [];
