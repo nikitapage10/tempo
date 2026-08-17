@@ -16,6 +16,16 @@ describe("Social discovery", () => {
     expect(peopleApi).not.toContain("fetchRecentlyActiveProfiles(opts");
   });
 
+  it("lets Top 8 add from followers and follows via a search popup", () => {
+    const social = read("app/(app)/social/social-view.tsx");
+    const rail = read("components/social/top8-rail.tsx");
+    expect(social).toContain("for (const f of followers)");
+    expect(social).toContain("for (const f of following)");
+    expect(rail).toContain("Search followers and follows");
+    expect(rail).toContain("bottom: panelPos.bottom");
+    expect(read("lib/social/top8.ts")).toContain("export function filterTop8Candidates");
+  });
+
   it("adds activity pins in Discover without resetting the globe", () => {
     const social = read("app/(app)/social/social-view.tsx");
     const globe = read("components/social/connection-globe.tsx");

@@ -238,16 +238,22 @@ export default function SocialView() {
   const displayedGlobePeople =
     tab === "discover" ? discoverGlobePeople : globePeople;
 
-  /** Anyone with an artist_profiles id — the only kind of person a Top 8 pick
-   *  can be, since a pick links straight to a profile. */
+  /** Followers and people you follow — Top 8 picks link straight to a profile. */
   const top8Candidates = React.useMemo<Top8Candidate[]>(() => {
-    const seen = new Set<string>();
-    const out: Top8Candidate[] = [];
-    for (const f of following) {
-      const p = f.profile;
-      if (!p || seen.has(p.id)) continue;
-      seen.add(p.id);
-      out.push({
+    const seen = new Map<string, Top8Candidate>();
+    const add = (
+      p: {
+        id: string;
+        display_name: string;
+        handle: string | null;
+        emblem_url: string | null;
+        palette_id: string | null;
+        ice_color: string | null;
+        amber_color: string | null;
+      }
+    ) => {
+      if (seen.has(p.id)) return;
+      seen.set(p.id, {
         id: p.id,
         name: p.display_name,
         handle: p.handle,
@@ -256,12 +262,19 @@ export default function SocialView() {
         iceColor: p.ice_color,
         amberColor: p.amber_color,
       });
+    };
+    for (const f of following) {
+      if (f.profile) add(f.profile);
     }
+    for (const f of followers) {
+      if (f.profile) add(f.profile);
+    }
+    // Keep already-picked people visible even if they left the follow graph.
+    const pickedIds = profile?.top8 ?? [];
     for (const person of allPeople) {
       const lp = person.linked_profile;
-      if (!lp || seen.has(lp.id)) continue;
-      seen.add(lp.id);
-      out.push({
+      if (!lp || seen.has(lp.id) || !pickedIds.includes(lp.id)) continue;
+      seen.set(lp.id, {
         id: lp.id,
         name: lp.display_name ?? person.display_name,
         handle: lp.handle,
@@ -271,8 +284,8 @@ export default function SocialView() {
         amberColor: lp.amber_color,
       });
     }
-    return out;
-  }, [following, allPeople]);
+    return Array.from(seen.values());
+  }, [following, followers, allPeople, profile?.top8]);
 
   const top8 = profile?.top8 ?? [];
   function saveTop8(next: string[]) {
