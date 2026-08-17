@@ -21,6 +21,7 @@ const MAX_DICTATION_MS = 10 * 60 * 1_000;
 const FINAL_TRANSCRIPT_QUIET_MS = 500;
 const FINAL_TRANSCRIPT_WAIT_MS = 2_500;
 const SOCKET_OPEN_MS = 10_000;
+const RELAY_CONNECT_MS = 2_500;
 const PROCESSOR_BUFFER = 4096;
 const REALTIME_SOCKET_URL =
   "wss://api.openai.com/v1/realtime?intent=transcription";
@@ -112,6 +113,30 @@ async function readSseStream(
   }
 }
 
+function isDesktopShell(): boolean {
+  return typeof window !== "undefined" && Boolean(window.tempoDesktop);
+}
+
+async function mintClientSecret(): Promise<string> {
+  const response = await fetch("/api/assistant/realtime-transcription", {
+    method: "POST",
+    headers: { Accept: "application/json" },
+    cache: "no-store",
+  });
+  const payload = (await response.json().catch(() => null)) as {
+    clientSecret?: string;
+  } | null;
+  if (!response.ok || !payload?.clientSecret) {
+    throw new Error("Realtime session rejected.");
+  }
+  return payload.clientSecret;
+}
+
+/**
+ * Same-origin PCM relay. Bidirectional fetch can hang on hosts that buffer
+ * the request body, so callers must impose RELAY_CONNECT_MS and treat
+ * failure as "try the next transport."
+ */
 async function openLiveDictationRelay(
   onEvent: (raw: string) => void,
   signal: AbortSignal,
@@ -119,30 +144,43 @@ async function openLiveDictationRelay(
   const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>();
   const writer = writable.getWriter();
   const encoder = new TextEncoder();
-  const response = await fetch("/api/assistant/live-dictation", {
-    method: "POST",
-    headers: {
-      Accept: "text/event-stream",
-      "Content-Type": "application/x-ndjson",
-    },
-    body: readable,
-    duplex: "half",
-    signal,
-    cache: "no-store",
-  } as RequestInit & { duplex: "half" });
-  if (!response.ok || !response.body) {
+  const timeout = new AbortController();
+  const timer = window.setTimeout(() => timeout.abort(), RELAY_CONNECT_MS);
+  const onAbort = () => timeout.abort();
+  signal.addEventListener("abort", onAbort);
+  try {
+    // Kick the body so a buffering proxy cannot wait forever on zero bytes.
+    void writer.write(encoder.encode("\n"));
+    const response = await fetch("/api/assistant/live-dictation", {
+      method: "POST",
+      headers: {
+        Accept: "text/event-stream",
+        "Content-Type": "application/x-ndjson",
+      },
+      body: readable,
+      duplex: "half",
+      signal: timeout.signal,
+      cache: "no-store",
+    } as RequestInit & { duplex: "half" });
+    if (!response.ok || !response.body) {
+      throw new Error("Live dictation couldn't connect.");
+    }
+    void readSseStream(response.body, onEvent, signal);
+    return {
+      send: (payload: string) => {
+        void writer.write(encoder.encode(`${payload}\n`));
+      },
+      stop: () => {
+        void writer.close().catch(() => undefined);
+      },
+    };
+  } catch (error) {
     await writer.close().catch(() => undefined);
-    throw new Error("Live dictation couldn't connect.");
+    throw error;
+  } finally {
+    window.clearTimeout(timer);
+    signal.removeEventListener("abort", onAbort);
   }
-  void readSseStream(response.body, onEvent, signal);
-  return {
-    send: (payload: string) => {
-      void writer.write(encoder.encode(`${payload}\n`));
-    },
-    stop: () => {
-      void writer.close().catch(() => undefined);
-    },
-  };
 }
 
 function startPcmCapture(
@@ -418,94 +456,50 @@ export function useRealtimeDictation({
       }
     };
 
-    try {
-      try {
-        const abort = new AbortController();
-        relayAbortRef.current = abort;
-        const relay = await openLiveDictationRelay(
-          handleRealtimeEvent,
-          abort.signal,
-        );
-        if (session !== activeSessionRef.current) {
-          abort.abort();
-          relay.stop();
-          stream.getTracks().forEach((track) => track.stop());
-          return "failed";
-        }
-        relayRef.current = relay;
-        beginListening(sendAudio);
-        return "started";
-      } catch {
-        relayAbortRef.current = null;
-        relayRef.current = null;
-      }
+    const sessionGone = () => {
+      stream.getTracks().forEach((track) => track.stop());
+      return "failed" as const;
+    };
 
+    const tryNative = async () => {
       const native = nativeDictation();
-      if (native) {
-        try {
-          const response = await fetch("/api/assistant/realtime-transcription", {
-            method: "POST",
-            headers: { Accept: "application/json" },
-            cache: "no-store",
-          });
-          const payload = (await response.json().catch(() => null)) as {
-            clientSecret?: string;
-          } | null;
-          if (!response.ok || !payload?.clientSecret) {
-            throw new Error("Realtime session rejected.");
-          }
-          if (session !== activeSessionRef.current) {
-            stream.getTracks().forEach((track) => track.stop());
-            return "failed";
-          }
-          await native.start(payload.clientSecret);
-          if (session !== activeSessionRef.current) {
-            await native.stop();
-            stream.getTracks().forEach((track) => track.stop());
-            return "failed";
-          }
-          nativeRef.current = native;
-          nativeUnsubRef.current = native.onEvent(handleRealtimeEvent);
-          if (native.onClose) {
-            const unsubClose = native.onClose(lostConnection);
-            const prev = nativeUnsubRef.current;
-            nativeUnsubRef.current = () => {
-              prev();
-              unsubClose();
-            };
-          }
-          native.send(
-            JSON.stringify({
-              type: "session.update",
-              session: transcriptionSessionConfig(undefined, { includeFormat: true }),
-            }),
-          );
-          beginListening(sendAudio);
-          return "started";
-        } catch {
-          nativeRef.current = null;
-        }
-      }
-
-      const response = await fetch("/api/assistant/realtime-transcription", {
-        method: "POST",
-        headers: { Accept: "application/json" },
-        cache: "no-store",
-      });
-      const payload = (await response.json().catch(() => null)) as {
-        clientSecret?: string;
-      } | null;
-      if (!response.ok || !payload?.clientSecret) {
-        throw new Error("Realtime session rejected.");
-      }
+      if (!native) return false;
+      const clientSecret = await mintClientSecret();
+      if (session !== activeSessionRef.current) return sessionGone();
+      await native.start(clientSecret);
       if (session !== activeSessionRef.current) {
-        stream.getTracks().forEach((track) => track.stop());
-        return "failed";
+        await native.stop();
+        return sessionGone();
       }
+      nativeRef.current = native;
+      nativeUnsubRef.current = native.onEvent(handleRealtimeEvent);
+      if (native.onClose) {
+        const unsubClose = native.onClose(lostConnection);
+        const prev = nativeUnsubRef.current;
+        nativeUnsubRef.current = () => {
+          prev();
+          unsubClose();
+        };
+      }
+      native.send(
+        JSON.stringify({
+          type: "session.update",
+          session: transcriptionSessionConfig(undefined, { includeFormat: true }),
+        }),
+      );
+      beginListening(sendAudio);
+      return "started" as const;
+    };
 
+    const tryBrowserSocket = async () => {
+      // Desktop Chromium talking to OpenAI directly is what triggered the
+      // Windows firewall prompt. Skip it in the shell; native or relay instead.
+      if (isDesktopShell()) return false;
+      const clientSecret = await mintClientSecret();
+      if (session !== activeSessionRef.current) return sessionGone();
       const socket = new WebSocket(REALTIME_SOCKET_URL, [
         "realtime",
-        `openai-insecure-api-key.${payload.clientSecret}`,
+        `openai-insecure-api-key.${clientSecret}`,
       ]);
       socketRef.current = socket;
       socket.addEventListener("message", (event) => {
@@ -515,7 +509,7 @@ export function useRealtimeDictation({
       await waitForSocketOpen(socket);
       if (session !== activeSessionRef.current) {
         releaseConnection();
-        return "failed";
+        return "failed" as const;
       }
       socket.send(
         JSON.stringify({
@@ -524,7 +518,53 @@ export function useRealtimeDictation({
         }),
       );
       beginListening(sendAudio);
-      return "started";
+      return "started" as const;
+    };
+
+    const tryRelay = async () => {
+      const abort = new AbortController();
+      relayAbortRef.current = abort;
+      const relay = await openLiveDictationRelay(
+        handleRealtimeEvent,
+        abort.signal,
+      );
+      if (session !== activeSessionRef.current) {
+        abort.abort();
+        relay.stop();
+        return sessionGone();
+      }
+      relayRef.current = relay;
+      beginListening(sendAudio);
+      return "started" as const;
+    };
+
+    try {
+      try {
+        const nativeResult = await tryNative();
+        if (nativeResult) return nativeResult;
+      } catch {
+        nativeRef.current = null;
+      }
+
+      try {
+        const socketResult = await tryBrowserSocket();
+        if (socketResult) return socketResult;
+      } catch {
+        const socket = socketRef.current;
+        socketRef.current = null;
+        if (socket && socket.readyState < WebSocket.CLOSING) socket.close();
+      }
+
+      try {
+        const relayResult = await tryRelay();
+        if (relayResult) return relayResult;
+      } catch {
+        relayAbortRef.current = null;
+        relayRef.current = null;
+      }
+
+      stream.getTracks().forEach((track) => track.stop());
+      return "failed";
     } catch {
       releaseConnection();
       setError("Live dictation couldn't connect.");

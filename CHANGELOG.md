@@ -4,6 +4,8 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-17
 
+- Fixed (v0.193.0): Dictate works again in the browser and on TEMPO Desktop. The last live-connection change could wait forever on a broken relay, so the mic looked like it was on and never fell back to a recording. Words stream live when the connection opens, and Stop still transcribes a recording if live cannot start.
+
 - Changed (v0.192.0): Dragging a track or note to another stage on the Board now slides it into the new column, so the move is easier to follow. Pro workflow cards do the same between their stages.
 
 - Added (v0.191.0): Tasks and Projects got a full rework. Add a task by typing or speaking it naturally — "pitch to Sam by Friday, high priority, remind me a day before" — and TEMPO reads out the date, priority, assignee, steps, repeat schedule, and reminder as editable chips before saving, so nothing gets misheard silently. Tasks now support priority, a step-by-step checklist with a progress count, reminders, and repeating schedules that regenerate the next one automatically when you close a task out. Click a task to open its full detail in one place. Three views sit over the same list: the familiar Overdue/Today/This week/Later lanes, a sortable List with bulk reschedule/priority/close-out/delete, and a new Timeline. Projects now open on a hero showing status, a deadline countdown, live track/task counts, and overall progress, with a timeline of every date underneath; you can add a new task straight from the project page instead of only attaching existing ones.

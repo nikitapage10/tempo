@@ -1,6 +1,6 @@
 {
   "name": "tempo",
-  "version": "0.192.0",
+  "version": "0.193.0",
   "private": true,
   "scripts": {
     "postinstall": "node scripts/copy-ffmpeg.js",
@@ -14,6 +14,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "agent:workspace": "node scripts/agent-workspace.mjs acquire --wait",
+    "agent:workspace:status": "node scripts/agent-workspace.mjs status",
+    "agent:workspace:release": "node scripts/agent-workspace.mjs release",
+    "agent:workspace:ensure": "node scripts/agent-workspace.mjs ensure",
     "check:desktop-release": "node scripts/check-desktop-release.mjs",
     "desktop:dev": "npm --prefix electron run dev",
     "desktop:build": "npm --prefix electron run build"

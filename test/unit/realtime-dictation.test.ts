@@ -124,7 +124,17 @@ describe("Realtime dictation wiring", () => {
     expect(hook).toContain("tempoDesktop?.dictation");
     expect(hook).toContain("/api/assistant/live-dictation");
     expect(hook).toContain('duplex: "half"');
+    expect(hook).toContain("RELAY_CONNECT_MS");
     expect(hook).toContain("includeFormat: true");
+    const startFn = hook.slice(hook.indexOf("const start = React.useCallback"));
+    expect(startFn.indexOf("nativeDictation()")).toBeGreaterThan(0);
+    expect(startFn.indexOf("nativeDictation()")).toBeLessThan(
+      startFn.indexOf("new WebSocket("),
+    );
+    expect(startFn.indexOf("new WebSocket(")).toBeLessThan(
+      startFn.indexOf("openLiveDictationRelay"),
+    );
+    expect(startFn).toContain("isDesktopShell()");
     expect(hook).not.toContain("RTCPeerConnection");
     expect(hook).not.toContain("OPENAI_API_KEY");
   });
@@ -135,6 +145,9 @@ describe("Realtime dictation wiring", () => {
     expect(relay).toContain("connectOpenAiRealtime");
     expect(relay).toContain("text/event-stream");
     expect(relay).not.toContain("clientSecret");
+    expect(relay.indexOf("socket.onMessage")).toBeLessThan(
+      relay.indexOf('type: "session.update"'),
+    );
   });
 
   it("opens the live socket from the desktop main process", () => {

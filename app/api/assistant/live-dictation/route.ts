@@ -60,13 +60,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  socket.sendJson({
-    type: "session.update",
-    session: transcriptionSessionConfig(REALTIME_TRANSCRIBE_MODEL, {
-      includeFormat: true,
-    }),
-  });
-
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
@@ -86,6 +79,12 @@ export async function POST(req: NextRequest) {
           /* already closed */
         }
       };
+      socket.sendJson({
+        type: "session.update",
+        session: transcriptionSessionConfig(REALTIME_TRANSCRIBE_MODEL, {
+          includeFormat: true,
+        }),
+      });
       void consumeClientAudio(req.body, socket);
       req.signal.addEventListener("abort", () => socket.close());
     },
