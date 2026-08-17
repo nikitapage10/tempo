@@ -3,6 +3,10 @@
   "hooks": {
     "sessionStart": [
       {
+        "command": ".cursor/hooks/acquire-workspace.sh",
+        "timeout": 150
+      },
+      {
         "command": ".cursor/hooks/pull-on-start.sh",
         "timeout": 30
       },

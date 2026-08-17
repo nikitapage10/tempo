@@ -11,6 +11,16 @@
             "statusMessage": "Syncing with GitHub…"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "d=\"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null)}\"; bash \"$d/.claude/hooks/acquire-workspace.sh\" || true",
+            "timeout": 150,
+            "statusMessage": "Acquiring agent workspace…"
+          }
+        ]
       }
     ],
     "PreToolUse": [

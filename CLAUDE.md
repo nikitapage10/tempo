@@ -36,25 +36,27 @@ Tooling-only pushes with no app-facing change opt out by putting
 `[skip-release-check]` in the commit message — every commit in the push needs
 the marker, not just one.
 
-## Working alongside other agents — REQUIRED when pushing
+## Working alongside other agents — REQUIRED
 
-This repo has multiple people and multiple agents (Claude Code, Cursor,
-Codex, others) working in it at once, sometimes in the same checked-out
-working directory. Before you commit anything, confirm the branch is still
-what you think it is (`git branch --show-current`) — another agent can
-switch it mid-session.
+This repo has multiple people and multiple agents working at once. **Acquire
+an isolated workspace before editing** — do not write in the shared checkout.
 
-**Default: work in place, on `main`, in this same directory.** Do not create
-a task branch or a worktree folder for ordinary work, and never create a
-throwaway worktree just to push from — that leaves a stray directory behind
-for every task and every push. To avoid colliding with another agent's
-version bump, commit first, then `git fetch origin && git rebase origin/main`
-in place, and only then do the version bump / CHANGELOG / PRODUCT.md pass
-against that fresh state. Stage narrowly by explicit path, never `git add -A`.
+```bash
+node scripts/agent-workspace.mjs acquire --wait --json
+```
 
-Read `AGENTS.md` before your first push in a session for the full protocol,
-including the two narrow cases where a worktree really is warranted and how
-to clean up the ones that have piled up.
+That assigns **Workspace 1**, **Workspace 2**, or **Workspace 3**
+(`../TEMPO-worktrees/…`). Works the same whether you are in **Cursor**, **Claude
+Code**, or **Codex** — one pool, one mutex. If all three are busy, `--wait`
+queues until a slot frees. Open the returned folder as your project root, work
+on `main` there, stage narrowly (never `git add -A`), rebase before the release
+pass, then:
+
+```bash
+node scripts/agent-workspace.mjs release --agent-id <id>
+```
+
+Read `AGENTS.md` for status, heartbeat, force-clear, and push protocol.
 
 ## Other things that bite
 

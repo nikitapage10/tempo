@@ -4,6 +4,10 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-17
 
+- Changed (v0.195.0): Dragging on the Board, Tasks lanes, and Pro workflow board is easier to aim. Grab anywhere on a card or row (not just a tiny handle), a bright line shows exactly where it will land, and you can drop between other items in the same column to reorder — not only when moving to another stage or lane.
+
+- Under the hood (v0.194.0): Multi-agent dev now uses three isolated workspace slots (**Workspace 1**, **Workspace 2**, **Workspace 3**) next to the repo. Cursor, Claude Code, Codex, and other agents share one pool and file lock — when all three are busy, the next agent waits until one frees. Run `npm run agent:workspace:status` to see who holds what.
+
 - Fixed (v0.193.0): Dictate works again in the browser and on TEMPO Desktop. The last live-connection change could wait forever on a broken relay, so the mic looked like it was on and never fell back to a recording. Words stream live when the connection opens, and Stop still transcribes a recording if live cannot start.
 
 - Changed (v0.192.0): Dragging a track or note to another stage on the Board now slides it into the new column, so the move is easier to follow. Pro workflow cards do the same between their stages.

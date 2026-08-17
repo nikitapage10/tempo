@@ -170,41 +170,23 @@ user where to verify changes. Never hardcode localhost in anything that ships.
 
 ## Concurrent multi-agent work — REQUIRED
 Multiple people and multiple agents (Claude Code, Cursor, Codex, others) work
-in this repo at the same time, often in the same checked-out working
-directory. That means the branch you started on, and the files in it, can
-change under you mid-task from someone else's uncommitted work. Follow this
-every time, no exceptions:
+on TEMPO at the same time. **Do not share one checkout for writes.** Use the
+**three-slot workspace pool** before any edit:
 
-1. **Work in place, on `main`, in the working directory you're already in.**
-   Do not create a task branch or an extra worktree folder for ordinary work
-   — that leaves a directory behind for every task and every push, and they
-   pile up. Never assume the currently-checked-out branch is still what it
-   was when you started: check `git branch --show-current` before committing.
-2. **Never `git add -A` or blanket-stage in a shared working directory.**
-   Stage only the files your own change actually touched, explicitly by path.
-   Before staging, run `git status` and account for every modified/untracked
-   file that *isn't* yours — leave those alone, staged or not.
-3. **Rebase onto fresh `origin/main` at push time, not before.** Don't plan a
-   version number or CHANGELOG position mid-task. When you're actually ready
-   to push: commit your work, then `git fetch origin && git rebase
-   origin/main` **in place**. Only then do the release pass, recomputing the
-   version bump and the CHANGELOG entry's position against what `main`
-   *actually* is at that moment. Never spin up a scratch worktree just to
-   push from — the in-place rebase gives the same guarantee and leaves
-   nothing on disk.
-4. **CHANGELOG.md conflicts are expected and easy**: keep both sides' bullets
-   under the shared `## YYYY-MM-DD` heading, newest addition on top. Never
-   drop another agent's entry to resolve a conflict.
-5. **Run typecheck + tests after the rebase, before pushing** — that's the
-   state you're actually landing on, and `node_modules` is already installed
-   here. A clean push should never be validated only against a stale local
-   state.
-6. Push only your own commits (`git log origin/main..HEAD` first) — never push
-   a whole stale branch that still carries someone else's unfinished,
-   unreviewed commits.
-7. **A worktree is an exception, not the default.** Only create one if another
-   agent's uncommitted changes actually block the files you need, or you need
-   two checkouts live at once. Then put it under `../TEMPO-worktrees/<task>`,
-   one per task, and `git worktree remove` it as soon as the work has landed.
+1. **Acquire** a slot: `node scripts/agent-workspace.mjs acquire --wait --json`
+   (or `npm run agent:workspace`). Slots are **Workspace 1**, **Workspace 2**,
+   **Workspace 3** under `../TEMPO-worktrees/`. If all three are busy,
+   `--wait` blocks on the pool mutex until one frees.
+2. **Move** Cursor to that root (`move_agent_to_root`) before editing.
+3. Work on **`main`** inside that workspace only. The primary `TEMPO` folder is
+   for the human or read-only use — not agent feature work.
+4. **Stage narrowly** — never `git add -A`.
+5. **Rebase onto fresh `origin/main` at push time**, then version bump,
+   CHANGELOG, PRODUCT.md against what `main` actually is.
+6. **Run typecheck + tests after the rebase**, before pushing.
+7. Push only your own commits (`git log origin/main..HEAD`).
+8. **Release** when done: `node scripts/agent-workspace.mjs release --agent-id <id>`.
 
-See `AGENTS.md` for the same protocol in tool-agnostic form.
+Never create extra worktrees beyond the three named slots. See `AGENTS.md` and
+`.cursor/rules/agent-workspaces.mdc` for acquire/release, heartbeats, and
+force-clear.

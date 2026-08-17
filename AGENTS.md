@@ -1,118 +1,149 @@
 # AGENTS.md — working in this repo alongside other agents
 
 This repo is worked on by multiple people **and** multiple AI coding agents
-(Claude Code, Cursor, Codex, others) at the same time — sometimes in the same
-checked-out working directory. `.cursorrules` is this project's full source
-of truth (stack, design system, database safety, release process); read it
-before making changes. This file covers only the concurrency problem: how to
-avoid stepping on other agents' in-progress work and how to get your own
-change to `main` cleanly.
+(Cursor, Claude Code, Codex, others) at the same time. `.cursorrules` is the
+full source of truth (stack, design, database safety, release process). This
+file covers **how agents share the repo without stepping on each other**.
 
-## The failure mode this protects against
+## Agent workspace pool — REQUIRED before editing
 
-Two agents work at once. Each bumps `APP_VERSION` / `package.json` `version`
-and adds a CHANGELOG entry based on whatever `main` looked like when *they*
-started. Both finish, both push. Whoever pushes second either overwrites the
-first agent's version bump, or — if working directly in a shared directory —
-ends up committing on top of a branch/commit they never reviewed, because the
-checked-out branch changed under them mid-task.
+TEMPO uses **three fixed isolated workspaces**, not one shared checkout:
 
-## The protocol — work in place, on `main`
+| Slot | Path (next to main repo) |
+|------|--------------------------|
+| Workspace 1 | `../TEMPO-worktrees/Workspace 1` |
+| Workspace 2 | `../TEMPO-worktrees/Workspace 2` |
+| Workspace 3 | `../TEMPO-worktrees/Workspace 3` |
 
-The default is **one working directory, one branch: `main`, no new folders.**
-An extra worktree is an exception you have to justify, not the starting move
-(see "When a worktree is actually warranted"). Rebasing gives you the same
-protection against a stale version bump that a throwaway push worktree did,
-without leaving a directory behind.
+Pool state (who holds which slot) lives in
+`../TEMPO-worktrees/.agent-pool/state.json` with a directory mutex
+(`state.lock`).
 
-1. **Work in the repo you're already in, on `main`.** Don't create a task
-   branch or a task folder for ordinary work. Before you commit, confirm the
-   branch is still what you think it is — another agent can switch it under
-   you mid-task:
-   ```
-   git branch --show-current
-   ```
-   If it isn't `main`, stop and look at what else is going on before
-   committing anything.
+### Acquire → work → release
 
-2. **Stage narrowly.** Never `git add -A` — this directory carries other
-   agents' and the user's stray files. Run `git status` first and stage only
-   the paths your change actually produced, explicitly, by name. If a shared
-   file (CHANGELOG.md, PRODUCT.md, package.json, lib/version.ts) already has
-   *someone else's* uncommitted edits mixed into it, don't blindly overwrite
-   it — either edit only your own lines, or stage an isolated blob for just
-   your change (`git hash-object -w` + `git update-index --cacheinfo`) so
-   their pending edit stays intact in the working tree, uncommitted, for them
-   to land later.
+**Every agent, every session, before the first edit:**
 
-3. **Don't decide your version number until you're actually pushing.**
-   Mid-task, don't hardcode "this will be v0.104.0." Commit your work first,
-   *then* sync in place:
-   ```
-   git fetch origin
-   git rebase origin/main
-   ```
-   Only now do the release pass — version bump, CHANGELOG entry, PRODUCT.md —
-   against what `origin/main` actually is at this moment. That's the whole
-   reason the old protocol spun up a scratch worktree; an in-place rebase
-   achieves it, and leaves nothing behind. A CHANGELOG conflict is normal and
-   easy: keep both sides' bullets under the shared `## YYYY-MM-DD` heading —
-   never delete another agent's entry to make yours fit.
-
-4. **Validate after the rebase, not before.** `npx tsc --noEmit` and
-   `npm test` on the rebased state — that's the state you're actually
-   landing on. `node_modules` is already installed here, which is one more
-   reason not to spin up a fresh worktree for this.
-
-5. **Push only your own commits.** `git log origin/main..HEAD` before pushing;
-   if it lists work that isn't yours, sort that out rather than pushing it.
-
-6. **Leave the directory as you found it** — don't discard another agent's
-   uncommitted changes, and don't commit their stray untracked files.
-
-## When a worktree *is* actually warranted
-
-Only two cases:
-
-- Another agent has uncommitted tracked changes in this directory that
-  overlap the files you need to edit, so you genuinely can't work here.
-- You need two checkouts live at once (comparing old vs new behaviour, or a
-  long build running while you keep editing).
-
-If you hit one of those:
-
-```
-git worktree add ../TEMPO-worktrees/<short-task-name> -b <branch-name> origin/main
+```bash
+node scripts/agent-workspace.mjs acquire --wait --json
 ```
 
-- Everything goes under the single `TEMPO-worktrees/` container — never
-  loose folders next to the repo.
-- One worktree per task, and **never** a second one just to push from.
-- Remove it the moment the work has landed; a merged worktree left on disk is
-  a bug, not a record:
-  ```
-  git worktree remove ../TEMPO-worktrees/<short-task-name>
-  git branch -d <branch-name>
-  ```
+1. If a slot is free → you get **Workspace 1**, **2**, or **3** immediately.
+2. If all three are busy → `--wait` blocks on the pool mutex and polls every
+   2s until a slot frees (default max wait: 2 hours).
+3. Move Cursor to the returned root (`move_agent_to_root`) **before** editing.
+   Claude Code and Codex: **`cd` to `rootPath`** in that tool's shell instead.
+4. Work on `main` inside that checkout only.
+5. When finished:
+
+```bash
+node scripts/agent-workspace.mjs release --agent-id <id-from-acquire>
+```
+
+Shortcuts:
+
+```bash
+npm run agent:workspace          # acquire --wait
+npm run agent:workspace:status   # who holds what
+npm run agent:workspace:release  # release (needs TEMPO_AGENT_ID env or --agent-id)
+```
+
+Bootstrap worktrees once (or let `acquire` do it):
+
+```bash
+node scripts/agent-workspace.mjs ensure
+```
+
+### What counts as “busy”
+
+A slot is leased while:
+
+- the holder process is still alive, **and**
+- the lease heartbeat is younger than **15 minutes**.
+
+Stale or dead leases are cleared on the next `acquire`.
+
+Refresh a long session:
+
+```bash
+node scripts/agent-workspace.mjs heartbeat --agent-id <id>
+```
+
+Force-clear a stuck slot (human operator only):
+
+```bash
+node scripts/agent-workspace.mjs release --slot "Workspace 1" --force
+```
+
+### Main `TEMPO` checkout
+
+The primary repo folder is for **you** (the human) or read-only inspection.
+Agents should **not** land feature work there — use the pool.
+
+Cursor's sessionStart hook tries to acquire automatically (waits up to ~2
+minutes). If all slots stay busy, follow the hook message and run
+`acquire --wait` before editing.
+
+### Cross-tool (Cursor, Claude Code, Codex, others)
+
+The pool is **one shared contract** — not Cursor-specific. Any tool that can
+run Node and `git` uses the same CLI and the same three folders:
+
+| Tool | How to participate |
+|------|-------------------|
+| **Cursor** | sessionStart hook + `move_agent_to_root` to the acquired path |
+| **Claude Code** | SessionStart hook in `.claude/settings.json`; `cd` to the acquired path |
+| **Codex / others** | Run `node scripts/agent-workspace.mjs acquire --wait --json` before edits; `cd` to `rootPath` |
+
+Optional env vars (all tools):
+
+- `TEMPO_AGENT_TOOL=cursor|claude|codex|other` — label shown in `status`
+- `TEMPO_AGENT_ID=<uuid>` — so `npm run agent:workspace:release` finds your lease
+- `TEMPO_AGENT_TASK=...` — short note stored on the lease
+
+Leases track **process id + heartbeat**, not which IDE owns the window — so
+Claude and Codex sessions queue the same way Cursor does when all three slots
+are full.
+
+## Push protocol (inside your workspace)
+
+Same release rules as always — just scoped to **your** slot:
+
+1. Confirm branch: `git branch --show-current` → should be `main`.
+2. **Stage narrowly** — never `git add -A`. Only paths your change touched.
+3. Commit your work.
+4. Sync: `git fetch origin && git rebase origin/main`
+5. **Then** version bump (`lib/version.ts` + `package.json`), CHANGELOG,
+   PRODUCT.md if the feature set changed.
+6. Validate: `npx tsc --noEmit` and `npm test`
+7. Push only your commits: `git log origin/main..HEAD`
+8. **Release** the workspace slot.
+
+CHANGELOG conflicts: keep both agents' bullets under the shared date heading.
+
+## The failure mode this prevents
+
+Two agents in one directory each bump version/CHANGELOG from stale `main`,
+stage each other's files, or push over each other. Isolated workspaces plus
+the pool mutex cap concurrency at three writers and queue a fourth.
 
 ## Housekeeping
 
-If worktrees have piled up, this lists every one that is clean and whose
-commits are all already in `origin/main` — i.e. safe to delete:
+Only these three worktrees should exist under `../TEMPO-worktrees/`. Do not
+add ad-hoc task folders. If old `TEMPO-worktrees/<task-name>` folders remain
+from before this protocol, remove them after confirming they are merged and
+clean:
 
 ```bash
-git fetch origin && git worktree list --porcelain | grep '^worktree ' | sed 's/^worktree //' | while read -r wt; do [ "$(git -C "$wt" rev-parse --git-common-dir)" = "$(git -C "$wt" rev-parse --git-dir)" ] && continue; [ -z "$(git -C "$wt" status --porcelain)" ] && [ -z "$(git -C "$wt" cherry origin/main HEAD | grep '^+')" ] && echo "$wt"; done
+git worktree list
+git worktree remove <path>
+git worktree prune
 ```
-
-Remove them with `git worktree remove`, then `git worktree prune` and
-`git branch -d` the merged branches.
 
 ## Where the rest of the rules live
 
-- `.cursorrules` — stack, design system, database/storage safety, the
-  release checklist (version bump + CHANGELOG.md + PRODUCT.md), and this same
-  concurrency protocol.
-- `CLAUDE.md` — the subset of `.cursorrules` most easily missed by Claude
-  Code specifically, since it doesn't auto-load `.cursorrules`.
-- `docs/WEB-DESKTOP-RELEASE-POLICY.md` — required reading before touching
-  `electron/` or anything cross-boundary between the web app and desktop shell.
+- `.cursorrules` — stack, design system, database/storage safety, release
+  checklist, and this pool as the default concurrency model.
+- `.cursor/rules/agent-workspaces.mdc` — Cursor-specific acquire/release
+  reminder (always on).
+- `CLAUDE.md` — release + pool summary for Claude Code.
+- `docs/WEB-DESKTOP-RELEASE-POLICY.md` — desktop-sensitive work.

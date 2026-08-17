@@ -1,0 +1,34 @@
+---
+description: Three-slot agent workspace pool — acquire before editing
+alwaysApply: true
+---
+
+# Agent workspace pool (Workspace 1–3)
+
+Before **any** file edit, terminal command that mutates the repo, or commit:
+
+1. **Acquire** a workspace slot:
+   ```bash
+   node scripts/agent-workspace.mjs acquire --wait --json
+   ```
+2. **Move** Cursor to that root (`move_agent_to_root`). Claude Code / Codex: **`cd` there**.
+3. Work on **`main`** inside that checkout only. Never edit the shared `TEMPO` root while another agent may be using it.
+4. **Release** when the task is done (or before ending the session):
+   ```bash
+   node scripts/agent-workspace.mjs release --agent-id <id-from-acquire>
+   ```
+
+## Pool rules
+
+- Exactly **three** slots: **Workspace 1**, **Workspace 2**, **Workspace 3** under `../TEMPO-worktrees/`.
+- If a slot is free, `acquire` claims it immediately.
+- If all three are busy, `acquire --wait` holds on the pool mutex and polls until one frees (default max 2h; override with `TEMPO_AGENT_MAX_WAIT_MS`).
+- Leases expire after **15 minutes** without a heartbeat, or when the holder process exits.
+- Check status: `npm run agent:workspace:status`
+- Never create extra worktrees beyond the three named slots.
+
+## Push / release checklist (unchanged)
+
+Commit in your slot, then `git fetch origin && git rebase origin/main`, then version bump + CHANGELOG + PRODUCT.md, then push. Stage only your paths — never `git add -A`.
+
+See `AGENTS.md` for the full protocol.
