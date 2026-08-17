@@ -1,41 +1,43 @@
-"use strict";
-
-const crypto = require("crypto");
-const https = require("https");
+import { createHash, randomBytes } from "node:crypto";
+import { request as httpsRequest } from "node:https";
+import { Socket } from "node:net";
 
 const WS_MAGIC = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
-const MAX_SECRET_LENGTH = 4096;
+
+export type RealtimeSocket = {
+  sendJson: (payload: string | object) => void;
+  close: () => void;
+  onMessage: ((text: string) => void) | null;
+  onClose: (() => void) | null;
+};
 
 /**
- * Text-only WebSocket to OpenAI Realtime. Lives in the Electron main process
- * so dictation uses a normal outbound HTTPS upgrade (no WebRTC, no Windows
- * Firewall prompt) and can set an Authorization header (browsers cannot).
+ * Server-side text WebSocket to OpenAI Realtime. Browsers cannot set an
+ * Authorization header on WebSocket, so TEMPO opens this from Node instead.
  */
-function connectOpenAiRealtime(clientSecret) {
-  if (
-    typeof clientSecret !== "string" ||
-    !clientSecret.startsWith("ek_") ||
-    clientSecret.length > MAX_SECRET_LENGTH
-  ) {
+export function connectOpenAiRealtime(
+  bearerToken: string,
+  extraHeaders: Record<string, string> = {},
+): Promise<RealtimeSocket> {
+  if (typeof bearerToken !== "string" || bearerToken.length < 8 || bearerToken.length > 4096) {
     return Promise.reject(new Error("That dictation session was not valid."));
   }
 
   return new Promise((resolve, reject) => {
-    const key = crypto.randomBytes(16).toString("base64");
-    const expectedAccept = crypto
-      .createHash("sha1")
+    const key = randomBytes(16).toString("base64");
+    const expectedAccept = createHash("sha1")
       .update(key + WS_MAGIC)
       .digest("base64");
 
     let settled = false;
-    const fail = (error) => {
+    const fail = (error: unknown) => {
       if (settled) return;
       settled = true;
       req.destroy();
       reject(error instanceof Error ? error : new Error("Live dictation couldn't connect."));
     };
 
-    const req = https.request({
+    const req = httpsRequest({
       hostname: "api.openai.com",
       path: "/v1/realtime?intent=transcription",
       method: "GET",
@@ -44,10 +46,11 @@ function connectOpenAiRealtime(clientSecret) {
         Host: "api.openai.com",
         Upgrade: "websocket",
         Connection: "Upgrade",
-        Authorization: `Bearer ${clientSecret}`,
+        Authorization: `Bearer ${bearerToken}`,
         "OpenAI-Beta": "realtime=v1",
         "Sec-WebSocket-Version": "13",
         "Sec-WebSocket-Key": key,
+        ...extraHeaders,
       },
     });
 
@@ -69,8 +72,8 @@ function connectOpenAiRealtime(clientSecret) {
         return;
       }
       settled = true;
-      if (head && head.length) socket.unshift(head);
-      resolve(new RealtimeSocket(socket));
+      if (head.length) socket.unshift(head);
+      resolve(new NodeRealtimeSocket(socket));
     });
     req.on("response", (response) => {
       response.resume();
@@ -82,29 +85,32 @@ function connectOpenAiRealtime(clientSecret) {
   });
 }
 
-class RealtimeSocket {
-  constructor(socket) {
-    this.socket = socket;
-    this.buffer = Buffer.alloc(0);
-    this.closed = false;
-    this.closeNotified = false;
-    this.onMessage = null;
-    this.onClose = null;
-    socket.on("data", (chunk) => this._push(chunk));
+class NodeRealtimeSocket implements RealtimeSocket {
+  onMessage: ((text: string) => void) | null = null;
+  onClose: (() => void) | null = null;
+  private buffer = Buffer.alloc(0);
+  private closed = false;
+  private closeNotified = false;
+
+  constructor(private readonly socket: Socket) {
+    socket.on("data", (chunk) => this.push(chunk));
     socket.on("error", () => this.close());
-    socket.on("close", () => this._notifyClose());
+    socket.on("close", () => this.notifyClose());
     socket.on("end", () => this.close());
   }
 
-  sendJson(payload) {
+  sendJson(payload: string | object) {
     if (this.closed || !this.socket.writable) return;
-    const data = Buffer.from(typeof payload === "string" ? payload : JSON.stringify(payload), "utf8");
+    const data = Buffer.from(
+      typeof payload === "string" ? payload : JSON.stringify(payload),
+      "utf8",
+    );
     this.socket.write(maskFrame(1, data));
   }
 
   close() {
     if (this.closed) {
-      this._notifyClose();
+      this.notifyClose();
       return;
     }
     this.closed = true;
@@ -114,17 +120,17 @@ class RealtimeSocket {
       /* ignore */
     }
     this.socket.destroy();
-    this._notifyClose();
+    this.notifyClose();
   }
 
-  _notifyClose() {
+  private notifyClose() {
     this.closed = true;
     if (this.closeNotified) return;
     this.closeNotified = true;
-    if (this.onClose) this.onClose();
+    this.onClose?.();
   }
 
-  _push(chunk) {
+  private push(chunk: Buffer) {
     this.buffer = Buffer.concat([this.buffer, chunk]);
     while (true) {
       const frame = readFrame(this.buffer);
@@ -138,19 +144,17 @@ class RealtimeSocket {
         if (this.socket.writable) this.socket.write(maskFrame(10, frame.payload));
         continue;
       }
-      if (frame.opcode === 1 && this.onMessage) {
-        this.onMessage(frame.payload.toString("utf8"));
-      }
+      if (frame.opcode === 1) this.onMessage?.(frame.payload.toString("utf8"));
     }
   }
 }
 
-function maskFrame(opcode, payload) {
-  const mask = crypto.randomBytes(4);
+function maskFrame(opcode: number, payload: Buffer) {
+  const mask = randomBytes(4);
   const masked = Buffer.alloc(payload.length);
-  for (let i = 0; i < payload.length; i++) masked[i] = payload[i] ^ mask[i % 4];
+  for (let i = 0; i < payload.length; i++) masked[i] = payload[i]! ^ mask[i % 4]!;
 
-  let header;
+  let header: Buffer;
   if (payload.length < 126) {
     header = Buffer.alloc(6);
     header[1] = 0x80 | payload.length;
@@ -171,11 +175,11 @@ function maskFrame(opcode, payload) {
   return Buffer.concat([header, masked]);
 }
 
-function readFrame(buffer) {
+function readFrame(buffer: Buffer) {
   if (buffer.length < 2) return null;
-  const opcode = buffer[0] & 0x0f;
-  const masked = (buffer[1] & 0x80) !== 0;
-  let length = buffer[1] & 0x7f;
+  const opcode = buffer[0]! & 0x0f;
+  const masked = (buffer[1]! & 0x80) !== 0;
+  let length = buffer[1]! & 0x7f;
   let offset = 2;
   if (length === 126) {
     if (buffer.length < 4) return null;
@@ -192,10 +196,8 @@ function readFrame(buffer) {
   if (masked) {
     const mask = buffer.subarray(offset, offset + 4);
     const unmasked = Buffer.alloc(length);
-    for (let i = 0; i < length; i++) unmasked[i] = payload[i] ^ mask[i % 4];
+    for (let i = 0; i < length; i++) unmasked[i] = payload[i]! ^ mask[i % 4]!;
     payload = unmasked;
   }
   return { opcode, payload, consumed: offset + maskSize + length };
 }
-
-module.exports = { connectOpenAiRealtime };

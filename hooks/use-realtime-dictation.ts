@@ -84,6 +84,67 @@ function waitForSocketOpen(socket: WebSocket): Promise<void> {
   });
 }
 
+async function readSseStream(
+  body: ReadableStream<Uint8Array>,
+  onEvent: (raw: string) => void,
+  signal: AbortSignal,
+) {
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  let buf = "";
+  try {
+    while (!signal.aborted) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true }).replace(/\r\n/g, "\n");
+      let sep = buf.indexOf("\n\n");
+      while (sep >= 0) {
+        const chunk = buf.slice(0, sep);
+        buf = buf.slice(sep + 2);
+        for (const line of chunk.split("\n")) {
+          if (line.startsWith("data: ")) onEvent(line.slice(6));
+        }
+        sep = buf.indexOf("\n\n");
+      }
+    }
+  } catch {
+    /* aborted or dropped */
+  }
+}
+
+async function openLiveDictationRelay(
+  onEvent: (raw: string) => void,
+  signal: AbortSignal,
+) {
+  const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>();
+  const writer = writable.getWriter();
+  const encoder = new TextEncoder();
+  const response = await fetch("/api/assistant/live-dictation", {
+    method: "POST",
+    headers: {
+      Accept: "text/event-stream",
+      "Content-Type": "application/x-ndjson",
+    },
+    body: readable,
+    duplex: "half",
+    signal,
+    cache: "no-store",
+  } as RequestInit & { duplex: "half" });
+  if (!response.ok || !response.body) {
+    await writer.close().catch(() => undefined);
+    throw new Error("Live dictation couldn't connect.");
+  }
+  void readSseStream(response.body, onEvent, signal);
+  return {
+    send: (payload: string) => {
+      void writer.write(encoder.encode(`${payload}\n`));
+    },
+    stop: () => {
+      void writer.close().catch(() => undefined);
+    },
+  };
+}
+
 function startPcmCapture(
   stream: MediaStream,
   onChunk: (base64: string) => void,
@@ -160,6 +221,10 @@ export function useRealtimeDictation({
   const socketRef = React.useRef<WebSocket | null>(null);
   const nativeRef = React.useRef<NativeDictation | null>(null);
   const nativeUnsubRef = React.useRef<(() => void) | null>(null);
+  const relayRef = React.useRef<{ send: (payload: string) => void; stop: () => void } | null>(
+    null,
+  );
+  const relayAbortRef = React.useRef<AbortController | null>(null);
   const streamRef = React.useRef<MediaStream | null>(null);
   const captureRef = React.useRef<CaptureHandle | null>(null);
   const transcriptRef = React.useRef<TranscriptState>(EMPTY_TRANSCRIPT_STATE);
@@ -194,6 +259,10 @@ export function useRealtimeDictation({
     const native = nativeRef.current;
     nativeRef.current = null;
     if (native) void native.stop();
+    relayAbortRef.current?.abort();
+    relayAbortRef.current = null;
+    relayRef.current?.stop();
+    relayRef.current = null;
     const socket = socketRef.current;
     socketRef.current = null;
     if (socket && socket.readyState < WebSocket.CLOSING) socket.close();
@@ -322,7 +391,102 @@ export function useRealtimeDictation({
       return "failed";
     }
 
+    const beginListening = (sendAudio: (audio: string) => void) => {
+      streamRef.current = stream;
+      captureRef.current = startPcmCapture(stream, sendAudio);
+      listeningRef.current = true;
+      setListening(true);
+      maxTimerRef.current = setTimeout(
+        () => void finishRef.current(),
+        MAX_DICTATION_MS,
+      );
+    };
+
+    const sendAudio = (audio: string) => {
+      const line = JSON.stringify({ type: "input_audio_buffer.append", audio });
+      nativeRef.current?.send(line);
+      relayRef.current?.send(line);
+      const socket = socketRef.current;
+      if (socket?.readyState === WebSocket.OPEN) socket.send(line);
+    };
+
+    const lostConnection = () => {
+      if (session === activeSessionRef.current && listeningRef.current) {
+        setError(
+          "Live dictation lost its connection. What you already said is kept.",
+        );
+      }
+    };
+
     try {
+      try {
+        const abort = new AbortController();
+        relayAbortRef.current = abort;
+        const relay = await openLiveDictationRelay(
+          handleRealtimeEvent,
+          abort.signal,
+        );
+        if (session !== activeSessionRef.current) {
+          abort.abort();
+          relay.stop();
+          stream.getTracks().forEach((track) => track.stop());
+          return "failed";
+        }
+        relayRef.current = relay;
+        beginListening(sendAudio);
+        return "started";
+      } catch {
+        relayAbortRef.current = null;
+        relayRef.current = null;
+      }
+
+      const native = nativeDictation();
+      if (native) {
+        try {
+          const response = await fetch("/api/assistant/realtime-transcription", {
+            method: "POST",
+            headers: { Accept: "application/json" },
+            cache: "no-store",
+          });
+          const payload = (await response.json().catch(() => null)) as {
+            clientSecret?: string;
+          } | null;
+          if (!response.ok || !payload?.clientSecret) {
+            throw new Error("Realtime session rejected.");
+          }
+          if (session !== activeSessionRef.current) {
+            stream.getTracks().forEach((track) => track.stop());
+            return "failed";
+          }
+          await native.start(payload.clientSecret);
+          if (session !== activeSessionRef.current) {
+            await native.stop();
+            stream.getTracks().forEach((track) => track.stop());
+            return "failed";
+          }
+          nativeRef.current = native;
+          nativeUnsubRef.current = native.onEvent(handleRealtimeEvent);
+          if (native.onClose) {
+            const unsubClose = native.onClose(lostConnection);
+            const prev = nativeUnsubRef.current;
+            nativeUnsubRef.current = () => {
+              prev();
+              unsubClose();
+            };
+          }
+          native.send(
+            JSON.stringify({
+              type: "session.update",
+              session: transcriptionSessionConfig(undefined, { includeFormat: true }),
+            }),
+          );
+          beginListening(sendAudio);
+          return "started";
+        } catch {
+          nativeRef.current = null;
+        }
+      }
+
       const response = await fetch("/api/assistant/realtime-transcription", {
         method: "POST",
         headers: { Accept: "application/json" },
@@ -334,104 +498,32 @@ export function useRealtimeDictation({
       if (!response.ok || !payload?.clientSecret) {
         throw new Error("Realtime session rejected.");
       }
-
       if (session !== activeSessionRef.current) {
         stream.getTracks().forEach((track) => track.stop());
         return "failed";
       }
 
-      const sendAudio = (audio: string) => {
-        nativeRef.current?.send(
-          JSON.stringify({ type: "input_audio_buffer.append", audio }),
-        );
-        const socket = socketRef.current;
-        if (socket?.readyState === WebSocket.OPEN) {
-          socket.send(
-            JSON.stringify({ type: "input_audio_buffer.append", audio }),
-          );
-        }
-      };
-
-      const native = nativeDictation();
-      if (native) {
-        await native.start(payload.clientSecret);
-        if (session !== activeSessionRef.current) {
-          await native.stop();
-          stream.getTracks().forEach((track) => track.stop());
-          return "failed";
-        }
-        nativeRef.current = native;
-        streamRef.current = stream;
-        nativeUnsubRef.current = native.onEvent(handleRealtimeEvent);
-        if (native.onClose) {
-          const unsubClose = native.onClose(() => {
-            if (session === activeSessionRef.current && listeningRef.current) {
-              setError(
-                "Live dictation lost its connection. What you already said is kept.",
-              );
-            }
-          });
-          const prev = nativeUnsubRef.current;
-          nativeUnsubRef.current = () => {
-            prev();
-            unsubClose();
-          };
-        }
-        native.send(
-          JSON.stringify({
-            type: "session.update",
-            session: transcriptionSessionConfig(undefined, { includeFormat: true }),
-          }),
-        );
-        captureRef.current = startPcmCapture(stream, sendAudio);
-        listeningRef.current = true;
-        setListening(true);
-        maxTimerRef.current = setTimeout(
-          () => void finishRef.current(),
-          MAX_DICTATION_MS,
-        );
-        return "started";
-      }
-
       const socket = new WebSocket(REALTIME_SOCKET_URL, [
         "realtime",
         `openai-insecure-api-key.${payload.clientSecret}`,
-        "openai-beta.realtime-v1",
       ]);
       socketRef.current = socket;
-      streamRef.current = stream;
       socket.addEventListener("message", (event) => {
         if (typeof event.data === "string") handleRealtimeEvent(event.data);
       });
-      socket.addEventListener("close", () => {
-        if (session === activeSessionRef.current && listeningRef.current) {
-          setError(
-            "Live dictation lost its connection. What you already said is kept.",
-          );
-        }
-      });
-
+      socket.addEventListener("close", lostConnection);
       await waitForSocketOpen(socket);
       if (session !== activeSessionRef.current) {
         releaseConnection();
         return "failed";
       }
-
       socket.send(
         JSON.stringify({
           type: "session.update",
           session: transcriptionSessionConfig(undefined, { includeFormat: true }),
         }),
       );
-
-      captureRef.current = startPcmCapture(stream, sendAudio);
-
-      listeningRef.current = true;
-      setListening(true);
-      maxTimerRef.current = setTimeout(
-        () => void finishRef.current(),
-        MAX_DICTATION_MS,
-      );
+      beginListening(sendAudio);
       return "started";
     } catch {
       releaseConnection();
@@ -443,7 +535,8 @@ export function useRealtimeDictation({
   const finish = React.useCallback(async () => {
     const native = nativeRef.current;
     const socket = socketRef.current;
-    if ((!native && !socket) || finalizing) return;
+    const relay = relayRef.current;
+    if ((!native && !socket && !relay) || finalizing) return;
     listeningRef.current = false;
     setListening(false);
     setFinalizing(true);
@@ -455,6 +548,7 @@ export function useRealtimeDictation({
 
     const commit = JSON.stringify({ type: "input_audio_buffer.commit" });
     if (native) native.send(commit);
+    if (relay) relay.send(commit);
     if (socket?.readyState === WebSocket.OPEN) socket.send(commit);
 
     const started = Date.now();

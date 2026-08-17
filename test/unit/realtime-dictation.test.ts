@@ -122,9 +122,19 @@ describe("Realtime dictation wiring", () => {
     expect(hook).toContain("new WebSocket(");
     expect(hook).toContain("intent=transcription");
     expect(hook).toContain("tempoDesktop?.dictation");
+    expect(hook).toContain("/api/assistant/live-dictation");
+    expect(hook).toContain('duplex: "half"');
     expect(hook).toContain("includeFormat: true");
     expect(hook).not.toContain("RTCPeerConnection");
     expect(hook).not.toContain("OPENAI_API_KEY");
+  });
+
+  it("relays live audio through an authenticated server socket", () => {
+    const relay = read("app/api/assistant/live-dictation/route.ts");
+    expect(relay).toContain("supabase.auth.getUser()");
+    expect(relay).toContain("connectOpenAiRealtime");
+    expect(relay).toContain("text/event-stream");
+    expect(relay).not.toContain("clientSecret");
   });
 
   it("opens the live socket from the desktop main process", () => {

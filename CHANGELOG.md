@@ -4,6 +4,8 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-17
 
+- Fixed (v0.190.0): Dictate on TEMPO Desktop now stays on live transcription instead of dropping to a recording after a moment. Spoken words appear as you talk, and Windows is not asked for extra network permission.
+
 - Changed (v0.189.0): On Social, Add someone in your Top 8 opens a search above that slot, so you can find people you follow and people who follow you without a list appearing further down the page.
 
 - Changed (v0.188.0): On Social, Add someone in your Top 8 opens a search above that slot, so you can find people you follow and people who follow you without a list appearing further down the page.
