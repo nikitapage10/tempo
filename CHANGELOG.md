@@ -4,6 +4,8 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-16
 
+- Changed (v0.176.0): The sticky Search, Notifications, Messages, and profile controls now gain a softly fading black-glass backdrop once a page begins scrolling, keeping them distinct from artwork and content moving underneath while leaving the top of the workspace visually open.
+
 - Changed (v0.175.0): TEMPO now uses the supplied distressed white logo instead of rebuilding the name with a font. The real wordmark appears in the expanded studio rail, admin, authentication and welcome screens, download and legal pages, Scenes, public profiles, review links, and invitation pages; compact icon-only controls keep the existing light-bar mark where the wide logo cannot fit.
 
 - Fixed (v0.174.0): **Explore a demo artist first** now completes its handoff reliably in the Mac app. It enters through a distinct server route instead of relying on a direct Origin reload, and an interrupted or partial PRESIDENT build is detected, safely removed, and rebuilt rather than being mistaken for a finished demo on every later attempt.
