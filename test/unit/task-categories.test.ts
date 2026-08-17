@@ -49,7 +49,10 @@ describe("custom task categories", () => {
     expect(manager).toContain("Add a category");
     expect(manager).toContain("Existing tasks will move to Other");
     expect(taskRow).toContain("taskCategorySurfaceStyle");
-    expect(board).toContain("taskCategoryChipStyle");
+    // The Pro Board now holds larger workflow cards, not tasks, so task
+    // categories intentionally remain on actual task surfaces only.
+    expect(board).not.toContain("taskCategoryChipStyle");
+    expect(board).toContain("Tasks stay in Tasks");
     expect(tasks).toContain("<Palette /> Categories");
     expect(shell).toContain("<TaskCategoryProvider");
     expect(api).toContain('.update({ category: "other" })');
