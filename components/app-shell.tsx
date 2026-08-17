@@ -130,6 +130,7 @@ const TASKS_MOBILE_NAV = [
 const WORK_MAIN_NAV: RailItem[] = [
   { href: "/", label: "Today", icon: SunMedium },
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
+  { href: "/board", label: "Board", icon: Columns3 },
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/profile", label: "Profile", icon: CircleUser },
@@ -139,7 +140,7 @@ const WORK_MAIN_NAV: RailItem[] = [
 
 const WORK_MOBILE_NAV = [
   { href: "/", label: "Today", icon: SunMedium },
-  { href: "/projects", label: "Projects", icon: FolderKanban },
+  { href: "/board", label: "Board", icon: Columns3 },
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
 ] as const;
@@ -211,6 +212,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const enteredNav = filterRail(artistNav);
   const mainNav =
     mode === "work" ? WORK_MAIN_NAV : mode === "entered" ? enteredNav : artistNav;
+  const navDescriptions =
+    mode === "work"
+      ? {
+          ...NAV_DESCRIPTIONS,
+          "/board": "Move professional tasks through To do, In progress, and Done.",
+        }
+      : NAV_DESCRIPTIONS;
   const mobileNav =
     mode === "work"
       ? WORK_MOBILE_NAV
@@ -314,7 +322,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   key={`${item.label}-${item.href}`}
                   item={item}
                   pathname={pathname}
-                  descriptions={NAV_DESCRIPTIONS}
+                  descriptions={navDescriptions}
                 />
               ))}
             </RailFlyoutScope>
@@ -485,7 +493,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           aria-label={mode === "artist" && !tasksFocused ? "Add track" : "Add task"}
           onClick={() =>
             router.push(
-              mode === "artist" && !tasksFocused ? "/board?new=1" : "/tasks"
+              mode === "work" || (mode === "artist" && !tasksFocused)
+                ? "/board?new=1"
+                : "/tasks"
             )
           }
         >

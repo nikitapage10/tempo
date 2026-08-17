@@ -2,10 +2,13 @@
 
 import * as React from "react";
 import { Check, Eye, Globe, Lock, Pencil, Plus, Trash2, Users, X } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useActiveArtist } from "@/components/active-artist-provider";
-import { ArtistProfileStoryView } from "@/components/artist/profile-story";
+import {
+  ArtistProfileStoryView,
+  type ArtistProfileStory,
+} from "@/components/artist/profile-story";
 import { CityInput } from "@/components/artists/city-input";
 import { JoinNetworkDialog } from "@/components/social/join-network-dialog";
 import { Button } from "@/components/ui/button";
@@ -16,6 +19,11 @@ import { useArtistProfile } from "@/hooks/use-artist-profile";
 import { useWorkspaceMode } from "@/hooks/use-workspace-mode";
 import { checkHandleAvailable } from "@/lib/api/artist-profile";
 import { fetchMemberPassage } from "@/lib/api/member-passage";
+import {
+  applyPassageToProfile,
+  needsPassageProfileRepair,
+  passageProfilePatch,
+} from "@/lib/passage/profile-mapping";
 import { validateHandle } from "@/lib/social/handle";
 import type {
   ArtistProfileUpdate,
@@ -55,6 +63,7 @@ function safeWebUrl(value: string) {
 }
 
 export function ProIdentityProfile() {
+  const queryClient = useQueryClient();
   const { activeArtist } = useActiveArtist();
   const { mode } = useWorkspaceMode();
   const { profile, isLoading, save, publish, unpublish } = useArtistProfile(
@@ -70,6 +79,76 @@ export function ProIdentityProfile() {
   const [draft, setDraft] = React.useState<Draft | null>(null);
   const [joinOpen, setJoinOpen] = React.useState(false);
   const [joinVisibility, setJoinVisibility] = React.useState<"members" | "public">("members");
+  const passageRepairRef = React.useRef<string | null>(null);
+  const passageNeedsRepair = Boolean(
+    passage.data && needsPassageProfileRepair(profile, passage.data)
+  );
+
+  const passagePatch = React.useMemo(
+    () =>
+      passage.data && passageNeedsRepair
+        ? passageProfilePatch(profile, passage.data)
+        : {},
+    [passage.data, passageNeedsRepair, profile]
+  );
+  const effectiveTagline =
+    profile?.tagline ||
+    (typeof passagePatch.tagline === "string" ? passagePatch.tagline : null);
+  const storyProfile = React.useMemo<ArtistProfileStory | null>(() => {
+    if (profile) return { ...profile, ...passagePatch };
+    if (!passageNeedsRepair) return null;
+    return {
+      bio: passagePatch.bio ?? null,
+      backstory: null,
+      genres: [],
+      roles: passagePatch.roles ?? [],
+      links: [],
+      story_sections: passagePatch.story_sections ?? [],
+      sound_markers: [],
+      current_focus_title: passagePatch.current_focus_title ?? null,
+      current_focus_body: passagePatch.current_focus_body ?? null,
+    };
+  }, [passageNeedsRepair, passagePatch, profile]);
+
+  /** Backfill completed Passage answers for Pros onboarded before this handoff existed. */
+  React.useEffect(() => {
+    const source = passage.data;
+    if (
+      mode !== "work" ||
+      activeArtist?.workspace_kind !== "personal" ||
+      isLoading ||
+      passage.isLoading ||
+      source?.status !== "complete" ||
+      !passageNeedsRepair
+    ) {
+      return;
+    }
+    const repairKey = `${activeArtist.id}:${source.updatedAt ?? source.completedAt ?? "complete"}`;
+    if (passageRepairRef.current === repairKey) return;
+    passageRepairRef.current = repairKey;
+
+    void applyPassageToProfile(
+      activeArtist.id,
+      source,
+      source.displayName?.trim() || activeArtist.name
+    )
+      .then((next) => {
+        if (next) {
+          queryClient.setQueryData(["artist-profile", activeArtist.id], next);
+        }
+      })
+      .catch(() => {
+        passageRepairRef.current = null;
+      });
+  }, [
+    activeArtist,
+    isLoading,
+    mode,
+    passage.data,
+    passage.isLoading,
+    passageNeedsRepair,
+    queryClient,
+  ]);
 
   function startEditing() {
     const savedPassage = passage.data;
@@ -161,8 +240,9 @@ export function ProIdentityProfile() {
 
   const busy = save.isPending || publish.isPending || unpublish.isPending;
   const hasProfileStory = Boolean(
-    profile?.bio || profile?.roles.length || profile?.story_sections.length ||
-    profile?.current_focus_title || profile?.current_focus_body || profile?.links.length
+    effectiveTagline || storyProfile?.bio || storyProfile?.roles.length ||
+    storyProfile?.story_sections?.length || storyProfile?.current_focus_title ||
+    storyProfile?.current_focus_body || storyProfile?.links.length
   );
 
   // /profile is also a safe account route for artist owners, but their
@@ -186,7 +266,7 @@ export function ProIdentityProfile() {
         <div className="min-w-0">
           <p className="label-mono text-ice">Professional identity</p>
           <h2 className="mt-2 font-display text-xl text-text-hi">
-            {profile?.tagline || "Tell people what you do and how you got here"}
+            {effectiveTagline || "Tell people what you do and how you got here"}
           </h2>
           <p className="mt-1 text-sm text-text-lo">
             {profile?.handle ? `@${profile.handle}` : "Claim a TEMPO handle so people can find and mention you."}
@@ -234,7 +314,7 @@ export function ProIdentityProfile() {
         />
       ) : (
         <ArtistProfileStoryView
-          profile={profile}
+          profile={storyProfile}
           variant="pro"
           emptyAction={<Button type="button" size="sm" variant="secondary" onClick={startEditing}><Pencil className="size-3.5" /> Build your profile</Button>}
         />

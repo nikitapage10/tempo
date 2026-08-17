@@ -44,6 +44,8 @@ export async function fetchArtistProfileByHandle(
 export type ProfileSearchResult = Pick<
   ArtistProfile,
   | "id"
+  | "artist_id"
+  | "profile_kind"
   | "handle"
   | "display_name"
   | "emblem_url"
@@ -60,19 +62,24 @@ export type ProfileSearchResult = Pick<
  */
 export async function searchArtistProfiles(
   query: string,
-  opts: { excludeProfileId?: string | null; limit?: number } = {}
+  opts: {
+    excludeProfileId?: string | null;
+    limit?: number;
+    profileKind?: "artist" | "pro";
+  } = {}
 ): Promise<ProfileSearchResult[]> {
   const term = query.trim().replace(/[%,()]/g, " ").trim();
   if (term.length < 2) return [];
   const supabase = createClient();
   let request = supabase
     .from("artist_profiles")
-    .select("id, handle, display_name, emblem_url, palette_id, ice_color, amber_color, tagline")
+    .select("id, artist_id, profile_kind, handle, display_name, emblem_url, palette_id, ice_color, amber_color, tagline")
     .in("visibility", ["members", "public"])
     .or(`display_name.ilike.%${term}%,handle.ilike.%${term}%`)
     .order("display_name", { ascending: true })
     .limit(opts.limit ?? 8);
   if (opts.excludeProfileId) request = request.neq("id", opts.excludeProfileId);
+  if (opts.profileKind) request = request.eq("profile_kind", opts.profileKind);
   const { data, error } = await request;
   if (error) {
     if (isMissingArtistProfileSchema(error)) return [];

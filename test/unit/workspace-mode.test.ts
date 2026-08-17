@@ -139,8 +139,9 @@ describe("workspace mode", () => {
     expect(socialAuthorArtistId([personal, music, managed], managed, me)).toBe("a-work");
   });
 
-  it("hides artist studio routes from My work", () => {
-    expect(isPathAllowedForMode("/board", "work", {})).toBe(false);
+  it("allows the Pro workflow board but hides artist-only studio routes", () => {
+    expect(isPathAllowedForMode("/board", "work", {})).toBe(true);
+    expect(isPathAllowedForMode("/tracks", "work", {})).toBe(false);
     expect(isPathAllowedForMode("/artist", "work", {})).toBe(false);
     expect(isPathAllowedForMode("/artist/team", "work", {})).toBe(false);
     expect(isPathAllowedForMode("/artist/teammate", "work", {})).toBe(true);

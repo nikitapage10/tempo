@@ -33,6 +33,8 @@ describe("Team Operations 1.0", () => {
       "migrations/103_team_brief_and_room.sql",
       "migrations/104_pro_operations.sql",
       "migrations/105_pro_starter_kits.sql",
+      "migrations/106_artist_team_requests.sql",
+      "migrations/107_richer_pro_starter_kits.sql",
     ];
     for (const path of paths) {
       expect(existsSync(resolve(path)), path).toBe(true);
@@ -46,6 +48,8 @@ describe("Team Operations 1.0", () => {
     expect(read(paths[2])).toContain("ensure_artist_team_room");
     expect(read(paths[3])).toContain("my_artist_schedule");
     expect(read(paths[4])).toContain("install_pro_starter_kits");
+    expect(read(paths[5])).toContain("artist_team_requests");
+    expect(read(paths[6])).toContain("v2:manager:template:weekly-review");
   });
 
   it("replays the calendar creator backfill atomically without the legacy owner trigger", () => {
@@ -92,5 +96,50 @@ describe("Team Operations 1.0", () => {
     const invites = read("components/team/pending-team-invites.tsx");
     expect(invites).toContain("Review access");
     expect(invites).toContain("reviewing !== invite.id");
+  });
+
+  it("keeps Pro-initiated team requests separate from access grants", () => {
+    const migration = read("migrations/106_artist_team_requests.sql");
+    expect(migration).toContain("enable row level security");
+    expect(migration).toContain("requester_user_id = auth.uid()");
+    expect(migration).toContain("a.user_id = auth.uid()");
+    expect(migration).not.toMatch(/create policy[\s\S]{0,120}for insert/i);
+
+    const createRoute = read("app/api/team-request/route.ts");
+    expect(createRoute).toContain('.eq("profile_kind", "pro")');
+    expect(createRoute).toContain('.in("visibility", ["members", "public"])');
+    expect(createRoute).toContain('workspace_kind !== "artist"');
+
+    const respondRoute = read("app/api/team-request/[id]/respond/route.ts");
+    expect(respondRoute).toContain("createMemberInvite");
+    expect(respondRoute).toContain('status: "invited"');
+    expect(respondRoute).not.toContain('status: "active"');
+  });
+
+  it("puts discovery on the Pro roster and artist review on People", () => {
+    const teamPage = read("app/(app)/team/page.tsx");
+    expect(teamPage).toContain("<ProTeamRequests />");
+    expect(teamPage).toContain("<ArtistTeamRequests");
+    expect(read("components/team/pro-team-requests.tsx")).toContain("Request to join an artist team");
+    expect(read("components/team/artist-team-requests.tsx")).toContain("Approve & send invitation");
+  });
+
+  it("ships substantial v2 starter kits with a detailed preview", () => {
+    const migration = read("migrations/107_richer_pro_starter_kits.sql");
+    for (const key of ["manager", "label", "publicist", "tour_manager", "agent", "assistant", "custom"]) {
+      expect(migration.match(new RegExp(`\\('${key}',2`, "g"))?.length).toBeGreaterThanOrEqual(9);
+    }
+    expect(migration).toContain("Release readiness gate");
+    expect(migration).toContain("Press campaign kickoff");
+    expect(migration).toContain("Venue advance");
+    expect(migration).toContain("Offer comparison");
+    expect(migration).toContain("Daily desk reset");
+    expect(migration).toContain("Weekly operating reset");
+
+    const setup = read("components/team/starter-kit-setup.tsx");
+    expect(setup).toContain("6 core items · 2 examples");
+    expect(setup).toContain("See checklist");
+    expect(setup).toContain('queryKey: ["templates"]');
+    expect(setup).toContain('queryKey: ["tasks"]');
   });
 });

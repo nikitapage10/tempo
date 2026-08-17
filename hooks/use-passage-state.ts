@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useActiveArtist } from "@/components/active-artist-provider";
 import {
   completeMemberPassage,
   fetchMemberPassage,
@@ -18,6 +19,7 @@ import type { MemberPassage, PassageInterpretation } from "@/lib/passage/types";
 import { normalizePersonDisplayName } from "@/lib/auth/person-name";
 import { updateMyMemberProfile } from "@/lib/api/member-profile";
 import { prefersReducedMotion, networkProfile } from "@/lib/origin/readiness";
+import { applyPassageToProfile } from "@/lib/passage/profile-mapping";
 
 /**
  * Wires the PASSAGE state machine to draft persistence. Mirrors
@@ -46,6 +48,7 @@ export type PassageController = {
 };
 
 export function usePassageState(): PassageController {
+  const { activeArtist } = useActiveArtist();
   const [state, dispatch] = React.useReducer(passageReducer, INITIAL_PASSAGE_STATE);
   const [hydrated, setHydrated] = React.useState(false);
 
@@ -175,6 +178,21 @@ export function usePassageState(): PassageController {
         functionText: s.functionText,
         interpretation: s.interpretation,
       });
+      if (activeArtist?.workspace_kind === "personal") {
+        await applyPassageToProfile(
+          activeArtist.id,
+          {
+            displayName: s.displayName,
+            roleTitles: s.roleTitles,
+            roleTitleOther: s.roleTitleOther,
+            entryText: s.entryText,
+            supportsText: s.supportsText,
+            functionText: s.functionText,
+            interpretation: s.interpretation,
+          },
+          s.displayName || activeArtist.name
+        ).catch(() => null);
+      }
       dispatch({ type: "save_ok" });
       return true;
     } catch {
@@ -184,7 +202,7 @@ export function usePassageState(): PassageController {
       });
       return false;
     }
-  }, [publishName]);
+  }, [activeArtist, publishName]);
 
   const skip = React.useCallback(async () => {
     // A name given before skipping is still a name they chose to give.

@@ -86,3 +86,12 @@ describe("Passage Tempo Theme bed", () => {
     );
   });
 });
+
+describe("Passage onboarding controls", () => {
+  const experience = read("components/passage/passage-experience.tsx");
+
+  it("reveals the shared sign-out control after Tune in", () => {
+    expect(experience).toContain("OriginExitControl");
+    expect(experience).toContain("<OriginExitControl visible={soundOn} />");
+  });
+});

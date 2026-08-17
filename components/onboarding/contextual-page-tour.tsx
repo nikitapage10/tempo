@@ -112,8 +112,9 @@ const TOURS: Record<string, PageTour> = {
  * The Pro set, for the pages a Pro's rail actually has.
  *
  * Deliberately a separate map rather than reworded shared steps. Half of the
- * artist tour points at Board, Tracks, Stats and the artist identity editor,
- * none of which a Pro can reach, and the pages they do share are described
+ * artist tour treats Board as a song pipeline and also points at Tracks,
+ * Stats, and the artist identity editor. Pro has its own workflow Board, and
+ * the pages both shells share are still described
  * from the wrong side: a manager opening Calendar is not looking at "your
  * music in time", they are looking at other people's.
  *
@@ -135,6 +136,13 @@ const PRO_TOURS: Record<string, PageTour> = {
       pageStep("Hold the timing", "The schedule you are keeping.", "Sessions, deadlines, releases, and shows for the people you support. Month, Week, Agenda, and Timeline each answer a different question about the same dates."),
       { selector: 'main [aria-label="Quick schedule with AI"]', kicker: "Just say it", title: "Type it, or speak it.", copy: "“Mix review Friday at 7pm” becomes a real event. Tap the microphone to dictate instead of typing, or start with “task:” to capture an action instead." },
       { selector: 'main [aria-label="Creative timeline"], main [role="grid"], main .glass', kicker: "See the whole arc", title: "Spot the collisions early.", copy: "The timeline and month grid make overlapping deadlines, travel, and release dates visible before they become a problem." },
+    ],
+  },
+  "/board": {
+    id: "pro-board",
+    steps: [
+      pageStep("Shape the flow", "Move work, not songs.", "This board turns the tasks in your current Pro Space into a simple flow: To do, In progress, and Done. It is separate from every artist's song pipeline."),
+      { selector: "main [data-pro-board]", kicker: "One shared state", title: "Drag the work forward.", copy: "Move a card between columns as its status changes. The same update appears on Tasks, so the board and list never drift apart." },
     ],
   },
   "/projects": {

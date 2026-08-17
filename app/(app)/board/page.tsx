@@ -2,8 +2,12 @@
 
 import { Suspense } from "react";
 import { BoardView } from "@/components/board/board-view";
+import { ProWorkflowBoard } from "@/components/board/pro-workflow-board";
+import { useWorkspaceMode } from "@/hooks/use-workspace-mode";
 
 export default function BoardPage() {
+  const { mode, isLoading } = useWorkspaceMode();
+
   return (
     <Suspense
       fallback={
@@ -17,7 +21,7 @@ export default function BoardPage() {
         </div>
       }
     >
-      <BoardView />
+      {isLoading ? null : mode === "work" ? <ProWorkflowBoard /> : <BoardView />}
     </Suspense>
   );
 }

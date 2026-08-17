@@ -4,7 +4,9 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { OriginMediaStage } from "@/components/origin/origin-media-stage";
 import { OriginOverlay, StepFade, TimedCopy } from "@/components/origin/origin-copy-layer";
+import { OriginExitControl } from "@/components/origin/origin-exit-control";
 import { OriginLookStep } from "@/components/origin/origin-look-step";
+import { ZoomControl } from "@/components/desktop/zoom-control";
 import { PassageAwakenStep } from "@/components/passage/passage-awaken-step";
 import { PassageNameStep } from "@/components/passage/passage-name-step";
 import { PassageDescribeStep } from "@/components/passage/passage-describe-step";
@@ -15,6 +17,7 @@ import { MorphingText } from "@/components/ui/morphing-text";
 import { PASSAGE_PHASE_GATES, usePassageMedia } from "@/hooks/use-passage-media";
 import { usePassageState } from "@/hooks/use-passage-state";
 import { SOUNDTRACK_SRC, useOriginSoundtrack } from "@/hooks/use-origin-soundtrack";
+import { useContentZoom } from "@/hooks/use-content-zoom";
 import { isDesktopApp } from "@/lib/desktop/bridge";
 import { clipForPassagePhase } from "@/lib/passage/reducer";
 import { originAsset, type OriginMediaKey } from "@/lib/origin/media";
@@ -44,6 +47,7 @@ export function PassageExperience() {
     skip,
   } = usePassageState();
   const media = usePassageMedia(state.phase);
+  const { factor: contentZoom } = useContentZoom();
   const soundtrack = useOriginSoundtrack();
   const {
     ref: soundtrackRef,
@@ -182,6 +186,19 @@ export function PassageExperience() {
       onActiveElement={handleActiveElement}
     >
       <audio ref={soundtrackRef} src={SOUNDTRACK_SRC} preload="auto" loop aria-hidden="true" />
+      {isDesktopApp() ? <ZoomControl placement="corner" visible={soundOn} /> : null}
+      <OriginExitControl visible={soundOn} />
+      <div
+        className="absolute inset-0"
+        style={
+          contentZoom !== 1
+            ? ({
+                zoom: contentZoom,
+                ["--origin-zoom"]: String(contentZoom),
+              } as React.CSSProperties)
+            : undefined
+        }
+      >
       {storyPhase ? (
         <div className="absolute inset-0">
           <PassageStoryScroll
@@ -350,6 +367,7 @@ export function PassageExperience() {
           ) : null}
         </OriginOverlay>
       )}
+      </div>
     </OriginMediaStage>
   );
 }

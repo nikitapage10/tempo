@@ -173,6 +173,7 @@ const AREA_BY_PATH: { prefix: string; area: AreaKey | "tasks" }[] = [
 const WORK_PREFIXES = [
   "/",
   "/calendar",
+  "/board",
   "/projects",
   "/tasks",
   "/profile",
@@ -220,7 +221,7 @@ export function isPathAllowedForMode(
     // are how Discover and Social open another artist — not the editor at /artist.
     if (isStudioArtistPath(pathname)) return false;
     if (pathname.startsWith("/artist/")) return true;
-    if (pathname.startsWith("/board") || pathname.startsWith("/tracks") || pathname.startsWith("/track/")) {
+    if (pathname.startsWith("/tracks") || pathname.startsWith("/track/")) {
       return false;
     }
     if (pathname.startsWith("/stats")) return false;

@@ -468,7 +468,12 @@ export function useArtistMutations() {
       if (ctx?.preview) URL.revokeObjectURL(ctx.preview);
       patchArtist(updated);
     },
-    onSettled: invalidate,
+    onSettled: (_data, _error, variables) => {
+      void invalidate();
+      if (variables.artist.workspace_kind === "personal") {
+        void qc.invalidateQueries({ queryKey: ["my-member-profile"] });
+      }
+    },
   });
 
   const clearEmblem = useMutation({
@@ -490,7 +495,12 @@ export function useArtistMutations() {
       if (ctx?.prev) qc.setQueryData(["artists"], ctx.prev);
     },
     onSuccess: (updated) => patchArtist(updated),
-    onSettled: invalidate,
+    onSettled: (_data, _error, artist) => {
+      void invalidate();
+      if (artist.workspace_kind === "personal") {
+        void qc.invalidateQueries({ queryKey: ["my-member-profile"] });
+      }
+    },
   });
 
   const setBannerColor = useMutation({

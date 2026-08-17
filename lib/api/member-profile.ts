@@ -30,6 +30,33 @@ export async function fetchMyMemberProfile(): Promise<MemberProfile | null> {
   return { userId: data.user_id, displayName: data.display_name, avatarUrl: data.avatar_url };
 }
 
+/**
+ * Keep a Pro's personal-workspace image and person-level team identity aligned.
+ * Passage edits the personal workspace directly, while team/profile surfaces
+ * read artist_member_profiles, so the shared image path must be written to both.
+ */
+export async function syncMyMemberAvatarPath(
+  avatarUrl: string | null
+): Promise<MemberProfile | null> {
+  const supabase = createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return null;
+
+  const { data, error } = await supabase
+    .from("artist_member_profiles")
+    .upsert(
+      { user_id: userData.user.id, avatar_url: avatarUrl },
+      { onConflict: "user_id" }
+    )
+    .select("user_id, display_name, avatar_url")
+    .single();
+  if (error) {
+    if (isMissingSchema(error)) return null;
+    throw new Error(error.message);
+  }
+  return { userId: data.user_id, displayName: data.display_name, avatarUrl: data.avatar_url };
+}
+
 /** Profiles of everyone actively on the given artist's team — RLS only returns rows the caller (the artist owner) can see. */
 export async function fetchMemberProfiles(userIds: string[]): Promise<Map<string, MemberProfile>> {
   const map = new Map<string, MemberProfile>();

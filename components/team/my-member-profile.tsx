@@ -11,6 +11,7 @@ import { useCurrentUser } from "@/hooks/use-current-user";
 import { listMemberOfArtists } from "@/lib/api/artist-members";
 import {
   fetchMyMemberProfile,
+  syncMyMemberAvatarPath,
   updateMyMemberProfile,
   uploadMyMemberAvatar,
 } from "@/lib/api/member-profile";
@@ -26,7 +27,7 @@ export function MyMemberProfile({ variant = "page" }: { variant?: "page" | "comp
   const qc = useQueryClient();
   const { toast } = useToast();
   const user = useCurrentUser();
-  const { artists } = useActiveArtist();
+  const { activeArtist, artists } = useActiveArtist();
   const query = useQuery({
     queryKey: ["my-member-profile"],
     queryFn: fetchMyMemberProfile,
@@ -45,6 +46,26 @@ export function MyMemberProfile({ variant = "page" }: { variant?: "page" | "comp
   React.useEffect(() => {
     if (query.data?.displayName) setName(query.data.displayName);
   }, [query.data?.displayName]);
+
+  const workspaceAvatarUrl =
+    activeArtist?.workspace_kind === "personal"
+      ? activeArtist.emblem_url?.trim() || null
+      : null;
+  const memberAvatarUrl = query.data?.avatarUrl?.trim() || null;
+
+  /** Repair Pros who chose a photo in Passage before both identity rows synced. */
+  React.useEffect(() => {
+    if (!query.data || memberAvatarUrl || !workspaceAvatarUrl) return;
+    let cancelled = false;
+    void syncMyMemberAvatarPath(workspaceAvatarUrl)
+      .then((profile) => {
+        if (!cancelled && profile) qc.setQueryData(["my-member-profile"], profile);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [memberAvatarUrl, qc, query.data, workspaceAvatarUrl]);
 
   const saveName = useMutation({
     mutationFn: (displayName: string) => updateMyMemberProfile({ displayName }),
@@ -72,6 +93,7 @@ export function MyMemberProfile({ variant = "page" }: { variant?: "page" | "comp
   if (query.isLoading) return <div className="h-40 animate-pulse rounded-panel bg-bg-2/40" />;
 
   const displayName = query.data?.displayName ?? "";
+  const avatarUrl = memberAvatarUrl || workspaceAvatarUrl;
   const musicOwned = ownedMusicArtists(artists, user?.id);
   const hats = membershipsQuery.data ?? [];
 
@@ -87,7 +109,7 @@ export function MyMemberProfile({ variant = "page" }: { variant?: "page" | "comp
             }
           >
             <SignedImage
-              path={query.data?.avatarUrl}
+              path={avatarUrl}
               alt={displayName || "Your photo"}
               className="h-full w-full object-cover"
               fallback={

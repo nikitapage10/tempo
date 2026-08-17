@@ -70,9 +70,9 @@ export const SEARCH_PAGES: SearchPageDef[] = [
   {
     id: "page-board",
     title: "Board",
-    subtitle: "Kanban stages for this space",
+    subtitle: "Visual workflow for this space",
     href: "/board",
-    keywords: ["board", "kanban", "pipeline", "stages"],
+    keywords: ["board", "kanban", "pipeline", "stages", "workflow", "status"],
   },
   {
     id: "page-tracks",

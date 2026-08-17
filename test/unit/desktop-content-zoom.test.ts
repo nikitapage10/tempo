@@ -60,11 +60,16 @@ describe("desktop content zoom wiring", () => {
     expect(zoom).toContain('placement?: "rail" | "corner" | "admin"');
   });
 
-  it("offers bottom-left zoom during Origin onboarding", () => {
+  it("offers bottom-left zoom during both onboarding films", () => {
     const origin = read("components/origin/origin-experience.tsx");
+    const passage = read("components/passage/passage-experience.tsx");
     expect(origin).toContain("useContentZoom");
     expect(origin).toContain('placement="corner"');
     expect(origin).toContain("ZoomControl");
+    expect(passage).toContain("useContentZoom");
+    expect(passage).toContain('placement="corner"');
+    expect(passage).toContain("ZoomControl");
+    expect(passage).toContain('["--origin-zoom"]: String(contentZoom)');
   });
 
   it("offers zoom on Admin past the ops rail, without scaling the wash", () => {

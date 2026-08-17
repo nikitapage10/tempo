@@ -1,7 +1,10 @@
 import { createClient } from "@/lib/supabase/client";
 import { buildArtistAssetPath, deleteFile, uploadFile } from "@/lib/storage";
 import { DEFAULT_ARTIST_NAME } from "@/lib/constants";
-import { fetchMyMemberProfile } from "@/lib/api/member-profile";
+import {
+  fetchMyMemberProfile,
+  syncMyMemberAvatarPath,
+} from "@/lib/api/member-profile";
 import {
   membershipArtists,
   ownedPersonalHomes,
@@ -236,6 +239,9 @@ export async function uploadArtistEmblem(
 ): Promise<Artist> {
   const path = await uploadArtistImage(artist.id, "emblem", file);
   const updated = await updateArtist(artist.id, { emblem_url: path });
+  if (updated.workspace_kind === "personal") {
+    await syncMyMemberAvatarPath(path).catch(() => null);
+  }
   if (artist.emblem_url && artist.emblem_url !== path) {
     void deleteFile(artist.emblem_url).catch(() => {});
   }
@@ -303,6 +309,9 @@ export async function clearArtistLogo(artist: Artist): Promise<Artist> {
 
 export async function clearArtistEmblem(artist: Artist): Promise<Artist> {
   const updated = await updateArtist(artist.id, { emblem_url: null });
+  if (updated.workspace_kind === "personal") {
+    await syncMyMemberAvatarPath(null).catch(() => null);
+  }
   if (artist.emblem_url) {
     void deleteFile(artist.emblem_url).catch(() => {});
   }

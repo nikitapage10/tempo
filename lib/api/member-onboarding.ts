@@ -46,6 +46,7 @@ export const ARTIST_PAGE_TOUR_IDS = [
 export const PRO_PAGE_TOUR_IDS = [
   "pro-today",
   "pro-calendar",
+  "pro-board",
   "pro-projects",
   "pro-tasks",
   "pro-team",

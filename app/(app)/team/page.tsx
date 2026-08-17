@@ -10,7 +10,9 @@ import { useActiveTeamRoster } from "@/hooks/use-artist-members";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { TeamConstellation, type ConstellationPerson } from "@/components/team/team-constellation";
 import { TeamManager } from "@/components/team/team-manager";
+import { ArtistTeamRequests } from "@/components/team/artist-team-requests";
 import { PendingTeamInvites } from "@/components/team/pending-team-invites";
+import { ProTeamRequests } from "@/components/team/pro-team-requests";
 import { WorkHub } from "@/components/team/work-hub";
 import { TeamTabs } from "@/components/team/team-tabs";
 import { MyWorkPanel } from "@/components/team/my-work-panel";
@@ -80,7 +82,7 @@ export default function TeamPage() {
         />
         {proTab === "work" ? <MyWorkPanel /> : null}
         {proTab === "schedule" ? <ProSchedulePanel /> : null}
-        {proTab === "roster" ? <WorkHub artists={membershipArtists(artists, user?.id)} memberships={membershipsQuery.data ?? []} /> : null}
+        {proTab === "roster" ? <div className="space-y-8"><ProTeamRequests /><WorkHub artists={membershipArtists(artists, user?.id)} memberships={membershipsQuery.data ?? []} /></div> : null}
         <StarterKitSetup />
       </div>
     );
@@ -138,7 +140,10 @@ export default function TeamPage() {
       </div>
 
       {!activeArtist ? null : isOwner ? (
-        <TeamManager artistId={activeArtist.id} />
+        <div className="space-y-6">
+          <ArtistTeamRequests artistId={activeArtist.id} />
+          <TeamManager artistId={activeArtist.id} />
+        </div>
       ) : (
         <div className="panel-quiet p-4">
           <p className="label-mono mb-3">What you can access here</p>
