@@ -393,10 +393,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           >
           {/* Sticky chrome lives outside the 1440px column so the scroll
               glass can span the whole workspace (rail edge → window edge).
-              [-webkit-app-region:drag] also makes this row the desktop
-              window-drag handle; interactive children opt out with no-drag. */}
+              Search and the header buttons still share that column's
+              right edge with the page panels. [-webkit-app-region:drag]
+              also makes this row the desktop window-drag handle;
+              interactive children opt out with no-drag. */}
           <div
-            className="sticky top-0 z-40 isolate mb-1 flex items-center justify-end gap-1.5 px-4 pb-2 pt-5 [-webkit-app-region:drag] md:px-8"
+            className="sticky top-0 z-40 isolate mb-1 [-webkit-app-region:drag]"
             data-scroll-glass={topBarVisible ? "visible" : "hidden"}
           >
             <div
@@ -408,20 +410,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   : "-translate-y-2 opacity-0"
               )}
             />
-            <div className="relative z-10 [-webkit-app-region:no-drag]">
-              <NotificationCenter />
-            </div>
-            <div className="relative z-10 [-webkit-app-region:no-drag]">
-              <MessageCenter />
-            </div>
-            <div className="relative z-10 [-webkit-app-region:no-drag]">
-              <ProfileMenu />
-            </div>
-            <div
-              data-tour="global-search"
-              className="relative z-50 w-full max-w-[280px] [-webkit-app-region:no-drag]"
-            >
-              <GlobalSearch className="ml-1" />
+            <div className="relative z-10 mx-auto flex w-full max-w-[1440px] items-center justify-end gap-1.5 px-4 pb-2 pt-5 md:px-8">
+              <div className="[-webkit-app-region:no-drag]">
+                <NotificationCenter />
+              </div>
+              <div className="[-webkit-app-region:no-drag]">
+                <MessageCenter />
+              </div>
+              <div className="[-webkit-app-region:no-drag]">
+                <ProfileMenu />
+              </div>
+              <div
+                data-tour="global-search"
+                className="relative z-50 w-full max-w-[280px] [-webkit-app-region:no-drag]"
+              >
+                <GlobalSearch className="ml-1" />
+              </div>
             </div>
           </div>
           <div className="relative z-[1] mx-auto w-full max-w-[1440px] px-4 md:px-8">
