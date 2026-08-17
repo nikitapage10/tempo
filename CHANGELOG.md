@@ -9,6 +9,9 @@ Plain-English history of what changed in TEMPO, newest first.
 
 - Changed (v0.185.0): Messages sits a little shorter on Desktop, so a small zoom no longer forces the whole page to scroll.
 
+- Fixed (v0.184.1): The thin band of moving light along the bottom of the window is gone. The workspace now sits flush to the edge.
+- Added (v0.184.1): Pros can reopen Passage from Settings the same way artists reopen Origin. Open Passage returns to the written story; Replay introduction runs the film from the start and offers the Pro page-guide choice again.
+
 - Changed (v0.184.0): Search, notifications, messages, and your profile now line up with the page panels again. The frost behind them still stretches to the window edge when you scroll.
 - Changed (v0.184.0): The expanded left menu now uses the supplied TEMPO type artwork beside the light bars, instead of spelling the name in the product typeface.
 
