@@ -76,6 +76,25 @@ export async function leaveGroupConversation(conversationId: string): Promise<vo
   if (error) throw error;
 }
 
+export async function expandDirectConversationToGroup(input: {
+  fromProfileId: string;
+  conversationId: string;
+  memberProfileId: string;
+  includeHistory: boolean;
+  title?: string | null;
+}): Promise<string> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("expand_direct_conversation_to_group", {
+    p_from_profile: input.fromProfileId,
+    p_conversation_id: input.conversationId,
+    p_member_profile_id: input.memberProfileId,
+    p_include_history: input.includeHistory,
+    p_title: input.title?.trim() || null,
+  });
+  if (error) throw error;
+  return data as string;
+}
+
 export async function renameGroupConversation(conversationId: string, title: string): Promise<void> {
   const supabase = createClient();
   const { error } = await supabase.rpc("rename_group_conversation", {

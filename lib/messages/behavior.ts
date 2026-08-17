@@ -65,3 +65,18 @@ export function conversationMemberLabel(names: string[], max = 3): string {
   if (cleaned.length <= max) return cleaned.join(", ");
   return `${cleaned.slice(0, max).join(", ")} +${cleaned.length - max}`;
 }
+
+/** 1:1 artist DMs can be expanded into a new group; team rooms cannot. */
+export function canExpandDirectConversation(input: {
+  kind: string;
+  teamArtistId?: string | null;
+}): boolean {
+  return input.kind === "direct" && !input.teamArtistId;
+}
+
+/**
+ * Viewport-filling Messages workspace. Subtracts page chrome, then divides by
+ * desktop content zoom so 100dvh inside a zoomed scroller does not overflow.
+ */
+export const MESSAGES_WORKSPACE_HEIGHT_CLASS =
+  "h-[calc((100dvh-12.5rem)/var(--tempo-content-zoom,1))] min-h-0";

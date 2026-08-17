@@ -87,7 +87,9 @@ plain explanation. The same New message flow can start a **group chat**: add
 several artists, optionally name the group, and it lands in a Groups section
 of the inbox, separate from 1:1 artist messages and from team rooms. The
 person who starts a group can rename it and add or remove people; anyone can
-leave. Scene chats still live on the Scene page, not in this inbox. Incoming direct replies update the mini-inbox, full thread,
+leave. From a 1:1 artist chat you can also add someone: that starts a new group
+with the original two people plus the new person, and you choose whether to
+include this chat's history. The original 1:1 stays put. Scene chats still live on the Scene page, not in this inbox. Incoming direct replies update the mini-inbox, full thread,
 and Messages unread badge in realtime without creating a duplicate bell
 notification. Away from Messages, a new message raises a glass toast in the bottom-right (above Get help on the web; the same glass card on desktop when the window is in the background), tinted to your active artist's Cool / Warm colours. On the Messages page itself the toast stays off — the conversation updates in place, and if a deep link is available TEMPO opens that thread instead of stacking another popup over the chat.
 Support replies also update the notification center. Reconnects

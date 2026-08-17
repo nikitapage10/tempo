@@ -389,7 +389,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 visible === nextVisible ? visible : nextVisible
               );
             }}
-            style={contentZoom !== 1 ? { zoom: contentZoom } : undefined}
+            style={{
+              ...(contentZoom !== 1 ? { zoom: contentZoom } : {}),
+              ["--tempo-content-zoom" as string]: String(contentZoom),
+            }}
           >
           {/* Sticky chrome lives outside the 1440px column so the scroll
               glass can span the whole workspace (rail edge → window edge).

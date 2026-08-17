@@ -205,6 +205,7 @@ describe("desktop content zoom wiring", () => {
     expect(shell).toContain("railLayoutWidthPx");
     expect(shell).toContain("overflow-hidden");
     expect(shell).toContain("AppVideoBackdrop");
+    expect(shell).toContain("--tempo-content-zoom");
     expect(shell).toContain("absolute inset-0");
     expect(zoom).toContain("railLayoutWidthPx");
     expect(zoom).toContain("--tempo-zoom-left");

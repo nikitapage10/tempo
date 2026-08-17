@@ -32,6 +32,14 @@ profile must pass `can_dm_profile`. Later member changes go through
 Client inserts into `conversation_participants` are denied; definers still
 write membership for DMs, Scenes, team rooms, and these groups.
 
+#### Expand a 1:1 into a group (migration 112)
+
+`expand_direct_conversation_to_group` starts a **new** artist group from an
+existing direct thread. The original 1:1 is unchanged. The caller must be in
+that DM; the invitee must pass `can_dm_profile`. Optional history copies up to
+the latest 1,000 messages with `suppress_notification`, so old lines do not
+ping. Team rooms and Scene chats cannot use this path.
+
 #### Dual artist + Pro identity (migrations 092 + 100)
 
 An auth user may own both `artists.workspace_kind = 'artist'` and a separate

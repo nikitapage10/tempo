@@ -118,6 +118,11 @@ profile must pass `can_dm_profile` (the same block and DM-policy gate as a
 membership writes are RPC-only. Scene rooms remain on the Scene Chat tab and
 are excluded from the Messages inbox.
 
+Expanding a 1:1 into a group uses `expand_direct_conversation_to_group`. It
+never rewrites the original thread. Copied history is marked
+`suppress_notification` so the invitee is not flooded with old-message
+alerts; they still get one notification that they were added.
+
 Support conversations use a dedicated `support_messages` table rather than the
 artist messaging tables. It has RLS enabled with no browser-facing policies.
 Member support APIs first authenticate the caller and verify that the ticket's

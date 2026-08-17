@@ -4,6 +4,11 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-17
 
+- Added (v0.185.0): In a 1:1 artist chat, Add someone starts a new group with that person. You choose whether to include this chat's history; the original conversation stays as it is.
+  Under the hood: run additive migration 112 in the Supabase SQL editor after 111.
+
+- Changed (v0.185.0): Messages sits a little shorter on Desktop, so a small zoom no longer forces the whole page to scroll.
+
 - Changed (v0.184.0): Search, notifications, messages, and your profile now line up with the page panels again. The frost behind them still stretches to the window edge when you scroll.
 - Changed (v0.184.0): The expanded left menu now uses the supplied TEMPO type artwork beside the light bars, instead of spelling the name in the product typeface.
 

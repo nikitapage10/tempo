@@ -15,6 +15,7 @@ import {
   sendMessage,
   startDirectConversation,
   startGroupConversation,
+  expandDirectConversationToGroup,
   addGroupConversationMembers,
   removeGroupConversationMember,
   leaveGroupConversation,
@@ -133,6 +134,17 @@ export function useMessageMutations(myProfileId: string | null, myScenePersonaId
       startGroupConversation(myProfileId!, input.memberProfileIds, input.title),
     onSuccess: invalidateConversations,
   });
+  const expandDirect = useMutation({
+    mutationFn: (input: { conversationId: string; memberProfileId: string; includeHistory: boolean; title?: string | null }) =>
+      expandDirectConversationToGroup({
+        fromProfileId: myProfileId!,
+        conversationId: input.conversationId,
+        memberProfileId: input.memberProfileId,
+        includeHistory: input.includeHistory,
+        title: input.title,
+      }),
+    onSuccess: invalidateConversations,
+  });
   const addGroupMembers = useMutation({
     mutationFn: (input: { conversationId: string; memberProfileIds: string[] }) =>
       addGroupConversationMembers(input.conversationId, myProfileId!, input.memberProfileIds),
@@ -246,7 +258,7 @@ export function useMessageMutations(myProfileId: string | null, myScenePersonaId
   const markUnread = useMutation({ mutationFn: markConversationUnread, onSuccess: () => { qc.invalidateQueries({ queryKey: ["conversations", myProfileId] }); qc.invalidateQueries({ queryKey: ["dm-unread", myProfileId] }); } });
   const archive = useMutation({ mutationFn: ({ conversationId, archived }: { conversationId: string; archived: boolean }) => setConversationArchived(conversationId, archived), onSuccess: () => qc.invalidateQueries({ queryKey: ["conversations", myProfileId] }) });
 
-  return { startDm, startGroup, addGroupMembers, removeGroupMember, leaveGroup, renameGroup, send, markRead, markUnread, removeMessage, edit, reaction, sceneReaction, pin, mute, archive };
+  return { startDm, startGroup, expandDirect, addGroupMembers, removeGroupMember, leaveGroup, renameGroup, send, markRead, markUnread, removeMessage, edit, reaction, sceneReaction, pin, mute, archive };
 }
 
 export function useMessageSearch(conversationId: string | null, query: string) {

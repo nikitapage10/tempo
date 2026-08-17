@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { conversationHeading, conversationMemberLabel, isArtistGroupConversation, isMessagesInboxConversation, isNearConversationBottom, messageDraftStorageKey, preservedScrollTop, resolvePreferredAudioInput, shouldAutoFollowConversation, suggestedGroupTitle, typingExpiry } from "@/lib/messages/behavior";
+import { canExpandDirectConversation, conversationHeading, conversationMemberLabel, isArtistGroupConversation, isMessagesInboxConversation, isNearConversationBottom, messageDraftStorageKey, MESSAGES_WORKSPACE_HEIGHT_CLASS, preservedScrollTop, resolvePreferredAudioInput, shouldAutoFollowConversation, suggestedGroupTitle, typingExpiry } from "@/lib/messages/behavior";
 import { audioConstraints } from "@/hooks/use-audio-inputs";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -52,5 +52,10 @@ describe("messaging workspace behavior", () => {
     expect(suggestedGroupTitle(["Alex", "Jordan", "Sam", "Riley"])).toBe("Alex, Jordan +2");
     expect(conversationHeading({ kind: "group", title: "Studio crew" })).toBe("Studio crew");
     expect(conversationMemberLabel(["Alex", "Jordan", "Sam", "Riley"])).toBe("Alex, Jordan, Sam +1");
+    expect(canExpandDirectConversation({ kind: "direct", teamArtistId: null })).toBe(true);
+    expect(canExpandDirectConversation({ kind: "direct", teamArtistId: "artist-1" })).toBe(false);
+    expect(canExpandDirectConversation({ kind: "group", teamArtistId: null })).toBe(false);
+    expect(MESSAGES_WORKSPACE_HEIGHT_CLASS).toContain("--tempo-content-zoom");
+    expect(MESSAGES_WORKSPACE_HEIGHT_CLASS).toContain("12.5rem");
   });
 });

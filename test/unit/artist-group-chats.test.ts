@@ -28,4 +28,21 @@ describe("artist group chats", () => {
     expect(api).toContain("start_group_conversation");
     expect(api).toContain("isMessagesInboxConversation");
   });
+
+  it("expands a 1:1 into a new group without replacing the original chat", () => {
+    const sql = read("migrations/112_expand_direct_to_group.sql");
+    const panel = read("components/messages/expand-direct-panel.tsx");
+    const inbox = read("app/(app)/messages/messages-view.tsx");
+    const api = read("lib/api/messages.ts");
+    expect(sql).toContain("create or replace function expand_direct_conversation_to_group");
+    expect(sql).toContain("p_include_history");
+    expect(sql).toContain("suppress_notification");
+    expect(sql).toContain("Only a 1:1 chat can become a group this way");
+    expect(panel).toContain("Include messages from this chat");
+    expect(panel).toContain("This 1:1 stays as it is");
+    expect(panel).toContain("expandDirect.mutateAsync");
+    expect(inbox).toContain("Add someone to a new group");
+    expect(inbox).toContain("MESSAGES_WORKSPACE_HEIGHT_CLASS");
+    expect(api).toContain("expand_direct_conversation_to_group");
+  });
 });
