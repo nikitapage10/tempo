@@ -18,9 +18,10 @@ describe("TEMPO supplied wordmark", () => {
     expect(wordmark).toContain("BARS.map");
   });
 
-  it("uses the real mark in the main rail and public entry points", () => {
+  it("pairs the light-bar mark with the supplied wordmark in the labeled rail", () => {
+    expect(wordmark).toContain("withMark");
     expect(read("components/app-shell.tsx")).toContain(
-      '<Wordmark size={26} className="hidden xl:inline-flex" />'
+      '<Wordmark size={26} withMark className="hidden xl:inline-flex" />'
     );
     for (const path of [
       "app/login/page.tsx",

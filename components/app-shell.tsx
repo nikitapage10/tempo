@@ -306,7 +306,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 className="rounded-input focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
               >
                 <Wordmark size={22} markOnly className="xl:hidden" />
-                <Wordmark size={26} className="hidden xl:inline-flex" />
+                <Wordmark size={26} withMark className="hidden xl:inline-flex" />
               </Link>
             </div>
             <FlareLine className="mt-3" />
@@ -391,43 +391,40 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             }}
             style={contentZoom !== 1 ? { zoom: contentZoom } : undefined}
           >
-          <div className="relative z-[1] mx-auto w-full max-w-[1440px] px-4 md:px-8">
-            {/* [-webkit-app-region:drag] makes this row double as the desktop
-                app's window-drag handle (a no-op outside Electron, so it's
-                safe unconditionally) — each interactive child below is
-                explicitly carved out with the matching no-drag utility so
-                clicks still reach them instead of moving the window.
-                Extra top padding clears the window edge; tighter bottom
-                padding pulls the chrome closer to page content. */}
+          {/* Sticky chrome lives outside the 1440px column so the scroll
+              glass can span the whole workspace (rail edge → window edge).
+              [-webkit-app-region:drag] also makes this row the desktop
+              window-drag handle; interactive children opt out with no-drag. */}
+          <div
+            className="sticky top-0 z-40 isolate mb-1 flex items-center justify-end gap-1.5 px-4 pb-2 pt-5 [-webkit-app-region:drag] md:px-8"
+            data-scroll-glass={topBarVisible ? "visible" : "hidden"}
+          >
             <div
-              className="sticky top-0 z-40 isolate mb-1 flex items-center justify-end gap-1.5 pb-2 pt-5 [-webkit-app-region:drag]"
-              data-scroll-glass={topBarVisible ? "visible" : "hidden"}
-            >
-              <div
-                aria-hidden
-                className={cn(
-                  "pointer-events-none absolute -inset-x-4 inset-y-0 z-0 border-b border-line/70 bg-[linear-gradient(180deg,rgba(10,10,12,0.94),rgba(10,10,12,0.76))] shadow-[0_16px_36px_rgba(0,0,0,0.28)] backdrop-blur-xl backdrop-saturate-150 transition-[opacity,transform] duration-300 ease-out motion-reduce:transition-none md:-inset-x-8",
-                  topBarVisible
-                    ? "translate-y-0 opacity-100"
-                    : "-translate-y-2 opacity-0"
-                )}
-              />
-              <div className="relative z-10 [-webkit-app-region:no-drag]">
-                <NotificationCenter />
-              </div>
-              <div className="relative z-10 [-webkit-app-region:no-drag]">
-                <MessageCenter />
-              </div>
-              <div className="relative z-10 [-webkit-app-region:no-drag]">
-                <ProfileMenu />
-              </div>
-              <div
-                data-tour="global-search"
-                className="relative z-50 w-full max-w-[280px] [-webkit-app-region:no-drag]"
-              >
-                <GlobalSearch className="ml-1" />
-              </div>
+              aria-hidden
+              className={cn(
+                "pointer-events-none absolute inset-x-0 inset-y-0 z-0 border-b border-line/40 bg-[linear-gradient(180deg,rgb(var(--bg-1-rgb)_/_0.42),rgb(var(--bg-1-rgb)_/_0.16))] shadow-[0_8px_24px_rgba(0,0,0,0.12)] backdrop-blur-2xl backdrop-saturate-150 transition-[opacity,transform] duration-300 ease-out motion-reduce:transition-none",
+                topBarVisible
+                  ? "translate-y-0 opacity-100"
+                  : "-translate-y-2 opacity-0"
+              )}
+            />
+            <div className="relative z-10 [-webkit-app-region:no-drag]">
+              <NotificationCenter />
             </div>
+            <div className="relative z-10 [-webkit-app-region:no-drag]">
+              <MessageCenter />
+            </div>
+            <div className="relative z-10 [-webkit-app-region:no-drag]">
+              <ProfileMenu />
+            </div>
+            <div
+              data-tour="global-search"
+              className="relative z-50 w-full max-w-[280px] [-webkit-app-region:no-drag]"
+            >
+              <GlobalSearch className="ml-1" />
+            </div>
+          </div>
+          <div className="relative z-[1] mx-auto w-full max-w-[1440px] px-4 md:px-8">
             {/* Above the page, not inside it: whether this catalog is real is
                 context for every screen, not a fact about any one of them. */}
             <DemoBanner />

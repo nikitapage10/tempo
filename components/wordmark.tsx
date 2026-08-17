@@ -22,61 +22,77 @@ type WordmarkProps = {
   size?: number;
   /** Compact light-bar mark for controls too narrow for the full wordmark. */
   markOnly?: boolean;
+  /** Pair the ice→amber bars with the supplied wordmark (studio rail lockup). */
+  withMark?: boolean;
   className?: string;
 };
+
+function LightBarMark({ size }: { size: number }) {
+  return (
+    <span
+      className="relative flex shrink-0 items-center gap-[3.5px]"
+      style={{ height: size }}
+      aria-hidden
+    >
+      <span
+        className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 blur-[6px] motion-reduce:hidden"
+        style={{
+          width: size * 1.5,
+          height: size * 1.1,
+          background: RAMP,
+          opacity: 0.35,
+        }}
+      />
+      {BARS.map((bar, index) => (
+        <span
+          key={index}
+          className="relative rounded-full"
+          style={{
+            width: bar.w,
+            height: `${bar.h * 100}%`,
+            background: RAMP,
+            opacity: bar.o,
+          }}
+        />
+      ))}
+    </span>
+  );
+}
 
 export function Wordmark({
   size = 22,
   markOnly = false,
+  withMark = false,
   className,
 }: WordmarkProps) {
   return (
     <span
-      className={cn("inline-flex select-none items-center", className)}
+      className={cn(
+        "inline-flex select-none items-center",
+        withMark && !markOnly && "gap-2",
+        className
+      )}
       aria-label="TEMPO"
       role="img"
     >
       {markOnly ? (
-        <span
-          className="relative flex shrink-0 items-center gap-[3.5px]"
-          style={{ height: size }}
-          aria-hidden
-        >
-          <span
-            className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 blur-[6px] motion-reduce:hidden"
-            style={{
-              width: size * 1.5,
-              height: size * 1.1,
-              background: RAMP,
-              opacity: 0.35,
-            }}
-          />
-          {BARS.map((bar, index) => (
-            <span
-              key={index}
-              className="relative rounded-full"
-              style={{
-                width: bar.w,
-                height: `${bar.h * 100}%`,
-                background: RAMP,
-                opacity: bar.o,
-              }}
-            />
-          ))}
-        </span>
+        <LightBarMark size={size} />
       ) : (
-        // Use the supplied raster directly: its distressed edges are the
-        // identity, not decoration to be recreated with a typeface.
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src="/tempo-logo.png"
-          alt=""
-          width={1819}
-          height={264}
-          draggable={false}
-          className="block max-w-none shrink-0 select-none object-contain"
-          style={{ height: Math.max(12, size * 0.78), width: "auto" }}
-        />
+        <>
+          {withMark ? <LightBarMark size={Math.round(size * 0.7)} /> : null}
+          {/* Use the supplied raster directly: its distressed edges are the
+              identity, not decoration to be recreated with a typeface. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/tempo-logo.png"
+            alt=""
+            width={1819}
+            height={264}
+            draggable={false}
+            className="block max-w-none shrink-0 select-none object-contain"
+            style={{ height: Math.max(12, size * 0.78), width: "auto" }}
+          />
+        </>
       )}
     </span>
   );

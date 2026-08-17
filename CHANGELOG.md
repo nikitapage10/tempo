@@ -2,6 +2,10 @@
 
 Plain-English history of what changed in TEMPO, newest first.
 
+## 2026-08-17
+
+- Changed (v0.179.0): The once-a-day intro now plays all the way through, with film grain over the picture so it doesn't look soft. Skip sits at the bottom of the screen, and the last two seconds fade into your workspace instead of cutting away. When a page scrolls, the frost behind Search, notifications, messages, and your profile now stretches from the left menu to the right edge of the window and is lighter so the workspace video still shows through. The expanded left menu also keeps the original ice-to-amber light bars beside the TEMPO wordmark.
+
 ## 2026-08-16
 
 - Fixed (v0.178.1): Opening **Team room** from an artist's Brief no longer fails with a database conflict error. The room can be created and members added as intended.
