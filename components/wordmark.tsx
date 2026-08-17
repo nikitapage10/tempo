@@ -22,7 +22,7 @@ type WordmarkProps = {
   size?: number;
   /** Compact light-bar mark for controls too narrow for the full wordmark. */
   markOnly?: boolean;
-  /** Pair the ice→amber bars with the supplied wordmark (studio rail lockup). */
+  /** Rail lockup: bars, a hairline divider, then TEMPO in display type. */
   withMark?: boolean;
   className?: string;
 };
@@ -59,6 +59,23 @@ function LightBarMark({ size }: { size: number }) {
   );
 }
 
+function TypeWordmark({ size }: { size: number }) {
+  return (
+    <span
+      className="font-display font-light leading-none text-text-hi/90"
+      style={{
+        fontSize: size * 0.72,
+        letterSpacing: `${size * 0.2}px`,
+        // Tracking leaves a gap after the final O — pull it back so the
+        // lockup stays optically centred.
+        marginRight: `-${size * 0.2}px`,
+      }}
+    >
+      TEMPO
+    </span>
+  );
+}
+
 export function Wordmark({
   size = 22,
   markOnly = false,
@@ -67,19 +84,28 @@ export function Wordmark({
 }: WordmarkProps) {
   return (
     <span
-      className={cn(
-        "inline-flex select-none items-center",
-        withMark && !markOnly && "gap-2",
-        className
-      )}
+      className={cn("inline-flex select-none items-center", className)}
       aria-label="TEMPO"
       role="img"
     >
       {markOnly ? (
         <LightBarMark size={size} />
+      ) : withMark ? (
+        <>
+          <LightBarMark size={size} />
+          <span
+            aria-hidden
+            className="mx-3 w-px shrink-0"
+            style={{
+              height: size * 0.92,
+              background:
+                "linear-gradient(180deg, transparent, rgb(242 240 235 / 0.35), transparent)",
+            }}
+          />
+          <TypeWordmark size={size} />
+        </>
       ) : (
         <>
-          {withMark ? <LightBarMark size={Math.round(size * 0.7)} /> : null}
           {/* Use the supplied raster directly: its distressed edges are the
               identity, not decoration to be recreated with a typeface. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}

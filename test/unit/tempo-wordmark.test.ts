@@ -7,10 +7,9 @@ const read = (path: string) => readFileSync(resolve(path), "utf8");
 describe("TEMPO supplied wordmark", () => {
   const wordmark = read("components/wordmark.tsx");
 
-  it("uses the supplied raster for every full brand lockup", () => {
+  it("uses the supplied raster for standalone brand lockups", () => {
     expect(existsSync(resolve("public/tempo-logo.png"))).toBe(true);
     expect(wordmark).toContain('src="/tempo-logo.png"');
-    expect(wordmark).not.toContain(">TEMPO<");
   });
 
   it("keeps a compact mark for controls where the wide logo cannot fit", () => {
@@ -18,8 +17,11 @@ describe("TEMPO supplied wordmark", () => {
     expect(wordmark).toContain("BARS.map");
   });
 
-  it("pairs the light-bar mark with the supplied wordmark in the labeled rail", () => {
+  it("pairs the light-bar mark with typeset TEMPO and a divider in the labeled rail", () => {
     expect(wordmark).toContain("withMark");
+    expect(wordmark).toContain("TypeWordmark");
+    expect(wordmark).toMatch(/>\s*TEMPO\s*</);
+    expect(wordmark).toContain("w-px");
     expect(read("components/app-shell.tsx")).toContain(
       '<Wordmark size={26} withMark className="hidden xl:inline-flex" />'
     );
