@@ -5,7 +5,7 @@ export function pointerFromDragEvent(
   event: Pick<DragOverEvent, "activatorEvent" | "delta">
 ): { x: number; y: number } | null {
   const activator = event.activatorEvent;
-  if (!activator || !("clientX" in activator) || !("clientY" in activator)) {
+  if (!(activator instanceof MouseEvent)) {
     return null;
   }
   return {
