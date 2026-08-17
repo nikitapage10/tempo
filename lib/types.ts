@@ -319,6 +319,7 @@ export type Conversation = {
   title: string | null;
   created_by_profile_id: string;
   scene_id?: string | null;
+  session_room_id?: string | null;
   last_message_at: string | null;
   last_message_preview: string | null;
   created_at: string;
@@ -366,7 +367,9 @@ export type ConversationMessage = {
   conversation_id: string;
   sender_profile_id: string | null;
   sender_scene_persona_id?: string | null;
-  sender_user_id: string;
+  sender_session_guest_id?: string | null;
+  sender_guest_name?: string | null;
+  sender_user_id: string | null;
   body: string;
   media: (string | MessageAttachment)[];
   reply_to_message_id?: string | null;
@@ -666,6 +669,102 @@ export type Session = {
   elapsed_sec: number | null;
   next_action_after: string | null;
   created_at: string | null;
+};
+
+/**
+ * Persistent Session room (migration 114). Not the per-track focus log above.
+ * A Session grants access to the room, never to anyone's catalog.
+ */
+export type SessionRoomStatus = "active" | "archived";
+export type SessionMemberRole = "host" | "member";
+export type SessionMemberStatus = "active" | "left" | "removed";
+
+export type SessionRoomMember = {
+  user_id: string;
+  profile_id: string;
+  role: SessionMemberRole;
+  status: SessionMemberStatus;
+  display_name: string;
+  emblem_url: string | null;
+  palette_id: string | null;
+  ice_color: string | null;
+  amber_color: string | null;
+};
+
+export type SessionRoom = {
+  id: string;
+  artist_id: string;
+  space_id: string;
+  title: string;
+  purpose: string;
+  status: SessionRoomStatus;
+  notes: string;
+  notes_updated_at: string | null;
+  notes_updated_by_user_id: string | null;
+  created_by_user_id: string;
+  last_hang_at: string | null;
+  hang_count: number;
+  created_at: string;
+  updated_at: string;
+  members: SessionRoomMember[];
+  open_agenda_count: number;
+  task_count: number;
+  conversation_id: string | null;
+  open_meet_id: string | null;
+};
+
+export type SessionAgendaItem = {
+  id: string;
+  session_room_id: string;
+  body: string;
+  sort: number;
+  done_at: string | null;
+  done_by_user_id: string | null;
+  done_in_meet_id: string | null;
+  created_by_user_id: string;
+  created_at: string;
+};
+
+export type SessionPinSummary = {
+  id: string;
+  sort: number;
+  note: string;
+  track_id: string | null;
+  project_id: string | null;
+  version_id: string | null;
+  task_id: string | null;
+  title: string;
+  artwork_path: string | null;
+};
+
+export type SessionMeet = {
+  id: string;
+  session_room_id: string;
+  started_at: string;
+  ended_at: string | null;
+  started_by_user_id: string;
+  summary: string;
+};
+
+export type SessionAttendance = {
+  id: string;
+  session_meet_id: string;
+  user_id: string | null;
+  guest_id?: string | null;
+  display_name: string;
+  first_seen_at: string;
+  last_seen_at: string;
+  on_call_seconds: number;
+};
+
+export type SessionDecision = {
+  id: string;
+  session_room_id: string;
+  session_meet_id: string;
+  message_id: string;
+  body: string;
+  created_at: string;
+  created_by_user_id: string;
 };
 
 /** Built-in or workspace-defined task category key. */

@@ -8,7 +8,7 @@
 // secret stays on Vercel. This process only ever authenticates as the
 // signed-in artist, same as a browser tab would.
 
-const { app, BrowserWindow, Tray, Menu, nativeImage, shell, ipcMain, protocol, dialog, screen, session, systemPreferences } = require("electron");
+const { app, BrowserWindow, Tray, Menu, nativeImage, shell, ipcMain, protocol, dialog, screen, session, systemPreferences, desktopCapturer } = require("electron");
 const path = require("path");
 const { autoUpdater } = require("electron-updater");
 const { Vault } = require("./vault");
@@ -308,6 +308,16 @@ function mediaRequestAllowed(webContents, permission, details = {}) {
   });
 }
 
+let screenSourceResolver = null;
+
+function resolveScreenSource(id) {
+  if (typeof screenSourceResolver !== "function") return false;
+  const resolve = screenSourceResolver;
+  screenSourceResolver = null;
+  resolve(id);
+  return true;
+}
+
 function registerMediaPermissions() {
   session.defaultSession.setPermissionCheckHandler((webContents, permission, _origin, details) =>
     mediaRequestAllowed(webContents, permission, details)
@@ -319,13 +329,67 @@ function registerMediaPermissions() {
     }
     if (process.platform === "darwin") {
       try {
-        callback(await systemPreferences.askForMediaAccess("microphone"));
+        const types = Array.isArray(details.mediaTypes) ? details.mediaTypes : [];
+        const wantsMic =
+          permission === "media" &&
+          (types.length === 0 || types.includes("audio") || details.mediaType === "audio");
+        const wantsCam =
+          permission === "media" && (types.includes("video") || details.mediaType === "video");
+        if (wantsMic) {
+          const ok = await systemPreferences.askForMediaAccess("microphone");
+          if (!ok) {
+            callback(false);
+            return;
+          }
+        }
+        if (wantsCam) {
+          const ok = await systemPreferences.askForMediaAccess("camera");
+          if (!ok) {
+            callback(false);
+            return;
+          }
+        }
+        if (permission === "display-capture") {
+          systemPreferences.getMediaAccessStatus("screen");
+        }
+        callback(true);
       } catch {
         callback(false);
       }
       return;
     }
     callback(true);
+  });
+
+  session.defaultSession.setDisplayMediaRequestHandler(async (_request, callback) => {
+    const sources = await desktopCapturer.getSources({
+      types: ["screen", "window"],
+      thumbnailSize: { width: 320, height: 180 },
+    });
+    const payload = sources.map((source) => ({
+      id: source.id,
+      name: source.name,
+      thumbnail: source.thumbnail.toDataURL(),
+    }));
+    const chosenId = await new Promise((resolve) => {
+      if (screenSourceResolver) screenSourceResolver(null);
+      screenSourceResolver = resolve;
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send("desktop:screen-sources", payload);
+      } else {
+        resolve(null);
+        return;
+      }
+      setTimeout(() => {
+        if (screenSourceResolver === resolve) resolveScreenSource(null);
+      }, 60_000);
+    });
+    const chosen = sources.find((source) => source.id === chosenId);
+    if (!chosen) {
+      callback({});
+      return;
+    }
+    callback({ video: chosen });
   });
 }
 
@@ -653,6 +717,9 @@ function registerVaultIpc() {
   });
   ipcMain.handle("sync:setEnabled", (_e, next) => setSyncEnabled(Boolean(next)));
   ipcMain.handle("sync:getEnabled", () => syncEnabled);
+  ipcMain.handle("desktop:chooseScreenSource", (_e, id) => {
+    return resolveScreenSource(typeof id === "string" || id === null ? id : null);
+  });
 
   ipcMain.handle("shell:openExternal", async (_e, urlString) => {
     // OAuth authorize URLs (esp. Google) can exceed 2KB with state + PKCE.

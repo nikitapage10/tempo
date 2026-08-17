@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowLeft, Headphones, MessageCircle, MessagesSquare, PenSquare, Users } from "lucide-react";
+import { ArrowLeft, Headphones, MessageCircle, MessagesSquare, PenSquare, Radio, Users } from "lucide-react";
 import { useActiveArtist } from "@/components/active-artist-provider";
 import { ArtistMark } from "@/components/artists/artist-mark";
 import { GroupAvatar } from "@/components/messages/group-avatar";
@@ -10,7 +10,7 @@ import { MessageComposer } from "@/components/messages/message-composer";
 import { NewConversationPanel } from "@/components/messages/new-conversation-panel";
 import { useArtistProfile } from "@/hooks/use-artist-profile";
 import { useConversations, useMessageMutations, useSupportThreads } from "@/hooks/use-messages";
-import { conversationHeading, isArtistGroupConversation } from "@/lib/messages/behavior";
+import { conversationHeading, isArtistGroupConversation, isSessionConversation } from "@/lib/messages/behavior";
 
 type Selected = { kind: "direct" | "support"; id: string } | null;
 
@@ -34,7 +34,7 @@ export function MessageCenter() {
   const unread = directUnread + supportUnread;
   const items = [
     ...supportThreads.map((thread) => ({ kind: "support" as const, id: thread.id, title: thread.subject, preview: thread.messages.at(-1)?.body ?? thread.details, time: thread.last_message_at ?? thread.created_at, unread: Boolean(thread.last_admin_reply_at && (!thread.member_last_read_at || thread.last_admin_reply_at > thread.member_last_read_at)) })),
-    ...directThreads.map((thread) => ({ kind: "direct" as const, id: thread.id, title: conversationHeading({ kind: thread.kind, title: thread.title, teamArtistId: thread.team_artist_id, peerName: thread.peer?.display_name }), preview: thread.last_message_preview ?? "No messages yet", time: thread.last_message_at ?? thread.created_at, unread: (thread.unread_count ?? 0) > 0, thread })),
+    ...directThreads.map((thread) => ({ kind: "direct" as const, id: thread.id, title: conversationHeading({ kind: thread.kind, title: thread.title, teamArtistId: thread.team_artist_id, sessionRoomId: thread.session_room_id, peerName: thread.peer?.display_name }), preview: thread.last_message_preview ?? "No messages yet", time: thread.last_message_at ?? thread.created_at, unread: (thread.unread_count ?? 0) > 0, thread })),
   ].sort((a, b) => b.time.localeCompare(a.time)).slice(0, 8);
   const activeItem = selected
     ? items.find((item) => item.kind === selected.kind && item.id === selected.id)
@@ -101,7 +101,9 @@ export function MessageCenter() {
                 <div className="flex items-start gap-3">
                   {activeItem.kind === "support" ? (
                     <span className="flex size-9 shrink-0 items-center justify-center rounded-full border border-amber/20 bg-amber/10"><Headphones className="size-4 text-amber"/></span>
-                  ) : activeItem.thread && isArtistGroupConversation({ kind: activeItem.thread.kind, teamArtistId: activeItem.thread.team_artist_id }) ? (
+                  ) : activeItem.thread && isSessionConversation({ sessionRoomId: activeItem.thread.session_room_id }) ? (
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-full border border-ice/25 bg-ice/10"><Radio className="size-4 text-ice"/></span>
+                  ) : activeItem.thread && isArtistGroupConversation({ kind: activeItem.thread.kind, teamArtistId: activeItem.thread.team_artist_id, sessionRoomId: activeItem.thread.session_room_id }) ? (
                     <GroupAvatar members={activeItem.thread.members} size={36} className="size-9"/>
                   ) : activeItem.thread?.team_artist_id ? (
                     <span className="flex size-9 shrink-0 items-center justify-center rounded-full border border-ice/25 bg-ice/10"><Users className="size-4 text-ice"/></span>
@@ -139,7 +141,7 @@ export function MessageCenter() {
             <div className="max-h-96 overflow-y-auto">
               {items.map((item) => (
                 <button key={`${item.kind}-${item.id}`} type="button" onClick={() => chooseThread(item.kind, item.id)} className="flex w-full items-start gap-3 border-b border-line/70 px-3 py-3 text-left transition-colors hover:bg-bg-2">
-                  {item.kind === "support" ? <span className="flex size-7 shrink-0 items-center justify-center rounded-full border border-amber/20 bg-amber/10"><Headphones className="size-3.5 text-amber"/></span> : item.thread && isArtistGroupConversation({ kind: item.thread.kind, teamArtistId: item.thread.team_artist_id }) ? <GroupAvatar members={item.thread.members} size={28} className="size-7"/> : item.thread?.team_artist_id ? <span className="flex size-7 shrink-0 items-center justify-center rounded-full border border-ice/25 bg-ice/10"><Users className="size-3.5 text-ice"/></span> : <ArtistMark emblemUrl={item.thread?.peer?.emblem_url ?? null} paletteId={item.thread?.peer?.palette_id} iceColor={item.thread?.peer?.ice_color} amberColor={item.thread?.peer?.amber_color} name={item.title} size={18} className="size-7"/>}
+                  {item.kind === "support" ? <span className="flex size-7 shrink-0 items-center justify-center rounded-full border border-amber/20 bg-amber/10"><Headphones className="size-3.5 text-amber"/></span> : item.thread && isSessionConversation({ sessionRoomId: item.thread.session_room_id }) ? <span className="flex size-7 shrink-0 items-center justify-center rounded-full border border-ice/25 bg-ice/10"><Radio className="size-3.5 text-ice"/></span> : item.thread && isArtistGroupConversation({ kind: item.thread.kind, teamArtistId: item.thread.team_artist_id, sessionRoomId: item.thread.session_room_id }) ? <GroupAvatar members={item.thread.members} size={28} className="size-7"/> : item.thread?.team_artist_id ? <span className="flex size-7 shrink-0 items-center justify-center rounded-full border border-ice/25 bg-ice/10"><Users className="size-3.5 text-ice"/></span> : <ArtistMark emblemUrl={item.thread?.peer?.emblem_url ?? null} paletteId={item.thread?.peer?.palette_id} iceColor={item.thread?.peer?.ice_color} amberColor={item.thread?.peer?.amber_color} name={item.title} size={18} className="size-7"/>}
                   <div className="min-w-0 flex-1"><div className="flex items-center gap-2"><p className="truncate text-xs font-medium text-text-hi">{item.kind === "support" ? `TEMPO Support · ${item.title}` : item.title}</p>{item.unread ? <span className="ml-auto mt-1 size-1.5 shrink-0 rounded-full bg-amber"/> : null}</div><p className="mt-1 line-clamp-3 whitespace-normal text-xs leading-relaxed text-text-lo">{item.preview}</p></div>
                 </button>
               ))}

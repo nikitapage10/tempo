@@ -77,6 +77,14 @@ export async function updateSession(request: NextRequest) {
     path === "/api/review" ||
     path.startsWith("/api/review/");
 
+  // Public Session join. Guests have no TEMPO account; the passcode cookie is
+  // the bearer. Exact `/join` and `/api/sessions/public` prefixes only.
+  const isPublicSessionRoute =
+    path === "/join" ||
+    path.startsWith("/join/") ||
+    path === "/api/sessions/public" ||
+    path.startsWith("/api/sessions/public/");
+
   // Invite landing pages are public so an unauthenticated invitee can read
   // the preview and get routed to sign in; accepting itself still requires
   // an authenticated session (checked in the route handler) — see
@@ -156,6 +164,7 @@ export async function updateSession(request: NextRequest) {
     !isLegalRoute &&
     !isResetPasswordRoute &&
     !isGuestReviewRoute &&
+    !isPublicSessionRoute &&
     !isInviteRoute &&
     !isInviteCodeCheckRoute &&
     !isPublicProfileRoute &&
@@ -203,6 +212,7 @@ export async function updateSession(request: NextRequest) {
       request.headers.has("rsc"));
   const isPublicExperience =
     isGuestReviewRoute ||
+    isPublicSessionRoute ||
     isInviteRoute ||
     isPublicProfileRoute ||
     isPublicSceneRoute ||

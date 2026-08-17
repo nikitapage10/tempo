@@ -90,6 +90,14 @@ const TOURS: Record<string, PageTour> = {
       { selector: 'main a[href^="/scenes/"], main .panel-quiet', matchIndex: 1, kicker: "Inside a scene", title: "Each community has its own rhythm.", copy: "Open a scene to see its feed, events, members, chat, and any onboarding steps from its hosts." },
     ],
   },
+  "/sessions": {
+    id: "sessions",
+    steps: [
+      pageStep("Shared workrooms", "Open a Session.", "Sessions are rooms for you and your people to plan, talk, and work on a song together. Agenda, notes, chat, and hangs stay here."),
+      { selector: 'main button, main [class*="flex-wrap"]', kicker: "Start one", title: "Make a room, invite the people.", copy: "Name the Session, add who should be in it, and pin the track or project you are actually working on." },
+      { selector: 'main a[href^="/sessions/"], main .panel-quiet', matchIndex: 1, kicker: "Inside the room", title: "The hang lives here.", copy: "Open a Session for agenda, shared notes, tasks, chat, and a call when you are ready. A Session never opens anyone's catalog." },
+    ],
+  },
   "/stats": {
     id: "stats",
     steps: [
@@ -186,6 +194,13 @@ const PRO_TOURS: Record<string, PageTour> = {
     steps: [
       pageStep("Shared rooms", "Step into a scene.", "Scenes are focused communities with their own people, conversations, and events. Labels, collectives, and local circles tend to live here."),
       { selector: 'main a[href="/scenes/new"], main [class*="flex-wrap"]', kicker: "Find your rooms", title: "Browse or start one.", copy: "Move between the scenes you are in and the ones you could join, or open a room for a community you already run." },
+    ],
+  },
+  "/sessions": {
+    id: "pro-sessions",
+    steps: [
+      pageStep("Shared workrooms", "Open a Session.", "Sessions are rooms for you and the people around a song. Plan, talk, hang, and keep the notes in one place."),
+      { selector: 'main button, main [class*="flex-wrap"]', kicker: "Start one", title: "Make a room for the work.", copy: "Name it, add the people, and pin what you are actually working on. Being in the room never opens the catalog." },
     ],
   },
   "/settings": {

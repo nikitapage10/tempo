@@ -189,7 +189,7 @@ export async function fetchConversations(
         .select("id", { count: "exact", head: true })
         .eq("conversation_id", c.id)
         .is("deleted_at", null)
-        .neq("sender_user_id", user.id)
+        .or(`sender_user_id.is.null,sender_user_id.neq.${user.id}`)
         .gt("created_at", lastRead ?? "1970-01-01");
       unread = count ?? 0;
     }
@@ -229,6 +229,13 @@ async function enrichMessages(
     supabase.auth.getUser(),
   ]);
   const userId = auth.user?.id ?? null;
+  const guestIds = Array.from(
+    new Set(rows.map((message) => message.sender_session_guest_id).filter((id): id is string => Boolean(id)))
+  );
+  const { data: guests } = guestIds.length
+    ? await supabase.from("session_guests").select("id, display_name").in("id", guestIds)
+    : { data: [] as { id: string; display_name: string }[] };
+  const guestNames = new Map((guests ?? []).map((guest) => [guest.id, guest.display_name]));
   let myPersonaId: string | null = null;
   if (userId && sceneReactions?.length) {
     const { data } = await supabase
@@ -262,6 +269,9 @@ async function enrichMessages(
     const reply = message.reply_to_message_id ? replyMap.get(message.reply_to_message_id) : null;
     return {
       ...message,
+      sender_guest_name: message.sender_session_guest_id
+        ? guestNames.get(message.sender_session_guest_id) ?? "Guest"
+        : message.sender_guest_name ?? null,
       pinned: pinned.has(message.id),
       reactions: Array.from(reactionMap, ([emoji, value]) => ({ emoji, ...value })),
       reply_preview: reply

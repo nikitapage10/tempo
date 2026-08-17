@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canExpandDirectConversation, conversationHeading, conversationMemberLabel, isArtistGroupConversation, isMessagesInboxConversation, isNearConversationBottom, messageDraftStorageKey, MESSAGES_WORKSPACE_HEIGHT_CLASS, preservedScrollTop, resolvePreferredAudioInput, shouldAutoFollowConversation, suggestedGroupTitle, typingExpiry } from "@/lib/messages/behavior";
+import { canExpandDirectConversation, conversationHeading, conversationMemberLabel, isArtistGroupConversation, isMessagesInboxConversation, isNearConversationBottom, isSessionConversation, messageDraftStorageKey, MESSAGES_WORKSPACE_HEIGHT_CLASS, preservedScrollTop, resolvePreferredAudioInput, shouldAutoFollowConversation, suggestedGroupTitle, typingExpiry } from "@/lib/messages/behavior";
 import { audioConstraints } from "@/hooks/use-audio-inputs";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -32,11 +32,11 @@ describe("messaging workspace behavior", () => {
     expect(resolvePreferredAudioInput("stale", ["default", "device-1"])).toBeNull();
   });
 
-  it("allows trusted audio requests while denying cameras and untrusted origins", () => {
+  it("allows trusted audio and video requests while denying untrusted origins", () => {
     const base = { allowedOrigins: ["https://tempo.example"], requestUrl: "https://tempo.example/messages", permission: "media" };
     expect(isMediaRequestAllowed({ ...base, mediaTypes: ["audio"] })).toBe(true);
-    expect(isMediaRequestAllowed({ ...base, mediaTypes: ["video"] })).toBe(false);
-    expect(isMediaRequestAllowed({ ...base, mediaTypes: ["audio", "video"] })).toBe(false);
+    expect(isMediaRequestAllowed({ ...base, mediaTypes: ["video"] })).toBe(true);
+    expect(isMediaRequestAllowed({ ...base, mediaTypes: ["audio", "video"] })).toBe(true);
     expect(isMediaRequestAllowed({ ...base, requestUrl: "https://evil.example", mediaTypes: ["audio"] })).toBe(false);
     expect(isMediaRequestAllowed({ ...base, permission: "camera", mediaTypes: ["audio"] })).toBe(false);
   });
@@ -48,7 +48,11 @@ describe("messaging workspace behavior", () => {
     expect(isMessagesInboxConversation({ kind: "group", sceneId: null, isTeamRoom: false })).toBe(true);
     expect(isArtistGroupConversation({ kind: "group", teamArtistId: null })).toBe(true);
     expect(isArtistGroupConversation({ kind: "group", teamArtistId: "artist-1" })).toBe(false);
+    expect(isArtistGroupConversation({ kind: "group", teamArtistId: null, sessionRoomId: "room-1" })).toBe(false);
     expect(isArtistGroupConversation({ kind: "direct", teamArtistId: null })).toBe(false);
+    expect(isSessionConversation({ sessionRoomId: "room-1" })).toBe(true);
+    expect(isMessagesInboxConversation({ kind: "group", sceneId: null, isTeamRoom: false })).toBe(true);
+    expect(conversationHeading({ kind: "group", title: "Late mix", sessionRoomId: "room-1" })).toBe("Late mix");
     expect(suggestedGroupTitle(["Alex", "Jordan", "Sam", "Riley"])).toBe("Alex, Jordan +2");
     expect(conversationHeading({ kind: "group", title: "Studio crew" })).toBe("Studio crew");
     expect(conversationMemberLabel(["Alex", "Jordan", "Sam", "Riley"])).toBe("Alex, Jordan, Sam +1");

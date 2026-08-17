@@ -168,6 +168,7 @@ const AREA_BY_PATH: { prefix: string; area: AreaKey | "tasks" }[] = [
   { prefix: "/calendar", area: "calendar" },
   { prefix: "/stats", area: "stats" },
   { prefix: "/social", area: "social" },
+  // Sessions is roster-based like Scenes. Do not add /sessions here.
 ];
 
 const WORK_PREFIXES = [
@@ -176,6 +177,7 @@ const WORK_PREFIXES = [
   "/board",
   "/projects",
   "/tasks",
+  "/sessions",
   "/profile",
   "/team",
   "/social",
@@ -235,7 +237,8 @@ export function isPathAllowedForMode(
     pathname.startsWith("/artist") ||
     pathname.startsWith("/team") ||
     pathname.startsWith("/profile") ||
-    pathname.startsWith("/scenes")
+    pathname.startsWith("/scenes") ||
+    pathname.startsWith("/sessions")
   ) {
     return true;
   }

@@ -4,6 +4,9 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-17
 
+- Added (v0.196.0 / Desktop v0.100.28): **Sessions.** Persistent rooms where you and your people plan, talk, and work on a song together. Each Session keeps an agenda, shared notes, pinned tracks or projects, tasks, decisions, and a chat that also appears in Messages. Start a hang for a live call with voice, video, and screenshare; past hangs stay in History. Share a passcode link so a guest can join the room without a TEMPO account: they see titles and artwork, never anyone's catalog. On TEMPO Desktop the first call asks for microphone, camera, and screen recording (and a one-time Windows network prompt); older desktop installs still screenshare in the browser way. The per-track studio timer is now the **Focus log**, so it is not confused with these rooms.
+  Under the hood: run additive migrations 114 then 115 in the Supabase SQL editor after 113. Calls need LiveKit switched on (LIVEKIT_API_KEY, LIVEKIT_API_SECRET, and NEXT_PUBLIC_LIVEKIT_URL). Update TEMPO Desktop after Desktop Release publishes both installers (Windows and Mac).
+
 - Fixed (v0.195.3): The v0.195.2 deploy failed to build — a small typing issue in the board drag code is corrected so the site ships again.
 
 - Fixed (v0.195.2): On the Board, you can now drop a track between other tracks in the same stage — not only at the very top or bottom of the list. Drag toward the gap between two cards, or toward the top or bottom half of a card, and the line shows the exact spot.

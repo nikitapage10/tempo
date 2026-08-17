@@ -88,4 +88,11 @@ contextBridge.exposeInMainWorld("tempoDesktop", {
       return () => ipcRenderer.removeListener("notifications:open", listener);
     },
   },
+
+  onScreenSourceRequest: (callback) => {
+    const listener = (_event, sources) => callback(sources);
+    ipcRenderer.on("desktop:screen-sources", listener);
+    return () => ipcRenderer.removeListener("desktop:screen-sources", listener);
+  },
+  chooseScreenSource: (id) => ipcRenderer.invoke("desktop:chooseScreenSource", id),
 });

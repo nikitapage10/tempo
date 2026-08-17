@@ -24,7 +24,7 @@ export function resolvePreferredAudioInput(preferredId: string | null, available
   return preferredId && availableIds.includes(preferredId) ? preferredId : null;
 }
 
-/** Inbox rows: 1:1 threads, team rooms, and artist groups — never Scene rooms. */
+/** Inbox rows: 1:1 threads, team rooms, artist groups, and Session chats — never Scene rooms. */
 export function isMessagesInboxConversation(input: {
   kind: string;
   sceneId?: string | null;
@@ -37,8 +37,13 @@ export function isMessagesInboxConversation(input: {
 export function isArtistGroupConversation(input: {
   kind: string;
   teamArtistId?: string | null;
+  sessionRoomId?: string | null;
 }): boolean {
-  return input.kind === "group" && !input.teamArtistId;
+  return input.kind === "group" && !input.teamArtistId && !input.sessionRoomId;
+}
+
+export function isSessionConversation(input: { sessionRoomId?: string | null }): boolean {
+  return Boolean(input.sessionRoomId);
 }
 
 export function suggestedGroupTitle(names: string[]): string {
@@ -52,8 +57,10 @@ export function conversationHeading(input: {
   kind: string;
   title?: string | null;
   teamArtistId?: string | null;
+  sessionRoomId?: string | null;
   peerName?: string | null;
 }): string {
+  if (input.sessionRoomId) return input.title?.trim() || "Session";
   if (input.teamArtistId) return input.title?.trim() || "Artist team";
   if (input.kind === "group") return input.title?.trim() || "Group chat";
   return input.peerName?.trim() || "Conversation";

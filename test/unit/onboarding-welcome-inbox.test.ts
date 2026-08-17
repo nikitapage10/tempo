@@ -30,9 +30,9 @@ describe("Nikita welcome inbox visibility", () => {
     expect(messagesApi).toContain("conversation_id, profile_id, user_id");
     expect(messagesApi).toContain("profile:artist_profiles");
     expect(messagesApi).toContain("p.user_id !== user.id");
-    expect(messagesApi).toContain('.neq("sender_user_id", user.id)');
+    expect(messagesApi).toContain("sender_user_id.is.null,sender_user_id.neq.");
     expect(messagesApi).not.toContain("p.profile_id !== myProfileId");
-    expect(messagesView).toContain("message.sender_user_id === currentUser?.id");
+    expect(messagesView).toContain("isMyMessage");
     expect(messagesView).not.toContain("message.sender_profile_id === myProfileId");
   });
 });

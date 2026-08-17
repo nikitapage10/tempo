@@ -96,6 +96,13 @@ export const SEARCH_PAGES: SearchPageDef[] = [
     keywords: ["tasks", "todo", "to-do", "checklist"],
   },
   {
+    id: "page-sessions",
+    title: "Sessions",
+    subtitle: "Rooms to plan, talk, and work on a song together",
+    href: "/sessions",
+    keywords: ["session", "hang", "room", "call", "video", "meet", "studio"],
+  },
+  {
     id: "page-artist",
     title: "Artist",
     subtitle: "Your public profile and branding",

@@ -21,7 +21,9 @@ import {
   MoreHorizontal,
   ArrowLeft,
   Globe,
+  Radio,
 } from "lucide-react";
+import { ScreenSourcePicker } from "@/components/sessions/screen-source-picker";
 import { AssistantRoot } from "@/components/assistant/assistant-root";
 import { ArtistFavicon } from "@/components/artist-favicon";
 import { ArtistSwitcher } from "@/components/artist-switcher";
@@ -101,6 +103,7 @@ const MUSIC_MAIN_NAV: RailItem[] = [
   { href: "/tracks", label: "Tracks", icon: Music2 },
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
+  { href: "/sessions", label: "Sessions", icon: Radio },
   { href: "/artist", label: "Artist", icon: Disc3, children: ARTIST_NAV_CHILDREN },
   { href: "/social", label: "Social", icon: Orbit, children: SOCIAL_NAV_CHILDREN },
 ];
@@ -117,6 +120,7 @@ const TASKS_MAIN_NAV: RailItem[] = [
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
+  { href: "/sessions", label: "Sessions", icon: Radio },
   { href: "/artist", label: "Artist", icon: Disc3, children: ARTIST_NAV_CHILDREN },
   { href: "/social", label: "Social", icon: Orbit, children: SOCIAL_NAV_CHILDREN },
 ];
@@ -134,6 +138,7 @@ const WORK_MAIN_NAV: RailItem[] = [
   { href: "/board", label: "Board", icon: Columns3 },
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
+  { href: "/sessions", label: "Sessions", icon: Radio },
   { href: "/profile", label: "Profile", icon: CircleUser },
   { href: "/team", label: "Artists", icon: Users },
   { href: "/social", label: "Social", icon: Orbit, children: SOCIAL_NAV_CHILDREN },
@@ -148,7 +153,8 @@ const WORK_MOBILE_NAV = [
 
 const NAV_DESCRIPTIONS: Record<string, string> = {
   "/": "See what is active, due, and ready for your attention today.",
-  "/calendar": "Plan sessions, deadlines, milestones, and release dates.",
+  "/calendar": "Plan hangs, deadlines, milestones, and release dates.",
+  "/sessions": "Rooms where you and your people plan, talk, and work on a song together.",
   "/board": "Move tracks and notes through the stages of your process.",
   "/tracks": "Browse and manage every track in the active space.",
   "/projects": "Organize releases, campaigns, tracks, and milestones together.",
@@ -184,6 +190,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { mode, areas: memberAreas, role, isLoading: modeLoading, activeArtist } =
     useWorkspaceMode();
   const tasksFocused = activeSpace?.focus === "tasks";
+  // Sessions is roster-based like Scenes, not an AreaKey. Do not add /sessions here.
   const NAV_AREA: Partial<Record<string, "catalog" | "calendar" | "stats" | "social">> = {
     "/board": "catalog",
     "/tracks": "catalog",
@@ -551,6 +558,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </DialogContent>
       </Dialog>
 
+      <ScreenSourcePicker />
       <AssistantRoot />
       <ZoomControl />
       <GuidedTour />

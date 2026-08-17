@@ -70,6 +70,14 @@ export type DesktopBridge = {
     }) => Promise<boolean>;
     onOpen: (callback: (url: string) => void) => () => void;
   };
+  /**
+   * Optional until every pre-Sessions display-capture install has updated.
+   * Capability-detect: typeof window.tempoDesktop?.chooseScreenSource === "function".
+   */
+  onScreenSourceRequest?: (
+    callback: (sources: { id: string; name: string; thumbnail: string }[]) => void
+  ) => () => void;
+  chooseScreenSource?: (id: string | null) => Promise<boolean>;
 };
 
 export type DesktopUpdateState = {
