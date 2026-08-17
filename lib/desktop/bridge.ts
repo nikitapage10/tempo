@@ -279,9 +279,11 @@ export async function zoomOut(): Promise<number> {
 
 export async function zoomReset(): Promise<number> {
   if (!isDesktopApp()) return 1;
-  const { writeContentZoom } = await import("@/lib/desktop/content-zoom");
+  const { defaultContentZoom, writeContentZoom } = await import(
+    "@/lib/desktop/content-zoom"
+  );
   await resetNativePageZoom();
-  return writeContentZoom(1);
+  return writeContentZoom(defaultContentZoom());
 }
 
 export async function getZoomFactor(): Promise<number> {

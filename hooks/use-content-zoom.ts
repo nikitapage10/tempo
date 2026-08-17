@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import {
+  defaultContentZoom,
   nudgeContentZoom,
   readContentZoom,
   subscribeContentZoom,
@@ -55,7 +56,7 @@ export function useContentZoom(): {
       return next;
     },
     zoomReset: () => {
-      const next = writeContentZoom(1);
+      const next = writeContentZoom(defaultContentZoom());
       setFactor(next);
       return next;
     },

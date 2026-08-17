@@ -80,8 +80,8 @@ export function ZoomControl({
       <button
         type="button"
         onClick={() => zoomReset()}
-        aria-label="Reset zoom to 100%"
-        title="Reset zoom"
+        aria-label="Reset zoom to default"
+        title="Reset zoom to default"
         tabIndex={shown ? undefined : -1}
         className="min-w-[2.75rem] rounded-full px-1 text-center font-mono text-[11px] transition-colors hover:bg-bg-3 hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
       >

@@ -1,10 +1,16 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  CONTENT_ZOOM_DEFAULT_GEN,
+  CONTENT_ZOOM_DEFAULT_GEN_KEY,
+  CONTENT_ZOOM_STORAGE_KEY,
   clampContentZoom,
+  nudgeContentZoom,
   railLayoutWidthPx,
   railTypeZoom,
+  readContentZoom,
+  suggestedContentZoom,
 } from "@/lib/desktop/content-zoom";
 
 const read = (path: string) => readFileSync(resolve(path), "utf8");
@@ -16,6 +22,151 @@ describe("clampContentZoom", () => {
     expect(clampContentZoom(0.2)).toBe(0.5);
     expect(clampContentZoom(3)).toBe(2);
     expect(clampContentZoom(Number.NaN)).toBe(1);
+  });
+});
+
+describe("suggestedContentZoom", () => {
+  it("keeps 100% when the OS already scales CSS pixels", () => {
+    expect(
+      suggestedContentZoom({
+        devicePixelRatio: 2,
+        screenWidth: 1728,
+        screenHeight: 1117,
+      })
+    ).toBe(1);
+    expect(
+      suggestedContentZoom({
+        devicePixelRatio: 1.5,
+        screenWidth: 2560,
+        screenHeight: 1440,
+      })
+    ).toBe(1);
+  });
+
+  it("opens larger on 1x high-resolution displays", () => {
+    expect(
+      suggestedContentZoom({
+        devicePixelRatio: 1,
+        screenWidth: 3440,
+        screenHeight: 1440,
+      })
+    ).toBe(1.3);
+    expect(
+      suggestedContentZoom({
+        devicePixelRatio: 1,
+        screenWidth: 2560,
+        screenHeight: 1440,
+      })
+    ).toBe(1.3);
+    expect(
+      suggestedContentZoom({
+        devicePixelRatio: 1,
+        screenWidth: 1920,
+        screenHeight: 1080,
+      })
+    ).toBe(1.2);
+  });
+
+  it("adds only a modest bump at 125% Windows scaling", () => {
+    expect(
+      suggestedContentZoom({
+        devicePixelRatio: 1.25,
+        screenWidth: 2752,
+        screenHeight: 1152,
+      })
+    ).toBe(1.1);
+  });
+
+  it("leaves small 1x screens at 100%", () => {
+    expect(
+      suggestedContentZoom({
+        devicePixelRatio: 1,
+        screenWidth: 1366,
+        screenHeight: 768,
+      })
+    ).toBe(1);
+  });
+});
+
+describe("readContentZoom default migration", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  function stubDisplay(opts: {
+    zoom?: string | null;
+    gen?: string | null;
+    width: number;
+    height: number;
+    dpr: number;
+  }) {
+    const store = new Map<string, string>();
+    if (opts.zoom != null) store.set(CONTENT_ZOOM_STORAGE_KEY, opts.zoom);
+    if (opts.gen != null) store.set(CONTENT_ZOOM_DEFAULT_GEN_KEY, opts.gen);
+    const localStorage = {
+      getItem: (key: string) => store.get(String(key)) ?? null,
+      setItem: (key: string, value: string) => {
+        store.set(String(key), String(value));
+      },
+      removeItem: (key: string) => {
+        store.delete(String(key));
+      },
+    };
+    vi.stubGlobal("window", {
+      localStorage,
+      devicePixelRatio: opts.dpr,
+      screen: { width: opts.width, height: opts.height },
+      dispatchEvent: () => true,
+    });
+    vi.stubGlobal("localStorage", localStorage);
+    return store;
+  }
+
+  it("migrates an old 100% default on a 3440×1440 Windows screen", () => {
+    const store = stubDisplay({
+      zoom: "1",
+      width: 3440,
+      height: 1440,
+      dpr: 1,
+    });
+    expect(readContentZoom()).toBe(1.3);
+    expect(store.get(CONTENT_ZOOM_STORAGE_KEY)).toBe("1.3");
+    expect(store.get(CONTENT_ZOOM_DEFAULT_GEN_KEY)).toBe(
+      String(CONTENT_ZOOM_DEFAULT_GEN)
+    );
+  });
+
+  it("keeps an explicit 100% after the new default generation", () => {
+    stubDisplay({
+      zoom: "1",
+      gen: "2",
+      width: 3440,
+      height: 1440,
+      dpr: 1,
+    });
+    expect(readContentZoom()).toBe(1);
+  });
+
+  it("keeps a customized zoom", () => {
+    stubDisplay({
+      zoom: "1.1",
+      width: 3440,
+      height: 1440,
+      dpr: 1,
+    });
+    expect(readContentZoom()).toBe(1.1);
+  });
+
+  it("resets to the display default rather than 100%", () => {
+    stubDisplay({
+      zoom: "1.6",
+      gen: "2",
+      width: 3440,
+      height: 1440,
+      dpr: 1,
+    });
+    expect(nudgeContentZoom(0)).toBe(1.3);
   });
 });
 
@@ -58,6 +209,8 @@ describe("desktop content zoom wiring", () => {
     expect(zoom).toContain("railLayoutWidthPx");
     expect(zoom).toContain("--tempo-zoom-left");
     expect(zoom).toContain('placement?: "rail" | "corner" | "admin"');
+    expect(zoom).toContain("Reset zoom to default");
+    expect(zoom).not.toContain("Reset zoom to 100%");
   });
 
   it("delays corner zoom so it does not arrive with Tune in", () => {

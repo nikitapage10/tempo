@@ -4,6 +4,10 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-17
 
+- Changed (v0.181.0): TEMPO Desktop now opens a little larger on high-resolution Windows screens (1440p and ultrawide at normal scaling), so type and controls aren't tiny. Mac Retina stays at 100% because the Mac already enlarges the interface. If you had already picked a zoom other than 100%, that choice is kept; click the percentage or press Ctrl/Cmd+0 to jump back to the new display default.
+
+- Fixed (v0.181.0): On Tasks, the assignee menu now shows the person's name — so assigning a task to yourself in a Pro workspace reads as that name, not **Artist owner**.
+
 - Changed (v0.181.0): Dictation now streams words continuously into editable text on the browser, Mac, and Windows instead of repeatedly stopping and restarting a recorder. Natural pauses create phrase boundaries without ending the microphone session, music-specific terms get extra context, and a failed live connection falls back to one uninterrupted recording so words are not lost between chunks.
 - Fixed (v0.181.0): The new Pro Boards now actually reach the live site. A punctuation issue in the empty-state copy stopped the last release from building, so the role-based workflows never made it out.
 

@@ -43,7 +43,7 @@ import { useTaskMutations, useTasks } from "@/hooks/use-tasks";
 import { useTracks } from "@/hooks/use-tracks";
 import { useActiveTeamRoster } from "@/hooks/use-artist-members";
 import { useCurrentUser } from "@/hooks/use-current-user";
-import { fetchMemberProfiles } from "@/lib/api/member-profile";
+import { fetchMemberProfiles, fetchMyMemberProfile } from "@/lib/api/member-profile";
 import { canRead, canWrite } from "@/lib/team/areas";
 import { useWorkspaceMode } from "@/hooks/use-workspace-mode";
 import { useQuery } from "@tanstack/react-query";
@@ -60,6 +60,7 @@ import {
   parseBucketDropId,
   type TaskBucket,
 } from "@/lib/tasks/buckets";
+import { buildTaskAssigneeOptions } from "@/lib/tasks/assignee-label";
 import type { Task, TaskCategory, TaskStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { taskCategoryChipStyle } from "@/lib/tasks/categories";
@@ -92,16 +93,46 @@ function TasksContent() {
   const rosterQuery = useActiveTeamRoster(activeArtist?.id ?? null);
   const eligibleMembers = React.useMemo(() => (rosterQuery.data ?? []).filter((member) => member.userId && canRead(member.areas, "tasks")), [rosterQuery.data]);
   const eligibleIds = React.useMemo(() => eligibleMembers.map((member) => member.userId!), [eligibleMembers]);
-  const memberProfiles = useQuery({
-    queryKey: ["member-profiles", "task-assignees", eligibleIds.slice().sort()],
-    queryFn: () => fetchMemberProfiles(eligibleIds),
-    enabled: eligibleIds.length > 0,
+  const myProfileQuery = useQuery({
+    queryKey: ["my-member-profile"],
+    queryFn: fetchMyMemberProfile,
+    enabled: Boolean(currentUser),
     staleTime: 30_000,
   });
-  const assignees = React.useMemo(() => [
-    ...(currentUser ? [{ userId: currentUser.id, label: "Artist owner" }] : []),
-    ...eligibleMembers.map((member) => ({ userId: member.userId!, label: memberProfiles.data?.get(member.userId!)?.displayName || "Team member" })),
-  ], [currentUser, eligibleMembers, memberProfiles.data]);
+  const profileIds = React.useMemo(() => {
+    const ids = new Set(eligibleIds);
+    if (currentUser) ids.add(currentUser.id);
+    if (activeArtist?.user_id) ids.add(activeArtist.user_id);
+    return Array.from(ids);
+  }, [eligibleIds, currentUser, activeArtist?.user_id]);
+  const memberProfiles = useQuery({
+    queryKey: ["member-profiles", "task-assignees", profileIds.slice().sort()],
+    queryFn: () => fetchMemberProfiles(profileIds),
+    enabled: profileIds.length > 0,
+    staleTime: 30_000,
+  });
+  const assignees = React.useMemo(() => {
+    const memberNames = new Map<string, string | null>();
+    memberProfiles.data?.forEach((profile, id) => {
+      memberNames.set(id, profile.displayName);
+    });
+    return buildTaskAssigneeOptions({
+      currentUserId: currentUser?.id ?? null,
+      currentUserEmail: currentUser?.email ?? null,
+      currentUserName: myProfileQuery.data?.displayName ?? null,
+      ownerUserId: activeArtist?.user_id ?? currentUser?.id ?? null,
+      ownerWorkspaceName: activeArtist?.name ?? null,
+      memberNames,
+      eligibleUserIds: eligibleIds,
+    });
+  }, [
+    currentUser,
+    myProfileQuery.data,
+    activeArtist?.user_id,
+    activeArtist?.name,
+    memberProfiles.data,
+    eligibleIds,
+  ]);
   const tracksQuery = useTracks(activeSpaceId);
   const projectsQuery = useProjects(activeSpaceId);
 

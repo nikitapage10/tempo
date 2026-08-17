@@ -39,5 +39,8 @@ describe("tasks page drag and closed-out", () => {
     expect(page.indexOf('htmlFor="task-track"')).toBeGreaterThan(moreDetails);
     expect(page.indexOf('htmlFor="task-project"')).toBeGreaterThan(moreDetails);
     expect(page).toContain("await assign.mutateAsync({ id: task.id, userId: assigneeId })");
+    expect(page).toContain("buildTaskAssigneeOptions");
+    expect(page).toContain("fetchMyMemberProfile");
+    expect(page).not.toContain("Artist owner");
   });
 });
