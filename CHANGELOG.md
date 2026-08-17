@@ -4,6 +4,8 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-17
 
+- Changed (v0.189.0): On Social, Add someone in your Top 8 opens a search above that slot, so you can find people you follow and people who follow you without a list appearing further down the page.
+
 - Changed (v0.188.0): On Social, Add someone in your Top 8 opens a search above that slot, so you can find people you follow and people who follow you without a list appearing further down the page.
 
 - Fixed (v0.187.0 / Desktop v0.100.26): Dictate on TEMPO Desktop now shows your words as you speak — assistant, Import, Messages, Origin, Passage, and Calendar — without a Windows network-permission prompt. The desktop app itself carries the live connection. Update TEMPO Desktop after Desktop Release publishes both installers (Windows and Mac).
