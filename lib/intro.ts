@@ -25,7 +25,7 @@ export const ORIGIN_ARRIVAL_KEY = "tempo.originFirstOpen";
 /** Set on <html> before first paint while the intro is still expected. */
 export const INTRO_PENDING_ATTR = "data-intro-pending";
 
-/** webm first — ~1/3 the size of the mp4 where it's supported. */
+/** Prefer WebM where it is supported, with MP4 as the broad fallback. */
 export const INTRO_SOURCES: { src: string; type: string }[] = [
   { src: "/intro/tempo-intro.webm", type: "video/webm" },
   { src: "/intro/tempo-intro.mp4", type: "video/mp4" },

@@ -18,19 +18,9 @@ import {
   introDayKey,
   introWillPlay,
 } from "@/lib/intro";
-import {
-  TEMPO_THEME_SRC,
-  TEMPO_THEME_VOLUME,
-  startTempoThemeBed,
-  stopTempoThemeBed,
-} from "@/lib/audio/tempo-theme-bed";
 import { LfWindow } from "@/components/lf-windows";
 import { cn } from "@/lib/utils";
 
-const WORDMARK_START = 2.2; // s — per-character reveal begins
-const WORDMARK_STAGGER = 0.09; // s between characters
-const WORDMARK_SETTLE = 0.42; // s per character fade/blur/rise
-const MELT_START = 7.6; // s — dispersion melt begins
 const MELT_DURATION_MS = 1100;
 /** The whole overlay (black backdrop included) dissolves over the tail of the
  *  melt, so the streaks stay full-strength briefly before the app shows through. */
@@ -39,13 +29,11 @@ const MELT_FADE_DELAY_MS = 350;
  *  cover a possible one-frame offset. */
 const CANVAS_SWAP_MS = 80;
 const SKIP_HINT_AFTER_MS = 1200;
-const SAFETY_TIMEOUT_MS = 12000;
+const SAFETY_TIMEOUT_MS = 16000;
 /** Longest we'll sit on black waiting for enough video to play smoothly. */
 const BUFFER_WAIT_MS = 2500;
 const DPR_CAP = 1.5;
 const MAX_INTERNAL_PIXELS = 1280 * 720;
-
-const CHARS = ["T", "E", "M", "P", "O"];
 
 type GL = {
   renderer: WebGLRenderer;
@@ -57,10 +45,10 @@ type GL = {
 };
 
 /**
- * Boot intro: the TEMPO INTRO video plays full-bleed, the wordmark reveals
- * character by character over it, then a GLSL dispersion pass melts the
- * frame apart while the app dissolves up underneath. Once per calendar day;
- * skipped under prefers-reduced-motion.
+ * Boot intro: the supplied TEMPO film plays full-bleed with its authored logo
+ * and soundtrack, then a GLSL dispersion pass melts the final frame while the
+ * app dissolves up underneath. Once per calendar day; skipped under
+ * prefers-reduced-motion.
  *
  * Playback deliberately runs as a plain composited <video>, NOT through the
  * shader: sampling it into a VideoTexture costs a full-frame GPU upload every
@@ -81,19 +69,14 @@ export function IntroMoment({
     "checking" | "playing" | "melting" | "done"
   >("checking");
   const [glReady, setGlReady] = React.useState(false);
-  const [charsOn, setCharsOn] = React.useState<boolean[]>(() =>
-    CHARS.map(() => false)
-  );
   const [showSkipHint, setShowSkipHint] = React.useState(false);
 
   const videoRef = React.useRef<HTMLVideoElement>(null);
-  const audioRef = React.useRef<HTMLAudioElement>(null);
   const containerRef = React.useRef<HTMLDivElement>(null);
   const glRef = React.useRef<GL | null>(null);
   const phaseRef = React.useRef(phase);
   phaseRef.current = phase;
   const gateRanRef = React.useRef(false);
-  const cancelBedFadeRef = React.useRef<(() => void) | null>(null);
 
   /** Stable across playing→melting so the melt context survives the switch. */
   const glActive = phase === "playing" || phase === "melting";
@@ -144,27 +127,6 @@ export function IntroMoment({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [phase, skipToMelt]);
 
-  // Soft Tempo Theme under the film — same bed as login / Origin.
-  React.useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    if (phase === "playing") {
-      cancelBedFadeRef.current?.();
-      cancelBedFadeRef.current = startTempoThemeBed(audio, TEMPO_THEME_VOLUME) ?? null;
-      return () => {
-        cancelBedFadeRef.current?.();
-        cancelBedFadeRef.current = null;
-      };
-    }
-
-    if (phase === "melting" || phase === "done") {
-      cancelBedFadeRef.current?.();
-      cancelBedFadeRef.current = null;
-      void stopTempoThemeBed(audio);
-    }
-  }, [phase]);
-
   // Chrome punch-through, and pause the field so the video gets the GPU.
   // Both release on "melting" — the field has to be live again by the time
   // the dissolve reveals it. Written as a plain set (no cleanup-then-reapply)
@@ -190,39 +152,19 @@ export function IntroMoment({
     return () => window.clearTimeout(t);
   }, [phase, finish]);
 
-  // Video playback + timeline (character reveal, melt trigger) driven off
-  // currentTime so a decode stall can't desync text from picture.
+  // Play the supplied film through to its authored ending before handing off.
   React.useEffect(() => {
     if (phase !== "playing") return;
     const video = videoRef.current;
     if (!video) return;
 
     let cancelled = false;
-    let meltTriggered = false;
     let hintTimer: number | null = null;
     let bufferTimer: number | null = null;
     let started = false;
 
-    const onTimeUpdate = () => {
-      const t = video.currentTime;
-      if (t >= WORDMARK_START) {
-        setCharsOn((prev) => {
-          const idx = Math.min(
-            CHARS.length,
-            Math.floor((t - WORDMARK_START) / WORDMARK_STAGGER) + 1
-          );
-          const next = CHARS.map((_, i) => i < idx);
-          return next.every((v, i) => v === prev[i]) ? prev : next;
-        });
-      }
-      if (t >= MELT_START && !meltTriggered) {
-        meltTriggered = true;
-        setPhase("melting");
-      }
-    };
-
     const onEnded = () => {
-      if (!meltTriggered) setPhase("melting");
+      setPhase("melting");
     };
 
     const onError = () => {
@@ -237,16 +179,23 @@ export function IntroMoment({
       started = true;
       if (bufferTimer) window.clearTimeout(bufferTimer);
       video.removeEventListener("canplaythrough", start);
-      video.play().catch(() => {
-        if (!cancelled) finish();
-      });
+      video
+        .play()
+        .catch(() => {
+          // Browsers may block audible autoplay after navigation. Preserve the
+          // film instead of dropping the whole intro when that happens.
+          video.muted = true;
+          return video.play();
+        })
+        .catch(() => {
+          if (!cancelled) finish();
+        });
       hintTimer = window.setTimeout(
         () => setShowSkipHint(true),
         SKIP_HINT_AFTER_MS
       );
     };
 
-    video.addEventListener("timeupdate", onTimeUpdate);
     video.addEventListener("ended", onEnded);
     video.addEventListener("error", onError);
 
@@ -260,7 +209,6 @@ export function IntroMoment({
 
     return () => {
       cancelled = true;
-      video.removeEventListener("timeupdate", onTimeUpdate);
       video.removeEventListener("ended", onEnded);
       video.removeEventListener("error", onError);
       video.removeEventListener("canplaythrough", start);
@@ -437,15 +385,6 @@ export function IntroMoment({
       role="presentation"
       onClick={skipToMelt}
     >
-      {/* Soft soundtrack — same Tempo Theme as login / Origin. */}
-      <audio
-        ref={audioRef}
-        src={TEMPO_THEME_SRC}
-        preload="auto"
-        loop
-        aria-hidden
-      />
-
       {/* Plain composited playback — no per-frame GPU upload. */}
       <video
         ref={videoRef}
@@ -454,7 +393,6 @@ export function IntroMoment({
           cssMelt && "scale-125 opacity-0 blur-2xl transition-[filter,opacity,transform] ease-out"
         )}
         style={cssMelt ? { transitionDuration: `${MELT_DURATION_MS}ms` } : undefined}
-        muted
         playsInline
         preload="auto"
         poster={INTRO_POSTER}
@@ -474,46 +412,6 @@ export function IntroMoment({
         )}
         style={{ transitionDuration: `${CANVAS_SWAP_MS}ms` }}
       />
-
-      {/* Grain over the footage, under the wordmark — the type stays crisp. */}
-      <div className="intro-grain z-[5]" aria-hidden />
-
-      <span
-        aria-label="TEMPO"
-        role="img"
-        className={cn(
-          "relative z-10 inline-flex select-none font-display font-light leading-none text-text-hi/90 transition-[filter,opacity,transform] ease-out",
-          melting && "scale-105 opacity-0 blur-xl"
-        )}
-        style={{
-          fontSize: "clamp(2.5rem, 11vw, 7rem)",
-          letterSpacing: "0.2em",
-          marginRight: "-0.2em",
-          transitionDuration: `${MELT_DURATION_MS}ms`,
-        }}
-      >
-        {CHARS.map((ch, i) => (
-          <span
-            key={i}
-            aria-hidden
-            className="inline-block transition-[opacity,filter,transform] ease-out"
-            style={{
-              opacity: charsOn[i] ? 1 : 0,
-              filter: charsOn[i] ? "blur(0px)" : "blur(10px)",
-              transform: melting
-                ? `translateX(${(i - 2) * 18}px)`
-                : charsOn[i]
-                  ? "translateY(0)"
-                  : "translateY(6px)",
-              transitionDuration: melting
-                ? `${MELT_DURATION_MS}ms`
-                : `${WORDMARK_SETTLE * 1000}ms`,
-            }}
-          >
-            {ch}
-          </span>
-        ))}
-      </span>
 
       <button
         type="button"
