@@ -10,6 +10,7 @@ import {
   type StageAddAction,
 } from "@/components/board/stage-add-menu";
 import { TrackCard } from "@/components/tracks/track-card";
+import { DropIndicator } from "@/components/ui/drop-indicator";
 import { LfWindow } from "@/components/lf-windows";
 import {
   stageHueAt,
@@ -42,6 +43,9 @@ type KanbanColumnProps = {
   fillAvailable?: boolean;
   /** Let a sliding card travel past the column edge while it moves. */
   allowOverflow?: boolean;
+  draggingKind?: "track" | "note" | null;
+  activeSlot?: { kind: "track" | "note"; containerId: string; beforeId: string | null } | null;
+  showInsertSlots?: boolean;
 };
 
 export function KanbanColumn({
@@ -61,6 +65,9 @@ export function KanbanColumn({
   allowCollapse = true,
   fillAvailable,
   allowOverflow,
+  draggingKind,
+  activeSlot,
+  showInsertSlots,
 }: KanbanColumnProps) {
   const { setNodeRef } = useDroppable({
     id: stage.id,
@@ -205,25 +212,97 @@ export function KanbanColumn({
               </div>
             ) : (
               <>
-                {notes.map((note) => (
-                  <BoardNoteCard
-                    key={note.id}
-                    note={note}
-                    compact={compact}
-                    onSave={(patch) => onSaveNote?.(note, patch)}
-                    onDelete={() => onDeleteNote?.(note)}
+                {notes.map((note) => {
+                  const noteSlot = {
+                    kind: "note" as const,
+                    containerId: stage.id,
+                    beforeId: note.id,
+                  };
+                  return (
+                    <React.Fragment key={note.id}>
+                      {showInsertSlots ? (
+                        <DropIndicator
+                          slot={noteSlot}
+                          disabled={draggingKind !== "note"}
+                          active={
+                            draggingKind === "note" &&
+                            activeSlot?.kind === "note" &&
+                            activeSlot.containerId === stage.id &&
+                            activeSlot.beforeId === note.id
+                          }
+                        />
+                      ) : null}
+                      <BoardNoteCard
+                        note={note}
+                        compact={compact}
+                        onSave={(patch) => onSaveNote?.(note, patch)}
+                        onDelete={() => onDeleteNote?.(note)}
+                      />
+                    </React.Fragment>
+                  );
+                })}
+                {showInsertSlots && notes.length > 0 ? (
+                  <DropIndicator
+                    slot={{
+                      kind: "note",
+                      containerId: stage.id,
+                      beforeId: null,
+                    }}
+                    disabled={draggingKind !== "note"}
+                    active={
+                      draggingKind === "note" &&
+                      activeSlot?.kind === "note" &&
+                      activeSlot.containerId === stage.id &&
+                      activeSlot.beforeId == null
+                    }
                   />
-                ))}
-                {visibleTracks.map((track) => (
-                  <TrackCard
-                    key={track.id}
-                    track={track}
-                    onOpen={onOpenTrack}
-                    compact={compact}
-                    roomy={roomy}
-                    onRemoveFromBoard={onRemoveFromBoard}
+                ) : null}
+                {visibleTracks.map((track) => {
+                  const trackSlot = {
+                    kind: "track" as const,
+                    containerId: stage.id,
+                    beforeId: track.id,
+                  };
+                  return (
+                    <React.Fragment key={track.id}>
+                      {showInsertSlots ? (
+                        <DropIndicator
+                          slot={trackSlot}
+                          disabled={draggingKind !== "track"}
+                          active={
+                            draggingKind === "track" &&
+                            activeSlot?.kind === "track" &&
+                            activeSlot.containerId === stage.id &&
+                            activeSlot.beforeId === track.id
+                          }
+                        />
+                      ) : null}
+                      <TrackCard
+                        track={track}
+                        onOpen={onOpenTrack}
+                        compact={compact}
+                        roomy={roomy}
+                        onRemoveFromBoard={onRemoveFromBoard}
+                      />
+                    </React.Fragment>
+                  );
+                })}
+                {showInsertSlots && (visibleTracks.length > 0 || draggingKind === "track") ? (
+                  <DropIndicator
+                    slot={{
+                      kind: "track",
+                      containerId: stage.id,
+                      beforeId: null,
+                    }}
+                    disabled={draggingKind !== "track"}
+                    active={
+                      draggingKind === "track" &&
+                      activeSlot?.kind === "track" &&
+                      activeSlot.containerId === stage.id &&
+                      activeSlot.beforeId == null
+                    }
                   />
-                ))}
+                ) : null}
                 {hiddenCount > 0 ? (
                   <button
                     type="button"

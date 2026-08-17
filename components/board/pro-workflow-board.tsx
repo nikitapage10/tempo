@@ -5,11 +5,14 @@ import {
   DragOverlay,
   PointerSensor,
   closestCorners,
+  pointerWithin,
   useDraggable,
   useDroppable,
   useSensor,
   useSensors,
+  type CollisionDetection,
   type DragEndEvent,
+  type DragOverEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { LayoutGroup, motion } from "framer-motion";
@@ -20,7 +23,6 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronUp,
-  GripVertical,
   Lightbulb,
   Plus,
   Settings2,
@@ -32,6 +34,7 @@ import { useActiveSpace } from "@/components/active-space-provider";
 import { BoardStageSlot } from "@/components/board/board-stage-slot";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { DropIndicator } from "@/components/ui/drop-indicator";
 import { Input } from "@/components/ui/input";
 import { useLayoutMove, useLayoutOverflowUnlock } from "@/components/ui/layout-item";
 import { PageHeader } from "@/components/ui/page-header";
@@ -52,6 +55,34 @@ import type {
   ProWorkflowStage,
 } from "@/lib/pro-workflows/types";
 import { cn } from "@/lib/utils";
+import { insertIdBefore, isNoOpInsert, ranksForIds } from "@/lib/dnd/insert";
+import {
+  parseDropSlotId,
+  sameDropSlot,
+  type DropSlot,
+} from "@/lib/dnd/drop-slot";
+
+const proBoardCollision: CollisionDetection = (args) => {
+  const pointer = pointerWithin(args);
+  if (pointer.length > 0) return pointer;
+  return closestCorners(args);
+};
+
+function proFlowCardDragId(cardId: string) {
+  return `pro-flow-card:${cardId}`;
+}
+
+function parseProFlowCardDragId(id: string): string | null {
+  return id.startsWith("pro-flow-card:") ? id.slice(14) : null;
+}
+
+function proFlowStageDropId(stageId: string) {
+  return `pro-flow-stage:${stageId}`;
+}
+
+function parseProFlowStageDropId(id: string): string | null {
+  return id.startsWith("pro-flow-stage:") ? id.slice(15) : null;
+}
 
 const selectClass =
   "h-9 rounded-input border border-line bg-bg-2 px-3 text-sm text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice";
@@ -76,35 +107,27 @@ function ProFlowCard({
   onRemove?: () => void;
   overlay?: boolean;
 }) {
-  const { attributes, listeners, setActivatorNodeRef, setNodeRef, isDragging } =
-    useDraggable({
-      id: `pro-flow-card:${card.id}`,
-      disabled: overlay,
-      data: { kind: "pro-flow-card", card },
-    });
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: proFlowCardDragId(card.id),
+    disabled: overlay,
+    data: { kind: "pro-flow-card", card },
+  });
   const layoutMove = useLayoutMove(`pro-flow-card-${card.id}`, !overlay);
+  const dragProps = overlay ? {} : { ...listeners, ...attributes };
 
   return (
     <motion.article
       {...layoutMove}
+      {...dragProps}
       ref={setNodeRef}
       className={cn(
         "rounded-card border border-line bg-bg-1/95 p-3 shadow-e1",
+        !overlay && "cursor-grab active:cursor-grabbing",
         isDragging && "opacity-35",
         overlay && "w-[min(340px,82vw)] rotate-1 border-ice/50 shadow-raise"
       )}
     >
       <div className="flex items-start gap-2">
-        <button
-          ref={setActivatorNodeRef}
-          type="button"
-          className="mt-0.5 shrink-0 cursor-grab rounded-input p-1 text-text-lo hover:bg-bg-2 hover:text-ice active:cursor-grabbing"
-          aria-label={`Move ${card.title}`}
-          {...listeners}
-          {...attributes}
-        >
-          <GripVertical className="size-4" />
-        </button>
         <div className="min-w-0 flex-1">
           {card.isExample ? (
             <span className="mb-1 inline-flex items-center gap-1 rounded-chip bg-ice/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.08em] text-ice">
@@ -119,7 +142,11 @@ function ProFlowCard({
         {!overlay && onRemove ? (
           <button
             type="button"
-            onClick={onRemove}
+            onClick={(event) => {
+              event.stopPropagation();
+              onRemove();
+            }}
+            onPointerDown={(event) => event.stopPropagation()}
             className="rounded-input p-1 text-text-lo/60 hover:bg-warn/10 hover:text-warn"
             aria-label={`Remove ${card.title}`}
           >
@@ -136,6 +163,7 @@ function ProFlowCard({
         <select
           value={card.stageId}
           onChange={(event) => onMove(event.target.value)}
+          onPointerDown={(event) => event.stopPropagation()}
           aria-label={`Stage for ${card.title}`}
           className="mt-3 h-7 w-full rounded-input border border-line bg-bg-2 px-2 text-xs text-text-lo focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
         >
@@ -159,6 +187,8 @@ function ProFlowColumn({
   onRemove,
   onAdd,
   allowOverflow,
+  showInsertSlots,
+  activeSlot,
 }: {
   stage: ProWorkflowStage;
   stageIndex: number;
@@ -170,8 +200,13 @@ function ProFlowColumn({
   onRemove: (card: ProWorkflowCard) => void;
   onAdd: (stageId: string) => void;
   allowOverflow?: boolean;
+  showInsertSlots?: boolean;
+  activeSlot?: DropSlot | null;
 }) {
-  const { setNodeRef } = useDroppable({ id: `pro-flow-stage:${stage.id}`, data: { stageId: stage.id } });
+  const { setNodeRef } = useDroppable({
+    id: proFlowStageDropId(stage.id),
+    data: { stageId: stage.id },
+  });
   const hue = hueForStage(stageIndex, stageCount);
   return (
     <section
@@ -194,19 +229,60 @@ function ProFlowColumn({
         <div className="mt-3 h-[2px] rounded-full" style={{ background: `linear-gradient(90deg, transparent, ${hue}aa, transparent)` }} />
       </header>
       <div className="relative flex flex-1 flex-col gap-2">
-        {cards.map((card) => (
-          <ProFlowCard
-            key={card.id}
-            card={card}
-            stages={stages}
-            onMove={(stageId) => onMove(card, stageId)}
-            onRemove={() => onRemove(card)}
-          />
-        ))}
         {cards.length === 0 ? (
-          <div className="flex min-h-28 flex-1 items-center justify-center rounded-card border border-dashed border-line/70 bg-bg-0/25 px-3 text-center text-xs text-text-lo/70">
-            {isOver ? <span className="text-ice">Drop to move here</span> : "This stage is clear."}
-          </div>
+          <>
+            {showInsertSlots ? (
+              <DropIndicator
+                slot={{ kind: "pro", containerId: stage.id, beforeId: null }}
+                active={
+                  activeSlot?.kind === "pro" &&
+                  activeSlot.containerId === stage.id &&
+                  activeSlot.beforeId == null
+                }
+              />
+            ) : null}
+            <div className="flex min-h-28 flex-1 items-center justify-center rounded-card border border-dashed border-line/70 bg-bg-0/25 px-3 text-center text-xs text-text-lo/70">
+              {isOver ? <span className="text-ice">Drop to move here</span> : "This stage is clear."}
+            </div>
+          </>
+        ) : (
+          cards.map((card) => {
+            const slot = {
+              kind: "pro" as const,
+              containerId: stage.id,
+              beforeId: card.id,
+            };
+            return (
+              <React.Fragment key={card.id}>
+                {showInsertSlots ? (
+                  <DropIndicator
+                    slot={slot}
+                    active={
+                      activeSlot?.kind === "pro" &&
+                      activeSlot.containerId === stage.id &&
+                      activeSlot.beforeId === card.id
+                    }
+                  />
+                ) : null}
+                <ProFlowCard
+                  card={card}
+                  stages={stages}
+                  onMove={(stageId) => onMove(card, stageId)}
+                  onRemove={() => onRemove(card)}
+                />
+              </React.Fragment>
+            );
+          })
+        )}
+        {showInsertSlots && cards.length > 0 ? (
+          <DropIndicator
+            slot={{ kind: "pro", containerId: stage.id, beforeId: null }}
+            active={
+              activeSlot?.kind === "pro" &&
+              activeSlot.containerId === stage.id &&
+              activeSlot.beforeId == null
+            }
+          />
         ) : null}
       </div>
       <button
@@ -259,6 +335,7 @@ export function ProWorkflowBoard() {
   const [activeWorkflowId, setActiveWorkflowId] = React.useState<string | null>(null);
   const [focusStart, setFocusStart] = React.useState(0);
   const [overStageId, setOverStageId] = React.useState<string | null>(null);
+  const [overSlot, setOverSlot] = React.useState<DropSlot | null>(null);
   const [activeCard, setActiveCard] = React.useState<ProWorkflowCard | null>(null);
   const [cardTitle, setCardTitle] = React.useState("");
   const [cardNotes, setCardNotes] = React.useState("");
@@ -332,15 +409,102 @@ export function ProWorkflowBoard() {
     } catch (error) { toast(error instanceof Error ? error.message : "Couldn't move that work item."); }
   }
 
+  function cardIdsInStage(stageId: string, excludeId?: string) {
+    return (activeWorkflow?.cards ?? [])
+      .filter((item) => item.stageId === stageId && item.id !== excludeId)
+      .sort((a, b) => a.sort - b.sort)
+      .map((item) => item.id);
+  }
+
+  function resolveOverStage(overId: string): string | null {
+    const slot = parseDropSlotId(overId);
+    if (slot) return slot.containerId;
+    return parseProFlowStageDropId(overId);
+  }
+
+  function resolveDropSlot(overId: string): DropSlot | null {
+    const slot = parseDropSlotId(overId);
+    if (slot?.kind === "pro") return slot;
+    const stageId = parseProFlowStageDropId(overId);
+    if (stageId) return { kind: "pro", containerId: stageId, beforeId: null };
+    const cardId = parseProFlowCardDragId(overId);
+    if (cardId) {
+      const card = activeWorkflow?.cards.find((item) => item.id === cardId);
+      return card
+        ? { kind: "pro", containerId: card.stageId, beforeId: card.id }
+        : null;
+    }
+    return null;
+  }
+
+  function clearDragState() {
+    setActiveCard(null);
+    setOverStageId(null);
+    setOverSlot(null);
+  }
+
+  async function persistCardPlacement(
+    cardId: string,
+    stageId: string,
+    beforeId: string | null
+  ) {
+    const card = activeWorkflow?.cards.find((item) => item.id === cardId);
+    if (!card) return;
+    const sameStage = card.stageId === stageId;
+    const originalIds = sameStage ? cardIdsInStage(stageId) : [];
+    const targetIds = cardIdsInStage(stageId, cardId);
+    const nextIds = insertIdBefore(targetIds, cardId, beforeId);
+    if (sameStage && isNoOpInsert(originalIds, cardId, beforeId)) return;
+
+    try {
+      await Promise.all(
+        ranksForIds(nextIds).map(({ id, sort }) =>
+          mutations.updateCard.mutateAsync({
+            id,
+            patch: {
+              sort,
+              isExample: false,
+              ...(id === cardId && !sameStage ? { stageId } : {}),
+            },
+          })
+        )
+      );
+    } catch (error) {
+      toast(error instanceof Error ? error.message : "Couldn't move that work item.");
+    }
+  }
+
   function handleDragStart(event: DragStartEvent) {
     setActiveCard((event.active.data.current?.card as ProWorkflowCard | undefined) ?? null);
   }
 
+  function handleDragOver(event: DragOverEvent) {
+    const overId = event.over?.id;
+    if (!overId) {
+      setOverStageId(null);
+      setOverSlot(null);
+      return;
+    }
+    const id = String(overId);
+    setOverStageId(resolveOverStage(id));
+    const slot = resolveDropSlot(id);
+    const activeCardId = parseProFlowCardDragId(String(event.active.id));
+    if (slot && slot.beforeId !== activeCardId) {
+      setOverSlot((prev) => (sameDropSlot(prev, slot) ? prev : slot));
+    } else {
+      setOverSlot(null);
+    }
+  }
+
   function handleDragEnd(event: DragEndEvent) {
     const card = (event.active.data.current?.card as ProWorkflowCard | undefined) ?? null;
-    const stageId = event.over?.data.current?.stageId as string | undefined;
-    setActiveCard(null); setOverStageId(null);
-    if (card && stageId) void moveCard(card, stageId);
+    const slot = overSlot;
+    clearDragState();
+    const { over } = event;
+    if (!card || !over) return;
+    const resolved = slot ?? resolveDropSlot(String(over.id));
+    if (!resolved || resolved.kind !== "pro") return;
+    void persistCardPlacement(card.id, resolved.containerId, resolved.beforeId);
   }
 
   if (spaceLoading || bundleQuery.isLoading || (!bundleQuery.data?.initialized && mutations.installSeeds.isPending)) {
@@ -352,7 +516,14 @@ export function ProWorkflowBoard() {
   }
 
   const stages = activeWorkflow?.stages ?? [];
-  const cardsByStage = new Map(stages.map((stage) => [stage.id, activeWorkflow?.cards.filter((card) => card.stageId === stage.id) ?? []]));
+  const cardsByStage = new Map(
+    stages.map((stage) => [
+      stage.id,
+      (activeWorkflow?.cards.filter((card) => card.stageId === stage.id) ?? []).sort(
+        (a, b) => a.sort - b.sort
+      ),
+    ])
+  );
 
   return (
     <div className="py-2">
@@ -382,14 +553,14 @@ export function ProWorkflowBoard() {
       ) : stages.length === 0 ? (
         <div className="panel p-6 text-center"><p className="text-sm text-text-lo">This workflow needs at least one stage. Open Customize to add it.</p></div>
       ) : (
-        <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragOver={(event) => setOverStageId((event.over?.data.current?.stageId as string | undefined) ?? null)} onDragCancel={() => { setActiveCard(null); setOverStageId(null); }} onDragEnd={handleDragEnd}>
+        <DndContext sensors={sensors} collisionDetection={proBoardCollision} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragCancel={clearDragState} onDragEnd={handleDragEnd}>
           <div className="mb-3 flex items-center justify-between gap-3"><div><h2 className="font-display text-lg font-semibold text-text-hi">{activeWorkflow.name}</h2>{activeWorkflow.description ? <p className="mt-1 text-xs text-text-lo">{activeWorkflow.description}</p> : null}</div>{stages.length > BOARD_FOCUS_COUNT ? <div className="flex gap-1"><Button type="button" variant="ghost" size="icon" aria-label="Earlier stages" disabled={focusStart === 0} onClick={() => setFocusStart((value) => clampBoardFocusStart(stages.length, value - 1))}><ChevronLeft /></Button><Button type="button" variant="ghost" size="icon" aria-label="Later stages" disabled={focusStart >= stages.length - BOARD_FOCUS_COUNT} onClick={() => setFocusStart((value) => clampBoardFocusStart(stages.length, value + 1))}><ChevronRight /></Button></div> : null}</div>
           <LayoutGroup id="tempo-pro-board">
           <div data-pro-board data-pro-workflow-board className={cn("flex flex-col gap-3 lg:grid lg:items-stretch lg:transition-[grid-template-columns] lg:duration-300 motion-reduce:transition-none", allowOverflow ? "lg:overflow-visible" : "lg:overflow-hidden")} style={{ gridTemplateColumns: boardFocusGridTemplate(stages.length, focusStart) }}>
             {stages.map((stage, index) => {
               const expanded = index >= focusStart && index < focusStart + BOARD_FOCUS_COUNT;
               const cards = cardsByStage.get(stage.id) ?? [];
-              return <BoardStageSlot key={stage.id} expanded={expanded} overflowVisible={allowOverflow} expandedContent={<ProFlowColumn stage={stage} stageIndex={index} stageCount={stages.length} cards={cards} stages={stages} isOver={overStageId === stage.id} allowOverflow={allowOverflow} onMove={(card, stageId) => void moveCard(card, stageId)} onRemove={(card) => mutations.deleteCard.mutate(card.id)} onAdd={(stageId) => { setCardStageId(stageId); setCreateOpen(true); }} />} railContent={<ProFlowRail stage={stage} count={cards.length} onOpen={() => setFocusStart((current) => focusStartForStage(stages.length, current, index))} />} />;
+              return <BoardStageSlot key={stage.id} expanded={expanded} overflowVisible={allowOverflow} expandedContent={<ProFlowColumn stage={stage} stageIndex={index} stageCount={stages.length} cards={cards} stages={stages} isOver={overStageId === stage.id} allowOverflow={allowOverflow} showInsertSlots={Boolean(activeCard)} activeSlot={overSlot?.kind === "pro" && overSlot.containerId === stage.id ? overSlot : null} onMove={(card, stageId) => void moveCard(card, stageId)} onRemove={(card) => mutations.deleteCard.mutate(card.id)} onAdd={(stageId) => { setCardStageId(stageId); setCreateOpen(true); }} />} railContent={<ProFlowRail stage={stage} count={cards.length} onOpen={() => setFocusStart((current) => focusStartForStage(stages.length, current, index))} />} />;
             })}
           </div>
           </LayoutGroup>

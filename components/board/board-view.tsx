@@ -6,8 +6,10 @@ import {
   DragOverlay,
   PointerSensor,
   closestCorners,
+  pointerWithin,
   useSensor,
   useSensors,
+  type CollisionDetection,
   type DragEndEvent,
   type DragOverEvent,
   type DragStartEvent,
@@ -63,6 +65,12 @@ import { TRACK_TYPES } from "@/lib/constants";
 import { deriveAttentionSignals } from "@/lib/attention/signals";
 import type { BoardNote, Track, TrackInsert, TrackType } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { insertIdBefore, isNoOpInsert, ranksForIds } from "@/lib/dnd/insert";
+import {
+  parseDropSlotId,
+  sameDropSlot,
+  type DropSlot,
+} from "@/lib/dnd/drop-slot";
 
 type BoardSort = "custom" | "title" | "updated" | "deadline";
 
@@ -76,6 +84,12 @@ const BOARD_SORTS: { value: BoardSort; label: string }[] = [
 const BOARD_SORT_KEY = "tempo.boardSort";
 const BOARD_VIEW_KEY = "tempo.boardView";
 type BoardViewMode = "focus" | "overview";
+
+const boardCollision: CollisionDetection = (args) => {
+  const pointer = pointerWithin(args);
+  if (pointer.length > 0) return pointer;
+  return closestCorners(args);
+};
 
 function readBoardSort(): BoardSort {
   if (typeof window === "undefined") return "custom";
@@ -129,7 +143,7 @@ export function BoardView() {
   const stagesQuery = useStages(activeSpaceId);
   const tracksQuery = useTracks(activeSpaceId);
   const notesQuery = useBoardNotes(activeSpaceId);
-  const { create, moveStage } = useTrackMutations(activeSpaceId);
+  const { create, moveStage, reorder } = useTrackMutations(activeSpaceId);
   const {
     create: createNote,
     update: updateNote,
@@ -194,6 +208,7 @@ export function BoardView() {
   }, [searchParams, router]);
   const [activeDrag, setActiveDrag] = React.useState<ActiveDrag | null>(null);
   const [overStageId, setOverStageId] = React.useState<string | null>(null);
+  const [overSlot, setOverSlot] = React.useState<DropSlot | null>(null);
   const allowOverflow = useLayoutOverflowUnlock(!!activeDrag);
 
   const allTags = React.useMemo(() => {
@@ -286,6 +301,8 @@ export function BoardView() {
   );
 
   function resolveOverStage(overId: string): string | null {
+    const slot = parseDropSlotId(overId);
+    if (slot) return slot.containerId;
     if (stages.some((s) => s.id === overId)) return overId;
     const noteId = parseNoteDragId(overId);
     if (noteId) {
@@ -293,6 +310,52 @@ export function BoardView() {
     }
     const overTrack = tracks.find((t) => t.id === overId);
     return overTrack?.stage_id ?? null;
+  }
+
+  function resolveDropSlot(
+    overId: string,
+    dragKind: ActiveDrag["kind"] | null
+  ): DropSlot | null {
+    const slot = parseDropSlotId(overId);
+    if (slot) return slot;
+    if (dragKind && stages.some((s) => s.id === overId)) {
+      return { kind: dragKind, containerId: overId, beforeId: null };
+    }
+    const noteId = parseNoteDragId(overId);
+    if (noteId && dragKind === "note") {
+      const note = notes.find((n) => n.id === noteId);
+      return note
+        ? { kind: "note", containerId: note.stage_id, beforeId: note.id }
+        : null;
+    }
+    const overTrack = tracks.find((t) => t.id === overId);
+    if (overTrack && dragKind === "track") {
+      return {
+        kind: "track",
+        containerId: overTrack.stage_id ?? overId,
+        beforeId: overTrack.id,
+      };
+    }
+    return null;
+  }
+
+  function noteIdsInStage(stageId: string, excludeId?: string) {
+    return sortNotes(
+      notes.filter((n) => n.stage_id === stageId && n.id !== excludeId)
+    ).map((n) => n.id);
+  }
+
+  function trackIdsInStage(stageId: string, excludeId?: string) {
+    return sortBoardTracks(
+      tracks.filter((t) => t.stage_id === stageId && t.id !== excludeId),
+      boardSort
+    ).map((t) => t.id);
+  }
+
+  function clearDragState() {
+    setActiveDrag(null);
+    setOverStageId(null);
+    setOverSlot(null);
   }
 
   function handleDragStart(event: DragStartEvent) {
@@ -311,72 +374,122 @@ export function BoardView() {
     const overId = event.over?.id;
     if (!overId) {
       setOverStageId(null);
+      setOverSlot(null);
       return;
     }
-    setOverStageId(resolveOverStage(String(overId)));
+    const id = String(overId);
+    setOverStageId(resolveOverStage(id));
+    const dragKind = activeDrag?.kind ?? null;
+    const slot = resolveDropSlot(id, dragKind);
+    const activeEntityId =
+      parseNoteDragId(String(event.active.id)) ?? String(event.active.id);
+    if (slot && slot.beforeId !== activeEntityId) {
+      setOverSlot((prev) => (sameDropSlot(prev, slot) ? prev : slot));
+    } else {
+      setOverSlot(null);
+    }
+  }
+
+  async function persistNotePlacement(
+    noteId: string,
+    stageId: string,
+    beforeId: string | null
+  ) {
+    const note = notes.find((n) => n.id === noteId);
+    if (!note) return;
+    const sameStage = note.stage_id === stageId;
+    const originalIds = sameStage
+      ? sortNotes(notes.filter((n) => n.stage_id === stageId)).map((n) => n.id)
+      : [];
+    const targetIds = noteIdsInStage(stageId, noteId);
+    const nextIds = insertIdBefore(targetIds, noteId, beforeId);
+    if (sameStage && isNoOpInsert(originalIds, noteId, beforeId)) return;
+
+    const ranks = ranksForIds(nextIds);
+    try {
+      await Promise.all(
+        ranks.map(({ id, sort }) =>
+          updateNote.mutateAsync({
+            id,
+            patch: {
+              sort,
+              ...(id === noteId && !sameStage ? { stage_id: stageId } : {}),
+            },
+          })
+        )
+      );
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Couldn’t move that note.");
+    }
+  }
+
+  async function persistTrackPlacement(
+    trackId: string,
+    stageId: string,
+    beforeId: string | null
+  ) {
+    const track = tracks.find((t) => t.id === trackId);
+    if (!track) return;
+    const sameStage = track.stage_id === stageId;
+    const originalIds = sameStage
+      ? sortBoardTracks(
+          tracks.filter((t) => t.stage_id === stageId),
+          boardSort
+        ).map((t) => t.id)
+      : [];
+    const targetIds = trackIdsInStage(stageId, trackId);
+    const nextIds = insertIdBefore(targetIds, trackId, beforeId);
+    if (sameStage && isNoOpInsert(originalIds, trackId, beforeId)) return;
+
+    if (boardSort !== "custom") {
+      setSort("custom");
+    }
+
+    try {
+      if (!sameStage) {
+        await changeStage(trackId, stageId, {
+          trackTitle: track.title,
+          fromStageId: track.stage_id,
+        });
+      }
+      await reorder.mutateAsync(
+        ranksForIds(nextIds).map(({ id, sort }) => ({
+          id,
+          list_sort: sort,
+        }))
+      );
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Couldn’t move that track.");
+    }
   }
 
   function handleDragEnd(event: DragEndEvent) {
     const drag = activeDrag;
-    setActiveDrag(null);
-    setOverStageId(null);
+    const slot = overSlot;
+    clearDragState();
     const { over } = event;
     if (!over || !drag) return;
 
-    const overId = String(over.id);
+    const resolved =
+      slot ?? resolveDropSlot(String(over.id), drag.kind);
+    if (!resolved) return;
+    if (resolved.kind === "note" && drag.kind !== "note") return;
+    if (resolved.kind === "track" && drag.kind !== "track") return;
 
     if (drag.kind === "note") {
-      const targetStageId = resolveOverStage(overId);
-      if (!targetStageId || targetStageId === drag.note.stage_id) return;
-      void moveNoteStage
-        .mutateAsync({
-          id: drag.note.id,
-          stageId: targetStageId,
-        })
-        .catch((err) => {
-          toast(
-            err instanceof Error ? err.message : "Couldn’t move that note."
-          );
-        });
-      return;
-    }
-
-    const track = drag.track;
-
-    // Dropping onto another note — move track to that note's stage.
-    const overNoteId = parseNoteDragId(overId);
-    if (overNoteId) {
-      const overNote = notes.find((n) => n.id === overNoteId);
-      const targetStageId = overNote?.stage_id ?? null;
-      if (!targetStageId || targetStageId === track.stage_id) return;
-      void changeStage(track.id, targetStageId, {
-        trackTitle: track.title,
-        fromStageId: track.stage_id,
-      }).catch((err) => {
-        toast(
-          err instanceof Error ? err.message : "Couldn’t move that track."
-        );
-      });
-      return;
-    }
-
-    let targetStageId: string | null = null;
-    if (stages.some((s) => s.id === overId)) {
-      targetStageId = overId;
-    } else {
-      const overTrack = tracks.find((t) => t.id === overId);
-      targetStageId = overTrack?.stage_id ?? null;
-    }
-
-    if (!targetStageId || targetStageId === track.stage_id) return;
-    void changeStage(track.id, targetStageId, {
-      trackTitle: track.title,
-      fromStageId: track.stage_id,
-    }).catch((err) => {
-      toast(
-        err instanceof Error ? err.message : "Couldn’t move that track."
+      void persistNotePlacement(
+        drag.note.id,
+        resolved.containerId,
+        resolved.beforeId
       );
-    });
+      return;
+    }
+
+    void persistTrackPlacement(
+      drag.track.id,
+      resolved.containerId,
+      resolved.beforeId
+    );
   }
 
   async function removeFromBoard(track: Track) {
@@ -711,14 +824,11 @@ export function BoardView() {
       ) : (
         <DndContext
           sensors={sensors}
-          collisionDetection={closestCorners}
+          collisionDetection={boardCollision}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
-          onDragCancel={() => {
-            setActiveDrag(null);
-            setOverStageId(null);
-          }}
+          onDragCancel={clearDragState}
         >
           {viewMode === "overview" ? (
             <BoardOverview
@@ -790,6 +900,16 @@ export function BoardView() {
                         compact={density === "compact"}
                         roomy={roomy}
                         dragging={!!activeDrag}
+                        draggingKind={activeDrag?.kind ?? null}
+                        activeSlot={
+                          overSlot?.kind === "track" || overSlot?.kind === "note"
+                            ? (overSlot as Extract<
+                                DropSlot,
+                                { kind: "track" | "note" }
+                              >)
+                            : null
+                        }
+                        showInsertSlots={!!activeDrag}
                         allowCollapse={onBoardCount > 0 || tracks.length > 0}
                         fillAvailable
                         allowOverflow={allowOverflow}

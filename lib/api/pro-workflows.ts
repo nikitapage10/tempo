@@ -288,7 +288,14 @@ export async function createProWorkflowCard(input: {
 
 export async function updateProWorkflowCard(
   id: string,
-  patch: { stageId?: string; title?: string; notes?: string | null; dueDate?: string | null; isExample?: boolean }
+  patch: {
+    stageId?: string;
+    title?: string;
+    notes?: string | null;
+    dueDate?: string | null;
+    isExample?: boolean;
+    sort?: number;
+  }
 ): Promise<void> {
   const values: Record<string, unknown> = {};
   if (patch.stageId !== undefined) values.stage_id = patch.stageId;
@@ -296,6 +303,7 @@ export async function updateProWorkflowCard(
   if (patch.notes !== undefined) values.notes = patch.notes?.trim() || null;
   if (patch.dueDate !== undefined) values.due_date = patch.dueDate || null;
   if (patch.isExample !== undefined) values.is_example = patch.isExample;
+  if (patch.sort !== undefined) values.sort = patch.sort;
   const { error } = await createClient().from("pro_workflow_cards").update(values).eq("id", id);
   if (error) throw migrationError(error);
 }

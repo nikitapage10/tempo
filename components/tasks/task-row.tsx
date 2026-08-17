@@ -41,8 +41,8 @@ export function DraggableTaskRow(props: TaskRowProps) {
       {...props}
       layoutId={`task-${props.task.id}`}
       rowRef={setNodeRef}
-      rowProps={{ ...listeners, ...attributes }}
-      className={cn("cursor-grab", isDragging && "opacity-40")}
+      dragProps={{ ...listeners, ...attributes }}
+      className={cn(isDragging && "opacity-40")}
     />
   );
 }
@@ -59,12 +59,12 @@ export function TaskRow({
   onDelete,
   onOpen,
   rowRef,
-  rowProps,
+  dragProps,
   className,
   layoutId,
 }: TaskRowProps & {
-  rowRef?: React.Ref<HTMLLIElement>;
-  rowProps?: React.HTMLAttributes<HTMLLIElement>;
+  rowRef?: React.Ref<HTMLDivElement>;
+  dragProps?: React.HTMLAttributes<HTMLDivElement>;
   className?: string;
   layoutId?: string;
 }) {
@@ -76,12 +76,17 @@ export function TaskRow({
 
   return (
     <li
-      ref={rowRef}
       id={`task-${task.id}`}
       className={cn("list-none", className)}
-      {...rowProps}
     >
-      <motion.div {...layoutMove}>
+      <div
+        ref={rowRef}
+        {...dragProps}
+        className={cn(
+          dragProps && "cursor-grab touch-none active:cursor-grabbing"
+        )}
+      >
+        <motion.div {...layoutMove}>
         <SpotlightCard
           role="button"
           tabIndex={0}
@@ -189,7 +194,8 @@ export function TaskRow({
           </button>
         )}
         </SpotlightCard>
-      </motion.div>
+        </motion.div>
+      </div>
     </li>
   );
 }

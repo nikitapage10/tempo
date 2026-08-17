@@ -38,5 +38,20 @@ describe("column layout move animation", () => {
     expect(board).toContain('useLayoutMove(`pro-flow-card-${card.id}`');
     expect(board).toContain('LayoutGroup id="tempo-pro-board"');
     expect(board).toContain("dropAnimation={null}");
+    expect(board).toContain("DropIndicator");
+    expect(board).toContain("cursor-grab");
+  });
+
+  it("uses drop slots and full-card drag on board and tasks", () => {
+    const board = read("components/board/board-view.tsx");
+    const tracks = read("components/tracks/track-card.tsx");
+    const column = read("components/board/kanban-column.tsx");
+    const lanes = read("components/tasks/lanes-view.tsx");
+    expect(board).toContain("insertIdBefore");
+    expect(board).toContain("parseDropSlotId");
+    expect(tracks).toContain("{ ...listeners, ...attributes }");
+    expect(column).toContain("DropIndicator");
+    expect(column).toContain("showInsertSlots");
+    expect(lanes).toContain("DropIndicator");
   });
 });

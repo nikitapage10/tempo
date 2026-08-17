@@ -30,16 +30,15 @@ export function BoardNoteCard({
   onSave,
   onDelete,
 }: BoardNoteCardProps) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: noteDragId(note.id),
-    data: { note, kind: "note" as const },
-    disabled: isDragOverlay,
-  });
-  const layoutMove = useLayoutMove(`board-note-${note.id}`, !isDragOverlay);
-
   const [editing, setEditing] = React.useState(false);
   const [title, setTitle] = React.useState(note.title);
   const [body, setBody] = React.useState(note.body ?? "");
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: noteDragId(note.id),
+    data: { note, kind: "note" as const },
+    disabled: isDragOverlay || editing,
+  });
+  const layoutMove = useLayoutMove(`board-note-${note.id}`, !isDragOverlay);
 
   React.useEffect(() => {
     if (!editing) {
@@ -65,9 +64,11 @@ export function BoardNoteCard({
     <motion.article
       {...layoutMove}
       ref={isDragOverlay ? undefined : setNodeRef}
+      {...(editing || isDragOverlay ? {} : dragHandleProps)}
       className={cn(
         "rounded-card border border-dashed border-line/80 bg-bg-0/50",
         compact ? "px-2 py-1.5" : "px-2.5 py-2",
+        !isDragOverlay && !editing && "cursor-grab touch-none active:cursor-grabbing",
         isDragOverlay && "cursor-grabbing shadow-raise ring-1 ring-amber/40",
         isDragging && !isDragOverlay && "opacity-40"
       )}
@@ -123,19 +124,13 @@ export function BoardNoteCard({
           </div>
         </div>
       ) : (
-        <div
-          className={cn(
-            !isDragOverlay && "cursor-grab active:cursor-grabbing touch-none"
-          )}
-          {...dragHandleProps}
-        >
+        <div>
           <button
             type="button"
             className={cn(
               "block w-full text-left font-medium text-text-hi hover:text-ice",
               compact ? "text-xs" : "text-sm"
             )}
-            onPointerDown={(e) => e.stopPropagation()}
             onClick={() => !isDragOverlay && setEditing(true)}
           >
             {note.title}

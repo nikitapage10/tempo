@@ -18,7 +18,9 @@ import {
 import { LayoutGroup } from "framer-motion";
 import { FlareLine } from "@/components/flare-line";
 import { SlitDivider } from "@/components/ui/slit";
+import { DropIndicator } from "@/components/ui/drop-indicator";
 import { useLayoutOverflowUnlock } from "@/components/ui/layout-item";
+import { useActiveSpace } from "@/components/active-space-provider";
 import { DraggableTaskRow } from "@/components/tasks/task-row";
 import { TaskRescheduleDialog } from "@/components/tasks/task-reschedule-dialog";
 import {
@@ -30,10 +32,23 @@ import {
   dropNeedsDatePrompt,
   immediateDueDateForBucket,
   parseBucketDropId,
+  taskDragId,
   type TaskBucket,
 } from "@/lib/tasks/buckets";
 import type { Task } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { insertIdBefore, isNoOpInsert } from "@/lib/dnd/insert";
+import {
+  parseDropSlotId,
+  sameDropSlot,
+  type DropSlot,
+} from "@/lib/dnd/drop-slot";
+import {
+  applyTaskLaneOrder,
+  readTaskLaneOrder,
+  writeTaskLaneOrder,
+  type TaskLaneOrderMap,
+} from "@/lib/tasks/lane-order";
 
 const bucketCollision: CollisionDetection = (args) => {
   const pointer = pointerWithin(args);
@@ -71,11 +86,25 @@ export function LanesView({
   onOpen: (task: Task) => void;
   onReschedule: (taskId: string, dueDate: string | null) => Promise<void>;
 }) {
+  const { activeSpaceId } = useActiveSpace();
   const [activeTask, setActiveTask] = React.useState<Task | null>(null);
   const [overBucket, setOverBucket] = React.useState<TaskBucket | null>(null);
+  const [overSlot, setOverSlot] = React.useState<DropSlot | null>(null);
+  const [laneOrder, setLaneOrder] = React.useState<TaskLaneOrderMap>(() =>
+    readTaskLaneOrder(activeSpaceId)
+  );
   const [pendingMove, setPendingMove] = React.useState<{ task: Task; target: TaskBucket } | null>(null);
   const allowOverflow = useLayoutOverflowUnlock(Boolean(activeTask));
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+
+  React.useEffect(() => {
+    setLaneOrder(readTaskLaneOrder(activeSpaceId));
+  }, [activeSpaceId]);
+
+  function persistLaneOrder(next: TaskLaneOrderMap) {
+    setLaneOrder(next);
+    if (activeSpaceId) writeTaskLaneOrder(activeSpaceId, next);
+  }
 
   const grouped = React.useMemo(() => {
     const map: Record<TaskBucket, Task[]> = { overdue: [], today: [], week: [], later: [] };
@@ -83,8 +112,39 @@ export function LanesView({
       const b = bucketForTask(t, today);
       if (b) map[b].push(t);
     }
+    for (const bucket of TASK_BUCKETS) {
+      map[bucket] = applyTaskLaneOrder(map[bucket], bucket, laneOrder);
+    }
     return map;
-  }, [tasks, today]);
+  }, [tasks, today, laneOrder]);
+
+  function taskIdsInBucket(bucket: TaskBucket, excludeId?: string) {
+    return grouped[bucket]
+      .filter((task) => task.id !== excludeId)
+      .map((task) => task.id);
+  }
+
+  function resolveTaskSlot(overId: string): DropSlot | null {
+    const slot = parseDropSlotId(overId);
+    if (slot?.kind === "task") return slot;
+    const bucket = parseBucketDropId(overId);
+    if (bucket) {
+      return { kind: "task", containerId: bucket, beforeId: null };
+    }
+    const taskId = overId.startsWith("task:") ? overId.slice(5) : null;
+    if (taskId) {
+      const task = tasks.find((item) => item.id === taskId);
+      const b = task ? bucketForTask(task, today) : null;
+      return b ? { kind: "task", containerId: b, beforeId: taskId } : null;
+    }
+    return null;
+  }
+
+  function clearDrag() {
+    setActiveTask(null);
+    setOverBucket(null);
+    setOverSlot(null);
+  }
 
   function handleDragStart(event: DragStartEvent) {
     const task = event.active.data.current?.task;
@@ -92,27 +152,67 @@ export function LanesView({
   }
 
   function handleDragOver(event: DragOverEvent) {
-    const next = parseBucketDropId(event.over?.id);
-    setOverBucket((prev) => (prev === next ? prev : next));
+    const overId = event.over?.id;
+    if (!overId) {
+      setOverBucket(null);
+      setOverSlot(null);
+      return;
+    }
+    const id = String(overId);
+    const bucket = parseBucketDropId(id) ?? parseDropSlotId(id)?.containerId as TaskBucket | undefined ?? null;
+    setOverBucket(bucket);
+    const slot = resolveTaskSlot(id);
+    const activeId = String(event.active.id);
+    const activeTaskId = activeId.startsWith("task:") ? activeId.slice(5) : activeId;
+    if (slot && slot.beforeId !== activeTaskId) {
+      setOverSlot((prev) => (sameDropSlot(prev, slot) ? prev : slot));
+    } else {
+      setOverSlot(null);
+    }
   }
 
-  function clearDrag() {
-    setActiveTask(null);
-    setOverBucket(null);
+  function applyLanePlacement(taskId: string, bucket: TaskBucket, beforeId: string | null) {
+    const task = tasks.find((item) => item.id === taskId);
+    if (!task) return;
+    const sourceBucket = bucketForTask(task, today);
+    if (!sourceBucket) return;
+
+    const sameBucket = sourceBucket === bucket;
+    const originalIds = sameBucket ? grouped[bucket].map((item) => item.id) : [];
+    const targetIds = taskIdsInBucket(bucket, taskId);
+    const nextIds = insertIdBefore(targetIds, taskId, beforeId);
+    if (sameBucket && isNoOpInsert(originalIds, taskId, beforeId)) return;
+
+    const nextOrder: TaskLaneOrderMap = { ...laneOrder };
+    for (const key of TASK_BUCKETS) {
+      if (key === sourceBucket && key !== bucket && nextOrder[key]) {
+        nextOrder[key] = nextOrder[key]!.filter((id) => id !== taskId);
+      }
+    }
+    nextOrder[bucket] = nextIds;
+    persistLaneOrder(nextOrder);
+
+    if (!sameBucket) {
+      if (!dropNeedsDatePrompt(bucket)) {
+        void onReschedule(taskId, immediateDueDateForBucket(bucket, today));
+        return;
+      }
+      setPendingMove({ task, target: bucket });
+    }
   }
 
   function handleDragEnd(event: DragEndEvent) {
     const task = event.active.data.current?.task as Task | undefined;
-    const target = parseBucketDropId(event.over?.id);
+    const slot = overSlot;
     clearDrag();
-    if (!task || !target) return;
-    const current = bucketForTask(task, today);
-    if (current === target) return;
-    if (!dropNeedsDatePrompt(target)) {
-      void onReschedule(task.id, immediateDueDateForBucket(target, today));
-      return;
-    }
-    setPendingMove({ task, target });
+    const { over } = event;
+    if (!task || !over) return;
+
+    const resolved = slot ?? resolveTaskSlot(String(over.id));
+    if (!resolved || resolved.kind !== "task") return;
+    const target = resolved.containerId as TaskBucket;
+    if (!TASK_BUCKETS.includes(target)) return;
+    applyLanePlacement(task.id, target, resolved.beforeId);
   }
 
   const sourceBucket = activeTask ? bucketForTask(activeTask, today) : null;
@@ -144,6 +244,8 @@ export function LanesView({
                 isDragging={Boolean(activeTask)}
                 isDropTarget={overBucket === bucket && sourceBucket !== bucket}
                 allowOverflow={allowOverflow}
+                showInsertSlots={Boolean(activeTask)}
+                activeSlot={overSlot?.kind === "task" && overSlot.containerId === bucket ? overSlot : null}
               />
             ))}
           </div>
@@ -191,6 +293,8 @@ function LaneColumn({
   isDragging,
   isDropTarget,
   allowOverflow,
+  showInsertSlots,
+  activeSlot,
 }: {
   bucket: TaskBucket;
   list: Task[];
@@ -204,6 +308,8 @@ function LaneColumn({
   isDragging: boolean;
   isDropTarget: boolean;
   allowOverflow: boolean;
+  showInsertSlots: boolean;
+  activeSlot: DropSlot | null;
 }) {
   const { setNodeRef } = useDroppable({ id: bucketDropId(bucket), data: { bucket } });
   const urgent = bucket === "overdue" && list.length > 0 && !isDropTarget;
@@ -242,19 +348,37 @@ function LaneColumn({
       ) : null}
       <ul className="relative space-y-2">
         {list.map((task) => (
-          <DraggableTaskRow
-            key={task.id}
-            task={task}
-            trackTitle={trackName(task.track_id)}
-            projectTitle={projectName(task.project_id)}
-            assigneeLabel={assigneeLabel(task.assigned_to_user_id)}
-            overdue={bucket === "overdue"}
-            focused={editTaskId === task.id}
-            onToggle={() => onToggle(task)}
-            onDelete={() => onDelete(task)}
-            onOpen={() => onOpen(task)}
-          />
+          <React.Fragment key={task.id}>
+            {showInsertSlots ? (
+              <DropIndicator
+                slot={{ kind: "task", containerId: bucket, beforeId: task.id }}
+                active={
+                  activeSlot?.containerId === bucket &&
+                  activeSlot.beforeId === task.id
+                }
+              />
+            ) : null}
+            <DraggableTaskRow
+              task={task}
+              trackTitle={trackName(task.track_id)}
+              projectTitle={projectName(task.project_id)}
+              assigneeLabel={assigneeLabel(task.assigned_to_user_id)}
+              overdue={bucket === "overdue"}
+              focused={editTaskId === task.id}
+              onToggle={() => onToggle(task)}
+              onDelete={() => onDelete(task)}
+              onOpen={() => onOpen(task)}
+            />
+          </React.Fragment>
         ))}
+        {showInsertSlots ? (
+          <DropIndicator
+            slot={{ kind: "task", containerId: bucket, beforeId: null }}
+            active={
+              activeSlot?.containerId === bucket && activeSlot.beforeId == null
+            }
+          />
+        ) : null}
       </ul>
       {list.length === 0 && !isDropTarget ? <LaneEmpty bucket={bucket} /> : null}
     </section>

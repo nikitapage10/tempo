@@ -92,8 +92,10 @@ export function TrackCard({
     <motion.article
       {...layoutMove}
       ref={isDragOverlay ? undefined : setNodeRef}
+      {...dragHandleProps}
       className={cn(
         "relative rounded-card p-px transition-[box-shadow,opacity] duration-hover",
+        !isDragOverlay && "cursor-grab touch-none active:cursor-grabbing",
         isDragOverlay && "cursor-grabbing shadow-raise",
         isDragging && !isDragOverlay && "opacity-40"
       )}
@@ -121,15 +123,12 @@ export function TrackCard({
               "bg-gradient-to-b from-[#17171e] to-bg-1 px-2 py-1 shadow-e1",
               "transition-shadow duration-hover",
               !isDragOverlay && !isDragging && "hover:shadow-e2",
-              isDragOverlay && "ring-1 ring-ice/60",
-              !isDragOverlay && "cursor-grab active:cursor-grabbing touch-none"
+              isDragOverlay && "ring-1 ring-ice/60"
             )}
-            {...dragHandleProps}
           >
             <button
               type="button"
               className="min-w-0 flex-1 truncate text-left text-xs font-medium text-text-hi hover:text-ice"
-              onPointerDown={(e) => e.stopPropagation()}
               onClick={() => onOpen(track)}
             >
               {track.title}
@@ -180,7 +179,6 @@ export function TrackCard({
                   "relative shrink-0 overflow-hidden rounded-input border border-line",
                   roomy ? "size-16 shadow-e1" : "size-11"
                 )}
-                onPointerDown={(e) => e.stopPropagation()}
                 onClick={() => onOpen(track)}
                 aria-label={`Open ${track.title}`}
               >
@@ -192,19 +190,11 @@ export function TrackCard({
                 />
               </button>
 
-              <div
-                className={cn(
-                  "min-w-0 flex-1",
-                  !isDragOverlay &&
-                    "cursor-grab active:cursor-grabbing touch-none"
-                )}
-                {...dragHandleProps}
-              >
+              <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-2">
                   <button
                     type="button"
                     className="min-w-0 text-left"
-                    onPointerDown={(e) => e.stopPropagation()}
                     onClick={() => onOpen(track)}
                   >
                     <h3
