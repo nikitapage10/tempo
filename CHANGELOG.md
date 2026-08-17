@@ -4,6 +4,9 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-17
 
+- Fixed (v0.186.0): Dictate in the assistant — and the same mic control in Import, Messages, Origin, Passage, and Calendar — no longer asks Windows Defender for public and private network access. Spoken words still appear live as you talk.
+- Changed (v0.186.0): The assistant's message box is tall enough to read a full line, grows as you type, and no longer shows a cramped scrollbar inside the field.
+
 - Added (v0.185.0): In a 1:1 artist chat, Add someone starts a new group with that person. You choose whether to include this chat's history; the original conversation stays as it is.
   Under the hood: run additive migration 112 in the Supabase SQL editor after 111.
 
