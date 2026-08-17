@@ -947,7 +947,7 @@ export function OriginStoryScroll({
       // scrollTop directly. The bar itself is hidden: it would cut a hard line
       // down the film.
       className={cn(
-        "no-scrollbar absolute inset-0 z-10 overscroll-contain",
+        "origin-story-scroller no-scrollbar absolute inset-0 z-10 overscroll-contain",
         importStarted ? "overflow-y-hidden" : "overflow-y-auto"
       )}
     >

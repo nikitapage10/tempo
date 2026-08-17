@@ -1168,6 +1168,20 @@
   animation: origin-scroll-prompt-breathe 2.8s ease-in-out infinite;
 }
 
+/* A Retina backdrop sample over a newly-seeked video is the expensive part of
+   the closing scroll. The glass is already nearly opaque, so pause the blur and
+   ambient sweeps only while the trackpad or wheel is moving, then restore them
+   as soon as the gesture settles. */
+.origin-story-scroller[data-origin-scrubbing="true"] .origin-story-chapter {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+.origin-story-scroller[data-origin-scrubbing="true"] .origin-story-chapter::after,
+.origin-story-scroller[data-origin-scrubbing="true"] .origin-scroll-prompt {
+  animation-play-state: paused;
+}
+
 /* The opening story card behaves like a piece of the film, not a form panel. */
 @keyframes origin-first-shape-arrive {
   0% { opacity: 0; transform: translate3d(-18px, 10px, 0); letter-spacing: 0.025em; }

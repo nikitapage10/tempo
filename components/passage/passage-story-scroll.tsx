@@ -67,7 +67,7 @@ function ChapterSection({
     <section aria-labelledby={`passage-chapter-${index}`} className={cn(staticMode && "py-12")}>
       <div
         className={cn(
-          "relative ml-0 flex w-full max-w-2xl flex-col overflow-hidden rounded-[26px] border shadow-3 backdrop-blur-2xl sm:ml-[6%]",
+          "origin-story-chapter relative ml-0 flex w-full max-w-2xl flex-col overflow-hidden rounded-[26px] border shadow-3 backdrop-blur-2xl sm:ml-[6%]",
           // Dense enough to carry body copy over the film's bright streaks.
           "bg-[linear-gradient(125deg,rgb(9_10_13/0.94),rgb(18_21_27/0.9),rgb(10_10_13/0.94))]",
           !staticMode &&
@@ -208,6 +208,9 @@ export function PassageStoryScroll({
 
       const clamped = Math.max(0, Math.min(1, opacity));
       el.style.opacity = String(clamped);
+      const shown = clamped > 0;
+      el.style.visibility = shown ? "visible" : "hidden";
+      el.style.willChange = shown ? "transform, opacity" : "auto";
       el.style.transform = `translate3d(${x}%, -50%, 0) scale(${scale})`;
       el.style.pointerEvents = clamped > 0.6 ? "auto" : "none";
       el.style.zIndex = String(10 + i);
@@ -441,7 +444,7 @@ export function PassageStoryScroll({
   return (
     <div
       ref={scrollerRef}
-      className="no-scrollbar absolute inset-0 z-10 overflow-y-auto overscroll-contain"
+      className="origin-story-scroller no-scrollbar absolute inset-0 z-10 overflow-y-auto overscroll-contain"
     >
       <div style={{ height: `${sections.length * VH_PER_CHAPTER + 100}vh` }} className="w-full">
         <div className="sticky top-0 flex h-[calc(100dvh/var(--origin-zoom,1))] items-center overflow-hidden px-5 py-6 sm:py-8">

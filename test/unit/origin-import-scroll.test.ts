@@ -59,6 +59,7 @@ describe("Origin Shape the Workspace scroll", () => {
 });
 
 describe("Origin and Passage overlay fit", () => {
+  const originStory = read("components/origin/origin-story-scroll.tsx");
   const overlay = read("components/origin/origin-copy-layer.tsx");
   const intro = read("components/origin/origin-introduction-step.tsx");
   const direction = read("components/origin/origin-direction-step.tsx");
@@ -99,5 +100,16 @@ describe("Origin and Passage overlay fit", () => {
     expect(passageStory).toContain("overflow-hidden");
     expect(passageStory).toContain("spectra-scrollbar");
     expect(passageStory).not.toContain("max-h-[min(calc(100dvh-5rem),52rem)] overflow-x-hidden overflow-y-auto");
+  });
+
+  it("keeps the Mac scroll compositor light while the film is seeking", () => {
+    const scrub = read("hooks/use-origin-scroll-scrub.ts");
+    const css = read("app/globals.css");
+    expect(scrub).toContain("!video.seeking");
+    expect(scrub).toContain("MIN_SEEK_INTERVAL_MS");
+    expect(scrub).toContain("originScrubbing");
+    expect(css).toContain('[data-origin-scrubbing="true"] .origin-story-chapter');
+    expect(originStory).toContain("origin-story-scroller");
+    expect(passageStory).toContain("origin-story-scroller");
   });
 });
