@@ -36,6 +36,7 @@ describe("Pro workflow board", () => {
     expect(board).toContain("BoardStageSlot");
     expect(board).toContain("data-pro-workflow-board");
     expect(board).toContain("Tasks stay in Tasks");
+    expect(board).toContain('LayoutGroup id="tempo-pro-board"');
     expect(board).not.toContain("useTasks(");
     expect(api).toContain('from("pro_workflow_cards")');
   });

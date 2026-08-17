@@ -14,10 +14,12 @@ export function BoardStageSlot({
   expanded,
   expandedContent,
   railContent,
+  overflowVisible,
 }: {
   expanded: boolean;
   expandedContent: React.ReactNode;
   railContent: React.ReactNode;
+  overflowVisible?: boolean;
 }) {
   const [showExpanded, setShowExpanded] = React.useState(expanded);
   const [contentVisible, setContentVisible] = React.useState(true);
@@ -56,7 +58,12 @@ export function BoardStageSlot({
   }, [expanded]);
 
   return (
-    <div className="min-w-0 overflow-hidden lg:h-full">
+    <div
+      className={cn(
+        "min-w-0 lg:h-full",
+        overflowVisible ? "overflow-visible" : "overflow-hidden"
+      )}
+    >
       <div
         className={cn(
           "h-full origin-center transition-[opacity,transform] duration-200 ease-out will-change-[opacity,transform] lg:[&>*]:h-full",

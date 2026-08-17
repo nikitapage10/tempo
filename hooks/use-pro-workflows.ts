@@ -14,7 +14,7 @@ import {
   updateProWorkflowCard,
   updateProWorkflowStage,
 } from "@/lib/api/pro-workflows";
-import type { ProWorkflowSeed } from "@/lib/pro-workflows/types";
+import type { ProWorkflowBundle, ProWorkflowSeed } from "@/lib/pro-workflows/types";
 
 export function useProWorkflows(spaceId: string | null) {
   return useQuery({
@@ -56,7 +56,31 @@ export function useProWorkflowMutations(spaceId: string | null) {
     createCard: useMutation({ mutationFn: createProWorkflowCard, onSuccess: invalidate }),
     updateCard: useMutation({
       mutationFn: ({ id, patch }: { id: string; patch: Parameters<typeof updateProWorkflowCard>[1] }) => updateProWorkflowCard(id, patch),
-      onSuccess: invalidate,
+      onMutate: async ({ id, patch }) => {
+        const key = ["pro-workflows", spaceId] as const;
+        await queryClient.cancelQueries({ queryKey: key });
+        const prev = queryClient.getQueryData<ProWorkflowBundle>(key);
+        if (prev) {
+          queryClient.setQueryData<ProWorkflowBundle>(key, {
+            ...prev,
+            workflows: prev.workflows.map((workflow) => ({
+              ...workflow,
+              cards: workflow.cards.map((card) =>
+                card.id === id
+                  ? { ...card, ...patch, updatedAt: new Date().toISOString() }
+                  : card
+              ),
+            })),
+          });
+        }
+        return { prev };
+      },
+      onError: (_error, _vars, context) => {
+        if (context?.prev) {
+          queryClient.setQueryData(["pro-workflows", spaceId], context.prev);
+        }
+      },
+      onSettled: invalidate,
     }),
     deleteCard: useMutation({ mutationFn: deleteProWorkflowCard, onSuccess: invalidate }),
   };

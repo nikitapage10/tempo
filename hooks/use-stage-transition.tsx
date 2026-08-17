@@ -162,29 +162,51 @@ export function useStageTransitionController(spaceId: string | null) {
     stageId: string,
     options: RequestChangeOptions = {}
   ): Promise<Track> {
-    const result = await changeTrackStage({
-      trackId,
-      stageId,
-      spaceId: spaceId ?? undefined,
-    });
-    invalidateAfterMove(trackId);
-    checkAchievementsAfterMove();
-
-    if (result.recipe && result.recipe.actions.length > 0) {
-      if (result.recipe.execution_mode === "automatic") {
-        void runAutomatic(trackId, result.recipe, result.transitionKey, options);
-      } else {
-        setPreview({
-          trackId,
-          trackTitle: options.trackTitle ?? result.track.title,
-          fromStageId: options.fromStageId ?? null,
-          recipe: result.recipe,
-          transitionKey: result.transitionKey,
-          selected: new Set(result.recipe.actions.map((_, i) => i)),
-        });
-      }
+    const listKey = ["tracks", spaceId] as const;
+    const previousList = qc.getQueryData<Track[]>(listKey);
+    if (previousList) {
+      qc.setQueryData<Track[]>(
+        listKey,
+        previousList.map((track) =>
+          track.id === trackId
+            ? {
+                ...track,
+                stage_id: stageId,
+                updated_at: new Date().toISOString(),
+              }
+            : track
+        )
+      );
     }
-    return result.track;
+
+    try {
+      const result = await changeTrackStage({
+        trackId,
+        stageId,
+        spaceId: spaceId ?? undefined,
+      });
+      invalidateAfterMove(trackId);
+      checkAchievementsAfterMove();
+
+      if (result.recipe && result.recipe.actions.length > 0) {
+        if (result.recipe.execution_mode === "automatic") {
+          void runAutomatic(trackId, result.recipe, result.transitionKey, options);
+        } else {
+          setPreview({
+            trackId,
+            trackTitle: options.trackTitle ?? result.track.title,
+            fromStageId: options.fromStageId ?? null,
+            recipe: result.recipe,
+            transitionKey: result.transitionKey,
+            selected: new Set(result.recipe.actions.map((_, i) => i)),
+          });
+        }
+      }
+      return result.track;
+    } catch (err) {
+      if (previousList) qc.setQueryData(listKey, previousList);
+      throw err;
+    }
   }
 
   function toggleSelected(index: number) {

@@ -12,6 +12,7 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
+import { LayoutGroup, motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import {
   CalendarDays,
@@ -32,6 +33,7 @@ import { BoardStageSlot } from "@/components/board/board-stage-slot";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { useLayoutMove, useLayoutOverflowUnlock } from "@/components/ui/layout-item";
 import { PageHeader } from "@/components/ui/page-header";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
@@ -80,9 +82,11 @@ function ProFlowCard({
       disabled: overlay,
       data: { kind: "pro-flow-card", card },
     });
+  const layoutMove = useLayoutMove(`pro-flow-card-${card.id}`, !overlay);
 
   return (
-    <article
+    <motion.article
+      {...layoutMove}
       ref={setNodeRef}
       className={cn(
         "rounded-card border border-line bg-bg-1/95 p-3 shadow-e1",
@@ -140,7 +144,7 @@ function ProFlowCard({
           ))}
         </select>
       ) : null}
-    </article>
+    </motion.article>
   );
 }
 
@@ -154,6 +158,7 @@ function ProFlowColumn({
   onMove,
   onRemove,
   onAdd,
+  allowOverflow,
 }: {
   stage: ProWorkflowStage;
   stageIndex: number;
@@ -164,6 +169,7 @@ function ProFlowColumn({
   onMove: (card: ProWorkflowCard, stageId: string) => void;
   onRemove: (card: ProWorkflowCard) => void;
   onAdd: (stageId: string) => void;
+  allowOverflow?: boolean;
 }) {
   const { setNodeRef } = useDroppable({ id: `pro-flow-stage:${stage.id}`, data: { stageId: stage.id } });
   const hue = hueForStage(stageIndex, stageCount);
@@ -171,7 +177,8 @@ function ProFlowColumn({
     <section
       ref={setNodeRef}
       className={cn(
-        "relative flex min-h-[260px] min-w-0 flex-col overflow-hidden rounded-panel border border-line bg-gradient-to-b from-[rgb(20_20_25/0.76)] to-[rgb(14_14_18/0.62)] p-3 shadow-e2 backdrop-blur-xl transition-colors",
+        "relative flex min-h-[260px] min-w-0 flex-col rounded-panel border border-line bg-gradient-to-b from-[rgb(20_20_25/0.76)] to-[rgb(14_14_18/0.62)] p-3 shadow-e2 backdrop-blur-xl transition-colors",
+        allowOverflow ? "overflow-visible" : "overflow-hidden",
         isOver && "border-ice/50 bg-ice/[0.06]"
       )}
     >
@@ -266,6 +273,7 @@ export function ProWorkflowBoard() {
   const [editWorkflowDescription, setEditWorkflowDescription] = React.useState("");
   const [newStageName, setNewStageName] = React.useState("");
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+  const allowOverflow = useLayoutOverflowUnlock(Boolean(activeCard));
 
   const roles = React.useMemo(() => {
     const passage = passageQuery.data;
@@ -376,14 +384,16 @@ export function ProWorkflowBoard() {
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragOver={(event) => setOverStageId((event.over?.data.current?.stageId as string | undefined) ?? null)} onDragCancel={() => { setActiveCard(null); setOverStageId(null); }} onDragEnd={handleDragEnd}>
           <div className="mb-3 flex items-center justify-between gap-3"><div><h2 className="font-display text-lg font-semibold text-text-hi">{activeWorkflow.name}</h2>{activeWorkflow.description ? <p className="mt-1 text-xs text-text-lo">{activeWorkflow.description}</p> : null}</div>{stages.length > BOARD_FOCUS_COUNT ? <div className="flex gap-1"><Button type="button" variant="ghost" size="icon" aria-label="Earlier stages" disabled={focusStart === 0} onClick={() => setFocusStart((value) => clampBoardFocusStart(stages.length, value - 1))}><ChevronLeft /></Button><Button type="button" variant="ghost" size="icon" aria-label="Later stages" disabled={focusStart >= stages.length - BOARD_FOCUS_COUNT} onClick={() => setFocusStart((value) => clampBoardFocusStart(stages.length, value + 1))}><ChevronRight /></Button></div> : null}</div>
-          <div data-pro-board data-pro-workflow-board className="flex flex-col gap-3 lg:grid lg:items-stretch lg:overflow-hidden lg:transition-[grid-template-columns] lg:duration-300 motion-reduce:transition-none" style={{ gridTemplateColumns: boardFocusGridTemplate(stages.length, focusStart) }}>
+          <LayoutGroup id="tempo-pro-board">
+          <div data-pro-board data-pro-workflow-board className={cn("flex flex-col gap-3 lg:grid lg:items-stretch lg:transition-[grid-template-columns] lg:duration-300 motion-reduce:transition-none", allowOverflow ? "lg:overflow-visible" : "lg:overflow-hidden")} style={{ gridTemplateColumns: boardFocusGridTemplate(stages.length, focusStart) }}>
             {stages.map((stage, index) => {
               const expanded = index >= focusStart && index < focusStart + BOARD_FOCUS_COUNT;
               const cards = cardsByStage.get(stage.id) ?? [];
-              return <BoardStageSlot key={stage.id} expanded={expanded} expandedContent={<ProFlowColumn stage={stage} stageIndex={index} stageCount={stages.length} cards={cards} stages={stages} isOver={overStageId === stage.id} onMove={(card, stageId) => void moveCard(card, stageId)} onRemove={(card) => mutations.deleteCard.mutate(card.id)} onAdd={(stageId) => { setCardStageId(stageId); setCreateOpen(true); }} />} railContent={<ProFlowRail stage={stage} count={cards.length} onOpen={() => setFocusStart((current) => focusStartForStage(stages.length, current, index))} />} />;
+              return <BoardStageSlot key={stage.id} expanded={expanded} overflowVisible={allowOverflow} expandedContent={<ProFlowColumn stage={stage} stageIndex={index} stageCount={stages.length} cards={cards} stages={stages} isOver={overStageId === stage.id} allowOverflow={allowOverflow} onMove={(card, stageId) => void moveCard(card, stageId)} onRemove={(card) => mutations.deleteCard.mutate(card.id)} onAdd={(stageId) => { setCardStageId(stageId); setCreateOpen(true); }} />} railContent={<ProFlowRail stage={stage} count={cards.length} onOpen={() => setFocusStart((current) => focusStartForStage(stages.length, current, index))} />} />;
             })}
           </div>
-          <DragOverlay>{activeCard ? <ProFlowCard card={activeCard} stages={stages} overlay /> : null}</DragOverlay>
+          </LayoutGroup>
+          <DragOverlay dropAnimation={null}>{activeCard ? <ProFlowCard card={activeCard} stages={stages} overlay /> : null}</DragOverlay>
         </DndContext>
       )}
 

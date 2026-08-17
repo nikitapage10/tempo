@@ -40,6 +40,8 @@ type KanbanColumnProps = {
   allowCollapse?: boolean;
   /** Fill one slot in the three-stage focused board window. */
   fillAvailable?: boolean;
+  /** Let a sliding card travel past the column edge while it moves. */
+  allowOverflow?: boolean;
 };
 
 export function KanbanColumn({
@@ -58,6 +60,7 @@ export function KanbanColumn({
   dragging,
   allowCollapse = true,
   fillAvailable,
+  allowOverflow,
 }: KanbanColumnProps) {
   const { setNodeRef } = useDroppable({
     id: stage.id,
@@ -88,11 +91,13 @@ export function KanbanColumn({
     <section
       ref={setNodeRef}
       className={cn(
-        "prism-edge relative flex flex-col overflow-hidden rounded-panel border border-line",
+        "prism-edge relative flex flex-col rounded-panel border border-line",
         "bg-gradient-to-b from-[rgb(20_20_25/0.70)] to-[rgb(14_14_18/0.55)] shadow-e2 backdrop-blur-xl",
         "transition-[flex-grow,flex-basis,border-color,box-shadow] duration-300 ease-out motion-reduce:transition-none",
         // Clip blur + washes to the panel radius. Spotlight on track cards uses
         // local --spot-x/y, so overflow-hidden no longer kills the hover rim.
+        // Overflow opens while a card is sliding between columns.
+        allowOverflow ? "overflow-visible" : "overflow-hidden",
         "w-full lg:min-h-[220px] lg:w-auto",
         fillAvailable
           ? "lg:min-w-0 lg:w-auto lg:basis-0 lg:grow"

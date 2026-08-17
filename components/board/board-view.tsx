@@ -12,6 +12,7 @@ import {
   type DragOverEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
+import { LayoutGroup } from "framer-motion";
 import {
   Columns3,
   LayoutGrid,
@@ -38,6 +39,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { FilterGroup } from "@/components/ui/filter-row";
 import { HeaderMenu } from "@/components/ui/header-menu";
 import { Input } from "@/components/ui/input";
+import { useLayoutOverflowUnlock } from "@/components/ui/layout-item";
 import { PageHeader } from "@/components/ui/page-header";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
@@ -192,6 +194,7 @@ export function BoardView() {
   }, [searchParams, router]);
   const [activeDrag, setActiveDrag] = React.useState<ActiveDrag | null>(null);
   const [overStageId, setOverStageId] = React.useState<string | null>(null);
+  const allowOverflow = useLayoutOverflowUnlock(!!activeDrag);
 
   const allTags = React.useMemo(() => {
     const set = new Set<string>();
@@ -349,6 +352,10 @@ export function BoardView() {
       void changeStage(track.id, targetStageId, {
         trackTitle: track.title,
         fromStageId: track.stage_id,
+      }).catch((err) => {
+        toast(
+          err instanceof Error ? err.message : "Couldn’t move that track."
+        );
       });
       return;
     }
@@ -365,6 +372,10 @@ export function BoardView() {
     void changeStage(track.id, targetStageId, {
       trackTitle: track.title,
       fromStageId: track.stage_id,
+    }).catch((err) => {
+      toast(
+        err instanceof Error ? err.message : "Couldn’t move that track."
+      );
     });
   }
 
@@ -717,8 +728,12 @@ export function BoardView() {
               onFocusStage={focusStage}
             />
           ) : (
+            <LayoutGroup id="tempo-board">
             <div
-              className="flex flex-col gap-2 pb-3 lg:grid lg:items-stretch lg:overflow-hidden lg:transition-[grid-template-columns] lg:will-change-[grid-template-columns] motion-reduce:transition-none"
+              className={cn(
+                "flex flex-col gap-2 pb-3 lg:grid lg:items-stretch lg:transition-[grid-template-columns] lg:will-change-[grid-template-columns] motion-reduce:transition-none",
+                allowOverflow ? "lg:overflow-visible" : "lg:overflow-hidden"
+              )}
               style={{
                 gridTemplateColumns: boardFocusGridTemplate(
                   stages.length,
@@ -739,6 +754,7 @@ export function BoardView() {
                   <BoardStageSlot
                     key={stage.id}
                     expanded={inFocus}
+                    overflowVisible={allowOverflow}
                     railContent={
                       <StageRail
                         stage={stage}
@@ -776,14 +792,16 @@ export function BoardView() {
                         dragging={!!activeDrag}
                         allowCollapse={onBoardCount > 0 || tracks.length > 0}
                         fillAvailable
+                        allowOverflow={allowOverflow}
                       />
                     }
                   />
                 );
               })}
             </div>
+            </LayoutGroup>
           )}
-          <DragOverlay>
+          <DragOverlay dropAnimation={null}>
             {activeDrag?.kind === "track" ? (
               <TrackCard
                 track={activeDrag.track}

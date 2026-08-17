@@ -1,11 +1,12 @@
 "use client";
 
 import { useDraggable } from "@dnd-kit/core";
-import { CSS } from "@dnd-kit/utilities";
+import { motion } from "framer-motion";
 import * as React from "react";
 import { AlertTriangle, Clock } from "lucide-react";
 import { LfWindow } from "@/components/lf-windows";
 import { SpectraCoverArt } from "@/components/spectra/spectra-cover-art";
+import { useLayoutMove } from "@/components/ui/layout-item";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import type { Track } from "@/lib/types";
 import {
@@ -35,20 +36,13 @@ export function TrackCard({
   roomy,
   onRemoveFromBoard,
 }: TrackCardProps) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } =
-    useDraggable({
-      id: track.id,
-      data: { track, kind: "track" as const },
-      disabled: isDragOverlay,
-    });
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: track.id,
+    data: { track, kind: "track" as const },
+    disabled: isDragOverlay,
+  });
+  const layoutMove = useLayoutMove(`board-track-${track.id}`, !isDragOverlay);
   const [hovered, setHovered] = React.useState(false);
-
-  const style = isDragOverlay
-    ? undefined
-    : {
-        transform: CSS.Translate.toString(transform),
-        opacity: isDragging ? 0.35 : 1,
-      };
 
   const metaParts: string[] = [];
   if (track.bpm != null) metaParts.push(`${track.bpm} BPM`);
@@ -95,9 +89,9 @@ export function TrackCard({
     "text-[11px] text-text-lo/25 transition-colors duration-hover hover:text-text-lo/55 focus-visible:text-text-lo/55 focus-visible:outline-none";
 
   return (
-    <article
+    <motion.article
+      {...layoutMove}
       ref={isDragOverlay ? undefined : setNodeRef}
-      style={style}
       className={cn(
         "relative rounded-card p-px transition-[box-shadow,opacity] duration-hover",
         isDragOverlay && "cursor-grabbing shadow-raise",
@@ -303,6 +297,6 @@ export function TrackCard({
           </div>
         )}
       </SpotlightCard>
-    </article>
+    </motion.article>
   );
 }
