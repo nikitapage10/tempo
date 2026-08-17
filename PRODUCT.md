@@ -88,8 +88,12 @@ and Messages unread badge in realtime without creating a duplicate bell
 notification. Away from Messages, a new message raises a glass toast in the bottom-right (above Get help on the web; the same glass card on desktop when the window is in the background), tinted to your active artist's Cool / Warm colours. On the Messages page itself the toast stays off — the conversation updates in place, and if a deep link is available TEMPO opens that thread instead of stacking another popup over the chat.
 Support replies also update the notification center. Reconnects
 reconcile missed changes, with polling retained only as a temporary fallback.
-Dictation and voice notes are separate actions: dictated text remains editable,
-while voice notes include duration, a waveform, playback progress, and playback
+Dictation and voice notes are separate actions: dictated text streams into the
+editable field on the browser, Mac, and Windows over one continuous microphone
+session. Natural pauses settle phrases without stopping the session; if the live
+connection cannot open, TEMPO keeps the safety path as one uninterrupted
+recording transcribed after Stop rather than chopping speech into short clips.
+Voice notes include duration, a waveform, playback progress, and playback
 speed. The preferred input for the web app lives under Settings > Account;
 TEMPO Desktop also keeps a quick microphone picker beneath the composer.
 Recording uses the operating-system default unless a remembered input is
@@ -166,7 +170,7 @@ The closing scroll is **written for them, not read back to them**. TEMPO reads t
 
 Nothing in it is required. Every question can be passed, and **Skip for now** leaves the whole flow from any step without losing what was already written; it stays in Settings. Someone who has already been through it, or who is being onboarded as an artist, is never sent back into it: an unfinished Origin always wins.
 
-A Pro's workspace is not an artist's. They get Today, Calendar, a professional workflow Board, Projects, Tasks, Profile, **Artists**, and Social, with no Tracks or artist identity editor. Their Board moves professional tasks through To do, In progress, and Done rather than treating songs like a production pipeline.
+A Pro's workspace is not an artist's. They get Today, Calendar, a professional workflow Board, Projects, Tasks, Profile, **Artists**, and Social, with no Tracks or artist identity editor. Their Board holds larger professional work—campaigns, bookings, releases, and similar journeys—with role-based starting workflows, rather than treating songs like a production pipeline or repeating the Tasks page.
 
 Once inside, a Pro gets their own **guided page tour**, in the same style as the artist one and written from their side of the work: a manager opening Calendar is looking at other people's dates, not their own release. Every page in their rail has one, they appear once each, and taking or skipping one never affects the artist set for a dual account.
 

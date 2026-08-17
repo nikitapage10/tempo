@@ -4,6 +4,9 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-17
 
+- Changed (v0.181.0): Dictation now streams words continuously into editable text on the browser, Mac, and Windows instead of repeatedly stopping and restarting a recorder. Natural pauses create phrase boundaries without ending the microphone session, music-specific terms get extra context, and a failed live connection falls back to one uninterrupted recording so words are not lost between chunks.
+- Fixed (v0.181.0): The new Pro Boards now actually reach the live site. A punctuation issue in the empty-state copy stopped the last release from building, so the role-based workflows never made it out.
+
 - Changed (v0.180.1): The expanded left menu again uses the original TEMPO lockup — the color-shifting light bars, a thin line, and the name in the product typeface — instead of sitting the bars against the distressed logo artwork.
 
 - Changed (v0.180.0): Pro Boards now mirror the music workflow instead of repeating Tasks. Passage roles create up to three useful starting workflows—management, A&R, releases, booking, publicity, touring, creative, marketing, publishing, production, or operations—with editable stages and clearly marked example cards. The focused three-stage view opens and collapses stages like the music Board, while people can rename, reorder, add, or remove stages and workflows without changing their Tasks. Run additive migration 109 in the Supabase SQL editor after 108, followed by migration 110.
