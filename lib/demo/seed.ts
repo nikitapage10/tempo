@@ -62,6 +62,23 @@ export type SeedResult = DemoArtistSummary & {
   };
 };
 
+export type DemoReadinessCounts = {
+  spaces: number;
+  tracks: number;
+  projects: number;
+  tasks: number;
+};
+
+/** A timed-out seed must never masquerade as a finished demo forever. */
+export function demoWorkspaceIsReady(counts: DemoReadinessCounts): boolean {
+  return (
+    counts.spaces >= DEMO_SPACES.length &&
+    counts.tracks >= DEMO_TRACKS.length &&
+    counts.projects >= DEMO_PROJECTS.length &&
+    counts.tasks >= DEMO_TASKS.length
+  );
+}
+
 function isoDaysAgo(days: number, hour = 12, minutes = 0): string {
   const d = new Date();
   d.setDate(d.getDate() - days);
@@ -182,6 +199,38 @@ export async function findDemoArtist(
   return { artistId: data.id, demoKind: data.demo_kind, name: data.name };
 }
 
+async function inspectDemoWorkspace(
+  supabase: Client,
+  artistId: string
+): Promise<{ ready: boolean; spaceId: string }> {
+  const { data: spaces, error: spacesError } = await supabase
+    .from("spaces")
+    .select("id")
+    .eq("artist_id", artistId)
+    .order("sort", { ascending: true });
+  if (spacesError || !spaces?.length) return { ready: false, spaceId: "" };
+
+  const spaceIds = spaces.map((space) => space.id);
+  const [tracks, projects, tasks] = await Promise.all([
+    supabase.from("tracks").select("id", { count: "exact", head: true }).in("space_id", spaceIds),
+    supabase.from("projects").select("id", { count: "exact", head: true }).in("space_id", spaceIds),
+    supabase.from("tasks").select("id", { count: "exact", head: true }).in("space_id", spaceIds),
+  ]);
+  if (tracks.error || projects.error || tasks.error) {
+    return { ready: false, spaceId: spaces[0].id };
+  }
+
+  return {
+    ready: demoWorkspaceIsReady({
+      spaces: spaces.length,
+      tracks: tracks.count ?? 0,
+      projects: projects.count ?? 0,
+      tasks: tasks.count ?? 0,
+    }),
+    spaceId: spaces[0].id,
+  };
+}
+
 /**
  * Claims a profile handle, stepping aside if another account already took it.
  * The handle is globally unique, so "president" is first-come-first-served and
@@ -263,27 +312,28 @@ export async function seedPresidentDemo(supabase: Client): Promise<SeedResult> {
   if (existing && existing.demoKind !== PRESIDENT_DEMO_KIND) {
     await removeDemo(supabase, existing.artistId);
   } else if (existing) {
-    const { data: space } = await supabase
-      .from("spaces")
-      .select("id")
-      .eq("artist_id", existing.artistId)
-      .order("sort", { ascending: true })
-      .limit(1)
-      .maybeSingle();
-    return {
-      ...existing,
-      alreadyExisted: true,
-      spaceId: space?.id ?? "",
-      counts: {
-        tracks: 0,
-        projects: 0,
-        tasks: 0,
-        sessions: 0,
-        feedback: 0,
-        events: 0,
-        spotifyLinked: 0,
-      },
-    };
+    const inspection = await inspectDemoWorkspace(supabase, existing.artistId);
+    if (!inspection.ready) {
+      // Serverless timeouts can end the request before buildWorkspace reaches
+      // its catch block. Remove only the row explicitly marked as demo, then
+      // rebuild cleanly instead of reopening a permanently partial catalog.
+      await removeDemo(supabase, existing.artistId);
+    } else {
+      return {
+        ...existing,
+        alreadyExisted: true,
+        spaceId: inspection.spaceId,
+        counts: {
+          tracks: 0,
+          projects: 0,
+          tasks: 0,
+          sessions: 0,
+          feedback: 0,
+          events: 0,
+          spotifyLinked: 0,
+        },
+      };
+    }
   }
 
   // sort = -1 puts the demo first in the rail, which also means the workspace

@@ -8,6 +8,15 @@ import {
 } from "@/lib/constants";
 import { artistMemoryKey, spaceMemoryKey } from "@/lib/auth/workspace-memory";
 import { focusDemo } from "@/lib/api/demo";
+import {
+  demoWorkspaceIsReady,
+} from "@/lib/demo/seed";
+import {
+  DEMO_PROJECTS,
+  DEMO_SPACES,
+  DEMO_TASKS,
+  DEMO_TRACKS,
+} from "@/lib/demo/president";
 
 function memoryStorage() {
   const store = new Map<string, string>();
@@ -45,5 +54,30 @@ describe("demo startup for Pro accounts", () => {
     expect(provider).toContain("active?.demo_kind");
     expect(provider).toContain("setActiveArtistIdState(keeper.id)");
     expect(provider).toContain("sessionStorage.removeItem(PREFER_DEMO_ARTIST_KEY)");
+  });
+
+  it("does not treat a partial seed as an existing finished demo", () => {
+    expect(
+      demoWorkspaceIsReady({
+        spaces: DEMO_SPACES.length,
+        tracks: DEMO_TRACKS.length,
+        projects: DEMO_PROJECTS.length,
+        tasks: DEMO_TASKS.length,
+      })
+    ).toBe(true);
+    expect(
+      demoWorkspaceIsReady({ spaces: 2, tracks: 0, projects: 0, tasks: 0 })
+    ).toBe(false);
+  });
+
+  it("uses a distinct server-side handoff after building the demo", () => {
+    const button = readFileSync(
+      resolve("components/demo/try-demo-button.tsx"),
+      "utf8"
+    );
+    const bridge = readFileSync(resolve("app/demo/open/page.tsx"), "utf8");
+    expect(button).toContain('new URL("/demo/open", window.location.origin)');
+    expect(button).toContain("window.location.replace");
+    expect(bridge).toContain('redirect("/")');
   });
 });

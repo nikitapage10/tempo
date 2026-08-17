@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { PlayCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -34,7 +33,6 @@ export function TryDemoButton({
   /** Lets a host flow record the choice before the navigation happens. */
   onStarted?: () => void;
 }) {
-  const router = useRouter();
   const queryClient = useQueryClient();
   const user = useCurrentUser();
   const [busy, setBusy] = React.useState(false);
@@ -51,10 +49,14 @@ export function TryDemoButton({
       armGuidedTour(result.artistId, { force: true });
       onStarted?.();
       // Every cached list is about to describe the wrong artist.
-      await queryClient.invalidateQueries();
-      // A full load, not a client transition: the workspace gate in the app
-      // layout runs on the server and has to re-read which artist comes first.
-      window.location.assign("/");
+      void queryClient.invalidateQueries();
+      // Cross a distinct, uncached route before entering the workspace. The
+      // Mac shell has intermittently stayed on Origin during a direct `/`
+      // reload. The bridge redirects server-side, forcing the workspace gate
+      // to re-read the newly-created demo before the app layout mounts.
+      window.location.replace(
+        new URL("/demo/open", window.location.origin).href
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't build the demo workspace.");
       setBusy(false);
