@@ -3,8 +3,8 @@ import { provisionStarterCommunity } from "@/lib/onboarding-starter-community";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { connectTeamNetworkFollows } from "@/lib/social/connect-team-follows";
-import { isPlaceholderPersonName } from "@/lib/auth/person-name";
 import { validateHandle } from "@/lib/social/handle";
+import { resolveNetworkDisplayName } from "@/lib/social/network-display-name";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +31,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Choose a valid network visibility." }, { status: 400, headers });
   }
   const requestedHandle = typeof body?.handle === "string" ? body.handle : "";
+  const requestedDisplayName =
+    typeof body?.displayName === "string" ? body.displayName : "";
 
   if (!artistId) {
     const { data: owned } = await supabase
@@ -81,6 +83,19 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const { data: memberProfile } = await supabase
+    .from("artist_member_profiles")
+    .select("display_name, avatar_url")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  const displayName = resolveNetworkDisplayName({
+    requested: requestedDisplayName,
+    memberProfile: memberProfile?.display_name,
+    existingProfile: existing?.display_name,
+    artist: artist.name,
+    email: user.email,
+  }).slice(0, 80);
+
   /**
    * A handle is not optional once someone is on the network.
    *
@@ -122,24 +137,6 @@ export async function POST(request: NextRequest) {
 
   let profileId = existing?.id as string | undefined;
   if (!existing) {
-    const { data: memberProfile } = await supabase
-      .from("artist_member_profiles")
-      .select("display_name, avatar_url")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    const fromProfile =
-      typeof memberProfile?.display_name === "string"
-        ? memberProfile.display_name.trim()
-        : "";
-    const fromArtist =
-      artist.name && !isPlaceholderPersonName(artist.name, user.email)
-        ? artist.name.trim()
-        : "";
-    const displayName =
-      fromProfile ||
-      fromArtist ||
-      user.email?.split("@")[0] ||
-      "Member";
     const { data: created, error: createError } = await supabase
       .from("artist_profiles")
       .insert({
@@ -147,7 +144,7 @@ export async function POST(request: NextRequest) {
         owner_user_id: user.id,
         profile_kind: artist.workspace_kind === "personal" ? "pro" : "artist",
         handle,
-        display_name: displayName.slice(0, 80),
+        display_name: displayName,
         emblem_url: memberProfile?.avatar_url ?? artist.emblem_url ?? null,
         banner_url: artist.banner_url ?? null,
         banner_color: artist.banner_color ?? null,
@@ -171,7 +168,7 @@ export async function POST(request: NextRequest) {
   const publishedAt = existing?.published_at ?? new Date().toISOString();
   const { data: profile, error: publishError } = await supabase
     .from("artist_profiles")
-    .update({ visibility, published_at: publishedAt, handle })
+    .update({ visibility, published_at: publishedAt, handle, display_name: displayName })
     .eq("id", profileId)
     .select("*")
     .single();

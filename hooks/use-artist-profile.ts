@@ -35,11 +35,23 @@ export function useArtistProfile(artistId: string | null) {
     // A bare visibility string is still accepted so the many existing callers
     // read the same; joining with a handle passes the object form.
     mutationFn: (
-      input: "members" | "public" | { visibility: "members" | "public"; handle?: string }
+      input:
+        | "members"
+        | "public"
+        | {
+            visibility: "members" | "public";
+            handle?: string;
+            displayName?: string;
+          }
     ) =>
       typeof input === "string"
         ? publishArtistProfile(artistId, input)
-        : publishArtistProfile(artistId, input.visibility, input.handle),
+        : publishArtistProfile(
+            artistId,
+            input.visibility,
+            input.handle,
+            input.displayName
+          ),
     onSuccess: (profile) => qc.setQueryData(queryKey, profile),
   });
 

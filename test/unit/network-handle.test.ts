@@ -71,4 +71,12 @@ describe("network join route", () => {
   it("writes the handle onto the profile it publishes", () => {
     expect(route).toContain("visibility, published_at: publishedAt, handle");
   });
+
+  it("writes the confirmed name before onboarding creates automatic follows", () => {
+    expect(route).toContain("resolveNetworkDisplayName");
+    expect(route).toContain("display_name: displayName");
+    expect(route.indexOf("display_name: displayName")).toBeLessThan(
+      route.indexOf('service.rpc("provision_member_onboarding"')
+    );
+  });
 });

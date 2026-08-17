@@ -124,7 +124,8 @@ export class HandleRequiredError extends Error {
 export async function publishArtistProfile(
   artistId: string | null,
   visibility: "members" | "public",
-  handle?: string
+  handle?: string,
+  displayName?: string
 ): Promise<ArtistProfile> {
   const response = await fetch("/api/network/join", {
     method: "POST",
@@ -133,6 +134,7 @@ export async function publishArtistProfile(
       artistId: artistId || undefined,
       visibility,
       handle: handle || undefined,
+      displayName: displayName || undefined,
     }),
   });
   const body = await response.json().catch(() => null);

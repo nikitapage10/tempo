@@ -563,6 +563,7 @@ export function OriginExperience({
           {mountLook ? (
             <StepFade show={showLook} className="w-full max-w-2xl">
               <OriginLookStep
+                networkDisplayName={state.name}
                 onBack={() => dispatch({ type: "back_to_direction" })}
                 onFinish={() => dispatch({ type: "finish_look" })}
                 busy={state.busy}

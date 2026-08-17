@@ -350,6 +350,7 @@ export function PassageExperience() {
           {state.phase === "look_idle" ? (
             <StepFade show className="w-full max-w-2xl">
               <OriginLookStep
+                networkDisplayName={state.displayName}
                 kicker="Passage / your space"
                 heading="Make the space yours"
                 blurb="Colors, mark, and banner for your own workspace, plus the choice to claim your TEMPO handle. All optional, and all changeable later."

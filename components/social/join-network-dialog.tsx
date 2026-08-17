@@ -51,7 +51,11 @@ export function JoinNetworkDialog({
     if (!state.ready || !state.value) return;
     setError(null);
     try {
-      await publish.mutateAsync({ visibility, handle: state.value });
+      await publish.mutateAsync({
+        visibility,
+        handle: state.value,
+        displayName: artistName ?? undefined,
+      });
       onOpenChange(false);
       onJoined?.();
     } catch (err) {

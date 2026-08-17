@@ -51,6 +51,7 @@ export function OriginLookStep({
   kicker = "Look / 03",
   heading = "Give the signal a look",
   blurb = "Colors, mark, and banner, all optional. You can change any of this later in Settings.",
+  networkDisplayName,
 }: {
   onBack: () => void;
   onFinish: () => void;
@@ -58,6 +59,8 @@ export function OriginLookStep({
   kicker?: string;
   heading?: string;
   blurb?: string;
+  /** Confirmed onboarding name to publish before automatic follows fire. */
+  networkDisplayName?: string;
 }) {
   const { activeArtist } = useActiveArtist();
   const {
@@ -150,7 +153,11 @@ export function OriginLookStep({
     if (!handleState.ready || !handleState.value) return;
     setJoining(true);
     try {
-      await publish.mutateAsync({ visibility: "members", handle: handleState.value });
+      await publish.mutateAsync({
+        visibility: "members",
+        handle: handleState.value,
+        displayName: networkDisplayName,
+      });
       toast(`You’re on the network as @${handleState.value}.`, "ok");
       setError(null);
       onFinish();
