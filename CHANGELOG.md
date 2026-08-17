@@ -4,6 +4,8 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-16
 
+- Changed (v0.175.0): TEMPO now uses the supplied distressed white logo instead of rebuilding the name with a font. The real wordmark appears in the expanded studio rail, admin, authentication and welcome screens, download and legal pages, Scenes, public profiles, review links, and invitation pages; compact icon-only controls keep the existing light-bar mark where the wide logo cannot fit.
+
 - Fixed (v0.174.0): **Explore a demo artist first** now completes its handoff reliably in the Mac app. It enters through a distinct server route instead of relying on a direct Origin reload, and an interrupted or partial PRESIDENT build is detected, safely removed, and rebuilt rather than being mistaken for a finished demo on every later attempt.
 
 - Fixed (v0.173.0): The Tempo Theme now starts reliably during both artist Origin and Pro Passage on Mac. Onboarding keeps a rejected or not-yet-ready playback request armed, retries when the file or window becomes ready, and only begins its fade after audio is genuinely playing instead of silently giving up after one attempt.
