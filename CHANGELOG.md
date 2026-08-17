@@ -4,6 +4,9 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-17
 
+- Changed (v0.184.0): Search, notifications, messages, and your profile now line up with the page panels again. The frost behind them still stretches to the window edge when you scroll.
+- Changed (v0.184.0): The expanded left menu now uses the supplied TEMPO type artwork beside the light bars, instead of spelling the name in the product typeface.
+
 - Added (v0.183.0): From New message you can start a group chat with several artists, not just a 1:1. Groups sit in their own inbox section, separate from team rooms and Scene chat. The person who starts a group can name it and add or remove people; anyone in it can leave.
   Under the hood: run additive migration 111 in the Supabase SQL editor after 110.
 
