@@ -14,6 +14,7 @@ const { autoUpdater } = require("electron-updater");
 const { Vault } = require("./vault");
 const { createVaultMediaResponse } = require("./vault-media-response");
 const { isMediaRequestAllowed } = require("./media-permissions");
+const { connectOpenAiRealtime } = require("./openai-realtime-ws");
 const {
   isAllowedDesktopNavigation,
   appLinkDestination: resolveAppLinkDestination,
@@ -718,11 +719,48 @@ function registerUpdateIpc() {
   });
 }
 
+function registerDictationIpc() {
+  const dictationByContents = new WeakMap();
+
+  function closeDictation(contents) {
+    const socket = dictationByContents.get(contents);
+    if (!socket) return;
+    dictationByContents.delete(contents);
+    socket.close();
+  }
+
+  ipcMain.handle("dictation:start", async (event, clientSecret) => {
+    closeDictation(event.sender);
+    const socket = await connectOpenAiRealtime(clientSecret);
+    dictationByContents.set(event.sender, socket);
+    socket.onMessage = (text) => {
+      if (!event.sender.isDestroyed()) event.sender.send("dictation:event", text);
+    };
+    socket.onClose = () => {
+      dictationByContents.delete(event.sender);
+      if (!event.sender.isDestroyed()) event.sender.send("dictation:closed");
+    };
+    event.sender.once("destroyed", () => closeDictation(event.sender));
+    return { ok: true };
+  });
+  ipcMain.on("dictation:send", (event, payload) => {
+    const socket = dictationByContents.get(event.sender);
+    if (socket && typeof payload === "string" && payload.length < 1024 * 1024) {
+      socket.sendJson(payload);
+    }
+  });
+  ipcMain.handle("dictation:stop", (event) => {
+    closeDictation(event.sender);
+    return { ok: true };
+  });
+}
+
 app.whenReady().then(() => {
   if (!hasSingleInstanceLock) return;
   vault = new Vault();
   registerVaultProtocol();
   registerVaultIpc();
+  registerDictationIpc();
   registerUpdateIpc();
   registerMediaPermissions();
 

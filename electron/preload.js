@@ -64,6 +64,22 @@ contextBridge.exposeInMainWorld("tempoDesktop", {
     },
   },
 
+  dictation: {
+    start: (clientSecret) => ipcRenderer.invoke("dictation:start", clientSecret),
+    send: (payload) => ipcRenderer.send("dictation:send", payload),
+    stop: () => ipcRenderer.invoke("dictation:stop"),
+    onEvent: (callback) => {
+      const listener = (_event, text) => callback(text);
+      ipcRenderer.on("dictation:event", listener);
+      return () => ipcRenderer.removeListener("dictation:event", listener);
+    },
+    onClose: (callback) => {
+      const listener = () => callback();
+      ipcRenderer.on("dictation:closed", listener);
+      return () => ipcRenderer.removeListener("dictation:closed", listener);
+    },
+  },
+
   notifications: {
     show: (input) => ipcRenderer.invoke("notifications:show", input),
     onOpen: (callback) => {

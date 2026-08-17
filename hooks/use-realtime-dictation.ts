@@ -94,8 +94,10 @@ function startPcmCapture(
   const context = new Ctor();
   const source = context.createMediaStreamSource(stream);
   const processor = context.createScriptProcessor(PROCESSOR_BUFFER, 1, 1);
+  const dest = context.createMediaStreamDestination();
   const silent = context.createGain();
-  silent.gain.value = 0;
+  // A true zero gain can let Chromium skip the graph so no samples arrive.
+  silent.gain.value = 0.0001;
 
   processor.onaudioprocess = (event) => {
     const input = event.inputBuffer.getChannelData(0);
@@ -109,6 +111,7 @@ function startPcmCapture(
   };
 
   source.connect(processor);
+  processor.connect(dest);
   processor.connect(silent);
   silent.connect(context.destination);
   void context.resume();
@@ -118,10 +121,26 @@ function startPcmCapture(
       processor.onaudioprocess = null;
       processor.disconnect();
       source.disconnect();
+      dest.disconnect();
       silent.disconnect();
       void context.close();
     },
   };
+}
+
+type NativeDictation = {
+  start: (clientSecret: string) => Promise<unknown>;
+  send: (payload: string) => void;
+  stop: () => Promise<unknown>;
+  onEvent: (callback: (text: string) => void) => () => void;
+  onClose?: (callback: () => void) => () => void;
+};
+
+function nativeDictation(): NativeDictation | null {
+  if (typeof window === "undefined") return null;
+  const api = window.tempoDesktop?.dictation;
+  if (!api?.start || !api.send || !api.stop || !api.onEvent) return null;
+  return api;
 }
 
 export function useRealtimeDictation({
@@ -139,6 +158,8 @@ export function useRealtimeDictation({
   const callbackRef = React.useRef(onTranscript);
   callbackRef.current = onTranscript;
   const socketRef = React.useRef<WebSocket | null>(null);
+  const nativeRef = React.useRef<NativeDictation | null>(null);
+  const nativeUnsubRef = React.useRef<(() => void) | null>(null);
   const streamRef = React.useRef<MediaStream | null>(null);
   const captureRef = React.useRef<CaptureHandle | null>(null);
   const transcriptRef = React.useRef<TranscriptState>(EMPTY_TRANSCRIPT_STATE);
@@ -168,6 +189,11 @@ export function useRealtimeDictation({
     captureRef.current = null;
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
+    nativeUnsubRef.current?.();
+    nativeUnsubRef.current = null;
+    const native = nativeRef.current;
+    nativeRef.current = null;
+    if (native) void native.stop();
     const socket = socketRef.current;
     socketRef.current = null;
     if (socket && socket.readyState < WebSocket.CLOSING) socket.close();
@@ -216,8 +242,9 @@ export function useRealtimeDictation({
       }
 
       if (
-        message.type ===
-          "conversation.item.input_audio_transcription.delta" &&
+        (message.type ===
+          "conversation.item.input_audio_transcription.delta" ||
+          message.type === "input_audio_transcription.delta") &&
         message.item_id &&
         typeof message.delta === "string"
       ) {
@@ -232,8 +259,9 @@ export function useRealtimeDictation({
       }
 
       if (
-        message.type ===
-          "conversation.item.input_audio_transcription.completed" &&
+        (message.type ===
+          "conversation.item.input_audio_transcription.completed" ||
+          message.type === "input_audio_transcription.completed") &&
         message.item_id
       ) {
         transcriptRef.current = updateTranscript(transcriptRef.current, {
@@ -312,9 +340,63 @@ export function useRealtimeDictation({
         return "failed";
       }
 
+      const sendAudio = (audio: string) => {
+        nativeRef.current?.send(
+          JSON.stringify({ type: "input_audio_buffer.append", audio }),
+        );
+        const socket = socketRef.current;
+        if (socket?.readyState === WebSocket.OPEN) {
+          socket.send(
+            JSON.stringify({ type: "input_audio_buffer.append", audio }),
+          );
+        }
+      };
+
+      const native = nativeDictation();
+      if (native) {
+        await native.start(payload.clientSecret);
+        if (session !== activeSessionRef.current) {
+          await native.stop();
+          stream.getTracks().forEach((track) => track.stop());
+          return "failed";
+        }
+        nativeRef.current = native;
+        streamRef.current = stream;
+        nativeUnsubRef.current = native.onEvent(handleRealtimeEvent);
+        if (native.onClose) {
+          const unsubClose = native.onClose(() => {
+            if (session === activeSessionRef.current && listeningRef.current) {
+              setError(
+                "Live dictation lost its connection. What you already said is kept.",
+              );
+            }
+          });
+          const prev = nativeUnsubRef.current;
+          nativeUnsubRef.current = () => {
+            prev();
+            unsubClose();
+          };
+        }
+        native.send(
+          JSON.stringify({
+            type: "session.update",
+            session: transcriptionSessionConfig(undefined, { includeFormat: true }),
+          }),
+        );
+        captureRef.current = startPcmCapture(stream, sendAudio);
+        listeningRef.current = true;
+        setListening(true);
+        maxTimerRef.current = setTimeout(
+          () => void finishRef.current(),
+          MAX_DICTATION_MS,
+        );
+        return "started";
+      }
+
       const socket = new WebSocket(REALTIME_SOCKET_URL, [
         "realtime",
         `openai-insecure-api-key.${payload.clientSecret}`,
+        "openai-beta.realtime-v1",
       ]);
       socketRef.current = socket;
       streamRef.current = stream;
@@ -338,17 +420,11 @@ export function useRealtimeDictation({
       socket.send(
         JSON.stringify({
           type: "session.update",
-          session: transcriptionSessionConfig(),
+          session: transcriptionSessionConfig(undefined, { includeFormat: true }),
         }),
       );
 
-      captureRef.current = startPcmCapture(stream, (audio) => {
-        if (socket.readyState === WebSocket.OPEN) {
-          socket.send(
-            JSON.stringify({ type: "input_audio_buffer.append", audio }),
-          );
-        }
-      });
+      captureRef.current = startPcmCapture(stream, sendAudio);
 
       listeningRef.current = true;
       setListening(true);
@@ -365,7 +441,9 @@ export function useRealtimeDictation({
   }, [deviceId, handleRealtimeEvent, releaseConnection]);
 
   const finish = React.useCallback(async () => {
-    if (!socketRef.current || finalizing) return;
+    const native = nativeRef.current;
+    const socket = socketRef.current;
+    if ((!native && !socket) || finalizing) return;
     listeningRef.current = false;
     setListening(false);
     setFinalizing(true);
@@ -375,10 +453,9 @@ export function useRealtimeDictation({
     captureRef.current = null;
     streamRef.current?.getTracks().forEach((track) => track.stop());
 
-    const socket = socketRef.current;
-    if (socket?.readyState === WebSocket.OPEN) {
-      socket.send(JSON.stringify({ type: "input_audio_buffer.commit" }));
-    }
+    const commit = JSON.stringify({ type: "input_audio_buffer.commit" });
+    if (native) native.send(commit);
+    if (socket?.readyState === WebSocket.OPEN) socket.send(commit);
 
     const started = Date.now();
     while (

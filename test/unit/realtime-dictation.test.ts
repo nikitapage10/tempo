@@ -86,6 +86,9 @@ describe("Realtime dictation PCM", () => {
 describe("Realtime dictation session minting", () => {
   it("reads a client secret from either documented payload shape", () => {
     expect(clientSecretFromPayload({ value: "ek_abc" })).toBe("ek_abc");
+    expect(clientSecretFromPayload({ client_secret: "ek_string" })).toBe(
+      "ek_string",
+    );
     expect(
       clientSecretFromPayload({ client_secret: { value: "ek_nested" } }),
     ).toBe("ek_nested");
@@ -93,11 +96,16 @@ describe("Realtime dictation session minting", () => {
   });
 
   it("asks for live transcription with server VAD", () => {
-    const session = transcriptionSessionConfig("gpt-live-transcribe");
-    expect(session.type).toBe("transcription");
-    expect(session.audio.input.transcription.model).toBe("gpt-live-transcribe");
-    expect(session.audio.input.turn_detection.type).toBe("server_vad");
-    expect(session.audio.input.format.rate).toBe(24_000);
+    const minted = transcriptionSessionConfig("gpt-live-transcribe");
+    expect(minted.type).toBe("transcription");
+    expect(minted.audio.input.transcription.model).toBe("gpt-live-transcribe");
+    expect(minted.audio.input.turn_detection.type).toBe("server_vad");
+    expect(minted.audio.input.format).toBeUndefined();
+
+    const streaming = transcriptionSessionConfig("gpt-live-transcribe", {
+      includeFormat: true,
+    });
+    expect(streaming.audio.input.format?.rate).toBe(24_000);
   });
 });
 
@@ -113,8 +121,26 @@ describe("Realtime dictation wiring", () => {
     expect(session).toContain('type: "server_vad"');
     expect(hook).toContain("new WebSocket(");
     expect(hook).toContain("intent=transcription");
+    expect(hook).toContain("tempoDesktop?.dictation");
+    expect(hook).toContain("includeFormat: true");
     expect(hook).not.toContain("RTCPeerConnection");
     expect(hook).not.toContain("OPENAI_API_KEY");
+  });
+
+  it("opens the live socket from the desktop main process", () => {
+    const main = read("electron/main.js");
+    const preload = read("electron/preload.js");
+    const native = read("electron/openai-realtime-ws.js");
+    const bridge = read("lib/desktop/bridge.ts");
+
+    expect(main).toContain("registerDictationIpc");
+    expect(main).toContain("dictation:start");
+    expect(preload).toContain("dictation:");
+    expect(preload).toContain("dictation:start");
+    expect(native).toContain("Authorization");
+    expect(native).toContain("OpenAI-Beta");
+    expect(native).toContain("/v1/realtime?intent=transcription");
+    expect(bridge).toContain("dictation?:");
   });
 
   it("uses one continuous session and one-shot recorded fallback", () => {

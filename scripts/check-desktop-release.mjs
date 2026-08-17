@@ -63,6 +63,7 @@ for (const required of [
   "preload.js",
   "vault.js",
   "vault-media-response.js",
+  "openai-realtime-ws.js",
 ]) {
   if (!packagedFiles.has(required)) {
     errors.push(`electron build.files must include ${required}`);

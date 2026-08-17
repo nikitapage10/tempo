@@ -21,14 +21,14 @@ export function clientSecretFromPayload(payload: unknown): string | null {
   if (!payload || typeof payload !== "object") return null;
   const body = payload as {
     value?: unknown;
-    client_secret?: { value?: unknown };
+    client_secret?: { value?: unknown } | string;
   };
   if (typeof body.value === "string" && body.value.trim()) return body.value;
-  if (
-    typeof body.client_secret?.value === "string" &&
-    body.client_secret.value.trim()
-  ) {
-    return body.client_secret.value;
+  const secret = body.client_secret;
+  if (typeof secret === "string" && secret.trim()) return secret;
+  if (secret && typeof secret === "object" && typeof secret.value === "string") {
+    const nested = secret.value.trim();
+    if (nested) return nested;
   }
   return null;
 }
@@ -37,12 +37,17 @@ export function clientSecretFromPayload(payload: unknown): string | null {
  * Shared gpt-live-transcribe session. Used when minting a client secret and
  * again as session.update after the WebSocket opens.
  */
-export function transcriptionSessionConfig(model = LIVE_TRANSCRIBE_MODEL) {
+export function transcriptionSessionConfig(
+  model = LIVE_TRANSCRIBE_MODEL,
+  options: { includeFormat?: boolean } = {},
+) {
   return {
     type: "transcription" as const,
     audio: {
       input: {
-        format: { type: "audio/pcm" as const, rate: TARGET_SAMPLE_RATE },
+        ...(options.includeFormat
+          ? { format: { type: "audio/pcm" as const, rate: TARGET_SAMPLE_RATE } }
+          : {}),
         noise_reduction: { type: "near_field" as const },
         transcription: {
           model,

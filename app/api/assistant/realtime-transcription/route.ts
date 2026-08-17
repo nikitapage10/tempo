@@ -51,6 +51,7 @@ export async function POST(_req: NextRequest) {
         headers: {
           Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
           "Content-Type": "application/json",
+          "OpenAI-Beta": "realtime=v1",
           "OpenAI-Safety-Identifier": createHash("sha256")
             .update(user.id)
             .digest("hex"),
@@ -66,7 +67,15 @@ export async function POST(_req: NextRequest) {
     const payload: unknown = await response.json().catch(() => null);
     const clientSecret = clientSecretFromPayload(payload);
     if (!response.ok || !clientSecret) {
-      console.error("[dictation] Realtime session failed:", response.status);
+      const detail =
+        payload && typeof payload === "object" && "error" in payload
+          ? JSON.stringify((payload as { error?: unknown }).error)
+          : "";
+      console.error(
+        "[dictation] Realtime session failed:",
+        response.status,
+        detail.slice(0, 300),
+      );
       return NextResponse.json(
         {
           error:

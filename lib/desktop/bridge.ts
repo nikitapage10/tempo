@@ -46,6 +46,18 @@ export type DesktopBridge = {
     install: () => Promise<boolean>;
     onStateChange: (callback: (state: DesktopUpdateState) => void) => () => void;
   };
+  /**
+   * Optional until every pre-native-dictation install has updated.
+   * Live transcription WebSocket lives in the main process so Windows
+   * does not prompt for extra network access.
+   */
+  dictation?: {
+    start: (clientSecret: string) => Promise<unknown>;
+    send: (payload: string) => void;
+    stop: () => Promise<unknown>;
+    onEvent: (callback: (text: string) => void) => () => void;
+    onClose?: (callback: () => void) => () => void;
+  };
   /** Optional while older desktop shells roll forward to native alerts. */
   notifications?: {
     show: (input: {
