@@ -67,6 +67,11 @@ import type { BoardNote, Track, TrackInsert, TrackType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { insertIdBefore, isNoOpInsert, ranksForIds } from "@/lib/dnd/insert";
 import {
+  isDropSlotId,
+  pointerFromDragEvent,
+  refineTrackInsertSlot,
+} from "@/lib/dnd/pointer-insert";
+import {
   parseDropSlotId,
   sameDropSlot,
   type DropSlot,
@@ -87,7 +92,13 @@ type BoardViewMode = "focus" | "overview";
 
 const boardCollision: CollisionDetection = (args) => {
   const pointer = pointerWithin(args);
-  if (pointer.length > 0) return pointer;
+  if (pointer.length > 0) {
+    const slots = pointer.filter((collision) =>
+      String(collision.id).startsWith("slot:")
+    );
+    if (slots.length > 0) return slots;
+    return pointer;
+  }
   return closestCorners(args);
 };
 
@@ -371,16 +382,29 @@ export function BoardView() {
   }
 
   function handleDragOver(event: DragOverEvent) {
-    const overId = event.over?.id;
-    if (!overId) {
+    const dragKind = activeDrag?.kind ?? null;
+    const slotCollision = event.collisions?.find((collision) =>
+      isDropSlotId(String(collision.id))
+    );
+    const rawOverId = slotCollision?.id ?? event.over?.id;
+    if (!rawOverId) {
       setOverStageId(null);
       setOverSlot(null);
       return;
     }
-    const id = String(overId);
+    const id = String(rawOverId);
     setOverStageId(resolveOverStage(id));
-    const dragKind = activeDrag?.kind ?? null;
-    const slot = resolveDropSlot(id, dragKind);
+    let slot = resolveDropSlot(id, dragKind);
+    if (slot?.kind === "track" && dragKind === "track" && !isDropSlotId(id)) {
+      const hoveredTrackId = tracks.find((track) => track.id === id)?.id ?? null;
+      slot = refineTrackInsertSlot(
+        slot,
+        trackIdsInStage(slot.containerId),
+        pointerFromDragEvent(event),
+        event.over?.rect ?? null,
+        hoveredTrackId
+      );
+    }
     const activeEntityId =
       parseNoteDragId(String(event.active.id)) ?? String(event.active.id);
     if (slot && slot.beforeId !== activeEntityId) {
@@ -470,8 +494,24 @@ export function BoardView() {
     const { over } = event;
     if (!over || !drag) return;
 
-    const resolved =
-      slot ?? resolveDropSlot(String(over.id), drag.kind);
+    const slotCollision = event.collisions?.find((collision) =>
+      isDropSlotId(String(collision.id))
+    );
+    const rawOverId = slotCollision?.id ?? over.id;
+    let resolved = slot ?? resolveDropSlot(String(rawOverId), drag.kind);
+    if (
+      resolved?.kind === "track" &&
+      drag.kind === "track" &&
+      !isDropSlotId(String(rawOverId))
+    ) {
+      resolved = refineTrackInsertSlot(
+        resolved,
+        trackIdsInStage(resolved.containerId),
+        pointerFromDragEvent(event),
+        over.rect ?? null,
+        tracks.find((track) => track.id === String(rawOverId))?.id ?? null
+      );
+    }
     if (!resolved) return;
     if (resolved.kind === "note" && drag.kind !== "note") return;
     if (resolved.kind === "track" && drag.kind !== "track") return;

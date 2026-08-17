@@ -4,6 +4,8 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-17
 
+- Fixed (v0.195.2): On the Board, you can now drop a track between other tracks in the same stage — not only at the very top or bottom of the list. Drag toward the gap between two cards, or toward the top or bottom half of a card, and the line shows the exact spot.
+
 - Fixed (v0.195.1 / Desktop v0.100.27): Dictate genuinely works again everywhere — assistant, Import, Messages, Tasks, Origin, Passage, and Calendar. OpenAI stopped accepting two things TEMPO was still sending, which silently killed every live connection, so dictation always fell back to recording the whole thing and transcribing it after Stop — the long wait you were seeing. Words now appear about a second after you start talking, and Stop finishes the last phrase. Desktop gets this from the web app, so a reload is enough; the matching desktop shell only matters for its own built-in connection.
 
 - Changed (v0.195.0): Dragging on the Board, Tasks lanes, and Pro workflow board is easier to aim. Grab anywhere on a card or row (not just a tiny handle), a bright line shows exactly where it will land, and you can drop between other items in the same column to reorder — not only when moving to another stage or lane.

@@ -27,7 +27,7 @@ export function DropIndicator({
       data-drop-slot={id}
       aria-hidden
       className={cn(
-        "relative z-10 h-3 shrink-0 -my-1.5",
+        "relative z-20 h-5 shrink-0 -my-2",
         disabled && "pointer-events-none"
       )}
     >
