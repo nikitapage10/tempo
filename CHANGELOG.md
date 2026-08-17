@@ -4,6 +4,8 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-17
 
+- Changed (v0.180.1): The expanded left menu again uses the original TEMPO lockup — the color-shifting light bars, a thin line, and the name in the product typeface — instead of sitting the bars against the distressed logo artwork.
+
 - Changed (v0.180.0): Pro Boards now mirror the music workflow instead of repeating Tasks. Passage roles create up to three useful starting workflows—management, A&R, releases, booking, publicity, touring, creative, marketing, publishing, production, or operations—with editable stages and clearly marked example cards. The focused three-stage view opens and collapses stages like the music Board, while people can rename, reorder, add, or remove stages and workflows without changing their Tasks. Run additive migration 109 in the Supabase SQL editor after 108, followed by migration 110.
 
 - Changed (v0.179.0): The once-a-day intro now plays all the way through, with film grain over the picture so it doesn't look soft. Skip sits at the bottom of the screen, and the last two seconds fade into your workspace instead of cutting away. When a page scrolls, the frost behind Search, notifications, messages, and your profile now stretches from the left menu to the right edge of the window and is lighter so the workspace video still shows through. The expanded left menu also keeps the original ice-to-amber light bars beside the TEMPO wordmark.
