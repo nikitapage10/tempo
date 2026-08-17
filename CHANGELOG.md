@@ -4,11 +4,14 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-17
 
+- Added (v0.191.0): Tasks and Projects got a full rework. Add a task by typing or speaking it naturally — "pitch to Sam by Friday, high priority, remind me a day before" — and TEMPO reads out the date, priority, assignee, steps, repeat schedule, and reminder as editable chips before saving, so nothing gets misheard silently. Tasks now support priority, a step-by-step checklist with a progress count, reminders, and repeating schedules that regenerate the next one automatically when you close a task out. Click a task to open its full detail in one place. Three views sit over the same list: the familiar Overdue/Today/This week/Later lanes, a sortable List with bulk reschedule/priority/close-out/delete, and a new Timeline. Projects now open on a hero showing status, a deadline countdown, live track/task counts, and overall progress, with a timeline of every date underneath; you can add a new task straight from the project page instead of only attaching existing ones.
+  Under the hood: run additive migration 113 in the Supabase SQL editor after 112.
+
 - Fixed (v0.190.0): Dictate on TEMPO Desktop now stays on live transcription instead of dropping to a recording after a moment. Spoken words appear as you talk, and Windows is not asked for extra network permission.
 
 - Changed (v0.189.0): On Social, Add someone in your Top 8 opens a search above that slot, so you can find people you follow and people who follow you without a list appearing further down the page.
 
-- Changed (v0.188.0): On Social, Add someone in your Top 8 opens a search above that slot, so you can find people you follow and people who follow you without a list appearing further down the page.
+- Changed (v0.188.0): Dragging a track or note to another stage on the Board now slides it into the new column, so the move is easier to follow. Tasks do the same when you drag between Overdue / Today / This week / Later, and Pro workflow cards slide between their stages the same way.
 
 - Fixed (v0.187.0 / Desktop v0.100.26): Dictate on TEMPO Desktop now shows your words as you speak — assistant, Import, Messages, Origin, Passage, and Calendar — without a Windows network-permission prompt. The desktop app itself carries the live connection. Update TEMPO Desktop after Desktop Release publishes both installers (Windows and Mac).
 

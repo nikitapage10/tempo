@@ -673,6 +673,11 @@ export type TaskCategory = string;
 
 export type TaskStatus = "todo" | "doing" | "done";
 
+/** 0 none, 1 low, 2 high, 3 urgent. */
+export type TaskPriority = 0 | 1 | 2 | 3;
+
+export type TaskRecurrence = "daily" | "weekly" | "biweekly" | "monthly";
+
 export type Task = {
   id: string;
   user_id: string;
@@ -692,6 +697,21 @@ export type Task = {
   updated_at?: string;
   starter_content_key?: string | null;
   is_starter_example?: boolean;
+  priority: TaskPriority;
+  completed_at: string | null;
+  reminder_minutes: number[];
+  recurrence: TaskRecurrence | null;
+  recurrence_until: string | null;
+  recurrence_parent_id: string | null;
+};
+
+export type TaskStep = {
+  id: string;
+  task_id: string;
+  label: string;
+  done: boolean;
+  sort_order: number;
+  created_at: string;
 };
 
 export type TaskInsert = {
@@ -703,10 +723,29 @@ export type TaskInsert = {
   track_id?: string | null;
   project_id?: string | null;
   space_id?: string | null;
+  priority?: TaskPriority;
+  reminder_minutes?: number[];
+  recurrence?: TaskRecurrence | null;
+  recurrence_until?: string | null;
+  recurrence_parent_id?: string | null;
 };
 
 export type TaskUpdate = Partial<
-  Pick<Task, "title" | "category" | "status" | "due_date" | "notes" | "track_id" | "project_id">
+  Pick<
+    Task,
+    | "title"
+    | "category"
+    | "status"
+    | "due_date"
+    | "notes"
+    | "track_id"
+    | "project_id"
+    | "priority"
+    | "completed_at"
+    | "reminder_minutes"
+    | "recurrence"
+    | "recurrence_until"
+  >
 >;
 
 export type ProjectStatus = "active" | "done" | "parked";
@@ -740,6 +779,7 @@ export type ProjectUpdate = Partial<
 export type ProjectWithStats = Project & {
   track_count: number;
   task_count: number;
+  tasks_done_count: number;
   checklist_pct: number | null;
 };
 

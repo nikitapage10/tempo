@@ -7,6 +7,8 @@ import {
   fetchTasks,
   updateTask,
   assignArtistTask,
+  bulkUpdateTasks,
+  bulkDeleteTasks,
 } from "@/lib/api/tasks";
 import type { Task, TaskInsert, TaskUpdate } from "@/lib/types";
 
@@ -65,5 +67,15 @@ export function useTaskMutations(spaceId: string | null) {
     onSuccess: invalidate,
   });
 
-  return { create, update, remove, assign };
+  const bulkUpdate = useMutation({
+    mutationFn: ({ ids, patch }: { ids: string[]; patch: TaskUpdate }) => bulkUpdateTasks(ids, patch),
+    onSuccess: invalidate,
+  });
+
+  const bulkRemove = useMutation({
+    mutationFn: (ids: string[]) => bulkDeleteTasks(ids),
+    onSuccess: invalidate,
+  });
+
+  return { create, update, remove, assign, bulkUpdate, bulkRemove };
 }

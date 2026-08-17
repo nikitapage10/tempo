@@ -116,6 +116,10 @@ export type SpotlightCardProps = {
   as?: "div" | "li" | "article" | "section";
   /** Positioning or other layout styles — merged under the spotlight CSS vars. */
   style?: React.CSSProperties;
+  onClick?: React.MouseEventHandler<HTMLElement>;
+  onKeyDown?: React.KeyboardEventHandler<HTMLElement>;
+  role?: string;
+  tabIndex?: number;
 };
 
 export function SpotlightCard({
@@ -130,6 +134,10 @@ export function SpotlightCard({
   fill = true,
   as: Tag = "div",
   style,
+  onClick,
+  onKeyDown,
+  role,
+  tabIndex,
 }: SpotlightCardProps) {
   useSpotlightPointer();
 
@@ -149,6 +157,10 @@ export function SpotlightCard({
       className={cn("spotlight", className)}
       onPointerEnter={syncLocalSpot}
       onPointerMove={syncLocalSpot}
+      onClick={onClick}
+      onKeyDown={onKeyDown}
+      role={role}
+      tabIndex={tabIndex}
       style={
         {
           ...style,

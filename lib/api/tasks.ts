@@ -37,11 +37,35 @@ export async function createTask(input: TaskInsert): Promise<Task> {
       track_id: input.track_id ?? null,
       project_id: input.project_id ?? null,
       space_id: input.space_id ?? null,
+      priority: input.priority ?? 0,
+      reminder_minutes: input.reminder_minutes ?? [],
+      recurrence: input.recurrence ?? null,
+      recurrence_until: input.recurrence_until ?? null,
+      recurrence_parent_id: input.recurrence_parent_id ?? null,
     })
     .select()
     .single();
   if (error) throw error;
   return data;
+}
+
+/** Applies the same patch to several tasks at once, for the List view's bulk action bar. */
+export async function bulkUpdateTasks(ids: string[], patch: TaskUpdate): Promise<void> {
+  if (!ids.length) return;
+  const supabase = createClient();
+  const normalizedPatch = {
+    ...patch,
+    due_date: patch.due_date === "" ? null : patch.due_date,
+  };
+  const { error } = await supabase.from("tasks").update(normalizedPatch).in("id", ids);
+  if (error) throw error;
+}
+
+export async function bulkDeleteTasks(ids: string[]): Promise<void> {
+  if (!ids.length) return;
+  const supabase = createClient();
+  const { error } = await supabase.from("tasks").delete().in("id", ids);
+  if (error) throw error;
 }
 
 /**

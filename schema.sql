@@ -352,5 +352,6 @@ alter table tracks add column if not exists stage_entered_at timestamptz not nul
 -- 009 track_collaborators + activity_events + notifications + RLS helpers
 -- 010 user_track_workspace_preferences
 -- 011 dashboard aggregate views
+-- 113 tasks.priority/completed_at/reminder_minutes/recurrence + task_steps + task_reminder_deliveries
 
 -- Full SQL for each lives in /migrations — run 001 through 011 in order on production.

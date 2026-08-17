@@ -14,12 +14,22 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
 import { EmptyShaderPanel } from "@/components/shader-empty";
 import { FlareLine } from "@/components/flare-line";
+import { Chip } from "@/components/ui/chip";
 import { useActiveSpace } from "@/components/active-space-provider";
 import { useProjectMutations, useProjects } from "@/hooks/use-projects";
-import { formatShortDate } from "@/lib/format";
+import { formatShortDate, localDateString } from "@/lib/format";
 import { PROJECT_TYPES } from "@/lib/constants";
-import type { ProjectType } from "@/lib/types";
+import type { ProjectStatus, ProjectType } from "@/lib/types";
 import { cn } from "@/lib/utils";
+
+const STATUS_LABELS: Record<ProjectStatus, string> = { active: "Active", done: "Done", parked: "Parked" };
+const STATUS_TONE: Record<ProjectStatus, string> = {
+  active: "border-ice/40 bg-ice/10 text-ice",
+  done: "border-ok/40 bg-ok/10 text-ok",
+  parked: "border-line bg-bg-2 text-text-lo",
+};
+
+type SortKey = "deadline" | "name" | "progress";
 
 function ProjectStat({ value, label }: { value: number; label: string }) {
   return (
@@ -49,6 +59,20 @@ export default function ProjectsPage() {
   const [deadline, setDeadline] = React.useState("");
   const [projectType, setProjectType] = React.useState<ProjectType>("general");
   const [busy, setBusy] = React.useState(false);
+  const [statusFilter, setStatusFilter] = React.useState<ProjectStatus | "all">("all");
+  const [sortKey, setSortKey] = React.useState<SortKey>("deadline");
+  const today = localDateString();
+
+  const visible = React.useMemo(() => {
+    const filtered = statusFilter === "all" ? projects : projects.filter((p) => p.status === statusFilter);
+    return [...filtered].sort((a, b) => {
+      if (sortKey === "name") return a.name.localeCompare(b.name);
+      if (sortKey === "progress") return (b.checklist_pct ?? -1) - (a.checklist_pct ?? -1);
+      const ad = a.deadline ?? "9999-99-99";
+      const bd = b.deadline ?? "9999-99-99";
+      return ad < bd ? -1 : ad > bd ? 1 : 0;
+    });
+  }, [projects, statusFilter, sortKey]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -93,6 +117,29 @@ export default function ProjectsPage() {
         }
       />
 
+      {projects.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <Chip size="sm" active={statusFilter === "all"} onClick={() => setStatusFilter("all")}>
+              All
+            </Chip>
+            {(["active", "done", "parked"] as ProjectStatus[]).map((s) => (
+              <Chip key={s} size="sm" active={statusFilter === s} onClick={() => setStatusFilter(s)}>
+                {STATUS_LABELS[s]}
+              </Chip>
+            ))}
+          </div>
+          <div className="ml-auto flex items-center gap-1.5">
+            <span className="text-xs text-text-lo">Sort</span>
+            {(["deadline", "name", "progress"] as SortKey[]).map((k) => (
+              <Chip key={k} size="sm" active={sortKey === k} onClick={() => setSortKey(k)}>
+                {k[0].toUpperCase() + k.slice(1)}
+              </Chip>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       {isLoading ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <div className="h-32 animate-pulse rounded-card bg-bg-1" />
@@ -110,10 +157,12 @@ export default function ProjectsPage() {
         />
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {projects.map((p) => (
+          {visible.map((p) => {
+            const late = Boolean(p.deadline && p.deadline < today && p.status === "active");
+            return (
             <SpotlightCard
               key={p.id}
-              tone={p.project_type === "general" ? "ice" : "amber"}
+              tone={late ? "warn" : p.project_type === "general" ? "ice" : "amber"}
               className="min-h-[188px]"
             >
               <Link
@@ -125,6 +174,9 @@ export default function ProjectsPage() {
                   <h2 className="min-w-0 flex-1 font-display text-base font-semibold text-text-hi">
                     {p.name}
                   </h2>
+                  <span className={cn("shrink-0 rounded-chip border px-1.5 py-0.5 font-mono text-[11px] uppercase tracking-wide", STATUS_TONE[p.status])}>
+                    {STATUS_LABELS[p.status]}
+                  </span>
                   {p.project_type !== "general" ? (
                     <span className="shrink-0 rounded-chip border border-amber/30 bg-amber/10 px-1.5 py-0.5 font-mono text-[11px] uppercase tracking-wide text-amber">
                       {PROJECT_TYPES.find((t) => t.value === p.project_type)
@@ -133,7 +185,7 @@ export default function ProjectsPage() {
                   ) : null}
                 </div>
                 {p.deadline ? (
-                  <p className="mt-1 font-mono text-xs text-text-lo">
+                  <p className={cn("mt-1 font-mono text-xs", late ? "text-warn" : "text-text-lo")}>
                     Due {formatShortDate(p.deadline + "T12:00:00")}
                   </p>
                 ) : null}
@@ -142,7 +194,8 @@ export default function ProjectsPage() {
                     room, and a number you can read at a glance is worth more. */}
                 <div className="mt-4 flex gap-6">
                   <ProjectStat value={p.track_count} label="Tracks" />
-                  <ProjectStat value={p.task_count} label="Tasks" />
+                  <ProjectStat value={p.task_count - p.tasks_done_count} label="Tasks open" />
+                  <ProjectStat value={p.tasks_done_count} label="Done" />
                 </div>
 
                 <div className="mt-auto pt-4">
@@ -167,7 +220,8 @@ export default function ProjectsPage() {
               </div>
               </Link>
             </SpotlightCard>
-          ))}
+            );
+          })}
 
           {/* Ghost tile — keeps a sparse grid looking composed and puts the
               next action where the eye already is. */}

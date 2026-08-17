@@ -2,7 +2,7 @@
 
 import { FlareLine } from "@/components/flare-line";
 import { TaskRow } from "@/components/tasks/task-row";
-import type { Task, TaskStatus } from "@/lib/types";
+import type { Task } from "@/lib/types";
 
 function sortClosedOut(a: Task, b: Task) {
   if (a.due_date && b.due_date && a.due_date !== b.due_date) {
@@ -17,22 +17,22 @@ export function TaskDoneArchive({
   tasks,
   trackName,
   projectName,
+  assigneeName,
   focusedId,
   onBack,
   onToggle,
-  onStatus,
-  onDue,
   onDelete,
+  onOpen,
 }: {
   tasks: Task[];
   trackName: (id: string | null) => string | undefined;
   projectName: (id: string | null) => string | undefined;
+  assigneeName: (id: string | null | undefined) => string | undefined;
   focusedId?: string | null;
   onBack?: () => void;
   onToggle: (task: Task) => Promise<void>;
-  onStatus: (task: Task, next: TaskStatus) => Promise<void>;
-  onDue: (task: Task, next: string) => Promise<void>;
   onDelete: (task: Task) => Promise<void>;
+  onOpen: (task: Task) => void;
 }) {
   const sorted = [...tasks].sort(sortClosedOut);
 
@@ -75,12 +75,12 @@ export function TaskDoneArchive({
               task={task}
               trackTitle={trackName(task.track_id)}
               projectTitle={projectName(task.project_id)}
+              assigneeLabel={assigneeName(task.assigned_to_user_id)}
               overdue={false}
               focused={focusedId === task.id}
               onToggle={() => onToggle(task)}
-              onStatus={(next) => onStatus(task, next)}
-              onDue={(next) => onDue(task, next)}
               onDelete={() => onDelete(task)}
+              onOpen={() => onOpen(task)}
             />
           ))}
         </ul>

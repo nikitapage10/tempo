@@ -18,7 +18,7 @@ export async function fetchProjects(
 
   const [tracksRes, tasksRes] = await Promise.all([
     supabase.from("tracks").select("id, project_id").in("project_id", ids),
-    supabase.from("tasks").select("id, project_id").in("project_id", ids),
+    supabase.from("tasks").select("id, project_id, status").in("project_id", ids),
   ]);
 
   if (tracksRes.error) throw tracksRes.error;
@@ -35,9 +35,11 @@ export async function fetchProjects(
   }
 
   const taskCount = new Map<string, number>();
+  const tasksDoneCount = new Map<string, number>();
   for (const t of tasksRes.data ?? []) {
     if (!t.project_id) continue;
     taskCount.set(t.project_id, (taskCount.get(t.project_id) ?? 0) + 1);
+    if (t.status === "done") tasksDoneCount.set(t.project_id, (tasksDoneCount.get(t.project_id) ?? 0) + 1);
   }
 
   const allTrackIds = (tracksRes.data ?? []).map((t) => t.id);
@@ -80,6 +82,7 @@ export async function fetchProjects(
     ...p,
     track_count: trackCount.get(p.id) ?? 0,
     task_count: taskCount.get(p.id) ?? 0,
+    tasks_done_count: tasksDoneCount.get(p.id) ?? 0,
     checklist_pct: checklistPct.get(p.id) ?? null,
   }));
 }
