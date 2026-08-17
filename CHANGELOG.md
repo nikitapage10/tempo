@@ -4,6 +4,8 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-17
 
+- Fixed (v0.187.0 / Desktop v0.100.26): Dictate on TEMPO Desktop now shows your words as you speak — assistant, Import, Messages, Origin, Passage, and Calendar — without a Windows network-permission prompt. The desktop app itself carries the live connection. Update TEMPO Desktop after Desktop Release publishes both installers (Windows and Mac).
+
 - Fixed (v0.186.0): Dictate in the assistant — and the same mic control in Import, Messages, Origin, Passage, and Calendar — no longer asks Windows Defender for public and private network access. Spoken words still appear live as you talk.
 - Changed (v0.186.0): The assistant's message box is tall enough to read a full line, grows as you type, and no longer shows a cramped scrollbar inside the field.
 

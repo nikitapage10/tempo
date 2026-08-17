@@ -127,7 +127,7 @@ const PRO_TOURS: Record<string, PageTour> = {
     id: "pro-today",
     steps: [
       pageStep("Where the day starts", "Everything waiting on you.", "Today gathers what is due, what is moving, and what the artists you work with have been up to, across every workspace you have access to."),
-      { selector: "main section, main .panel, main .panel-quiet", kicker: "Across the roster", title: "One view, not one artist.", copy: "You are not locked to a single workspace. What surfaces here spans everyone you work with, so nothing gets buried in a room you did not open today." },
+      { selector: "main [data-tour='pro-today-hub']", kicker: "Across the roster", title: "One view, not one artist.", copy: "Open tasks and projects are yours. Below them, waiting work and the artists you work with sit together so nothing stays buried in a room you did not open today." },
     ],
   },
   "/calendar": {

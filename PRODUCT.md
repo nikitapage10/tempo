@@ -96,7 +96,9 @@ Support replies also update the notification center. Reconnects
 reconcile missed changes, with polling retained only as a temporary fallback.
 Dictation and voice notes are separate actions: dictated text streams into the
 editable field on the browser, Mac, and Windows over one continuous microphone
-session, using the same live transcription as Import and the assistant. Natural pauses settle phrases without stopping the session; if the live
+session, using the same live transcription as Import and the assistant. On
+TEMPO Desktop the live connection is handled by the app itself, so Windows
+does not ask for extra network access just to dictate. Natural pauses settle phrases without stopping the session; if the live
 connection cannot open, TEMPO keeps the safety path as one uninterrupted
 recording transcribed after Stop rather than chopping speech into short clips.
 Voice notes include duration, a waveform, playback progress, and playback

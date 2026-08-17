@@ -48,7 +48,9 @@ import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { TrackCoverSlider } from "@/components/today/track-cover-slider";
 import { ActivationGuideModule } from "@/components/today/activation-guide-module";
 import { PulseModule } from "@/components/today/pulse-module";
+import { ProTodayHub } from "@/components/today/pro-today-hub";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { useWorkspaceMode } from "@/hooks/use-workspace-mode";
 
 function greetingForHour(h: number): string {
   if (h < 12) return "Good morning";
@@ -62,6 +64,8 @@ export default function TodayPage() {
   const { activeSpaceId, activeSpace } = useActiveSpace();
   const { activeArtist } = useActiveArtist();
   const currentUser = useCurrentUser();
+  const { mode } = useWorkspaceMode();
+  const isProHome = mode === "work";
   const tasksFocused = activeSpace?.focus === "tasks";
   const tracksQuery = useTracks(activeSpaceId);
   const stagesQuery = useStages(activeSpaceId);
@@ -132,9 +136,11 @@ export default function TodayPage() {
     day: "numeric",
   });
 
-  const empty = tasksFocused
-    ? !tasksQuery.isLoading && openTasks.length === 0 && projects.length === 0
-    : !tracksQuery.isLoading && activeTracks.length === 0 && tasksDue.length === 0;
+  const empty =
+    !isProHome &&
+    (tasksFocused
+      ? !tasksQuery.isLoading && openTasks.length === 0 && projects.length === 0
+      : !tracksQuery.isLoading && activeTracks.length === 0 && tasksDue.length === 0);
 
   async function handleCreateTrack(input: TrackInsert) {
     const track = await createTrack.mutateAsync(input);
@@ -451,6 +457,8 @@ export default function TodayPage() {
       {!tasksFocused && tracks.length > 0 ? (
         <TrackCoverSlider tracks={tracks} className="pt-2" />
       ) : null}
+
+      {isProHome ? <ProTodayHub /> : null}
 
       {activeSpaceId ? (
         <TrackFormModal
