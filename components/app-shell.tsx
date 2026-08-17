@@ -227,6 +227,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           mainNav.some((m) => m.href === item.href)
         );
   const [moreOpen, setMoreOpen] = React.useState(false);
+  const [topBarVisible, setTopBarVisible] = React.useState(false);
   const moreNav = [
     ...flattenRailItems(mainNav).filter(
       (item) => !mobileNav.some((m) => m.href === item.href)
@@ -382,6 +383,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <AppVideoBackdrop className="pointer-events-none absolute inset-0 z-0" />
           <div
             className="relative z-[1] h-full min-h-0 overflow-x-hidden overflow-y-auto pb-20 md:pb-0"
+            onScroll={(event) => {
+              const nextVisible = event.currentTarget.scrollTop > 12;
+              setTopBarVisible((visible) =>
+                visible === nextVisible ? visible : nextVisible
+              );
+            }}
             style={contentZoom !== 1 ? { zoom: contentZoom } : undefined}
           >
           <div className="relative z-[1] mx-auto w-full max-w-[1440px] px-4 md:px-8">
@@ -392,14 +399,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 clicks still reach them instead of moving the window.
                 Extra top padding clears the window edge; tighter bottom
                 padding pulls the chrome closer to page content. */}
-            <div className="sticky top-0 z-40 mb-1 flex items-center justify-end gap-1.5 pb-2 pt-5 [-webkit-app-region:drag]">
-              <div className="[-webkit-app-region:no-drag]">
+            <div
+              className="sticky top-0 z-40 isolate mb-1 flex items-center justify-end gap-1.5 pb-2 pt-5 [-webkit-app-region:drag]"
+              data-scroll-glass={topBarVisible ? "visible" : "hidden"}
+            >
+              <div
+                aria-hidden
+                className={cn(
+                  "pointer-events-none absolute -inset-x-4 inset-y-0 z-0 border-b border-line/70 bg-[linear-gradient(180deg,rgba(10,10,12,0.94),rgba(10,10,12,0.76))] shadow-[0_16px_36px_rgba(0,0,0,0.28)] backdrop-blur-xl backdrop-saturate-150 transition-[opacity,transform] duration-300 ease-out motion-reduce:transition-none md:-inset-x-8",
+                  topBarVisible
+                    ? "translate-y-0 opacity-100"
+                    : "-translate-y-2 opacity-0"
+                )}
+              />
+              <div className="relative z-10 [-webkit-app-region:no-drag]">
                 <NotificationCenter />
               </div>
-              <div className="[-webkit-app-region:no-drag]">
+              <div className="relative z-10 [-webkit-app-region:no-drag]">
                 <MessageCenter />
               </div>
-              <div className="[-webkit-app-region:no-drag]">
+              <div className="relative z-10 [-webkit-app-region:no-drag]">
                 <ProfileMenu />
               </div>
               <div
