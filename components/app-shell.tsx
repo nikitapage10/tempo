@@ -56,6 +56,7 @@ import { useRealtimeInbox } from "@/hooks/use-realtime-inbox";
 import { useDesktopMediaWarm } from "@/hooks/use-desktop-media-warm";
 import { useBrowserMediaWarm } from "@/hooks/use-browser-media-warm";
 import { GlobalPlayerBar } from "@/components/player/global-player-bar";
+import { CallDock } from "@/components/calls/call-dock";
 import { GuidedTour } from "@/components/guided-tour";
 import { StarterChecklist } from "@/components/onboarding/starter-checklist";
 import { ContextualPageTour } from "@/components/onboarding/contextual-page-tour";
@@ -337,6 +338,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </RailFlyoutScope>
           </nav>
 
+          <CallDock />
           <GlobalPlayerBar />
 
           <SlitDivider />
@@ -475,6 +477,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </main>
       </div>
 
+      <div className="fixed inset-x-0 bottom-16 z-40 md:hidden">
+        <CallDock />
+      </div>
       <nav data-tour="workspace-nav" className="fixed bottom-0 left-0 right-0 z-40 flex items-stretch bg-bg-1 md:hidden">
         <SlitDivider className="absolute inset-x-0 top-0" />
         {mobileNav.map(({ href, label, icon: Icon }) => {

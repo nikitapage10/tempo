@@ -5,10 +5,12 @@ import {
   parseParticipantIdentity,
   sessionRoomName,
 } from "@/lib/sessions/room-name";
+import { callRoomName } from "@/lib/calls/room-name";
 
 describe("Session LiveKit room names", () => {
   it("keeps a stable room name across instances", () => {
     expect(sessionRoomName("abc")).toBe("tempo-session-abc");
+    expect(callRoomName("conversation", "abc")).toBe("tempo-conversation-abc");
   });
 
   it("never parses a guest identity as a member", () => {

@@ -23,7 +23,7 @@ import { AvSettingsDialog } from "@/components/sessions/av-settings-dialog";
 import { CallControls } from "@/components/sessions/call-controls";
 import { CallWarmupPanel, hasSeenCallWarmup } from "@/components/sessions/call-warmup-panel";
 import { SessionAgenda } from "@/components/sessions/session-agenda";
-import { SessionAudio } from "@/components/sessions/session-audio";
+import { useCall } from "@/components/calls/call-provider";
 import { SessionChatPanel } from "@/components/sessions/session-chat-panel";
 import { SessionDecisions } from "@/components/sessions/session-decisions";
 import { SessionDeck } from "@/components/sessions/session-deck";
@@ -39,7 +39,6 @@ import { FlareLine } from "@/components/flare-line";
 import { useToast } from "@/components/ui/toast";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useMicLevel } from "@/hooks/use-mic-level";
-import { useSessionCall } from "@/hooks/use-session-call";
 import { useSessionDevices } from "@/hooks/use-session-devices";
 import { useSessionRoom, useSessionRoomMutations } from "@/hooks/use-session-rooms";
 import { useTrack, useTracks } from "@/hooks/use-tracks";
@@ -157,7 +156,7 @@ export function SessionRoomShell({ roomId }: { roomId: string }) {
   const focusedVersions = useVersions(room?.track_id ?? null);
   const focusTracks = useTracks(room?.space_id ?? null);
   const mutations = useSessionRoomMutations(activeArtist?.id ?? room?.artist_id ?? null, roomId);
-  const call = useSessionCall({ roomId, enabled: Boolean(room) });
+  const call = useCall();
   const devices = useSessionDevices(call.room);
   const micMediaTrack =
     (call.micTrack as { mediaStreamTrack?: MediaStreamTrack } | null)?.mediaStreamTrack ?? null;
@@ -173,6 +172,16 @@ export function SessionRoomShell({ roomId }: { roomId: string }) {
   const me = room?.members.find((member) => member.user_id === user?.id) ?? null;
   const isHost = me?.role === "host";
   const desktop = isDesktopApp();
+
+  React.useEffect(() => {
+    if (!room) return;
+    call.activate({
+      scope: "session",
+      id: room.id,
+      title: room.title,
+      href: `/sessions/${room.id}`,
+    });
+  }, [call.activate, room]);
 
   React.useEffect(() => {
     if (room?.open_meet_id && user?.id) {
@@ -261,8 +270,6 @@ export function SessionRoomShell({ roomId }: { roomId: string }) {
 
   return (
     <div className="flex h-[calc(100dvh-8rem)] min-h-0 flex-col gap-3 overflow-hidden">
-      <SessionAudio room={call.room} />
-
       <header className="panel relative shrink-0 overflow-hidden px-4 py-4">
         <span
           aria-hidden

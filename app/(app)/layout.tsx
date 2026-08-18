@@ -6,6 +6,7 @@ import { ArtistThemeProvider } from "@/components/artist-theme-provider";
 import { LightfieldDriver } from "@/components/lightfield-driver";
 import { IntroPreflight } from "@/components/intro-preflight";
 import { GlobalPlayerProvider } from "@/components/player/global-player-provider";
+import { CallProvider } from "@/components/calls/call-provider";
 import {
   hasUnfinishedMusicArtist,
   shouldSendToOrigin,
@@ -129,9 +130,11 @@ export default async function AppLayout({
         <ArtistThemeProvider>
           <ActiveSpaceProvider>
             <LightfieldDriver />
-            <GlobalPlayerProvider>
-              <AppShell>{children}</AppShell>
-            </GlobalPlayerProvider>
+            <CallProvider>
+              <GlobalPlayerProvider>
+                <AppShell>{children}</AppShell>
+              </GlobalPlayerProvider>
+            </CallProvider>
           </ActiveSpaceProvider>
         </ArtistThemeProvider>
       </ActiveArtistProvider>
