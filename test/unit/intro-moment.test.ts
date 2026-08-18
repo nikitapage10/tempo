@@ -32,4 +32,14 @@ describe("daily intro film", () => {
     expect(intro).toContain("video.muted = true");
     expect(intro).toContain("return video.play()");
   });
+
+  it("waits until the window is in front and does not burn the day on a hidden play", () => {
+    expect(intro).toContain("introDocumentIsHidden");
+    expect(intro).toContain("visibilitychange");
+    expect(intro).toContain('visibilityState === "hidden"');
+    expect(intro).toContain("markIntroPlayed");
+    expect(intro).toContain("setIntroPending");
+    expect(intro).not.toContain("localStorage.setItem(INTRO_DAY_KEY");
+    expect(intro).toContain("started = false");
+  });
 });

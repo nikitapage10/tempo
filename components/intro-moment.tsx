@@ -3,12 +3,13 @@
 import * as React from "react";
 import { setIntroActive, setLightfieldPaused } from "@/lib/lightfield";
 import {
-  INTRO_DAY_KEY,
   INTRO_POSTER,
   INTRO_SOURCES,
   clearIntroPending,
-  introDayKey,
+  introDocumentIsHidden,
   introWillPlay,
+  markIntroPlayed,
+  setIntroPending,
 } from "@/lib/intro";
 import { LfWindow } from "@/components/lf-windows";
 import { cn } from "@/lib/utils";
@@ -25,8 +26,10 @@ const BUFFER_WAIT_MS = 2500;
 /**
  * Boot intro: the supplied TEMPO film plays full-bleed with its authored logo
  * and soundtrack, a grain layer over the footage, then a two-second fade into
- * the workspace during the film's last beats. Once per calendar day; skipped
- * under prefers-reduced-motion.
+ * the workspace during the film's last beats. Once per calendar day — including
+ * the first time TEMPO Desktop is brought in front that day after sitting in
+ * the tray. Skipped under prefers-reduced-motion. Playback waits until the
+ * window is visible so a hidden Electron launch cannot burn the day's play.
  *
  * Playback runs as a plain composited <video>. The root Lightfield is paused
  * while the overlay is opaque so the video gets the GPU, then released as the
@@ -49,7 +52,6 @@ export function IntroMoment({
   phaseRef.current = phase;
   const fadingRef = React.useRef(false);
   const skipFadeRef = React.useRef(false);
-  const gateRanRef = React.useRef(false);
   const finishTimerRef = React.useRef<number | null>(null);
 
   const finish = React.useCallback(() => {
@@ -78,35 +80,44 @@ export function IntroMoment({
 
   const skip = React.useCallback(() => {
     if (phaseRef.current !== "playing") return;
+    markIntroPlayed();
     const video = videoRef.current;
     if (video && !video.muted) video.volume = 0;
     beginFade(true);
   }, [beginFade]);
 
-  // Gate: reduced motion, or already played today. Guarded against
-  // React Strict Mode's dev-only double effect invocation — without this,
-  // the second run would see the day-flag the first run just wrote and
-  // immediately (wrongly) jump to "done".
+  // Gate: reduced motion, already played today, or the window is still
+  // hidden (desktop starts `show: false` and lives in the tray). Re-check
+  // on visibility so the first time the window comes forward on a new day
+  // still gets the film — without consuming the day if playback never
+  // actually starts.
   React.useEffect(() => {
-    if (gateRanRef.current) return;
-    gateRanRef.current = true;
     if (typeof window === "undefined") return;
 
-    if (!introWillPlay()) {
-      clearIntroPending();
-      setPhase("done");
-      onDone?.();
-      return;
-    }
+    const tryBegin = () => {
+      if (phaseRef.current === "playing") return;
+      if (!introWillPlay()) {
+        if (phaseRef.current === "checking") {
+          clearIntroPending();
+          setPhase("done");
+          onDone?.();
+        }
+        return;
+      }
+      if (introDocumentIsHidden()) return;
+      fadingRef.current = false;
+      skipFadeRef.current = false;
+      setFading(false);
+      setSkipFade(false);
+      setShowSkipHint(false);
+      setIntroPending();
+      setPhase("playing");
+    };
 
-    setPhase("playing");
-    try {
-      localStorage.setItem(INTRO_DAY_KEY, introDayKey());
-    } catch {
-      /* private mode */
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    tryBegin();
+    document.addEventListener("visibilitychange", tryBegin);
+    return () => document.removeEventListener("visibilitychange", tryBegin);
+  }, [onDone]);
 
   React.useEffect(() => {
     if (phase !== "playing") return;
@@ -182,37 +193,69 @@ export function IntroMoment({
     };
 
     const onError = () => {
-      if (!cancelled) finish();
+      if (cancelled) return;
+      // Hidden-window aborts shouldn't consume the day — retry when visible.
+      if (document.visibilityState === "hidden") return;
+      markIntroPlayed();
+      finish();
     };
+
+    const onPlaying = () => {
+      if (!cancelled) markIntroPlayed();
+    };
+
+    const playOrMute = () =>
+      video.play().catch(() => {
+        // Browsers may block audible autoplay after navigation. Preserve the
+        // film instead of dropping the whole intro when that happens.
+        video.muted = true;
+        return video.play();
+      });
 
     // Don't start into a stall — the overlay is already opaque black, so
     // waiting here is invisible, whereas playing unbuffered stutters through
     // the ignition. The login-screen preloader usually makes this instant.
     const start = () => {
       if (started || cancelled) return;
+      if (document.visibilityState === "hidden") return;
       started = true;
       if (bufferTimer) window.clearTimeout(bufferTimer);
       video.removeEventListener("canplaythrough", start);
-      video
-        .play()
-        .catch(() => {
-          // Browsers may block audible autoplay after navigation. Preserve the
-          // film instead of dropping the whole intro when that happens.
-          video.muted = true;
-          return video.play();
-        })
-        .catch(() => {
-          if (!cancelled) finish();
-        });
+      playOrMute().catch(() => {
+        if (cancelled) return;
+        // Desktop launches with the window hidden; autoplay often rejects
+        // until the window is actually in front. Don't burn the day.
+        if (document.visibilityState === "hidden") {
+          started = false;
+          return;
+        }
+        markIntroPlayed();
+        finish();
+      });
       hintTimer = window.setTimeout(
         () => setShowSkipHint(true),
         SKIP_HINT_AFTER_MS
       );
     };
 
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        video.pause();
+        return;
+      }
+      if (skipFadeRef.current || fadingRef.current) return;
+      if (!started) {
+        start();
+        return;
+      }
+      playOrMute().catch(() => undefined);
+    };
+
     video.addEventListener("timeupdate", onTimeUpdate);
     video.addEventListener("ended", onEnded);
     video.addEventListener("error", onError);
+    video.addEventListener("playing", onPlaying);
+    document.addEventListener("visibilitychange", onVisibility);
 
     if (video.readyState >= 4 /* HAVE_ENOUGH_DATA */) {
       start();
@@ -227,7 +270,9 @@ export function IntroMoment({
       video.removeEventListener("timeupdate", onTimeUpdate);
       video.removeEventListener("ended", onEnded);
       video.removeEventListener("error", onError);
+      video.removeEventListener("playing", onPlaying);
       video.removeEventListener("canplaythrough", start);
+      document.removeEventListener("visibilitychange", onVisibility);
       if (hintTimer) window.clearTimeout(hintTimer);
       if (bufferTimer) window.clearTimeout(bufferTimer);
     };

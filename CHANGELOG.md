@@ -4,6 +4,8 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-18
 
+- Fixed (v0.196.4): the once-a-day boot film plays on TEMPO Desktop again. It was disappearing because the app often comes up hidden, or is just brought back from the tray without a fresh load, so the film either ran out of sight or never got another chance. It now waits until the window is in front, and the first time you open TEMPO that day — including from the tray — it plays.
+
 - Changed (v0.196.3): Rearranging tracks on the Tracks page is smoother. Grab the handle and the row follows your pointer without stretching or stuttering, while the others slide out of the way.
 
 - Fixed (v0.196.2): Dropping a track between two others on the Board now aims from the cards themselves — the top half of the song below, or the bottom half of the song above — instead of only a thin gap, and the card slides straight to that spot instead of jumping to the top or bottom of the list first.

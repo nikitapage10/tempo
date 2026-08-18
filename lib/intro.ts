@@ -6,11 +6,17 @@
  *     covers the app before first paint so the shell never flashes,
  *   - the login-screen preloader (components/intro-preload.tsx), which warms
  *     the media cache so playback starts instantly,
- *   - the component itself (components/intro-moment.tsx).
+ *   - the component itself (components/intro-moment.tsx), which also
+ *     waits until the document is visible so a hidden desktop window
+ *     cannot burn the day's play, and re-checks when the window comes
+ *     forward (tray restore on a new calendar day).
  * Keep them in sync by going through here.
  */
 
-export const INTRO_DAY_KEY = "tempo.introDay";
+/** Storage key for the last calendar day the film actually started. `.v2` so a
+ *  hidden desktop launch that marked the old key without showing the film
+ *  does not skip the first real play after this fix. */
+export const INTRO_DAY_KEY = "tempo.introDay.v2";
 
 /**
  * Set for one session when ORIGIN hands off into the app, so the artist doesn't
@@ -43,6 +49,10 @@ export function introDayKey(d: Date = new Date()) {
 /**
  * Whether the intro should play on this load. Safe to call before mount —
  * only touches window/localStorage behind guards.
+ *
+ * Does not consume the day — the overlay waits until the document is actually
+ * visible (TEMPO Desktop starts hidden, and lives in the tray) and only then
+ * marks the day once playback starts.
  */
 export function introWillPlay(): boolean {
   if (typeof window === "undefined") return false;
@@ -64,6 +74,29 @@ export function introWillPlay(): boolean {
     // Private mode: no way to remember, so don't gate on it.
     return true;
   }
+}
+
+export function markIntroPlayed(d: Date = new Date()) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(INTRO_DAY_KEY, introDayKey(d));
+  } catch {
+    /* private mode */
+  }
+}
+
+export function introDocumentIsHidden() {
+  if (typeof document === "undefined") return false;
+  try {
+    return document.visibilityState === "hidden";
+  } catch {
+    return false;
+  }
+}
+
+export function setIntroPending() {
+  if (typeof document === "undefined") return;
+  document.documentElement.setAttribute(INTRO_PENDING_ATTR, "");
 }
 
 export function clearIntroPending() {
