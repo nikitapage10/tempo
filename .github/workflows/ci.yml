@@ -86,7 +86,19 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      # apt occasionally catches Google’s Chrome mirror mid-sync ("File has
+      # unexpected size"), which fails the whole job over nothing. Refresh the
+      # lists and try once more before giving up.
+      - name: Install Playwright chromium
+        run: |
+          if npx playwright install --with-deps chromium; then
+            exit 0
+          fi
+          echo "Playwright install failed. Refreshing apt lists and retrying once."
+          sudo rm -f /etc/apt/sources.list.d/google-chrome.list
+          sudo apt-get update || true
+          sleep 15
+          npx playwright install --with-deps chromium
       - name: Write isolated test env
         run: |
           cat > .env.test.local <<EOF
