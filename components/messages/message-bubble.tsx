@@ -28,6 +28,13 @@ export function MessageBubble({ message, mine, scope, threadId, authorLabel, can
   const [editText, setEditText] = React.useState(message.body);
   const [showReactions, setShowReactions] = React.useState(false);
   const deleted = Boolean(message.deleted_at);
+  if (message.body.startsWith("::system::")) {
+    return (
+      <div className="px-3 py-1 text-center text-xs text-text-lo">
+        {message.body.slice("::system::".length)}
+      </div>
+    );
+  }
 
   async function saveEdit() {
     const body = editText.trim();

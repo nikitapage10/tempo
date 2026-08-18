@@ -3,7 +3,8 @@
 import * as React from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Archive, ArchiveRestore, ChevronLeft, Files, Headphones, Lock, MessagesSquare, PenSquare, Pin, Radio, Search, Trash2, UserPlus, Users, Volume2, VolumeX, X } from "lucide-react";
+import { Archive, ArchiveRestore, ChevronLeft, Files, Headphones, Lock, MessagesSquare, PenSquare, Phone, Pin, Radio, Search, Trash2, UserPlus, Users, Volume2, VolumeX, X } from "lucide-react";
+import { useCall } from "@/components/calls/call-provider";
 import { useActiveArtist } from "@/components/active-artist-provider";
 import { useWorkspaceMode } from "@/hooks/use-workspace-mode";
 import { ArtistMark } from "@/components/artists/artist-mark";
@@ -35,6 +36,7 @@ export default function MessagesView() {
   const { toast } = useToast();
   const { activeArtist } = useActiveArtist();
   const currentUser = useCurrentUser();
+  const call = useCall();
   const { socialArtistId, mode } = useWorkspaceMode();
   const { profile, isLoading: profileLoading, publish } = useArtistProfile(socialArtistId ?? activeArtist?.id ?? null);
   const myProfileId = profile?.id ?? null;
@@ -141,6 +143,25 @@ export default function MessagesView() {
       <section className={cn("panel flex min-h-0 flex-col overflow-hidden", !showingThread && "hidden lg:flex")}>
         {composing ? <div className="flex min-h-0 flex-1 flex-col"><div className="border-b border-line px-4 py-3"><p className="text-sm font-medium text-text-hi">New message</p><p className="text-xs text-text-lo">Message one artist, or start a group chat.</p></div><NewConversationPanel myProfileId={myProfileId} onStarted={chooseDirect}/></div> : !activeSupport && !activeId ? <div className="flex flex-1 flex-col items-center justify-center p-6 text-center"><span className="flex size-11 items-center justify-center rounded-full border border-ice/20 bg-ice/10"><MessagesSquare className="size-5 text-ice"/></span><p className="mt-3 text-sm text-text-hi">Choose a conversation</p><p className="mt-1 max-w-sm text-xs text-text-lo">Messages stay inside a focused, scrollable workspace.</p></div> : <>
           <header className={cn("flex shrink-0 items-center gap-3 border-b border-line px-4 py-3", activeSupport && "bg-gradient-to-r from-amber/[0.08] to-transparent")}><Button type="button" size="sm" variant="ghost" className="-ml-2 lg:hidden" onClick={() => { setActiveId(null); setActiveSupportId(null); }} aria-label="Back"><ChevronLeft className="size-4"/></Button>{activeSupport ? <span className="flex size-8 items-center justify-center rounded-full border border-amber/25 bg-amber/10"><Headphones className="size-4 text-amber"/></span> : activeIsSession ? <span className="flex size-8 items-center justify-center rounded-full border border-ice/25 bg-ice/10"><Radio className="size-4 text-ice"/></span> : activeIsGroup ? <GroupAvatar members={active?.members} size={24} className="size-6"/> : <ArtistMark emblemUrl={active?.peer?.emblem_url ?? null} paletteId={active?.peer?.palette_id} iceColor={active?.peer?.ice_color} amberColor={active?.peer?.amber_color} name={active?.peer?.display_name ?? "Chat"} size={20} className="size-6"/>}<div className="min-w-0 flex-1"><p className="truncate text-sm font-medium text-text-hi">{activeHeading}</p><p className="text-xs text-text-lo">{activeSubheading}</p></div>{!activeSupport ? <>{activeCanExpand ? <Button size="sm" variant="ghost" aria-label="Add someone to a new group" onClick={() => { setShowExpand((value) => !value); setShowMembers(false); }}><UserPlus className="size-3.5"/></Button> : null}{activeIsGroup ? <Button size="sm" variant="ghost" aria-label="Group members" onClick={() => { setShowMembers((value) => !value); setShowExpand(false); }}><Users className="size-3.5"/></Button> : null}<Button size="sm" variant="ghost" aria-label="Search messages" onClick={() => setUtility(utility === "search" ? null : "search")}><Search className="size-3.5"/></Button><Button size="sm" variant="ghost" aria-label="Pinned messages" onClick={() => setUtility(utility === "pins" ? null : "pins")}><Pin className="size-3.5"/></Button><Button size="sm" variant="ghost" aria-label="Shared media" onClick={() => setUtility(utility === "media" ? null : "media")}><Files className="size-3.5"/></Button><Button size="sm" variant="ghost" onClick={() => mutations.mute.mutate({ conversationId: active!.id, muted: !active!.muted })}>{active?.muted ? <Volume2 className="size-3.5"/> : <VolumeX className="size-3.5"/>}</Button><Button size="sm" variant="ghost" onClick={() => { mutations.markUnread.mutate(active!.id); setActiveId(null); }}>Mark unread</Button></> : null}<Button size="sm" variant="ghost" onClick={() => void archiveActive()}>{archived ? <ArchiveRestore className="size-3.5"/> : <Archive className="size-3.5"/>}{archived ? "Restore" : "Archive"}</Button></header>
+          {active && !activeIsSession && !activeSupport && !archived ? (
+            <div className="flex shrink-0 justify-end border-b border-line px-3 py-1.5">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() =>
+                  call.start({
+                    scope: "conversation",
+                    id: active.id,
+                    title: activeHeading,
+                    href: `/messages?c=${active.id}`,
+                  })
+                }
+              >
+                <Phone className="size-3.5" />
+                Call
+              </Button>
+            </div>
+          ) : null}
           {showExpand && active && activeCanExpand ? <ExpandDirectPanel conversation={active} myProfileId={myProfileId} onCreated={(id) => { setShowExpand(false); chooseDirect(id); }} onCancel={() => setShowExpand(false)}/> : null}
           {showMembers && active && activeIsGroup ? <GroupMembersPanel conversation={active} myProfileId={myProfileId} onLeft={() => { setShowMembers(false); setActiveId(null); }}/> : null}
           {activeSupport ? <div className="flex shrink-0 justify-end gap-1 border-b border-line px-3 py-1.5"><Button size="sm" variant="ghost" onClick={() => setUtility(utility === "search" ? null : "search")}><Search className="size-3.5"/>Search</Button><Button size="sm" variant="ghost" onClick={() => setUtility(utility === "media" ? null : "media")}><Files className="size-3.5"/>Shared media</Button></div> : null}

@@ -3,7 +3,7 @@
  */
 
 import { AccessToken } from "livekit-server-sdk";
-import { guestIdentity, memberIdentity, sessionRoomName } from "@/lib/sessions/room-name";
+import { callRoomName, guestIdentity, memberIdentity, type CallScope } from "@/lib/calls/room-name";
 
 export function isLiveKitConfigured(): boolean {
   return Boolean(
@@ -15,8 +15,9 @@ export function isLiveKitConfigured(): boolean {
 
 export const LIVEKIT_UNAVAILABLE_MESSAGE = "Calls are not switched on right now.";
 
-export async function mintSessionLiveKitToken(input: {
-  sessionRoomId: string;
+export async function mintCallToken(input: {
+  scope: CallScope;
+  targetId: string;
   kind: "member" | "guest";
   id: string;
   displayName: string;
@@ -32,7 +33,7 @@ export async function mintSessionLiveKitToken(input: {
   }
 
   const identity = input.kind === "guest" ? guestIdentity(input.id) : memberIdentity(input.id);
-  const roomName = sessionRoomName(input.sessionRoomId);
+  const roomName = callRoomName(input.scope, input.targetId);
   const token = new AccessToken(apiKey, apiSecret, {
     identity,
     name: input.displayName,
@@ -51,4 +52,10 @@ export async function mintSessionLiveKitToken(input: {
     canUpdateOwnMetadata: true,
   });
   return { token: await token.toJwt(), url, roomName };
+}
+
+export function mintSessionLiveKitToken(
+  input: Omit<Parameters<typeof mintCallToken>[0], "scope" | "targetId"> & { sessionRoomId: string },
+) {
+  return mintCallToken({ ...input, scope: "session", targetId: input.sessionRoomId });
 }

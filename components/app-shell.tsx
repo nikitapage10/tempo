@@ -57,6 +57,7 @@ import { useDesktopMediaWarm } from "@/hooks/use-desktop-media-warm";
 import { useBrowserMediaWarm } from "@/hooks/use-browser-media-warm";
 import { GlobalPlayerBar } from "@/components/player/global-player-bar";
 import { CallDock } from "@/components/calls/call-dock";
+import { IncomingCall } from "@/components/calls/incoming-call";
 import { GuidedTour } from "@/components/guided-tour";
 import { StarterChecklist } from "@/components/onboarding/starter-checklist";
 import { ContextualPageTour } from "@/components/onboarding/contextual-page-tour";
@@ -564,6 +565,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </Dialog>
 
       <ScreenSourcePicker />
+      <IncomingCall />
       <AssistantRoot />
       <ZoomControl />
       <GuidedTour />

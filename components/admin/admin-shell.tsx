@@ -24,6 +24,8 @@ import { useRealtimeInbox } from "@/hooks/use-realtime-inbox";
 import { summarizeSystemHealth } from "@/lib/admin/health-status";
 import { APP_VERSION } from "@/lib/version";
 import { cn } from "@/lib/utils";
+import { CallDock } from "@/components/calls/call-dock";
+import { IncomingCall } from "@/components/calls/incoming-call";
 
 const items = [
   { href: "/admin", label: "Overview", icon: BarChart3 },
@@ -131,6 +133,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           </div>
         </main>
       </div>
+      <div className="fixed bottom-20 right-4 z-50 w-80"><CallDock /></div>
+      <IncomingCall />
       <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-7 border-t border-line bg-bg-1/85 backdrop-blur-md md:hidden">
         {items
           .filter((item) => !item.desktopOnly)

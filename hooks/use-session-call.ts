@@ -3,6 +3,7 @@
 import * as React from "react";
 import { ConnectionState, Room, RoomEvent, Track } from "livekit-client";
 import { decodePacket, encodePacket, type CallPacket } from "@/lib/calls/protocol";
+import type { CallScope } from "@/lib/calls/room-name";
 import {
   HIDDEN_DISCONNECT_MS,
   shouldDisconnectWhenHidden,
@@ -11,8 +12,8 @@ import { splitRoster, type SessionPresenceParticipant } from "@/lib/sessions/pre
 
 type CallToken = { token: string; url: string; roomName: string };
 
-async function fetchMemberToken(roomId: string): Promise<CallToken> {
-  const response = await fetch(`/api/sessions/${roomId}/livekit-token`, { method: "POST" });
+async function fetchMemberToken(scope: CallScope, roomId: string): Promise<CallToken> {
+  const response = await fetch(`/api/calls/${scope}/${roomId}/livekit-token`, { method: "POST" });
   const body = (await response.json().catch(() => ({}))) as Record<string, unknown>;
   if (!response.ok) {
     throw new Error(typeof body.error === "string" ? body.error : "Couldn’t join the room.");
@@ -70,6 +71,7 @@ function rosterSignature(people: SessionPresenceParticipant[]): string {
 export function useSessionCall(input: {
   roomId: string | null;
   enabled: boolean;
+  scope?: CallScope;
   fetchToken?: () => Promise<CallToken>;
 }) {
   const [room] = React.useState(() => new Room());
@@ -117,8 +119,8 @@ export function useSessionCall(input: {
     const custom = fetchTokenRef.current;
     if (custom) return custom();
     if (!roomId) throw new Error("Couldn’t join the room.");
-    return fetchMemberToken(roomId);
-  }, [roomId]);
+    return fetchMemberToken(input.scope ?? "session", roomId);
+  }, [input.scope, roomId]);
 
   React.useEffect(() => {
     const bump = () => refresh();
