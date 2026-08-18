@@ -22,7 +22,7 @@ export async function GET(_req: NextRequest, { params }: { params: { token: stri
   const admin = createAdminClient();
   const roomId = ctx.link.session_room_id;
 
-  const [{ data: room }, { data: members }, { data: agenda }, { data: pins }, { data: convo }] = await Promise.all([
+  const [{ data: room }, { data: members }, { data: agenda }, { data: pins }, { data: convo }, { data: openMeet }] = await Promise.all([
     admin.from("session_rooms").select("title, purpose, notes").eq("id", roomId).maybeSingle(),
     admin
       .from("session_members")
@@ -32,6 +32,12 @@ export async function GET(_req: NextRequest, { params }: { params: { token: stri
     admin.from("session_agenda_items").select("id, body, done_at, sort").eq("session_room_id", roomId).order("sort"),
     admin.rpc("list_session_pin_summaries", { p_room: roomId }),
     admin.from("conversations").select("id").eq("session_room_id", roomId).maybeSingle(),
+    admin
+      .from("session_meets")
+      .select("started_at")
+      .eq("session_room_id", roomId)
+      .is("ended_at", null)
+      .maybeSingle(),
   ]);
 
   let messages: Array<{ id: string; body: string; created_at: string; author: string; mine: boolean; guest: boolean }> = [];
@@ -90,6 +96,8 @@ export async function GET(_req: NextRequest, { params }: { params: { token: stri
         artwork_url: pin.artwork_path ? signed.get(pin.artwork_path) ?? null : null,
       })),
       messages,
+      live: Boolean(openMeet),
+      hangStartedAt: (openMeet?.started_at as string | undefined) ?? null,
       allowChat: ctx.link.allow_guest_chat,
       allowMedia: ctx.link.allow_guest_media,
       guestName: ctx.guest.display_name,

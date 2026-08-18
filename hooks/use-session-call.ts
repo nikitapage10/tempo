@@ -39,6 +39,7 @@ function snapshot(room: Room): SessionPresenceParticipant[] {
     ? [
         {
           identity: room.localParticipant.identity,
+          name: room.localParticipant.name,
           attributes: room.localParticipant.attributes,
           isLocal: true,
         },
@@ -47,11 +48,22 @@ function snapshot(room: Room): SessionPresenceParticipant[] {
   const remotes: SessionPresenceParticipant[] = Array.from(room.remoteParticipants.values()).map(
     (participant) => ({
       identity: participant.identity,
+      name: participant.name,
       attributes: participant.attributes,
       isLocal: false,
     })
   );
   return [...locals, ...remotes];
+}
+
+/** Presence can drift if a LiveKit event is missed; re-read the room on a slow beat. */
+const PRESENCE_POLL_MS = 4_000;
+
+/** Who is here and who is on the call, so the poll only re-renders on real movement. */
+function rosterSignature(people: SessionPresenceParticipant[]): string {
+  return people
+    .map((person) => `${person.identity}:${person.name ?? ""}:${person.attributes?.oncall ?? ""}`)
+    .join("|");
 }
 
 export function useSessionCall(input: {
@@ -70,18 +82,36 @@ export function useSessionCall(input: {
   const [chatTick, setChatTick] = React.useState(0);
   const hiddenSince = React.useRef<number | null>(null);
   const onCallRef = React.useRef(false);
-  const fetchToken = input.fetchToken;
+  const { enabled, roomId } = input;
+
+  // The caller usually passes an inline arrow (the guest view closes over its
+  // link token). Holding it in a ref means a parent re-render can never tear
+  // the LiveKit connection down and build it back up — that churn is what made
+  // guests miss the moment somebody joined the call.
+  const fetchTokenRef = React.useRef(input.fetchToken);
+  React.useEffect(() => {
+    fetchTokenRef.current = input.fetchToken;
+  }, [input.fetchToken]);
 
   React.useEffect(() => {
     onCallRef.current = onCall;
   }, [onCall]);
 
   const refresh = React.useCallback(() => {
-    setParticipants(snapshot(room));
+    const next = snapshot(room);
+    setParticipants((prev) => (rosterSignature(prev) === rosterSignature(next) ? prev : next));
     setMicEnabled(room.localParticipant.isMicrophoneEnabled);
     setCameraEnabled(room.localParticipant.isCameraEnabled);
     setScreenEnabled(room.localParticipant.isScreenShareEnabled);
+    setOnCall(room.localParticipant.attributes?.oncall === "1");
   }, [room]);
+
+  const credentials = React.useCallback(async (): Promise<CallToken> => {
+    const custom = fetchTokenRef.current;
+    if (custom) return custom();
+    if (!roomId) throw new Error("Couldn’t join the room.");
+    return fetchMemberToken(roomId);
+  }, [roomId]);
 
   React.useEffect(() => {
     const bump = () => refresh();
@@ -96,6 +126,10 @@ export function useSessionCall(input: {
     room.on(RoomEvent.ParticipantConnected, bump);
     room.on(RoomEvent.ParticipantDisconnected, bump);
     room.on(RoomEvent.ParticipantAttributesChanged, bump);
+    room.on(RoomEvent.TrackPublished, bump);
+    room.on(RoomEvent.TrackUnpublished, bump);
+    room.on(RoomEvent.TrackMuted, bump);
+    room.on(RoomEvent.TrackUnmuted, bump);
     room.on(RoomEvent.TrackSubscribed, bump);
     room.on(RoomEvent.TrackUnsubscribed, bump);
     room.on(RoomEvent.LocalTrackPublished, bump);
@@ -111,14 +145,15 @@ export function useSessionCall(input: {
   }, [refresh, room]);
 
   React.useEffect(() => {
-    if (!input.enabled || !input.roomId) return;
+    if (!enabled || !roomId) return;
     let cancelled = false;
     const connect = async () => {
       try {
         setError(null);
-        const creds = fetchToken ? await fetchToken() : await fetchMemberToken(input.roomId!);
-        if (cancelled) return;
+        const creds = await credentials();
+        if (cancelled || room.state !== ConnectionState.Disconnected) return;
         await room.connect(creds.url, creds.token, connectOptions());
+        if (cancelled) return;
         refresh();
       } catch (err) {
         if (!cancelled) {
@@ -131,7 +166,13 @@ export function useSessionCall(input: {
       cancelled = true;
       void room.disconnect();
     };
-  }, [fetchToken, input.enabled, input.roomId, refresh, room]);
+  }, [credentials, enabled, refresh, roomId, room]);
+
+  React.useEffect(() => {
+    if (!enabled || !roomId) return;
+    const timer = window.setInterval(refresh, PRESENCE_POLL_MS);
+    return () => window.clearInterval(timer);
+  }, [enabled, refresh, roomId]);
 
   React.useEffect(() => {
     const onVis = () => {
@@ -151,16 +192,19 @@ export function useSessionCall(input: {
         return;
       }
       hiddenSince.current = null;
-      if (input.enabled && input.roomId && room.state === ConnectionState.Disconnected) {
-        const reconnect = fetchToken ? fetchToken : () => fetchMemberToken(input.roomId!);
-        void reconnect()
-          .then((creds) => room.connect(creds.url, creds.token, connectOptions()))
+      if (enabled && roomId && room.state === ConnectionState.Disconnected) {
+        void credentials()
+          .then((creds) => {
+            if (room.state !== ConnectionState.Disconnected) return;
+            return room.connect(creds.url, creds.token, connectOptions());
+          })
+          .then(() => refresh())
           .catch(() => {});
       }
     };
     document.addEventListener("visibilitychange", onVis);
     return () => document.removeEventListener("visibilitychange", onVis);
-  }, [fetchToken, input.enabled, input.roomId, room]);
+  }, [credentials, enabled, refresh, roomId, room]);
 
   const publishChat = React.useCallback(() => {
     const payload = new TextEncoder().encode(JSON.stringify({ kind: "chat" }));
@@ -203,6 +247,7 @@ export function useSessionCall(input: {
   return {
     room,
     connection,
+    connected: connection === ConnectionState.Connected,
     error,
     onCall,
     micEnabled,

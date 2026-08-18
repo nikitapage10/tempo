@@ -5,6 +5,39 @@ import { ArtistMark } from "@/components/artists/artist-mark";
 import type { ConversationPeer } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
+/**
+ * ArtistMark only applies its `size` when no className is passed, and an
+ * emblem photo carries no intrinsic box at all — so every mark here gets a
+ * wrapper with real dimensions and fills it. Without that, a member with a
+ * profile photo rendered at the photo's natural size and blew the card apart.
+ */
+function SizedMark({
+  person,
+  size,
+  className,
+}: {
+  person: ConversationPeer;
+  size: number;
+  className?: string;
+}) {
+  return (
+    <span
+      className={cn("inline-flex shrink-0 overflow-hidden rounded-full", className)}
+      style={{ width: size, height: size }}
+    >
+      <ArtistMark
+        emblemUrl={person.emblem_url}
+        paletteId={person.palette_id}
+        iceColor={person.ice_color}
+        amberColor={person.amber_color}
+        name={person.display_name}
+        size={size}
+        className="size-full"
+      />
+    </span>
+  );
+}
+
 export function GroupAvatar({
   members,
   size = 18,
@@ -27,39 +60,13 @@ export function GroupAvatar({
         </span>
       );
     }
-    return (
-      <ArtistMark
-        emblemUrl={person.emblem_url}
-        paletteId={person.palette_id}
-        iceColor={person.ice_color}
-        amberColor={person.amber_color}
-        name={person.display_name}
-        size={size}
-        className={cn("shrink-0", className)}
-      />
-    );
+    return <SizedMark person={person} size={size} className={className} />;
   }
   const nested = Math.round(size * 0.72);
   return (
     <span className={cn("relative inline-block shrink-0", className)} style={{ width: size, height: size }}>
-      <ArtistMark
-        emblemUrl={shown[0].emblem_url}
-        paletteId={shown[0].palette_id}
-        iceColor={shown[0].ice_color}
-        amberColor={shown[0].amber_color}
-        name={shown[0].display_name}
-        size={nested}
-        className="absolute left-0 top-0"
-      />
-      <ArtistMark
-        emblemUrl={shown[1].emblem_url}
-        paletteId={shown[1].palette_id}
-        iceColor={shown[1].ice_color}
-        amberColor={shown[1].amber_color}
-        name={shown[1].display_name}
-        size={nested}
-        className="absolute bottom-0 right-0 ring-1 ring-bg-1"
-      />
+      <SizedMark person={shown[0]} size={nested} className="absolute left-0 top-0" />
+      <SizedMark person={shown[1]} size={nested} className="absolute bottom-0 right-0 ring-1 ring-bg-1" />
     </span>
   );
 }

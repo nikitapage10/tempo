@@ -4,6 +4,9 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-18
 
+- Fixed (v0.198.0): Guests you invite with a link now see the call. Their connection to the room was quietly rebuilding itself over and over, so someone who joined by link could sit there reading "Nobody is on the call" while you were already on camera. The connection holds now, the stage updates the moment somebody joins or leaves, and the guest page shows a "Hang is open" marker on its own, whether or not a camera is switched on yet.
+- Changed (v0.198.0): Sessions looks like the rest of TEMPO now. A session card shows the room name, who hosts it, the people in it, and whether a hang is running, instead of one profile photo blowing the card apart. Inside a room the call sits in its own panel with round mic, camera, and share controls under it; people on the call show as tiles with their name, whether their mic is live, and a lit edge while they talk, and anyone with their camera off shows their profile mark rather than a black box. The agenda and tasks tabs carry counts, and ending a hang asks for the summary in a small window instead of a stray text box wedged into the header.
+- Changed (v0.198.0): The guest page got the same treatment: live marker, call stage, agenda, notes, pinned items, and a chat panel that keeps itself up to date while you work.
 - Changed (v0.197.0): Rearranging on Tracks now matches the Board. The list stays still while you drag; drop, and the row slides into its new place instead of stretching or snapping around.
 - Fixed (v0.197.0): Dropping a track between two others on the Board no longer jumps to the top or bottom of the column first, then slides to the gap you aimed at. It goes straight to that spot.
 

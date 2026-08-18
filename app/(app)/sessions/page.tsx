@@ -67,9 +67,10 @@ export default function SessionsPage() {
       </PageHeader>
 
       {isLoading ? (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="panel-quiet h-32 animate-pulse" />
-          <div className="panel-quiet h-32 animate-pulse" />
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="panel-quiet h-[9.5rem] animate-pulse" />
+          <div className="panel-quiet h-[9.5rem] animate-pulse" />
+          <div className="panel-quiet hidden h-[9.5rem] animate-pulse xl:block" />
         </div>
       ) : visible.length === 0 ? (
         <EmptyShaderPanel

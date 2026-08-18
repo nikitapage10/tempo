@@ -1,55 +1,71 @@
 "use client";
 
 import Link from "next/link";
-import { GroupAvatar } from "@/components/messages/group-avatar";
-import { LfWindow } from "@/components/lf-windows";
+import { CheckSquare, ListChecks, Radio } from "lucide-react";
+import { LivePill, SessionAvatarStack } from "@/components/sessions/session-people";
 import type { SessionRoom } from "@/lib/types";
-import { cn } from "@/lib/utils";
 
 function hangSummary(room: SessionRoom): string {
   if (room.hang_count <= 0) return "No hangs yet";
   const hangs = room.hang_count === 1 ? "1 hang" : `${room.hang_count} hangs`;
   if (!room.last_hang_at) return hangs;
   const last = new Date(room.last_hang_at);
-  const label = last.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" });
-  return `${hangs}, last ${label}`;
+  const label = last.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return `${hangs} · last ${label}`;
 }
 
 export function SessionCard({ room }: { room: SessionRoom }) {
   const live = Boolean(room.open_meet_id);
-  const peers = room.members.map((member) => ({
-    id: member.profile_id,
-    handle: member.user_id,
-    display_name: member.display_name,
-    emblem_url: member.emblem_url,
-    palette_id: member.palette_id ?? "spectra",
-    ice_color: member.ice_color,
-    amber_color: member.amber_color,
-  }));
+  const hosts = room.members.filter((member) => member.role === "host");
+  const hostLine = hosts.length ? `Hosted by ${hosts.map((host) => host.display_name).join(", ")}` : "";
 
   return (
-    <Link href={`/sessions/${room.id}`} className="panel-quiet block p-4 transition-colors duration-hover hover:bg-bg-2/80">
-      <div className="flex items-start justify-between gap-3">
+    <Link
+      href={`/sessions/${room.id}`}
+      className="panel group relative flex min-h-[9.5rem] flex-col overflow-hidden p-4 transition-transform duration-hover hover:-translate-y-0.5"
+    >
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-24 opacity-0 transition-opacity duration-hover group-hover:opacity-100"
+        style={{
+          background:
+            "radial-gradient(120% 100% at 20% 0%, color-mix(in srgb, var(--ice) 12%, transparent) 0%, transparent 70%)",
+        }}
+      />
+
+      <div className="relative flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <h2 className="truncate font-display text-base font-semibold text-text-hi">{room.title}</h2>
-            {live ? (
-              <span className="relative inline-flex size-4 items-center justify-center" aria-label="Hang open">
-                <LfWindow className="absolute inset-0 rounded-full" field />
-                <span className="relative size-1.5 rounded-full bg-amber" />
-              </span>
-            ) : null}
-          </div>
-          {room.purpose ? <p className="mt-1 line-clamp-2 text-sm text-text-lo">{room.purpose}</p> : null}
-          <p className="mt-2 text-xs text-text-lo">{hangSummary(room)}</p>
+          <h2 className="truncate font-display text-base font-semibold text-text-hi">{room.title}</h2>
+          {hostLine ? <p className="mt-0.5 truncate text-xs text-text-lo">{hostLine}</p> : null}
         </div>
-        <GroupAvatar members={peers} size={28} />
+        <SessionAvatarStack members={room.members} size={26} />
       </div>
-      <p className={cn("mt-3 font-data text-[11px] text-text-lo")}>
-        {room.open_agenda_count} open on the agenda
-        {" · "}
-        {room.task_count} {room.task_count === 1 ? "task" : "tasks"}
-      </p>
+
+      {room.purpose ? (
+        <p className="relative mt-2 line-clamp-2 text-sm leading-5 text-text-lo">{room.purpose}</p>
+      ) : null}
+
+      <div className="relative mt-auto pt-3">
+        {live ? (
+          <div className="mb-2">
+            <LivePill label="Hang is open" />
+          </div>
+        ) : null}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-data text-[11px] text-text-lo">
+          <span className="inline-flex items-center gap-1">
+            <Radio className="size-3 text-text-lo" />
+            {hangSummary(room)}
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <ListChecks className="size-3 text-text-lo" />
+            {room.open_agenda_count} open
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <CheckSquare className="size-3 text-text-lo" />
+            {room.task_count} {room.task_count === 1 ? "task" : "tasks"}
+          </span>
+        </div>
+      </div>
     </Link>
   );
 }

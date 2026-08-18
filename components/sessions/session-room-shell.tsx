@@ -1,8 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { Mic, Video } from "lucide-react";
+import { Mic, Radio, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { CallControls } from "@/components/sessions/call-controls";
 import { CallWarmupPanel, hasSeenCallWarmup } from "@/components/sessions/call-warmup-panel";
 import { SessionAgenda } from "@/components/sessions/session-agenda";
@@ -10,13 +13,12 @@ import { SessionChatPanel } from "@/components/sessions/session-chat-panel";
 import { SessionDecisions } from "@/components/sessions/session-decisions";
 import { SessionHistory } from "@/components/sessions/session-history";
 import { SessionNotes } from "@/components/sessions/session-notes";
+import { LivePill, SessionAvatarStack } from "@/components/sessions/session-people";
 import { SessionPins } from "@/components/sessions/session-pins";
 import { SessionRoster } from "@/components/sessions/session-roster";
 import { SessionStage } from "@/components/sessions/session-stage";
 import { SessionTasks } from "@/components/sessions/session-tasks";
 import { ShareLinkDialog } from "@/components/sessions/share-link-dialog";
-import { LfWindow } from "@/components/lf-windows";
-import { SlitDivider } from "@/components/ui/slit";
 import { useToast } from "@/components/ui/toast";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useSessionCall } from "@/hooks/use-session-call";
@@ -37,6 +39,46 @@ const TAB_LABEL: Record<Tab, string> = {
   chat: "Chat",
 };
 
+function TabButton({
+  label,
+  count,
+  selected,
+  onSelect,
+  className,
+}: {
+  label: string;
+  count?: number;
+  selected: boolean;
+  onSelect: () => void;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={selected}
+      onClick={onSelect}
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-chip px-3 py-1.5 text-xs font-medium transition-colors duration-hover",
+        selected ? "bg-bg-2 text-ice shadow-e1" : "text-text-lo hover:bg-bg-2/50 hover:text-text-hi",
+        className
+      )}
+    >
+      {label}
+      {count ? (
+        <span
+          className={cn(
+            "rounded-chip px-1.5 font-data text-[10px]",
+            selected ? "bg-ice/15 text-ice" : "bg-bg-2/70 text-text-lo"
+          )}
+        >
+          {count}
+        </span>
+      ) : null}
+    </button>
+  );
+}
+
 export function SessionRoomShell({ roomId }: { roomId: string }) {
   const { toast } = useToast();
   const user = useCurrentUser();
@@ -46,6 +88,7 @@ export function SessionRoomShell({ roomId }: { roomId: string }) {
   const call = useSessionCall({ roomId, enabled: Boolean(room) });
   const [tab, setTab] = React.useState<Tab>("agenda");
   const [shareOpen, setShareOpen] = React.useState(false);
+  const [endOpen, setEndOpen] = React.useState(false);
   const [hangSummary, setHangSummary] = React.useState("");
   const [relay, setRelay] = React.useState(false);
   const [warmupOpen, setWarmupOpen] = React.useState(false);
@@ -104,38 +147,29 @@ export function SessionRoomShell({ roomId }: { roomId: string }) {
 
   const workbench = (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div role="tablist" className="relative flex flex-wrap gap-1 bg-bg-0/40 p-1.5">
-        <SlitDivider className="absolute inset-x-0 bottom-0" />
-        {(TABS.filter((id) => id !== "chat") as Tab[]).concat().map((id) => {
-          const selected = tab === id;
-          return (
-            <button
-              key={id}
-              type="button"
-              role="tab"
-              aria-selected={selected}
-              onClick={() => setTab(id)}
-              className={cn(
-                "rounded-input px-2.5 py-1.5 text-xs font-medium",
-                selected ? "bg-bg-2 text-ice shadow-e1" : "text-text-lo hover:text-text-hi"
-              )}
-            >
-              {TAB_LABEL[id]}
-            </button>
-          );
-        })}
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === "chat"}
-          onClick={() => setTab("chat")}
-          className={cn(
-            "rounded-input px-2.5 py-1.5 text-xs font-medium lg:hidden",
-            tab === "chat" ? "bg-bg-2 text-ice shadow-e1" : "text-text-lo hover:text-text-hi"
-          )}
-        >
-          Chat
-        </button>
+      <div role="tablist" className="flex flex-wrap gap-1 border-b border-line/70 p-2">
+        <TabButton
+          label={TAB_LABEL.agenda}
+          count={room.open_agenda_count}
+          selected={tab === "agenda"}
+          onSelect={() => setTab("agenda")}
+        />
+        <TabButton label={TAB_LABEL.notes} selected={tab === "notes"} onSelect={() => setTab("notes")} />
+        <TabButton
+          label={TAB_LABEL.tasks}
+          count={room.task_count}
+          selected={tab === "tasks"}
+          onSelect={() => setTab("tasks")}
+        />
+        <TabButton label={TAB_LABEL.pinned} selected={tab === "pinned"} onSelect={() => setTab("pinned")} />
+        <TabButton label={TAB_LABEL.decisions} selected={tab === "decisions"} onSelect={() => setTab("decisions")} />
+        <TabButton label={TAB_LABEL.history} selected={tab === "history"} onSelect={() => setTab("history")} />
+        <TabButton
+          label={TAB_LABEL.chat}
+          selected={tab === "chat"}
+          onSelect={() => setTab("chat")}
+          className="lg:hidden"
+        />
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto p-3">
         {tab === "agenda" ? <SessionAgenda roomId={room.id} artistId={room.artist_id} openMeetId={room.open_meet_id} /> : null}
@@ -163,53 +197,39 @@ export function SessionRoomShell({ roomId }: { roomId: string }) {
 
   return (
     <div className="flex min-h-[calc(100dvh-8rem)] flex-col">
-      <header className="mb-3 flex flex-wrap items-start justify-between gap-3">
+      <header className="mb-4 flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <h1 className="font-display text-2xl font-semibold text-text-hi">{room.title}</h1>
-            {live ? (
-              <span className="relative inline-flex size-4" aria-label="Hang open">
-                <LfWindow className="absolute inset-0 rounded-full" field />
-                <span className="relative m-auto size-1.5 rounded-full bg-amber" />
-              </span>
-            ) : null}
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="truncate font-display text-2xl font-semibold tracking-[0.02em] text-text-hi">{room.title}</h1>
+            {live ? <LivePill label="Hang is open" /> : null}
           </div>
-          {room.purpose ? <p className="mt-1 text-sm text-text-lo">{room.purpose}</p> : null}
-          <div className="mt-2">
+          {room.purpose ? <p className="mt-1 max-w-2xl text-sm text-text-lo">{room.purpose}</p> : null}
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <SessionAvatarStack members={room.members} size={24} />
             <SessionRoster members={room.members} inRoom={call.inRoom} onCall={call.onCallRoster} />
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {isHost ? (
             <Button type="button" size="sm" variant="secondary" onClick={() => setShareOpen(true)}>
               Share link
             </Button>
           ) : null}
           {live ? (
-            <form
-              className="flex gap-2"
-              onSubmit={(event) => {
-                event.preventDefault();
-                if (!room.open_meet_id) return;
-                void mutations.endHang.mutateAsync({ meetId: room.open_meet_id, summary: hangSummary }).then(() => setHangSummary(""));
-              }}
-            >
-              <input
-                className="h-8 rounded-input border border-line bg-bg-2 px-2 text-xs"
-                value={hangSummary}
-                onChange={(event) => setHangSummary(event.target.value)}
-                placeholder="Hang summary (optional)"
-              />
-              <Button type="submit" size="sm" variant="secondary">
-                End hang
-              </Button>
-            </form>
+            <Button type="button" size="sm" variant="secondary" onClick={() => setEndOpen(true)}>
+              End hang
+            </Button>
           ) : (
             <Button
               type="button"
               size="sm"
-              onClick={() => void mutations.startHang.mutateAsync().catch((err) => toast(err instanceof Error ? err.message : "Couldn’t start a hang."))}
+              onClick={() =>
+                void mutations.startHang
+                  .mutateAsync()
+                  .catch((err) => toast(err instanceof Error ? err.message : "Couldn’t start a hang."))
+              }
             >
+              <Radio className="size-4" />
               Start a hang
             </Button>
           )}
@@ -233,40 +253,98 @@ export function SessionRoomShell({ roomId }: { roomId: string }) {
         <>
           <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[minmax(0,1fr)_20rem]">
             <div className="flex min-h-0 flex-col gap-3">
-              <div className="min-h-[14rem] flex-1">
-                <SessionStage room={call.room} onCall={call.onCallRoster} members={room.members} />
-              </div>
+              <section className="panel flex min-h-[18rem] flex-1 flex-col gap-3 p-3">
+                <div className="min-h-[12rem] flex-1">
+                  <SessionStage
+                    room={call.room}
+                    onCall={call.onCallRoster}
+                    members={room.members}
+                    live={live}
+                    action={
+                      !call.onCall ? (
+                        <Button type="button" size="sm" onClick={() => void requestJoin()} disabled={Boolean(call.error)}>
+                          Join the call
+                        </Button>
+                      ) : null
+                    }
+                  />
+                </div>
+                <CallControls
+                  onCall={call.onCall}
+                  micEnabled={call.micEnabled}
+                  cameraEnabled={call.cameraEnabled}
+                  screenEnabled={call.screenEnabled}
+                  onJoin={() => void requestJoin()}
+                  onLeave={() => void call.leaveCall()}
+                  onToggleMic={() => void call.toggleMic()}
+                  onToggleCamera={() => void call.toggleCamera()}
+                  onToggleScreen={() => void call.toggleScreen()}
+                  disabled={Boolean(call.error)}
+                />
+                {call.error ? <p className="text-center text-xs text-warn">{call.error}</p> : null}
+                {desktop && !call.onCall ? (
+                  <p className="flex items-center justify-center gap-1 text-center text-[11px] text-text-lo">
+                    <Mic className="size-3" />
+                    <Video className="size-3" />
+                    First join may ask Windows or macOS for permission.
+                  </p>
+                ) : null}
+              </section>
               <div className="panel-quiet hidden min-h-[16rem] flex-1 flex-col overflow-hidden lg:flex">
                 {workbench}
               </div>
             </div>
-            <aside className="panel-quiet hidden min-h-0 flex-col overflow-hidden lg:flex">{chat}</aside>
+            <aside className="panel-quiet hidden min-h-0 flex-col overflow-hidden lg:flex">
+              <p className="label-mono border-b border-line/70 px-3 py-3">Room chat</p>
+              <div className="min-h-0 flex-1">{chat}</div>
+            </aside>
             <div className="panel-quiet flex min-h-[20rem] flex-col overflow-hidden lg:hidden">{workbench}</div>
           </div>
-          <CallControls
-            onCall={call.onCall}
-            micEnabled={call.micEnabled}
-            cameraEnabled={call.cameraEnabled}
-            screenEnabled={call.screenEnabled}
-            onJoin={() => void requestJoin()}
-            onLeave={() => void call.leaveCall()}
-            onToggleMic={() => void call.toggleMic()}
-            onToggleCamera={() => void call.toggleCamera()}
-            onToggleScreen={() => void call.toggleScreen()}
-            disabled={Boolean(call.error)}
-          />
-          {call.error ? <p className="mt-2 text-center text-xs text-warn">{call.error}</p> : null}
-          {desktop && !call.onCall ? (
-            <p className="mt-2 flex items-center justify-center gap-1 text-center text-[11px] text-text-lo">
-              <Mic className="size-3" />
-              <Video className="size-3" />
-              First join may ask Windows or macOS for permission.
-            </p>
-          ) : null}
         </>
       )}
 
       <ShareLinkDialog open={shareOpen} onOpenChange={setShareOpen} roomId={room.id} />
+
+      <Dialog open={endOpen} onOpenChange={setEndOpen}>
+        <DialogContent
+          title="End the hang"
+          description="The room stays. Only the live call closes."
+          onClose={() => setEndOpen(false)}
+        >
+          <form
+            className="space-y-4"
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (!room.open_meet_id) return;
+              void mutations.endHang
+                .mutateAsync({ meetId: room.open_meet_id, summary: hangSummary })
+                .then(() => {
+                  setHangSummary("");
+                  setEndOpen(false);
+                })
+                .catch((err) => toast(err instanceof Error ? err.message : "Couldn’t end the hang."));
+            }}
+          >
+            <div>
+              <Label htmlFor="hang-summary">What came out of it? (optional)</Label>
+              <Input
+                id="hang-summary"
+                value={hangSummary}
+                onChange={(event) => setHangSummary(event.target.value)}
+                placeholder="Locked the second verse, Dave takes the bridge."
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="secondary" onClick={() => setEndOpen(false)}>
+                Keep it going
+              </Button>
+              <Button type="submit" disabled={mutations.endHang.isPending}>
+                {mutations.endHang.isPending ? "Ending…" : "End hang"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

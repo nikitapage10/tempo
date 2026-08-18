@@ -1,5 +1,7 @@
 export type SessionPresenceParticipant = {
   identity: string;
+  /** LiveKit display name, minted into the token. Guests only ever have this. */
+  name?: string;
   attributes?: Record<string, string>;
   isLocal?: boolean;
 };
