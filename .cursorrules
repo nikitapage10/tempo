@@ -17,6 +17,13 @@ them in addition to the design spec before building any feature:
   `TEAM-OPERATIONS-SECURITY-AND-PERMISSIONS.md`, and
   `TEAM-OPERATIONS-IMPLEMENTATION-TEST-ROLLOUT-PLAN.md` — the current next
   initiative; specification only until individual packages ship
+- `SESSIONS-V2-PRODUCT-SPEC.md`, `SESSIONS-V2-UX-DESIGN.md`,
+  `SESSIONS-V2-TECHNICAL-DESIGN.md`, `CALLS-PLATFORM-DESIGN.md`,
+  `SESSIONS-V2-SECURITY-AND-PERMISSIONS.md`, and
+  `SESSIONS-V2-IMPLEMENTATION-PLAN.md` — rebuilding Sessions around the song it
+  is about, plus calling in every message thread; specification only until
+  individual packages ship. `SESSIONS-V2-KICKOFF-PROMPT.md` is the prompt to
+  start a package from.
 `tempo-design-spec.md` plus these documents are the source of truth for scope,
 data model, screens, and visual design. `PRODUCT.md` describes only what exists
 today — never treat roadmap specs as shipped product.
