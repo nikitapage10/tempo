@@ -43,3 +43,15 @@ describe("daily intro film", () => {
     expect(intro).toContain("started = false");
   });
 });
+
+describe("boot intro assets", () => {
+  const sources = readFileSync(resolve("lib/intro.ts"), "utf8");
+
+  it("ships only the current H.264 film, not the old WebM URL", () => {
+    expect(sources).toContain("/intro/tempo-intro-v2.mp4");
+    expect(sources).toContain("/intro/tempo-intro-v2-poster.jpg");
+    expect(sources).not.toContain('type: "video/webm"');
+    expect(sources).not.toContain("/intro/tempo-intro.mp4");
+    expect(sources).not.toContain("/intro/tempo-intro.webm");
+  });
+});

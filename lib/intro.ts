@@ -31,13 +31,14 @@ export const ORIGIN_ARRIVAL_KEY = "tempo.originFirstOpen";
 /** Set on <html> before first paint while the intro is still expected. */
 export const INTRO_PENDING_ATTR = "data-intro-pending";
 
-/** Prefer WebM where it is supported, with MP4 as the broad fallback. */
+/** Current boot film. Filename is versioned because `/intro/*` is cached as
+ *  immutable for a year — swapping the file in place left desktop playing the
+ *  earlier film. One H.264 MP4; the previous WebM source is gone. */
 export const INTRO_SOURCES: { src: string; type: string }[] = [
-  { src: "/intro/tempo-intro.webm", type: "video/webm" },
-  { src: "/intro/tempo-intro.mp4", type: "video/mp4" },
+  { src: "/intro/tempo-intro-v2.mp4", type: "video/mp4" },
 ];
 
-export const INTRO_POSTER = "/intro/tempo-intro-poster.jpg";
+export const INTRO_POSTER = "/intro/tempo-intro-v2-poster.jpg";
 
 /** Local calendar day, so "once a day" follows the user's clock, not UTC. */
 export function introDayKey(d: Date = new Date()) {
