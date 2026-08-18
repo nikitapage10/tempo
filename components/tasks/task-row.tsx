@@ -1,12 +1,13 @@
 "use client";
 
-import { useDraggable } from "@dnd-kit/core";
+import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { motion } from "framer-motion";
 import * as React from "react";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { useLayoutMove } from "@/components/ui/layout-item";
 import { useTaskCategoryPalette } from "@/components/tasks/task-category-provider";
 import { taskDragId } from "@/lib/tasks/buckets";
+import { itemTargetId } from "@/lib/dnd/pointer-insert";
 import { taskCategoryChipStyle, taskCategorySurfaceStyle } from "@/lib/tasks/categories";
 import type { Task } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -25,6 +26,7 @@ type TaskRowProps = {
   stepProgress?: { done: number; total: number };
   overdue: boolean;
   focused?: boolean;
+  dropContainerId?: string;
   onToggle: () => Promise<void>;
   onDelete: () => Promise<void>;
   onOpen: () => void;
@@ -35,12 +37,20 @@ export function DraggableTaskRow(props: TaskRowProps) {
     id: taskDragId(props.task.id),
     data: { kind: "task" as const, task: props.task },
   });
+  const { setNodeRef: setDropRef } = useDroppable({
+    id: itemTargetId("task", props.task.id),
+    data: { kind: "task-target", containerId: props.dropContainerId },
+    disabled: isDragging || !props.dropContainerId,
+  });
 
   return (
     <TaskRow
       {...props}
       layoutId={`task-${props.task.id}`}
-      rowRef={setNodeRef}
+      rowRef={(node) => {
+        setNodeRef(node);
+        setDropRef(node);
+      }}
       dragProps={{ ...listeners, ...attributes }}
       className={cn(isDragging && "opacity-40")}
     />

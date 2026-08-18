@@ -5,12 +5,9 @@ import {
   DndContext,
   DragOverlay,
   PointerSensor,
-  closestCorners,
-  pointerWithin,
   useDroppable,
   useSensor,
   useSensors,
-  type CollisionDetection,
   type DragEndEvent,
   type DragOverEvent,
   type DragStartEvent,
@@ -32,12 +29,12 @@ import {
   dropNeedsDatePrompt,
   immediateDueDateForBucket,
   parseBucketDropId,
-  taskDragId,
   type TaskBucket,
 } from "@/lib/tasks/buckets";
 import type { Task } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { insertIdBefore, isNoOpInsert } from "@/lib/dnd/insert";
+import { listInsertCollision } from "@/lib/dnd/pointer-insert";
 import {
   parseDropSlotId,
   sameDropSlot,
@@ -50,11 +47,7 @@ import {
   type TaskLaneOrderMap,
 } from "@/lib/tasks/lane-order";
 
-const bucketCollision: CollisionDetection = (args) => {
-  const pointer = pointerWithin(args);
-  if (pointer.length > 0) return pointer;
-  return closestCorners(args);
-};
+const bucketCollision = listInsertCollision;
 
 const BUCKET_HUE: Record<TaskBucket, string> = {
   overdue: "var(--warn)",
@@ -311,7 +304,10 @@ function LaneColumn({
   showInsertSlots: boolean;
   activeSlot: DropSlot | null;
 }) {
-  const { setNodeRef } = useDroppable({ id: bucketDropId(bucket), data: { bucket } });
+  const { setNodeRef } = useDroppable({
+    id: bucketDropId(bucket),
+    data: { bucket, containerId: bucket },
+  });
   const urgent = bucket === "overdue" && list.length > 0 && !isDropTarget;
 
   return (
@@ -360,6 +356,7 @@ function LaneColumn({
             ) : null}
             <DraggableTaskRow
               task={task}
+              dropContainerId={bucket}
               trackTitle={trackName(task.track_id)}
               projectTitle={projectName(task.project_id)}
               assigneeLabel={assigneeLabel(task.assigned_to_user_id)}

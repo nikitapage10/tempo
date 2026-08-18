@@ -71,7 +71,7 @@ export function KanbanColumn({
 }: KanbanColumnProps) {
   const { setNodeRef } = useDroppable({
     id: stage.id,
-    data: { stage },
+    data: { stage, containerId: stage.id },
   });
 
   // A single stage can hold hundreds of tracks after a big catalog import —

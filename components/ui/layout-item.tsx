@@ -6,9 +6,9 @@ import { useReducedMotion, type Transition } from "framer-motion";
 /** Shared spring for cards sliding between Kanban-style columns. */
 export const LAYOUT_MOVE_TRANSITION: Transition = {
   type: "spring",
-  stiffness: 500,
-  damping: 32,
-  mass: 0.85,
+  stiffness: 420,
+  damping: 40,
+  mass: 0.75,
 };
 
 /**

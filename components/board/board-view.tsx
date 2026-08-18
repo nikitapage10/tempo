@@ -5,8 +5,6 @@ import {
   DndContext,
   DragOverlay,
   PointerSensor,
-  closestCorners,
-  pointerWithin,
   useSensor,
   useSensors,
   type CollisionDetection,
@@ -68,6 +66,7 @@ import { cn } from "@/lib/utils";
 import { insertIdBefore, isNoOpInsert, ranksForIds } from "@/lib/dnd/insert";
 import {
   isDropSlotId,
+  listInsertCollision,
   pointerFromDragEvent,
   refineTrackInsertSlot,
 } from "@/lib/dnd/pointer-insert";
@@ -90,17 +89,7 @@ const BOARD_SORT_KEY = "tempo.boardSort";
 const BOARD_VIEW_KEY = "tempo.boardView";
 type BoardViewMode = "focus" | "overview";
 
-const boardCollision: CollisionDetection = (args) => {
-  const pointer = pointerWithin(args);
-  if (pointer.length > 0) {
-    const slots = pointer.filter((collision) =>
-      String(collision.id).startsWith("slot:")
-    );
-    if (slots.length > 0) return slots;
-    return pointer;
-  }
-  return closestCorners(args);
-};
+const boardCollision: CollisionDetection = listInsertCollision;
 
 function readBoardSort(): BoardSort {
   if (typeof window === "undefined") return "custom";
@@ -405,9 +394,7 @@ export function BoardView() {
         hoveredTrackId
       );
     }
-    const activeEntityId =
-      parseNoteDragId(String(event.active.id)) ?? String(event.active.id);
-    if (slot && slot.beforeId !== activeEntityId) {
+    if (slot) {
       setOverSlot((prev) => (sameDropSlot(prev, slot) ? prev : slot));
     } else {
       setOverSlot(null);

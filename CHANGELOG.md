@@ -2,6 +2,10 @@
 
 Plain-English history of what changed in TEMPO, newest first.
 
+## 2026-08-18
+
+- Fixed (v0.196.2): Dropping a track between two others on the Board now aims from the cards themselves — the top half of the song below, or the bottom half of the song above — instead of only a thin gap, and the card slides straight to that spot instead of jumping to the top or bottom of the list first.
+
 ## 2026-08-17
 
 - Fixed (v0.196.1): Session calls no longer fail with “does not have permission to update own metadata” when you tap Join the call. LiveKit now receives the permission it needs to mark you as on the call.

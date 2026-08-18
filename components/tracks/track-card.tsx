@@ -1,6 +1,6 @@
 "use client";
 
-import { useDraggable } from "@dnd-kit/core";
+import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { motion } from "framer-motion";
 import * as React from "react";
 import { AlertTriangle, Clock } from "lucide-react";
@@ -8,6 +8,7 @@ import { LfWindow } from "@/components/lf-windows";
 import { SpectraCoverArt } from "@/components/spectra/spectra-cover-art";
 import { useLayoutMove } from "@/components/ui/layout-item";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
+import { itemTargetId } from "@/lib/dnd/pointer-insert";
 import type { Track } from "@/lib/types";
 import {
   formatTrackType,
@@ -40,6 +41,11 @@ export function TrackCard({
     id: track.id,
     data: { track, kind: "track" as const },
     disabled: isDragOverlay,
+  });
+  const { setNodeRef: setDropRef } = useDroppable({
+    id: itemTargetId("track", track.id),
+    data: { kind: "track-target", containerId: track.stage_id },
+    disabled: isDragOverlay || isDragging,
   });
   const layoutMove = useLayoutMove(`board-track-${track.id}`, !isDragOverlay);
   const [hovered, setHovered] = React.useState(false);
@@ -91,7 +97,14 @@ export function TrackCard({
   return (
     <motion.article
       {...layoutMove}
-      ref={isDragOverlay ? undefined : setNodeRef}
+      ref={
+        isDragOverlay
+          ? undefined
+          : (node) => {
+              setNodeRef(node);
+              setDropRef(node);
+            }
+      }
       {...dragHandleProps}
       className={cn(
         "relative rounded-card p-px transition-[box-shadow,opacity] duration-hover",

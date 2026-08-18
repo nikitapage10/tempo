@@ -1,9 +1,10 @@
 "use client";
 
-import { useDraggable } from "@dnd-kit/core";
+import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { motion } from "framer-motion";
 import * as React from "react";
 import { useLayoutMove } from "@/components/ui/layout-item";
+import { itemTargetId } from "@/lib/dnd/pointer-insert";
 import type { BoardNote } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -38,6 +39,11 @@ export function BoardNoteCard({
     data: { note, kind: "note" as const },
     disabled: isDragOverlay || editing,
   });
+  const { setNodeRef: setDropRef } = useDroppable({
+    id: itemTargetId("note", note.id),
+    data: { kind: "note-target", containerId: note.stage_id },
+    disabled: isDragOverlay || isDragging || editing,
+  });
   const layoutMove = useLayoutMove(`board-note-${note.id}`, !isDragOverlay);
 
   React.useEffect(() => {
@@ -63,7 +69,14 @@ export function BoardNoteCard({
   return (
     <motion.article
       {...layoutMove}
-      ref={isDragOverlay ? undefined : setNodeRef}
+      ref={
+        isDragOverlay
+          ? undefined
+          : (node) => {
+              setNodeRef(node);
+              setDropRef(node);
+            }
+      }
       {...(editing || isDragOverlay ? {} : dragHandleProps)}
       className={cn(
         "rounded-card border border-dashed border-line/80 bg-bg-0/50",

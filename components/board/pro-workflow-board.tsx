@@ -4,13 +4,10 @@ import {
   DndContext,
   DragOverlay,
   PointerSensor,
-  closestCorners,
-  pointerWithin,
   useDraggable,
   useDroppable,
   useSensor,
   useSensors,
-  type CollisionDetection,
   type DragEndEvent,
   type DragOverEvent,
   type DragStartEvent,
@@ -56,17 +53,14 @@ import type {
 } from "@/lib/pro-workflows/types";
 import { cn } from "@/lib/utils";
 import { insertIdBefore, isNoOpInsert, ranksForIds } from "@/lib/dnd/insert";
+import { itemTargetId, listInsertCollision } from "@/lib/dnd/pointer-insert";
 import {
   parseDropSlotId,
   sameDropSlot,
   type DropSlot,
 } from "@/lib/dnd/drop-slot";
 
-const proBoardCollision: CollisionDetection = (args) => {
-  const pointer = pointerWithin(args);
-  if (pointer.length > 0) return pointer;
-  return closestCorners(args);
-};
+const proBoardCollision = listInsertCollision;
 
 function proFlowCardDragId(cardId: string) {
   return `pro-flow-card:${cardId}`;
@@ -112,6 +106,11 @@ function ProFlowCard({
     disabled: overlay,
     data: { kind: "pro-flow-card", card },
   });
+  const { setNodeRef: setDropRef } = useDroppable({
+    id: itemTargetId("pro", card.id),
+    data: { kind: "pro-target", containerId: card.stageId },
+    disabled: overlay || isDragging,
+  });
   const layoutMove = useLayoutMove(`pro-flow-card-${card.id}`, !overlay);
   const dragProps = overlay ? {} : { ...listeners, ...attributes };
 
@@ -119,7 +118,10 @@ function ProFlowCard({
     <motion.article
       {...layoutMove}
       {...dragProps}
-      ref={setNodeRef}
+      ref={(node) => {
+        setNodeRef(node);
+        setDropRef(node);
+      }}
       className={cn(
         "rounded-card border border-line bg-bg-1/95 p-3 shadow-e1",
         !overlay && "cursor-grab active:cursor-grabbing",
@@ -205,7 +207,7 @@ function ProFlowColumn({
 }) {
   const { setNodeRef } = useDroppable({
     id: proFlowStageDropId(stage.id),
-    data: { stageId: stage.id },
+    data: { stageId: stage.id, containerId: stage.id },
   });
   const hue = hueForStage(stageIndex, stageCount);
   return (
@@ -305,7 +307,10 @@ function ProFlowRail({
   count: number;
   onOpen: () => void;
 }) {
-  const { setNodeRef, isOver } = useDroppable({ id: `pro-flow-stage:${stage.id}`, data: { stageId: stage.id } });
+  const { setNodeRef, isOver } = useDroppable({
+    id: `pro-flow-stage:${stage.id}`,
+    data: { stageId: stage.id, containerId: stage.id },
+  });
   return (
     <button
       ref={setNodeRef}
