@@ -9,6 +9,7 @@ export type GuestSessionGate = {
 export type GuestSessionState = {
   title: string;
   purpose: string;
+  song: { title: string; artwork_url: string | null } | null;
   members: { display_name: string }[];
   agenda: { id: string; body: string; done: boolean }[];
   notes: string;

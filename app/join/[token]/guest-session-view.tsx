@@ -141,6 +141,17 @@ export function GuestSessionView({ token }: { token: string }) {
             <h1 className="truncate font-display text-lg font-semibold text-text-hi">{state.title}</h1>
           </div>
           {state.purpose ? <p className="mt-1 text-sm text-text-lo">{state.purpose}</p> : null}
+          {state.song ? (
+            <div className="mt-3 flex items-center gap-2">
+              {state.song.artwork_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={state.song.artwork_url} alt="" className="size-10 rounded-input object-cover" />
+              ) : (
+                <span className="size-10 rounded-input bg-bg-2" aria-hidden />
+              )}
+              <p className="text-sm font-medium text-text-hi">{state.song.title}</p>
+            </div>
+          ) : null}
         </div>
         <span className="glass-chip relative px-3 py-1 text-xs text-text-lo">
           You are here as a guest{state.guestName ? `, ${state.guestName}` : ""}.

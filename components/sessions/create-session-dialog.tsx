@@ -12,6 +12,7 @@ import { useActiveSpace } from "@/components/active-space-provider";
 import { useActiveTeamRoster } from "@/hooks/use-artist-members";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useSessionRoomMutations } from "@/hooks/use-session-rooms";
+import { useTracks } from "@/hooks/use-tracks";
 import { fetchMemberProfiles } from "@/lib/api/member-profile";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/toast";
@@ -34,13 +35,16 @@ export function CreateSessionDialog({
   const [title, setTitle] = React.useState("");
   const [purpose, setPurpose] = React.useState("");
   const [spaceId, setSpaceId] = React.useState(activeSpaceId ?? "");
+  const [trackId, setTrackId] = React.useState("");
   const [selected, setSelected] = React.useState<Set<string>>(new Set());
+  const tracks = useTracks(open ? spaceId || null : null);
 
   React.useEffect(() => {
     if (open) {
       setTitle("");
       setPurpose("");
       setSpaceId(activeSpaceId ?? spaces[0]?.id ?? "");
+      setTrackId("");
       setSelected(new Set());
     }
   }, [activeSpaceId, open, spaces]);
@@ -64,6 +68,7 @@ export function CreateSessionDialog({
         spaceId,
         title: title.trim(),
         purpose: purpose.trim(),
+        trackId: trackId || null,
         memberUserIds: Array.from(selected).filter((id) => id !== currentUser?.id),
       });
       onOpenChange(false);
@@ -109,6 +114,22 @@ export function CreateSessionDialog({
               {spaces.map((space) => (
                 <option key={space.id} value={space.id}>
                   {space.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <Label htmlFor="session-song">Song (optional)</Label>
+            <select
+              id="session-song"
+              className="mt-1 h-9 w-full rounded-input border border-line bg-bg-2 px-2 text-sm"
+              value={trackId}
+              onChange={(event) => setTrackId(event.target.value)}
+            >
+              <option value="">No song yet</option>
+              {(tracks.data ?? []).map((track) => (
+                <option key={track.id} value={track.id}>
+                  {track.title}
                 </option>
               ))}
             </select>

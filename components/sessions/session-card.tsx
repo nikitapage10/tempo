@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { CheckSquare, ListChecks, Radio } from "lucide-react";
 import { LivePill, SessionAvatarStack } from "@/components/sessions/session-people";
+import { SignedImage } from "@/components/ui/signed-image";
+import { useTrack } from "@/hooks/use-tracks";
 import type { SessionRoom } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -16,6 +18,7 @@ function instanceSummary(room: SessionRoom): string {
 }
 
 export function SessionCard({ room }: { room: SessionRoom }) {
+  const focusedTrack = useTrack(room.track_id);
   const live = Boolean(room.open_meet_id);
   const hosts = room.members.filter((member) => member.role === "host");
   const hostLine = hosts.length ? `Hosted by ${hosts.map((host) => host.display_name).join(", ")}` : "";
@@ -42,9 +45,17 @@ export function SessionCard({ room }: { room: SessionRoom }) {
       />
 
       <div className="relative flex items-start justify-between gap-3">
-        <div className="min-w-0">
+        <div className="flex min-w-0 items-center gap-3">
+          {room.track_id ? (
+            <span className="relative size-10 shrink-0 overflow-hidden rounded-input bg-bg-2">
+              <SignedImage path={focusedTrack.data?.artwork_url ?? null} className="absolute inset-0 size-full object-cover" />
+            </span>
+          ) : null}
+          <div className="min-w-0">
           <h2 className="truncate font-display text-base font-semibold text-text-hi">{room.title}</h2>
           {hostLine ? <p className="mt-0.5 truncate text-xs text-text-lo">{hostLine}</p> : null}
+            {focusedTrack.data ? <p className="mt-0.5 truncate text-xs text-ice">{focusedTrack.data.title}</p> : null}
+          </div>
         </div>
         <SessionAvatarStack members={room.members} size={26} />
       </div>

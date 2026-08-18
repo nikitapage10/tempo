@@ -16,4 +16,12 @@ describe("Session SQL guards", () => {
     expect(sql).toContain("is distinct from");
     expect(sql).toContain("sender_session_guest_id");
   });
+
+  it("snapshots the focused song and current bounce for each instance", () => {
+    const sql = read("migrations/116_session_track_focus.sql");
+    expect(sql).toContain("add column if not exists track_id");
+    expect(sql).toContain("add column if not exists version_id");
+    expect(sql).toContain("where track_id = v_track and is_current = true");
+    expect(sql).toContain("values (p_room, auth.uid(), v_track, v_version)");
+  });
 });

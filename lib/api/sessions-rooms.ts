@@ -116,6 +116,7 @@ async function attachRoomExtras(
     id: room.id,
     artist_id: room.artist_id as string,
     space_id: room.space_id as string,
+    track_id: (room.track_id as string | null) ?? null,
     title: room.title as string,
     purpose: (room.purpose as string) ?? "",
     status: room.status as SessionRoomStatus,
@@ -168,6 +169,7 @@ export async function createSessionRoom(input: {
   spaceId: string;
   title: string;
   purpose?: string;
+  trackId?: string | null;
   memberUserIds?: string[];
 }): Promise<string> {
   const supabase = createClient();
@@ -179,6 +181,14 @@ export async function createSessionRoom(input: {
   });
   if (error) throw error;
   const id = data as string;
+  if (input.trackId) {
+    const { error: focusError } = await supabase
+      .from("session_rooms")
+      .update({ track_id: input.trackId })
+      .eq("id", id)
+      .eq("space_id", input.spaceId);
+    if (focusError) throw focusError;
+  }
   for (const userId of input.memberUserIds ?? []) {
     const { error: addError } = await supabase.rpc("add_session_member", {
       p_room: id,
@@ -217,7 +227,7 @@ export async function leaveSession(roomId: string) {
 
 export async function updateSessionRoom(
   id: string,
-  patch: Partial<Pick<SessionRoom, "title" | "purpose" | "status" | "notes">>
+  patch: Partial<Pick<SessionRoom, "title" | "purpose" | "status" | "notes" | "track_id">>
 ) {
   const supabase = createClient();
   const body: Record<string, unknown> = { ...patch, updated_at: new Date().toISOString() };

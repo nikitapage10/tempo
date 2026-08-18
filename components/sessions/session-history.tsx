@@ -1,7 +1,10 @@
 "use client";
 
 import { useSessionHistory } from "@/hooks/use-session-rooms";
+import { useTrack } from "@/hooks/use-tracks";
+import { useVersions } from "@/hooks/use-versions";
 import { formatDuration } from "@/lib/format";
+import type { SessionMeet } from "@/lib/types";
 
 function ordinal(value: number): string {
   const mod100 = value % 100;
@@ -10,6 +13,22 @@ function ordinal(value: number): string {
   if (value % 10 === 2) return `${value}nd`;
   if (value % 10 === 3) return `${value}rd`;
   return `${value}th`;
+}
+
+function InstanceFocus({ meet }: { meet: SessionMeet }) {
+  const track = useTrack(meet.track_id);
+  const versions = useVersions(meet.track_id);
+  if (!meet.track_id) return null;
+  if (!track.data) {
+    return track.isLoading ? null : <p className="mt-2 text-xs text-text-lo">Song unavailable</p>;
+  }
+  const version = versions.data?.find((item) => item.id === meet.version_id);
+  return (
+    <p className="mt-2 text-xs text-ice">
+      Worked on {track.data.title}
+      {version ? ` · v${version.version_no}` : ""}
+    </p>
+  );
 }
 
 export function SessionHistory({ roomId }: { roomId: string }) {
@@ -50,6 +69,7 @@ export function SessionHistory({ roomId }: { roomId: string }) {
                 minute: "2-digit",
               })}
             </p>
+            <InstanceFocus meet={meet} />
             {meet.summary ? <p className="mt-2 text-sm text-text-hi">{meet.summary}</p> : null}
             <p className="mt-2 text-xs text-text-lo">
               {people.length

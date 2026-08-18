@@ -695,6 +695,7 @@ export type SessionRoom = {
   id: string;
   artist_id: string;
   space_id: string;
+  track_id: string | null;
   title: string;
   purpose: string;
   status: SessionRoomStatus;
@@ -746,6 +747,8 @@ export type SessionMeet = {
   ended_at: string | null;
   started_by_user_id: string;
   summary: string;
+  track_id: string | null;
+  version_id: string | null;
 };
 
 export type SessionAttendance = {

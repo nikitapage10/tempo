@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import {
   CheckSquare,
   Gavel,
@@ -17,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SignedImage } from "@/components/ui/signed-image";
 import { AvSettingsDialog } from "@/components/sessions/av-settings-dialog";
 import { CallControls } from "@/components/sessions/call-controls";
 import { CallWarmupPanel, hasSeenCallWarmup } from "@/components/sessions/call-warmup-panel";
@@ -39,6 +41,8 @@ import { useMicLevel } from "@/hooks/use-mic-level";
 import { useSessionCall } from "@/hooks/use-session-call";
 import { useSessionDevices } from "@/hooks/use-session-devices";
 import { useSessionRoom, useSessionRoomMutations } from "@/hooks/use-session-rooms";
+import { useTrack, useTracks } from "@/hooks/use-tracks";
+import { useVersions } from "@/hooks/use-versions";
 import { useWorkspaceMode } from "@/hooks/use-workspace-mode";
 import { isDesktopApp } from "@/lib/desktop/bridge";
 import { cn } from "@/lib/utils";
@@ -148,6 +152,9 @@ export function SessionRoomShell({ roomId }: { roomId: string }) {
   const user = useCurrentUser();
   const { areas, activeArtist } = useWorkspaceMode();
   const { data: room, isLoading } = useSessionRoom(roomId);
+  const focusedTrack = useTrack(room?.track_id ?? null);
+  const focusedVersions = useVersions(room?.track_id ?? null);
+  const focusTracks = useTracks(room?.space_id ?? null);
   const mutations = useSessionRoomMutations(activeArtist?.id ?? room?.artist_id ?? null, roomId);
   const call = useSessionCall({ roomId, enabled: Boolean(room) });
   const devices = useSessionDevices(call.room);
@@ -190,6 +197,7 @@ export function SessionRoomShell({ roomId }: { roomId: string }) {
 
   const assignees = room.members.map((member) => ({ id: member.user_id, name: member.display_name }));
   const live = Boolean(room.open_meet_id);
+  const currentVersion = focusedVersions.data?.find((version) => version.is_current) ?? null;
 
   async function requestJoin() {
     if (user?.id && desktop && !hasSeenCallWarmup(user.id)) {
@@ -277,6 +285,45 @@ export function SessionRoomShell({ roomId }: { roomId: string }) {
               {room.title}
             </h1>
             {room.purpose ? <p className="mt-1 max-w-2xl text-sm text-text-lo">{room.purpose}</p> : null}
+            {room.track_id ? (
+              focusedTrack.data ? (
+                <Link
+                  href={`/track/${room.track_id}`}
+                  className="mt-3 flex w-fit items-center gap-2 rounded-input text-sm text-text-hi hover:text-ice"
+                >
+                  <span className="relative size-10 overflow-hidden rounded-input bg-bg-2">
+                    <SignedImage path={focusedTrack.data.artwork_url} className="absolute inset-0 size-full object-cover" />
+                  </span>
+                  <span>
+                    <span className="block font-medium">{focusedTrack.data.title}</span>
+                    <span className="block font-data text-xs text-text-lo">
+                      {currentVersion ? `v${currentVersion.version_no}` : "Nothing to play yet"}
+                    </span>
+                  </span>
+                </Link>
+              ) : focusedTrack.isLoading ? null : (
+                <p className="mt-3 text-xs text-text-lo">A song you do not have access to</p>
+              )
+            ) : (
+              <p className="mt-3 text-xs text-text-lo">No song yet</p>
+            )}
+            {focusTracks.data?.length ? (
+              <select
+                aria-label="Session song"
+                className="mt-2 h-8 max-w-xs rounded-input border border-line bg-bg-2 px-2 text-xs text-text-lo"
+                value={room.track_id ?? ""}
+                onChange={(event) =>
+                  void mutations.update.mutateAsync({ track_id: event.target.value || null })
+                }
+              >
+                <option value="">No song yet</option>
+                {focusTracks.data.map((track) => (
+                  <option key={track.id} value={track.id}>
+                    {track.title}
+                  </option>
+                ))}
+              </select>
+            ) : null}
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {isHost ? (

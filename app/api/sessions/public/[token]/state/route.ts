@@ -23,7 +23,11 @@ export async function GET(_req: NextRequest, { params }: { params: { token: stri
   const roomId = ctx.link.session_room_id;
 
   const [{ data: room }, { data: members }, { data: agenda }, { data: pins }, { data: convo }, { data: openMeet }] = await Promise.all([
-    admin.from("session_rooms").select("title, purpose, notes").eq("id", roomId).maybeSingle(),
+    admin
+      .from("session_rooms")
+      .select("title, purpose, notes, track:tracks(title, artwork_url)")
+      .eq("id", roomId)
+      .maybeSingle(),
     admin
       .from("session_members")
       .select("profile:artist_profiles(display_name)")
@@ -71,7 +75,12 @@ export async function GET(_req: NextRequest, { params }: { params: { token: stri
     }));
   }
 
-  const artworkPaths = ((pins ?? []) as Array<{ artwork_path?: string | null }>).map((pin) => pin.artwork_path).filter(Boolean) as string[];
+  const track = Array.isArray(room?.track) ? room.track[0] : room?.track;
+  const trackArtworkPath = (track as { artwork_url?: string | null } | null)?.artwork_url ?? null;
+  const artworkPaths = [
+    ...((pins ?? []) as Array<{ artwork_path?: string | null }>).map((pin) => pin.artwork_path),
+    trackArtworkPath,
+  ].filter(Boolean) as string[];
   const signed = new Map<string, string>();
   for (const path of artworkPaths) {
     const { data } = await admin.storage.from("audio").createSignedUrl(path, 3600);
@@ -88,6 +97,12 @@ export async function GET(_req: NextRequest, { params }: { params: { token: stri
       title: room?.title ?? "Session",
       purpose: room?.purpose ?? "",
       notes: room?.notes ?? "",
+      song: track
+        ? {
+            title: (track as { title?: string }).title ?? "Song",
+            artwork_url: trackArtworkPath ? signed.get(trackArtworkPath) ?? null : null,
+          }
+        : null,
       members: memberNames,
       agenda: (agenda ?? []).map((item) => ({ id: item.id, body: item.body, done: Boolean(item.done_at) })),
       pins: ((pins ?? []) as Array<{ id: string; title: string; artwork_path: string | null }>).map((pin) => ({
