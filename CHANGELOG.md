@@ -4,6 +4,8 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-18
 
+- Fixed (v0.200.1): Session rooms now stay inside the window while the stage, workspace, and chat scroll in their own areas. New chat messages sit directly above the composer, call controls stay at the bottom of the stage, and there is only one Join the call button. Guests get the same stable room layout.
+
 - Changed (v0.200.0): A project page now looks like a place you plan from, not a stack of lists. Under the header a schedule lays the whole project out across time: one row per kind of work, each stretching from its first due date to its last, a dot for every task on it, diamonds along the top for the moments that matter (when you started it, release and pitching dates, the deadline), and a line marking today so you can see at a glance what you are ahead of and what you are behind. The header gained a progress dial and a line telling you the next thing coming up. Beside your tasks and tracks there is now a month calendar with a dot on every day that has something on it, click a day to see what. Tasks are grouped into Overdue, Scheduled, No date and Done, and you can tick one off right there on the project instead of opening the Tasks page. Everything fades up in reading order as the page opens, and holds still if you have reduced motion switched on.
 
 - Fixed (v0.199.1): Dropping a track between others on the Board now slides straight into that gap — it no longer appears at the top or bottom of the column first.
