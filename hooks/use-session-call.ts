@@ -79,6 +79,7 @@ export function useSessionCall(input: {
   const [cameraEnabled, setCameraEnabled] = React.useState(false);
   const [screenEnabled, setScreenEnabled] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [audioBlocked, setAudioBlocked] = React.useState(false);
   const [chatTick, setChatTick] = React.useState(0);
   const hiddenSince = React.useRef<number | null>(null);
   const onCallRef = React.useRef(false);
@@ -135,12 +136,30 @@ export function useSessionCall(input: {
     room.on(RoomEvent.LocalTrackPublished, bump);
     room.on(RoomEvent.LocalTrackUnpublished, bump);
     room.on(RoomEvent.DataReceived, onData);
-    room.on(RoomEvent.ConnectionStateChanged, (state) => {
+    const onConnection = (state: ConnectionState) => {
       setConnection(state);
       bump();
-    });
+    };
+    const onPlayback = () => setAudioBlocked(!room.canPlaybackAudio);
+    room.on(RoomEvent.ConnectionStateChanged, onConnection);
+    room.on(RoomEvent.AudioPlaybackStatusChanged, onPlayback);
     return () => {
-      room.removeAllListeners();
+      // Never removeAllListeners here: the audio renderer listens on the same
+      // room, and tearing its handlers off would silence the call.
+      room.off(RoomEvent.ParticipantConnected, bump);
+      room.off(RoomEvent.ParticipantDisconnected, bump);
+      room.off(RoomEvent.ParticipantAttributesChanged, bump);
+      room.off(RoomEvent.TrackPublished, bump);
+      room.off(RoomEvent.TrackUnpublished, bump);
+      room.off(RoomEvent.TrackMuted, bump);
+      room.off(RoomEvent.TrackUnmuted, bump);
+      room.off(RoomEvent.TrackSubscribed, bump);
+      room.off(RoomEvent.TrackUnsubscribed, bump);
+      room.off(RoomEvent.LocalTrackPublished, bump);
+      room.off(RoomEvent.LocalTrackUnpublished, bump);
+      room.off(RoomEvent.DataReceived, onData);
+      room.off(RoomEvent.ConnectionStateChanged, onConnection);
+      room.off(RoomEvent.AudioPlaybackStatusChanged, onPlayback);
     };
   }, [refresh, room]);
 
@@ -211,12 +230,23 @@ export function useSessionCall(input: {
     void room.localParticipant.publishData(payload, { reliable: true });
   }, [room]);
 
+  /** Browsers refuse audio until a gesture; joining the call is that gesture. */
+  const unlockAudio = React.useCallback(async () => {
+    try {
+      await room.startAudio();
+      setAudioBlocked(!room.canPlaybackAudio);
+    } catch {
+      setAudioBlocked(true);
+    }
+  }, [room]);
+
   const joinCall = React.useCallback(async () => {
     await room.localParticipant.setAttributes({ oncall: "1" });
     await room.localParticipant.setMicrophoneEnabled(true);
+    await unlockAudio();
     setOnCall(true);
     refresh();
-  }, [refresh, room]);
+  }, [refresh, room, unlockAudio]);
 
   const leaveCall = React.useCallback(async () => {
     await room.localParticipant.setMicrophoneEnabled(false);
@@ -249,6 +279,8 @@ export function useSessionCall(input: {
     connection,
     connected: connection === ConnectionState.Connected,
     error,
+    audioBlocked,
+    unlockAudio,
     onCall,
     micEnabled,
     cameraEnabled,
@@ -263,5 +295,6 @@ export function useSessionCall(input: {
     toggleCamera,
     toggleScreen,
     cameraTrack: room.localParticipant.getTrackPublication(Track.Source.Camera),
+    micTrack: room.localParticipant.getTrackPublication(Track.Source.Microphone)?.track ?? null,
   };
 }

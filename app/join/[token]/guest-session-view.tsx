@@ -1,15 +1,19 @@
 "use client";
 
 import * as React from "react";
+import { AvSettingsDialog } from "@/components/sessions/av-settings-dialog";
 import { CallControls } from "@/components/sessions/call-controls";
 import { GuestGate } from "@/components/sessions/guest-gate";
 import { ScreenSourcePicker } from "@/components/sessions/screen-source-picker";
-import { LivePill } from "@/components/sessions/session-people";
+import { SessionAudio } from "@/components/sessions/session-audio";
+import { OnAirPlate } from "@/components/sessions/session-people";
 import { SessionStage } from "@/components/sessions/session-stage";
 import { Wordmark } from "@/components/wordmark";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { useMicLevel } from "@/hooks/use-mic-level";
 import { useSessionCall } from "@/hooks/use-session-call";
+import { useSessionDevices } from "@/hooks/use-session-devices";
 import {
   fetchGuestGate,
   fetchGuestLiveKitToken,
@@ -29,6 +33,7 @@ export function GuestSessionView({ token }: { token: string }) {
   const [state, setState] = React.useState<GuestSessionState | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [draft, setDraft] = React.useState("");
+  const [settingsOpen, setSettingsOpen] = React.useState(false);
 
   const loadState = React.useCallback(async () => {
     const next = await fetchGuestSessionState(token);
@@ -76,6 +81,15 @@ export function GuestSessionView({ token }: { token: string }) {
     enabled: joined,
     fetchToken,
   });
+  const devices = useSessionDevices(call.room);
+  const micMediaTrack =
+    (call.micTrack as { mediaStreamTrack?: MediaStreamTrack } | null)?.mediaStreamTrack ?? null;
+  const micLevel = useMicLevel(micMediaTrack, call.onCall && call.micEnabled);
+
+  const joinCall = React.useCallback(async () => {
+    await call.joinCall();
+    await devices.applyAll();
+  }, [call, devices]);
 
   React.useEffect(() => {
     if (call.chatTick) void loadState().catch(() => {});
@@ -109,24 +123,34 @@ export function GuestSessionView({ token }: { token: string }) {
 
   return (
     <div className="flex min-h-[100dvh] flex-col bg-bg-0">
-      <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line px-4 py-3">
-        <div className="min-w-0">
+      <SessionAudio room={call.room} />
+      <header className="relative flex flex-wrap items-start justify-between gap-3 overflow-hidden border-b border-line px-4 py-3">
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 transition-opacity duration-300"
+          style={{
+            opacity: live ? 1 : 0,
+            background:
+              "radial-gradient(120% 140% at 8% 0%, color-mix(in srgb, var(--amber) 12%, transparent) 0%, transparent 62%)",
+          }}
+        />
+        <div className="relative min-w-0">
           <Wordmark size={18} />
           <div className="mt-2 flex flex-wrap items-center gap-2">
+            <OnAirPlate live={live} />
             <h1 className="truncate font-display text-lg font-semibold text-text-hi">{state.title}</h1>
-            {live ? <LivePill label="Hang is open" /> : null}
           </div>
           {state.purpose ? <p className="mt-1 text-sm text-text-lo">{state.purpose}</p> : null}
         </div>
-        <span className="glass-chip px-3 py-1 text-xs text-text-lo">
+        <span className="glass-chip relative px-3 py-1 text-xs text-text-lo">
           You are here as a guest{state.guestName ? `, ${state.guestName}` : ""}.
         </span>
       </header>
 
       <div className="grid min-h-0 flex-1 gap-3 p-3 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="flex min-h-0 flex-col gap-3">
-          <section className="panel flex min-h-[18rem] flex-1 flex-col gap-3 p-3">
-            <div className="min-h-[12rem] flex-1">
+          <section className="panel prism-edge relative flex min-h-[20rem] flex-1 flex-col gap-3 overflow-hidden p-3">
+            <div className="min-h-[14rem] flex-1">
               <SessionStage
                 room={call.room}
                 onCall={call.onCallRoster}
@@ -134,7 +158,7 @@ export function GuestSessionView({ token }: { token: string }) {
                 live={live}
                 action={
                   state.allowMedia && !call.onCall ? (
-                    <Button type="button" size="sm" onClick={() => void call.joinCall()} disabled={Boolean(call.error)}>
+                    <Button type="button" size="sm" onClick={() => void joinCall()} disabled={Boolean(call.error)}>
                       Join the call
                     </Button>
                   ) : null
@@ -147,15 +171,32 @@ export function GuestSessionView({ token }: { token: string }) {
                 micEnabled={call.micEnabled}
                 cameraEnabled={call.cameraEnabled}
                 screenEnabled={call.screenEnabled}
-                onJoin={() => void call.joinCall()}
+                onJoin={() => void joinCall()}
                 onLeave={() => void call.leaveCall()}
                 onToggleMic={() => void call.toggleMic()}
                 onToggleCamera={() => void call.toggleCamera()}
                 onToggleScreen={() => void call.toggleScreen()}
+                onOpenSettings={() => setSettingsOpen(true)}
+                micLevel={micLevel}
+                audioBlocked={call.audioBlocked}
+                onEnableAudio={() => void call.unlockAudio()}
                 disabled={Boolean(call.error)}
               />
             ) : (
-              <p className="text-center text-xs text-text-lo">Mic and camera are off for guests on this link.</p>
+              <div className="flex flex-col items-center gap-2">
+                <p className="text-center text-xs text-text-lo">
+                  Mic and camera are off for guests on this link. You can still hear the room.
+                </p>
+                {call.audioBlocked ? (
+                  <button
+                    type="button"
+                    onClick={() => void call.unlockAudio()}
+                    className="rounded-chip border border-amber/40 bg-amber/12 px-3 py-1 text-xs font-medium text-amber"
+                  >
+                    Tap to hear the room
+                  </button>
+                ) : null}
+              </div>
             )}
             {call.error ? <p className="text-center text-xs text-warn">{call.error}</p> : null}
           </section>
@@ -262,6 +303,14 @@ export function GuestSessionView({ token }: { token: string }) {
         </aside>
       </div>
       <ScreenSourcePicker />
+      <AvSettingsDialog
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        devices={devices}
+        room={call.room}
+        liveMicTrack={call.micTrack}
+        liveCamera={call.cameraEnabled}
+      />
     </div>
   );
 }

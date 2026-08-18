@@ -711,6 +711,8 @@ export type SessionRoom = {
   task_count: number;
   conversation_id: string | null;
   open_meet_id: string | null;
+  /** When the open hang started, for the running clock in the room. */
+  open_meet_started_at: string | null;
 };
 
 export type SessionAgendaItem = {

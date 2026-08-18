@@ -71,3 +71,34 @@ export function LivePill({ className, label = "Live" }: { className?: string; la
     </span>
   );
 }
+
+/**
+ * Studio plate at the top of a room: amber and lit while a hang runs, dark and
+ * quiet otherwise. Members and guests see the same plate.
+ */
+export function OnAirPlate({ live, className }: { live: boolean; className?: string }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-2 rounded-chip border px-2.5 py-1",
+        live ? "border-amber/45 bg-amber/12" : "border-line bg-bg-2/50",
+        className
+      )}
+    >
+      <span className="relative flex size-1.5">
+        {live ? (
+          <span className="absolute inline-flex size-full animate-ping rounded-full bg-amber/70 motion-reduce:hidden" />
+        ) : null}
+        <span className={cn("relative inline-flex size-1.5 rounded-full", live ? "bg-amber" : "bg-text-lo/60")} />
+      </span>
+      <span
+        className={cn(
+          "font-display text-[10px] font-semibold uppercase tracking-[0.22em]",
+          live ? "text-amber" : "text-text-lo"
+        )}
+      >
+        {live ? "On air" : "Standby"}
+      </span>
+    </span>
+  );
+}

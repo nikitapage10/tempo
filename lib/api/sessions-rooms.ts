@@ -76,7 +76,7 @@ async function attachRoomExtras(
     supabase.from("conversations").select("id, session_room_id").in("session_room_id", ids),
     supabase
       .from("session_meets")
-      .select("id, session_room_id")
+      .select("id, session_room_id, started_at")
       .in("session_room_id", ids)
       .is("ended_at", null),
   ]);
@@ -105,6 +105,12 @@ async function attachRoomExtras(
   const meetByRoom = new Map(
     (meetsRes.data ?? []).map((row) => [row.session_room_id as string, row.id as string])
   );
+  const meetStartedByRoom = new Map(
+    (meetsRes.data ?? []).map((row) => [
+      row.session_room_id as string,
+      (row.started_at as string | null) ?? null,
+    ])
+  );
 
   return rooms.map((room) => ({
     id: room.id,
@@ -126,6 +132,7 @@ async function attachRoomExtras(
     task_count: taskCount.get(room.id) ?? 0,
     conversation_id: convoByRoom.get(room.id) ?? null,
     open_meet_id: meetByRoom.get(room.id) ?? null,
+    open_meet_started_at: meetStartedByRoom.get(room.id) ?? null,
   }));
 }
 

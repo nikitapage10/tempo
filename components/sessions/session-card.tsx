@@ -4,6 +4,7 @@ import Link from "next/link";
 import { CheckSquare, ListChecks, Radio } from "lucide-react";
 import { LivePill, SessionAvatarStack } from "@/components/sessions/session-people";
 import type { SessionRoom } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 function hangSummary(room: SessionRoom): string {
   if (room.hang_count <= 0) return "No hangs yet";
@@ -22,14 +23,21 @@ export function SessionCard({ room }: { room: SessionRoom }) {
   return (
     <Link
       href={`/sessions/${room.id}`}
-      className="panel group relative flex min-h-[9.5rem] flex-col overflow-hidden p-4 transition-transform duration-hover hover:-translate-y-0.5"
+      className={cn(
+        "panel group relative flex min-h-[9.5rem] flex-col overflow-hidden p-4 transition-transform duration-hover hover:-translate-y-0.5",
+        live && "border-amber/35"
+      )}
     >
       <span
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-24 opacity-0 transition-opacity duration-hover group-hover:opacity-100"
+        className={cn(
+          "pointer-events-none absolute inset-x-0 top-0 h-24 transition-opacity duration-hover",
+          live ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+        )}
         style={{
-          background:
-            "radial-gradient(120% 100% at 20% 0%, color-mix(in srgb, var(--ice) 12%, transparent) 0%, transparent 70%)",
+          background: live
+            ? "radial-gradient(120% 100% at 20% 0%, color-mix(in srgb, var(--amber) 14%, transparent) 0%, transparent 70%)"
+            : "radial-gradient(120% 100% at 20% 0%, color-mix(in srgb, var(--ice) 12%, transparent) 0%, transparent 70%)",
         }}
       />
 

@@ -1,17 +1,20 @@
 "use client";
 
-import { Mic, MicOff, MonitorUp, PhoneOff, Video, VideoOff } from "lucide-react";
+import * as React from "react";
+import { Mic, MicOff, MonitorUp, PhoneOff, Settings2, Video, VideoOff, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-function ToggleButton({
+function ConsoleButton({
   on,
+  danger,
   label,
   onClick,
   disabled,
   children,
 }: {
-  on: boolean;
+  on?: boolean;
+  danger?: boolean;
   label: string;
   onClick: () => void;
   disabled?: boolean;
@@ -22,14 +25,16 @@ function ToggleButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      aria-pressed={on}
+      aria-pressed={danger ? undefined : Boolean(on)}
       aria-label={label}
       title={label}
       className={cn(
-        "inline-flex size-9 items-center justify-center rounded-full border transition-colors duration-hover disabled:pointer-events-none disabled:opacity-50",
-        on
-          ? "border-ice/40 bg-ice/15 text-ice"
-          : "border-line bg-bg-2/60 text-text-lo hover:bg-bg-2 hover:text-text-hi"
+        "relative inline-flex size-11 items-center justify-center rounded-full border transition-colors duration-hover disabled:pointer-events-none disabled:opacity-45",
+        danger
+          ? "border-warn/40 bg-warn/15 text-warn hover:bg-warn/25"
+          : on
+            ? "border-ice/45 bg-ice/15 text-ice"
+            : "border-line bg-bg-2/70 text-text-lo hover:bg-bg-2 hover:text-text-hi"
       )}
     >
       {children}
@@ -37,6 +42,11 @@ function ToggleButton({
   );
 }
 
+/**
+ * The console under the stage. Round metal-ish buttons, a live meter wrapped
+ * around the microphone so you can see your own voice registering, and the
+ * device picker one click away.
+ */
 export function CallControls({
   onCall,
   micEnabled,
@@ -47,6 +57,10 @@ export function CallControls({
   onToggleMic,
   onToggleCamera,
   onToggleScreen,
+  onOpenSettings,
+  micLevel = 0,
+  audioBlocked,
+  onEnableAudio,
   disabled,
   className,
 }: {
@@ -59,45 +73,92 @@ export function CallControls({
   onToggleMic: () => void;
   onToggleCamera: () => void;
   onToggleScreen: () => void;
+  onOpenSettings?: () => void;
+  /** 0..1 from the local microphone, for the ring around the mic button. */
+  micLevel?: number;
+  audioBlocked?: boolean;
+  onEnableAudio?: () => void;
   disabled?: boolean;
   className?: string;
 }) {
   return (
-    <div className={cn("flex justify-center", className)}>
-      <div className="glass-chip flex items-center gap-2 px-2 py-2">
+    <div className={cn("flex flex-col items-center gap-2", className)}>
+      {audioBlocked && onEnableAudio ? (
+        <button
+          type="button"
+          onClick={onEnableAudio}
+          className="inline-flex items-center gap-2 rounded-chip border border-amber/40 bg-amber/12 px-3 py-1 text-xs font-medium text-amber"
+        >
+          <Volume2 className="size-3.5" />
+          Your browser is holding the sound back. Tap to hear the room.
+        </button>
+      ) : null}
+
+      <div className="glass flex items-center gap-2 rounded-full px-3 py-2">
         {onCall ? (
           <>
-            <ToggleButton on={micEnabled} label={micEnabled ? "Mute" : "Unmute"} onClick={onToggleMic} disabled={disabled}>
-              {micEnabled ? <Mic className="size-4" /> : <MicOff className="size-4" />}
-            </ToggleButton>
-            <ToggleButton
+            <span className="relative inline-flex">
+              <span
+                aria-hidden
+                className="pointer-events-none absolute -inset-1 rounded-full transition-transform duration-100"
+                style={{
+                  transform: `scale(${1 + micLevel * 0.22})`,
+                  opacity: micEnabled ? 0.25 + micLevel * 0.75 : 0,
+                  background:
+                    "radial-gradient(circle, color-mix(in srgb, var(--ok) 55%, transparent) 0%, transparent 70%)",
+                }}
+              />
+              <ConsoleButton
+                on={micEnabled}
+                label={micEnabled ? "Mute your microphone" : "Unmute your microphone"}
+                onClick={onToggleMic}
+                disabled={disabled}
+              >
+                {micEnabled ? <Mic className="size-4" /> : <MicOff className="size-4" />}
+              </ConsoleButton>
+            </span>
+            <ConsoleButton
               on={cameraEnabled}
-              label={cameraEnabled ? "Turn camera off" : "Turn camera on"}
+              label={cameraEnabled ? "Turn your camera off" : "Turn your camera on"}
               onClick={onToggleCamera}
               disabled={disabled}
             >
               {cameraEnabled ? <Video className="size-4" /> : <VideoOff className="size-4" />}
-            </ToggleButton>
-            <ToggleButton
+            </ConsoleButton>
+            <ConsoleButton
               on={screenEnabled}
-              label={screenEnabled ? "Stop sharing" : "Share your screen"}
+              label={screenEnabled ? "Stop sharing your screen" : "Share your screen"}
               onClick={onToggleScreen}
               disabled={disabled}
             >
               <MonitorUp className="size-4" />
-            </ToggleButton>
-            <span aria-hidden className="mx-0.5 h-6 w-px bg-line" />
-            <Button type="button" size="sm" variant="destructive" onClick={onLeave} disabled={disabled} className="rounded-full">
+            </ConsoleButton>
+            {onOpenSettings ? (
+              <ConsoleButton label="Sound and camera settings" onClick={onOpenSettings}>
+                <Settings2 className="size-4" />
+              </ConsoleButton>
+            ) : null}
+            <span aria-hidden className="mx-1 h-7 w-px bg-line" />
+            <ConsoleButton danger label="Leave the call" onClick={onLeave} disabled={disabled}>
               <PhoneOff className="size-4" />
-              Leave
-            </Button>
+            </ConsoleButton>
           </>
         ) : (
           <>
-            <Button type="button" size="sm" onClick={onJoin} disabled={disabled} className="rounded-full px-4">
+            <Button
+              type="button"
+              onClick={onJoin}
+              disabled={disabled}
+              className="h-10 rounded-full px-5 text-sm"
+            >
+              <Mic className="size-4" />
               Join the call
             </Button>
-            <p className="pr-2 text-[11px] text-text-lo">In the room. Join when you want to talk.</p>
+            {onOpenSettings ? (
+              <ConsoleButton label="Sound and camera settings" onClick={onOpenSettings}>
+                <Settings2 className="size-4" />
+              </ConsoleButton>
+            ) : null}
           </>
         )}
       </div>
