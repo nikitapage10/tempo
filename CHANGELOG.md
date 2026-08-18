@@ -4,6 +4,8 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-18
 
+- Added (v0.206.0): Direct messages, artist groups, and team rooms can now become voice or video calls. The other people get a 45-second Answer or Decline card, and the call follows everyone through TEMPO in the same dock as Session calls. Artists cannot call TEMPO Support, but support staff can call an artist from an open support thread.
+
 - Added (v0.205.0): A Session call now stays connected when you leave the room page. A compact dock follows you around TEMPO with the room name, microphone control, leave button, and a link back to the stage.
 
 - Added (v0.204.0): A Session with a song now has a shared listening deck. One person can play, pause, seek, or switch bounces and everybody in the room follows. Drop a note at the playhead to create the same timestamped comment used on the track. Guests see the moving shared playhead but never receive or play the audio.
