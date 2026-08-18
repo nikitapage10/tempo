@@ -434,7 +434,7 @@ export function BoardView() {
     }
   }
 
-  async function persistTrackPlacement(
+  function persistTrackPlacement(
     trackId: string,
     stageId: string,
     beforeId: string | null
@@ -456,21 +456,30 @@ export function BoardView() {
       setSort("custom");
     }
 
-    try {
-      if (!sameStage) {
-        await changeStage(trackId, stageId, {
-          trackTitle: track.title,
-          fromStageId: track.stage_id,
-        });
+    // One cache write for stage + order so the card does not paint at the
+    // top/bottom of the new column before sliding into the aimed gap.
+    reorder.mutate(
+      ranksForIds(nextIds).map(({ id, sort }) => ({
+        id,
+        list_sort: sort,
+        ...(id === trackId ? { stage_id: stageId } : {}),
+      })),
+      {
+        onError: (err) =>
+          toast(
+            err instanceof Error ? err.message : "Couldn’t move that track."
+          ),
       }
-      await reorder.mutateAsync(
-        ranksForIds(nextIds).map(({ id, sort }) => ({
-          id,
-          list_sort: sort,
-        }))
+    );
+    if (!sameStage) {
+      void changeStage(trackId, stageId, {
+        trackTitle: track.title,
+        fromStageId: track.stage_id,
+        skipOptimistic: true,
+        skipListInvalidate: true,
+      }).catch((err) =>
+        toast(err instanceof Error ? err.message : "Couldn’t move that track.")
       );
-    } catch (err) {
-      toast(err instanceof Error ? err.message : "Couldn’t move that track.");
     }
   }
 

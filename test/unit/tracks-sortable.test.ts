@@ -13,6 +13,9 @@ describe("tracks list drag", () => {
     expect(page).toContain('LayoutGroup id="tempo-tracks-list"');
     expect(page).toContain("dropAnimation={null}");
     expect(page).toContain("itemTargetId(\"track\", track.id)");
+    expect(page).toContain("DropIndicator");
+    expect(page).toContain("listInsertCollision");
+    expect(page).toContain("collisionDetection={tracksCollision}");
     expect(page).not.toContain("useSortable");
     expect(page).not.toContain("SortableContext");
     expect(page).not.toContain("CSS.Translate");

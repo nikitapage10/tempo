@@ -25,6 +25,10 @@ type RequestChangeOptions = {
   /** Track's stage before this change — enables the "safe" undo offer after automatic runs. */
   fromStageId?: string | null;
   trackTitle?: string;
+  /** Caller already wrote stage + sort in one cache update. */
+  skipOptimistic?: boolean;
+  /** Don't refetch the tracks list; a stale response would snap the card. */
+  skipListInvalidate?: boolean;
 };
 
 type PendingPreview = {
@@ -54,9 +58,11 @@ export function useStageTransitionController(spaceId: string | null) {
   const [preview, setPreview] = React.useState<PendingPreview | null>(null);
   const [busy, setBusy] = React.useState(false);
 
-  function invalidateAfterMove(trackId: string) {
+  function invalidateAfterMove(trackId: string, skipListInvalidate = false) {
     qc.invalidateQueries({ queryKey: ["track", trackId] });
-    qc.invalidateQueries({ queryKey: ["tracks", spaceId] });
+    if (!skipListInvalidate) {
+      qc.invalidateQueries({ queryKey: ["tracks", spaceId] });
+    }
     qc.invalidateQueries({ queryKey: ["today-stats"] });
   }
 
@@ -164,7 +170,7 @@ export function useStageTransitionController(spaceId: string | null) {
   ): Promise<Track> {
     const listKey = ["tracks", spaceId] as const;
     const previousList = qc.getQueryData<Track[]>(listKey);
-    if (previousList) {
+    if (previousList && !options.skipOptimistic) {
       qc.setQueryData<Track[]>(
         listKey,
         previousList.map((track) =>
@@ -185,7 +191,7 @@ export function useStageTransitionController(spaceId: string | null) {
         stageId,
         spaceId: spaceId ?? undefined,
       });
-      invalidateAfterMove(trackId);
+      invalidateAfterMove(trackId, options.skipListInvalidate);
       checkAchievementsAfterMove();
 
       if (result.recipe && result.recipe.actions.length > 0) {
@@ -204,7 +210,11 @@ export function useStageTransitionController(spaceId: string | null) {
       }
       return result.track;
     } catch (err) {
-      if (previousList) qc.setQueryData(listKey, previousList);
+      if (options.skipOptimistic) {
+        qc.invalidateQueries({ queryKey: listKey });
+      } else if (previousList) {
+        qc.setQueryData(listKey, previousList);
+      }
       throw err;
     }
   }

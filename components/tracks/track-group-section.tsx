@@ -104,6 +104,8 @@ type TrackGroupSectionProps = {
   onDelete?: () => void;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
+  /** Drop-slot container for insert-between lines (group id or "ungrouped"). */
+  listContainerId: string;
   children: ReactNode;
 };
 
@@ -122,11 +124,13 @@ export function TrackGroupSection({
   onDelete,
   onMoveUp,
   onMoveDown,
+  listContainerId,
   children,
 }: TrackGroupSectionProps) {
   const { setNodeRef, isOver: droppableOver } = useDroppable({
     id: dropId,
     disabled: !canDrag,
+    data: { containerId: listContainerId },
   });
 
   const canReorderGroup = Boolean(sortId) && canDrag;

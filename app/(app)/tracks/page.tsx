@@ -5,11 +5,11 @@ import {
   DndContext,
   DragOverlay,
   PointerSensor,
-  closestCenter,
   useDraggable,
   useDroppable,
   useSensor,
   useSensors,
+  type CollisionDetection,
   type DragEndEvent,
   type DragOverEvent,
   type DragStartEvent,
@@ -40,6 +40,7 @@ import {
 import { HeaderMenu } from "@/components/ui/header-menu";
 import { Input } from "@/components/ui/input";
 import { useLayoutMove } from "@/components/ui/layout-item";
+import { DropIndicator } from "@/components/ui/drop-indicator";
 import { useToast } from "@/components/ui/toast";
 import { PageHeader } from "@/components/ui/page-header";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
@@ -75,7 +76,13 @@ import {
 } from "@/hooks/use-projects";
 import { useTrackMutations, useTracks } from "@/hooks/use-tracks";
 import { useVersionsForTracks } from "@/hooks/use-versions";
-import { itemTargetId } from "@/lib/dnd/pointer-insert";
+import { itemTargetId, isDropSlotId, listInsertCollision } from "@/lib/dnd/pointer-insert";
+import { insertIdBefore, isNoOpInsert } from "@/lib/dnd/insert";
+import {
+  parseDropSlotId,
+  sameDropSlot,
+  type DropSlot,
+} from "@/lib/dnd/drop-slot";
 import { deriveAttentionSignals } from "@/lib/attention/signals";
 import { TRACK_TYPES } from "@/lib/constants";
 import { assignTracksToGroupOrder } from "@/lib/tracks/bulk-group-assign";
@@ -121,6 +128,8 @@ const BUILTIN_SORTS: { value: BuiltinSort; label: string }[] = [
 
 const SORT_STORAGE_KEY = "tempo.tracksSort";
 const DENSITY_STORAGE_KEY = "tempo.tracksDensity";
+const TRACKS_LIST_CONTAINER = "list";
+const tracksCollision: CollisionDetection = listInsertCollision;
 
 type ListDensity = "comfortable" | "compact";
 
@@ -303,6 +312,14 @@ function resolveDropGroup(
   tracks: Track[],
   groups: TrackGroup[]
 ): GroupKey | undefined {
+  const slot = parseDropSlotId(overId);
+  if (slot?.kind === "track") {
+    if (slot.containerId === "ungrouped") return null;
+    if (slot.containerId === TRACKS_LIST_CONTAINER) return undefined;
+    return groups.some((g) => g.id === slot.containerId)
+      ? slot.containerId
+      : undefined;
+  }
   const fromDrop = parseGroupDropId(overId);
   if (fromDrop !== undefined) {
     if (fromDrop === null) return null;
@@ -406,6 +423,7 @@ export default function TracksPage() {
     | { kind: "group"; title: string }
     | null
   >(null);
+  const [overSlot, setOverSlot] = React.useState<DropSlot | null>(null);
 
   // Drop a stale preset id from localStorage if it was deleted elsewhere.
   React.useEffect(() => {
@@ -685,8 +703,22 @@ export default function TracksPage() {
   }
 
   function handleDragOver(event: DragOverEvent) {
+    const slotCollision = event.collisions?.find((collision) =>
+      isDropSlotId(String(collision.id))
+    );
+    const slot = slotCollision
+      ? parseDropSlotId(String(slotCollision.id))
+      : null;
+    setOverSlot((prev) => (sameDropSlot(prev, slot) ? prev : slot));
+
     if (!canDrag || !showGroups) {
       setOverGroupId(undefined);
+      return;
+    }
+    if (slot?.kind === "track") {
+      setOverGroupId(
+        slot.containerId === "ungrouped" ? null : slot.containerId
+      );
       return;
     }
     const overId = event.over?.id;
@@ -697,106 +729,44 @@ export default function TracksPage() {
     setOverGroupId(resolveDropGroup(String(overId), tracks, groups));
   }
 
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    try {
-      if (!over || active.id === over.id || !canDrag) return;
+  function persistTrackListInsert(trackId: string, slot: DropSlot) {
+    if (slot.kind !== "track") return;
 
-      const activeId = String(active.id);
-      const overId = String(over.id);
-      const overTrackId = trackIdFromOver(overId);
-
-    // A whole group was dragged by its handle: reorder the groups themselves
-    // rather than anything inside them.
-    const draggedGroupId = parseGroupSortId(activeId);
-    if (draggedGroupId) {
-      const overSection = resolveDropGroup(overId, tracks, groups);
-      if (overSection === undefined || overSection === draggedGroupId) return;
-      // The ungrouped run is a valid landing place — dropping a group onto it
-      // is how you move a group above (or below) your loose tracks.
-      const keys = sections.map((s) => s.groupId);
-      const from = keys.indexOf(draggedGroupId);
-      const to = keys.indexOf(overSection);
-      if (from < 0 || to < 0 || from === to) return;
-      persistSectionOrder(arrayMove(keys, from, to));
-      return;
-    }
-
-    if (!showGroups) {
+    if (slot.containerId === TRACKS_LIST_CONTAINER) {
       const visibleIds = displayed.map((t) => t.id);
-      const oldIndex = visibleIds.indexOf(activeId);
-      const newIndex = visibleIds.indexOf(overTrackId);
-      if (oldIndex < 0 || newIndex < 0 || oldIndex === newIndex) return;
-
-      const nextVisible = arrayMove(visibleIds, oldIndex, newIndex);
-      const allOrdered = customOrderedIds();
-      const merged = mergeVisibleReorder(allOrdered, nextVisible);
+      if (isNoOpInsert(visibleIds, trackId, slot.beforeId)) return;
+      const nextVisible = insertIdBefore(visibleIds, trackId, slot.beforeId);
+      const merged = mergeVisibleReorder(customOrderedIds(), nextVisible);
       reorder.mutate(merged.map((id, list_sort) => ({ id, list_sort })));
       return;
     }
 
-    const targetGroupId = resolveDropGroup(overId, tracks, groups);
-    if (targetGroupId === undefined) return;
-
-    const activeTrack = tracks.find((t) => t.id === activeId);
+    const activeTrack = tracks.find((t) => t.id === trackId);
     if (!activeTrack) return;
-
+    const targetGroup: GroupKey =
+      slot.containerId === "ungrouped" ? null : slot.containerId;
     const groupKeys: GroupKey[] = [...groups.map((g) => g.id), null];
     const full = new Map<GroupKey, string[]>();
-    const visible = new Map<GroupKey, string[]>();
-    for (const k of groupKeys) {
-      full.set(k, []);
-      visible.set(k, []);
-    }
+    for (const k of groupKeys) full.set(k, []);
     for (const t of sortTracks(tracks, "custom", stageSort, presets)) {
       full.get(trackGroupKey(t, groups))!.push(t.id);
     }
-    for (const t of displayed) {
-      visible.get(trackGroupKey(t, groups))!.push(t.id);
-    }
-
     const sourceGroup = trackGroupKey(activeTrack, groups);
-    const overIsDroppable = parseGroupDropId(overId) !== undefined;
-
-    if (sourceGroup === targetGroupId && !overIsDroppable) {
-      // Same-group reorder onto another track
-      const vis = visible.get(sourceGroup)!;
-      const oldIndex = vis.indexOf(activeId);
-      const newIndex = vis.indexOf(overTrackId);
-      if (oldIndex < 0 || newIndex < 0 || oldIndex === newIndex) return;
-      const nextVis = arrayMove(vis, oldIndex, newIndex);
+    if (!full.has(targetGroup)) return;
+    if (sourceGroup !== targetGroup) {
       full.set(
         sourceGroup,
-        mergeVisibleReorder(full.get(sourceGroup)!, nextVis)
+        (full.get(sourceGroup) ?? []).filter((id) => id !== trackId)
       );
-    } else if (sourceGroup === targetGroupId && overIsDroppable) {
-      // Dropped on own group chrome — no-op
-      return;
-    } else {
-      full.set(
-        sourceGroup,
-        full.get(sourceGroup)!.filter((id) => id !== activeId)
-      );
-      const targetFull = [...full.get(targetGroupId)!];
-      const targetVis = visible
-        .get(targetGroupId)!
-        .filter((id) => id !== activeId);
-
-      let insertAt: number;
-      if (overIsDroppable || !targetFull.includes(overTrackId)) {
-        if (targetVis.length === 0) insertAt = targetFull.length;
-        else {
-          const lastId = targetVis[targetVis.length - 1]!;
-          const idx = targetFull.indexOf(lastId);
-          insertAt = idx >= 0 ? idx + 1 : targetFull.length;
-        }
-      } else {
-        const idx = targetFull.indexOf(overTrackId);
-        insertAt = idx >= 0 ? idx : targetFull.length;
-      }
-      targetFull.splice(insertAt, 0, activeId);
-      full.set(targetGroupId, targetFull);
     }
+    const currentTarget = full.get(targetGroup) ?? [];
+    if (
+      sourceGroup === targetGroup &&
+      isNoOpInsert(currentTarget, trackId, slot.beforeId)
+    ) {
+      return;
+    }
+    full.set(targetGroup, insertIdBefore(currentTarget, trackId, slot.beforeId));
 
     const flattened: {
       id: string;
@@ -805,14 +775,46 @@ export default function TracksPage() {
     }[] = [];
     let i = 0;
     for (const k of groupKeys) {
-      for (const id of full.get(k)!) {
+      for (const id of full.get(k) ?? []) {
         flattened.push({ id, list_sort: i++, list_group_id: k });
       }
     }
     reorder.mutate(flattened);
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    try {
+      if (!canDrag) return;
+
+      const activeId = String(active.id);
+      const draggedGroupId = parseGroupSortId(activeId);
+      if (draggedGroupId) {
+        if (!over) return;
+        const overId = String(over.id);
+        const overSection = resolveDropGroup(overId, tracks, groups);
+        if (overSection === undefined || overSection === draggedGroupId) return;
+        const keys = sections.map((s) => s.groupId);
+        const from = keys.indexOf(draggedGroupId);
+        const to = keys.indexOf(overSection);
+        if (from < 0 || to < 0 || from === to) return;
+        persistSectionOrder(arrayMove(keys, from, to));
+        return;
+      }
+
+      const slotCollision = event.collisions?.find((collision) =>
+        isDropSlotId(String(collision.id))
+      );
+      const slot =
+        overSlot ??
+        (slotCollision ? parseDropSlotId(String(slotCollision.id)) : null);
+      if (slot?.kind === "track") {
+        persistTrackListInsert(activeId, slot);
+      }
     } finally {
       setOverGroupId(undefined);
       setActiveDrag(null);
+      setOverSlot(null);
     }
   }
 
@@ -1035,23 +1037,51 @@ export default function TracksPage() {
   const loading = spacesLoading || tracksQuery.isLoading;
   const selectedTracks = tracks.filter((t) => selected.has(t.id));
   const densityListClass = density === "compact" ? "space-y-1" : "space-y-2";
+  const draggingTrack = activeDrag?.kind === "track";
 
-  function renderTrackRow(track: Track) {
+  function renderTrackRow(track: Track, containerId: string) {
     return (
       <TrackListRow
         key={track.id}
         track={track}
+        containerId={containerId}
         stageLabel={stageName(track.stage_id)}
         selecting={selecting}
         selected={selected.has(track.id)}
         canDrag={canDrag}
         compact={density === "compact"}
+        showInsertLine={draggingTrack}
+        insertActive={
+          draggingTrack &&
+          overSlot?.kind === "track" &&
+          overSlot.containerId === containerId &&
+          overSlot.beforeId === track.id
+        }
         onToggleSelect={() => toggleSelected(track.id)}
         onOpen={() => router.push(`/track/${track.id}`)}
         playable={playableTracks.has(track.id)}
         isPlaying={nowPlaying?.id === track.id && playing}
         onPlay={() => handlePlayTrack(track)}
       />
+    );
+  }
+
+  function renderListEnd(containerId: string) {
+    if (!canDrag) return null;
+    return (
+      <li aria-hidden className="relative h-0 list-none">
+        <DropIndicator
+          slot={{ kind: "track", containerId, beforeId: null }}
+          active={
+            draggingTrack &&
+            overSlot?.kind === "track" &&
+            overSlot.containerId === containerId &&
+            overSlot.beforeId == null
+          }
+        disabled={!canDrag}
+        edge="end"
+        />
+      </li>
     );
   }
 
@@ -1525,13 +1555,14 @@ export default function TracksPage() {
 
           <DndContext
             sensors={sensors}
-            collisionDetection={closestCenter}
+            collisionDetection={tracksCollision}
             onDragStart={handleDragStart}
             onDragOver={handleDragOver}
             onDragEnd={handleDragEnd}
             onDragCancel={() => {
               setOverGroupId(undefined);
               setActiveDrag(null);
+              setOverSlot(null);
             }}
           >
             <LayoutGroup id="tempo-tracks-list">
@@ -1549,6 +1580,7 @@ export default function TracksPage() {
                       section.groupId === null
                         ? null
                         : groups.find((g) => g.id === section.groupId) ?? null;
+                    const listContainerId = section.groupId ?? "ungrouped";
 
                     return (
                       <TrackGroupSection
@@ -1563,6 +1595,7 @@ export default function TracksPage() {
                         canDrag={canDrag}
                         densityClass={densityListClass}
                         isOver={overGroupId === section.groupId}
+                        listContainerId={listContainerId}
                         onRename={
                           group ? () => openRenameGroup(group) : undefined
                         }
@@ -1580,15 +1613,25 @@ export default function TracksPage() {
                             : undefined
                         }
                       >
-                        {section.tracks.map((track) => renderTrackRow(track))}
+                        {section.tracks.map((track) =>
+                          renderTrackRow(track, listContainerId)
+                        )}
+                        {renderListEnd(listContainerId)}
                       </TrackGroupSection>
                     );
                   })}
                 </div>
               ) : (
-                <ul className={densityListClass}>
-                  {displayed.map((track) => renderTrackRow(track))}
-                </ul>
+                <TracksListColumn
+                  containerId={TRACKS_LIST_CONTAINER}
+                  disabled={!canDrag}
+                  className={densityListClass}
+                >
+                  {displayed.map((track) =>
+                    renderTrackRow(track, TRACKS_LIST_CONTAINER)
+                  )}
+                  {renderListEnd(TRACKS_LIST_CONTAINER)}
+                </TracksListColumn>
               )}
             <DragOverlay dropAnimation={null}>
               {activeDrag?.kind === "track" ? (
@@ -1935,13 +1978,39 @@ export default function TracksPage() {
   );
 }
 
+function TracksListColumn({
+  containerId,
+  disabled,
+  className,
+  children,
+}: {
+  containerId: string;
+  disabled?: boolean;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const { setNodeRef } = useDroppable({
+    id: `tracks-col-${containerId}`,
+    disabled,
+    data: { containerId },
+  });
+  return (
+    <ul ref={setNodeRef} className={className}>
+      {children}
+    </ul>
+  );
+}
+
 function TrackListRow({
   track,
+  containerId,
   stageLabel,
   selecting,
   selected,
   canDrag,
   compact,
+  showInsertLine,
+  insertActive,
   onToggleSelect,
   onOpen,
   playable,
@@ -1949,11 +2018,14 @@ function TrackListRow({
   onPlay,
 }: {
   track: Track;
+  containerId: string;
   stageLabel: string;
   selecting: boolean;
   selected: boolean;
   canDrag: boolean;
   compact?: boolean;
+  showInsertLine?: boolean;
+  insertActive?: boolean;
   onToggleSelect: () => void;
   onOpen: () => void;
   playable: boolean;
@@ -1967,6 +2039,7 @@ function TrackListRow({
   });
   const { setNodeRef: setDropRef } = useDroppable({
     id: itemTargetId("track", track.id),
+    data: { kind: "track-target", containerId },
     disabled: !canDrag || isDragging,
   });
   const layoutMove = useLayoutMove(`tracks-row-${track.id}`);
@@ -1978,8 +2051,13 @@ function TrackListRow({
         setDropRef(node);
       }}
       {...layoutMove}
-      className={cn(isDragging && "relative z-10 opacity-40")}
+      className={cn("relative", isDragging && "z-10 opacity-40")}
     >
+      <DropIndicator
+        slot={{ kind: "track", containerId, beforeId: track.id }}
+        active={Boolean(showInsertLine && insertActive)}
+        disabled={!canDrag}
+      />
       <TrackRowView
         track={track}
         stageLabel={stageLabel}

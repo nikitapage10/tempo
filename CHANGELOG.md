@@ -4,6 +4,9 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-18
 
+- Fixed (v0.199.1): Dropping a track between others on the Board now slides straight into that gap — it no longer appears at the top or bottom of the column first.
+- Added (v0.199.1): Rearranging on Tracks shows the same bright line as the Board, so you can see exactly where the row will land before you drop.
+
 - Fixed (v0.199.0): You can hear each other on Session calls. Everyone's microphone was reaching the room but never being played, so a call could connect, show video, and stay completely silent. Sound now plays as soon as somebody joins, and if a browser holds it back until you tap something, the room says so and one tap turns it on.
 - Added (v0.199.0): Pick your microphone, camera, and speakers for calls without leaving TEMPO. There is a gear in the call console, on the web and in the desktop app on both Mac and Windows. It has a level meter that moves when you talk, a camera preview, and a test tone for the speakers, and it remembers your choice on that machine and uses it every time you join.
 - Changed (v0.199.0): A Session room now looks like a room. An "on air" plate and a running clock sit at the top while a hang is open, people on the call glow as they talk, whoever is sharing a screen is marked, the controls are round console buttons with your own microphone level ringing the mic, and the agenda, notes, tasks, pinned, decisions, and history tabs carry icons and counts. Guests see the same room, and a session that is live now shows up warm on the Sessions list.

@@ -121,9 +121,18 @@ export function useTrackMutations(spaceId: string | null) {
         id: string;
         list_sort: number;
         list_group_id?: string | null;
+        stage_id?: string | null;
       }[]
-    ) => reorderTracks(ordered),
+    ) =>
+      reorderTracks(
+        ordered.map(({ id, list_sort, list_group_id }) => ({
+          id,
+          list_sort,
+          ...(list_group_id !== undefined ? { list_group_id } : {}),
+        }))
+      ),
     onMutate: async (ordered) => {
+      await qc.cancelQueries({ queryKey: key });
       const prev = qc.getQueryData<Track[]>(key);
       const byId = new Map(
         ordered.map((o) => [
@@ -131,6 +140,7 @@ export function useTrackMutations(spaceId: string | null) {
           {
             list_sort: o.list_sort,
             list_group_id: o.list_group_id,
+            stage_id: o.stage_id,
           },
         ])
       );
@@ -145,6 +155,12 @@ export function useTrackMutations(spaceId: string | null) {
                 ...(patch.list_group_id !== undefined
                   ? { list_group_id: patch.list_group_id }
                   : {}),
+                ...(patch.stage_id !== undefined
+                  ? {
+                      stage_id: patch.stage_id,
+                      updated_at: new Date().toISOString(),
+                    }
+                  : {}),
               };
             })
             .sort(
@@ -152,8 +168,6 @@ export function useTrackMutations(spaceId: string | null) {
                 a.list_sort - b.list_sort || a.title.localeCompare(b.title)
             )
         : undefined;
-      if (next) qc.setQueryData<Track[]>(key, next);
-      await qc.cancelQueries({ queryKey: key });
       if (next) qc.setQueryData<Track[]>(key, next);
       return { prev };
     },

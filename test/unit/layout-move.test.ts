@@ -8,6 +8,7 @@ describe("column layout move animation", () => {
   it("shares a layout-move helper instead of a demo Kanban", () => {
     const helper = read("components/ui/layout-item.tsx");
     expect(helper).toContain("useLayoutMove");
+    expect(helper).toContain("initial: false");
     expect(helper).toContain('layout: animate ? ("position" as const) : false');
     expect(helper).toContain("layoutId");
     expect(helper).toContain("useReducedMotion");
@@ -52,7 +53,14 @@ describe("column layout move animation", () => {
     expect(board).toContain("insertIdBefore");
     expect(board).toContain("slot ?? fromCollision");
     expect(board).toContain("parseDropSlotId");
+    expect(board).toContain("skipOptimistic");
+    expect(board).toContain("skipListInvalidate");
+    expect(board).toContain("void changeStage");
+    expect(board).not.toContain("await changeStage(trackId, stageId");
     expect(tracks).toContain("{ ...listeners, ...attributes }");
+    const hooks = read("hooks/use-tracks.ts");
+    expect(hooks).toContain("stage_id?: string | null");
+    expect(hooks).toContain("patch.stage_id !== undefined");
     expect(column).toContain("InsertSlot");
     expect(column).toContain("showInsertSlots");
     expect(lanes).toContain("InsertSlot");
