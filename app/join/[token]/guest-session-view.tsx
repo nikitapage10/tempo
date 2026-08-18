@@ -6,6 +6,7 @@ import { CallControls } from "@/components/sessions/call-controls";
 import { GuestGate } from "@/components/sessions/guest-gate";
 import { ScreenSourcePicker } from "@/components/sessions/screen-source-picker";
 import { SessionAudio } from "@/components/sessions/session-audio";
+import { SessionDeck } from "@/components/sessions/session-deck";
 import { OnAirPlate } from "@/components/sessions/session-people";
 import { SessionStage } from "@/components/sessions/session-stage";
 import { Wordmark } from "@/components/wordmark";
@@ -217,6 +218,15 @@ export function GuestSessionView({ token }: { token: string }) {
             )}
             {call.error ? <p className="text-center text-xs text-warn">{call.error}</p> : null}
           </section>
+          {state.song ? (
+            <SessionDeck
+              roomId={token}
+              trackId="guest-session-song"
+              localIdentity={call.room.localParticipant.identity || null}
+              callPacket={call.callPacket}
+              guest
+            />
+          ) : null}
 
           <section className="panel-quiet space-y-3 p-4">
             <p className="label-mono">Agenda</p>

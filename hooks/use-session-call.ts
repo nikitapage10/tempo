@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { ConnectionState, Room, RoomEvent, Track } from "livekit-client";
+import { decodePacket, encodePacket, type CallPacket } from "@/lib/calls/protocol";
 import {
   HIDDEN_DISCONNECT_MS,
   shouldDisconnectWhenHidden,
@@ -81,6 +82,11 @@ export function useSessionCall(input: {
   const [error, setError] = React.useState<string | null>(null);
   const [audioBlocked, setAudioBlocked] = React.useState(false);
   const [chatTick, setChatTick] = React.useState(0);
+  const [callPacket, setCallPacket] = React.useState<{
+    packet: Exclude<CallPacket, { kind: "chat" }>;
+    fromIdentity: string | null;
+    receivedAtMs: number;
+  } | null>(null);
   const hiddenSince = React.useRef<number | null>(null);
   const onCallRef = React.useRef(false);
   const { enabled, roomId } = input;
@@ -116,13 +122,18 @@ export function useSessionCall(input: {
 
   React.useEffect(() => {
     const bump = () => refresh();
-    const onData = (payload: Uint8Array) => {
-      try {
-        const parsed = JSON.parse(new TextDecoder().decode(payload)) as { kind?: string };
-        if (parsed.kind === "chat") setChatTick((value) => value + 1);
-      } catch {
-        /* ignore non-json packets */
+    const onData = (payload: Uint8Array, participant?: { identity?: string }) => {
+      const parsed = decodePacket(payload);
+      if (!parsed) return;
+      if (parsed.kind === "chat") {
+        setChatTick((value) => value + 1);
+        return;
       }
+      setCallPacket({
+        packet: parsed,
+        fromIdentity: participant?.identity ?? null,
+        receivedAtMs: Date.now(),
+      });
     };
     room.on(RoomEvent.ParticipantConnected, bump);
     room.on(RoomEvent.ParticipantDisconnected, bump);
@@ -226,9 +237,14 @@ export function useSessionCall(input: {
   }, [credentials, enabled, refresh, roomId, room]);
 
   const publishChat = React.useCallback(() => {
-    const payload = new TextEncoder().encode(JSON.stringify({ kind: "chat" }));
-    void room.localParticipant.publishData(payload, { reliable: true });
+    void room.localParticipant.publishData(encodePacket({ kind: "chat" }), { reliable: true });
   }, [room]);
+
+  const publishCallPacket = React.useCallback(
+    (packet: Exclude<CallPacket, { kind: "chat" }>) =>
+      room.localParticipant.publishData(encodePacket(packet), { reliable: true }),
+    [room],
+  );
 
   /** Browsers refuse audio until a gesture; joining the call is that gesture. */
   const unlockAudio = React.useCallback(async () => {
@@ -288,7 +304,9 @@ export function useSessionCall(input: {
     inRoom: roster.inRoom,
     onCallRoster: roster.onCall,
     chatTick,
+    callPacket,
     publishChat,
+    publishCallPacket,
     joinCall,
     leaveCall,
     toggleMic,

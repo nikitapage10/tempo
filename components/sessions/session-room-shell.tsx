@@ -26,6 +26,7 @@ import { SessionAgenda } from "@/components/sessions/session-agenda";
 import { SessionAudio } from "@/components/sessions/session-audio";
 import { SessionChatPanel } from "@/components/sessions/session-chat-panel";
 import { SessionDecisions } from "@/components/sessions/session-decisions";
+import { SessionDeck } from "@/components/sessions/session-deck";
 import { SessionHistory } from "@/components/sessions/session-history";
 import { SessionNotes } from "@/components/sessions/session-notes";
 import { OnAirPlate, SessionAvatarStack } from "@/components/sessions/session-people";
@@ -417,6 +418,13 @@ export function SessionRoomShell({ roomId }: { roomId: string }) {
                 </p>
               ) : null}
             </section>
+            <SessionDeck
+              roomId={room.id}
+              trackId={room.track_id}
+              localIdentity={call.room.localParticipant.identity || null}
+              callPacket={call.callPacket}
+              publish={call.publishCallPacket}
+            />
             <div className="panel-quiet hidden min-h-[16rem] flex-1 flex-col overflow-hidden lg:flex">
               {workbench}
             </div>
