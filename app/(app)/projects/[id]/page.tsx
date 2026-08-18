@@ -239,8 +239,13 @@ export default function ProjectDetailPage() {
       return {
         id: t.id,
         title: t.title,
+        // A task's bar starts the day it appeared, so its length is real time
+        // rather than an invented span. Guard a due date set before creation.
+        startDate:
+          t.created_at.slice(0, 10) < (t.due_date as string)
+            ? t.created_at.slice(0, 10)
+            : (t.due_date as string),
         date: t.due_date as string,
-        categoryKey: t.category,
         categoryLabel: category?.label ?? t.category,
         color: normalizeTaskCategoryColor(category?.color ?? "#8b8b96"),
         done: t.status === "done",

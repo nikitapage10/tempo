@@ -4,6 +4,8 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-18
 
+- Changed (v0.203.1): The project schedule now shows one row per task instead of one row per kind of work. Each bar runs from the day the task appeared to the day it is due, so its length is the time you actually have, and a task you have missed keeps running past today in red. Grouping tasks under Social or Pitching implied a stretch of work that was never really there.
+
 - Added (v0.203.0): Starting a Session now rings every other member through TEMPO’s bell, in-app alert, and desktop notification, with a link straight back to the room. The room chat records who started it, and guests already on a link see an amber live prompt within seconds.
 
 - Added (v0.202.0): A Session can now be about a song. Choose one when creating the room or change it later, see its artwork and current bounce in the header and on Session cards, and see which song and version each past session worked on. Guests see the song title and artwork but never receive its audio.
