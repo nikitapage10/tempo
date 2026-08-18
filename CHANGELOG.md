@@ -4,6 +4,9 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-18
 
+- Added (v0.204.0): A Session with a song now has a shared listening deck. One person can play, pause, seek, or switch bounces and everybody in the room follows. Drop a note at the playhead to create the same timestamped comment used on the track. Guests see the moving shared playhead but never receive or play the audio.
+  Under the hood: run migration 117 in the Supabase SQL editor after migration 116.
+
 - Changed (v0.203.1): The project schedule now shows one row per task instead of one row per kind of work. Each bar runs from the day the task appeared to the day it is due, so its length is the time you actually have, and a task you have missed keeps running past today in red. Grouping tasks under Social or Pitching implied a stretch of work that was never really there.
 
 - Added (v0.203.0): Starting a Session now rings every other member through TEMPO’s bell, in-app alert, and desktop notification, with a link straight back to the room. The room chat records who started it, and guests already on a link see an amber live prompt within seconds.
