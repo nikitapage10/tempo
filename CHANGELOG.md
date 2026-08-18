@@ -4,6 +4,8 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-18
 
+- Added (v0.203.0): Starting a Session now rings every other member through TEMPO’s bell, in-app alert, and desktop notification, with a link straight back to the room. The room chat records who started it, and guests already on a link see an amber live prompt within seconds.
+
 - Added (v0.202.0): A Session can now be about a song. Choose one when creating the room or change it later, see its artwork and current bounce in the header and on Session cards, and see which song and version each past session worked on. Guests see the song title and artwork but never receive its audio.
   Under the hood: run migration 116 in the Supabase SQL editor after migration 115.
 
