@@ -15,7 +15,7 @@ import {
 import { LayoutGroup } from "framer-motion";
 import { FlareLine } from "@/components/flare-line";
 import { SlitDivider } from "@/components/ui/slit";
-import { DropIndicator } from "@/components/ui/drop-indicator";
+import { InsertEnd, InsertSlot } from "@/components/ui/drop-indicator";
 import { useLayoutOverflowUnlock } from "@/components/ui/layout-item";
 import { useActiveSpace } from "@/components/active-space-provider";
 import { DraggableTaskRow } from "@/components/tasks/task-row";
@@ -197,15 +197,24 @@ export function LanesView({
   function handleDragEnd(event: DragEndEvent) {
     const task = event.active.data.current?.task as Task | undefined;
     const slot = overSlot;
-    clearDrag();
     const { over } = event;
-    if (!task || !over) return;
+    if (!task || !over) {
+      clearDrag();
+      return;
+    }
 
     const resolved = slot ?? resolveTaskSlot(String(over.id));
-    if (!resolved || resolved.kind !== "task") return;
+    if (!resolved || resolved.kind !== "task") {
+      clearDrag();
+      return;
+    }
     const target = resolved.containerId as TaskBucket;
-    if (!TASK_BUCKETS.includes(target)) return;
+    if (!TASK_BUCKETS.includes(target)) {
+      clearDrag();
+      return;
+    }
     applyLanePlacement(task.id, target, resolved.beforeId);
+    clearDrag();
   }
 
   const sourceBucket = activeTask ? bucketForTask(activeTask, today) : null;
@@ -344,16 +353,15 @@ function LaneColumn({
       ) : null}
       <ul className="relative space-y-2">
         {list.map((task) => (
-          <React.Fragment key={task.id}>
-            {showInsertSlots ? (
-              <DropIndicator
-                slot={{ kind: "task", containerId: bucket, beforeId: task.id }}
-                active={
-                  activeSlot?.containerId === bucket &&
-                  activeSlot.beforeId === task.id
-                }
-              />
-            ) : null}
+          <InsertSlot
+            key={task.id}
+            show={showInsertSlots}
+            slot={{ kind: "task", containerId: bucket, beforeId: task.id }}
+            active={
+              activeSlot?.containerId === bucket &&
+              activeSlot.beforeId === task.id
+            }
+          >
             <DraggableTaskRow
               task={task}
               dropContainerId={bucket}
@@ -366,16 +374,15 @@ function LaneColumn({
               onDelete={() => onDelete(task)}
               onOpen={() => onOpen(task)}
             />
-          </React.Fragment>
+          </InsertSlot>
         ))}
-        {showInsertSlots ? (
-          <DropIndicator
-            slot={{ kind: "task", containerId: bucket, beforeId: null }}
-            active={
-              activeSlot?.containerId === bucket && activeSlot.beforeId == null
-            }
-          />
-        ) : null}
+        <InsertEnd
+          show={showInsertSlots}
+          slot={{ kind: "task", containerId: bucket, beforeId: null }}
+          active={
+            activeSlot?.containerId === bucket && activeSlot.beforeId == null
+          }
+        />
       </ul>
       {list.length === 0 && !isDropTarget ? <LaneEmpty bucket={bucket} /> : null}
     </section>

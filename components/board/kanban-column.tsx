@@ -10,7 +10,7 @@ import {
   type StageAddAction,
 } from "@/components/board/stage-add-menu";
 import { TrackCard } from "@/components/tracks/track-card";
-import { DropIndicator } from "@/components/ui/drop-indicator";
+import { InsertEnd, InsertSlot } from "@/components/ui/drop-indicator";
 import { LfWindow } from "@/components/lf-windows";
 import {
   stageHueAt,
@@ -219,44 +219,42 @@ export function KanbanColumn({
                     beforeId: note.id,
                   };
                   return (
-                    <React.Fragment key={note.id}>
-                      {showInsertSlots ? (
-                        <DropIndicator
-                          slot={noteSlot}
-                          disabled={draggingKind !== "note"}
-                          active={
-                            draggingKind === "note" &&
-                            activeSlot?.kind === "note" &&
-                            activeSlot.containerId === stage.id &&
-                            activeSlot.beforeId === note.id
-                          }
-                        />
-                      ) : null}
+                    <InsertSlot
+                      key={note.id}
+                      show={showInsertSlots}
+                      slot={noteSlot}
+                      disabled={draggingKind !== "note"}
+                      active={
+                        draggingKind === "note" &&
+                        activeSlot?.kind === "note" &&
+                        activeSlot.containerId === stage.id &&
+                        activeSlot.beforeId === note.id
+                      }
+                    >
                       <BoardNoteCard
                         note={note}
                         compact={compact}
                         onSave={(patch) => onSaveNote?.(note, patch)}
                         onDelete={() => onDeleteNote?.(note)}
                       />
-                    </React.Fragment>
+                    </InsertSlot>
                   );
                 })}
-                {showInsertSlots && notes.length > 0 ? (
-                  <DropIndicator
-                    slot={{
-                      kind: "note",
-                      containerId: stage.id,
-                      beforeId: null,
-                    }}
-                    disabled={draggingKind !== "note"}
-                    active={
-                      draggingKind === "note" &&
-                      activeSlot?.kind === "note" &&
-                      activeSlot.containerId === stage.id &&
-                      activeSlot.beforeId == null
-                    }
-                  />
-                ) : null}
+                <InsertEnd
+                  show={showInsertSlots && notes.length > 0}
+                  slot={{
+                    kind: "note",
+                    containerId: stage.id,
+                    beforeId: null,
+                  }}
+                  disabled={draggingKind !== "note"}
+                  active={
+                    draggingKind === "note" &&
+                    activeSlot?.kind === "note" &&
+                    activeSlot.containerId === stage.id &&
+                    activeSlot.beforeId == null
+                  }
+                />
                 {visibleTracks.map((track) => {
                   const trackSlot = {
                     kind: "track" as const,
@@ -264,19 +262,18 @@ export function KanbanColumn({
                     beforeId: track.id,
                   };
                   return (
-                    <React.Fragment key={track.id}>
-                      {showInsertSlots ? (
-                        <DropIndicator
-                          slot={trackSlot}
-                          disabled={draggingKind !== "track"}
-                          active={
-                            draggingKind === "track" &&
-                            activeSlot?.kind === "track" &&
-                            activeSlot.containerId === stage.id &&
-                            activeSlot.beforeId === track.id
-                          }
-                        />
-                      ) : null}
+                    <InsertSlot
+                      key={track.id}
+                      show={showInsertSlots}
+                      slot={trackSlot}
+                      disabled={draggingKind !== "track"}
+                      active={
+                        draggingKind === "track" &&
+                        activeSlot?.kind === "track" &&
+                        activeSlot.containerId === stage.id &&
+                        activeSlot.beforeId === track.id
+                      }
+                    >
                       <TrackCard
                         track={track}
                         onOpen={onOpenTrack}
@@ -284,25 +281,27 @@ export function KanbanColumn({
                         roomy={roomy}
                         onRemoveFromBoard={onRemoveFromBoard}
                       />
-                    </React.Fragment>
+                    </InsertSlot>
                   );
                 })}
-                {showInsertSlots && (visibleTracks.length > 0 || draggingKind === "track") ? (
-                  <DropIndicator
-                    slot={{
-                      kind: "track",
-                      containerId: stage.id,
-                      beforeId: null,
-                    }}
-                    disabled={draggingKind !== "track"}
-                    active={
-                      draggingKind === "track" &&
-                      activeSlot?.kind === "track" &&
-                      activeSlot.containerId === stage.id &&
-                      activeSlot.beforeId == null
-                    }
-                  />
-                ) : null}
+                <InsertEnd
+                  show={
+                    showInsertSlots &&
+                    (visibleTracks.length > 0 || draggingKind === "track")
+                  }
+                  slot={{
+                    kind: "track",
+                    containerId: stage.id,
+                    beforeId: null,
+                  }}
+                  disabled={draggingKind !== "track"}
+                  active={
+                    draggingKind === "track" &&
+                    activeSlot?.kind === "track" &&
+                    activeSlot.containerId === stage.id &&
+                    activeSlot.beforeId == null
+                  }
+                />
                 {hiddenCount > 0 ? (
                   <button
                     type="button"

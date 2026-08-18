@@ -38,7 +38,7 @@ describe("column layout move animation", () => {
     expect(board).toContain('useLayoutMove(`pro-flow-card-${card.id}`');
     expect(board).toContain('LayoutGroup id="tempo-pro-board"');
     expect(board).toContain("dropAnimation={null}");
-    expect(board).toContain("DropIndicator");
+    expect(board).toContain("InsertSlot");
     expect(board).toContain("cursor-grab");
   });
 
@@ -47,11 +47,14 @@ describe("column layout move animation", () => {
     const tracks = read("components/tracks/track-card.tsx");
     const column = read("components/board/kanban-column.tsx");
     const lanes = read("components/tasks/lanes-view.tsx");
+    const indicator = read("components/ui/drop-indicator.tsx");
     expect(board).toContain("insertIdBefore");
     expect(board).toContain("parseDropSlotId");
     expect(tracks).toContain("{ ...listeners, ...attributes }");
-    expect(column).toContain("DropIndicator");
+    expect(column).toContain("InsertSlot");
     expect(column).toContain("showInsertSlots");
-    expect(lanes).toContain("DropIndicator");
+    expect(lanes).toContain("InsertSlot");
+    expect(indicator).toContain("absolute inset-x-0");
+    expect(indicator).not.toContain("-my-2");
   });
 });

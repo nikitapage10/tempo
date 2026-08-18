@@ -99,18 +99,15 @@ export function useTrackMutations(spaceId: string | null) {
     mutationFn: ({ id, stageId }: { id: string; stageId: string | null }) =>
       moveTrackStage(id, stageId),
     onMutate: async ({ id, stageId }) => {
-      await qc.cancelQueries({ queryKey: key });
       const prev = qc.getQueryData<Track[]>(key);
-      if (prev) {
-        qc.setQueryData<Track[]>(
-          key,
-          prev.map((t) =>
-            t.id === id
-              ? { ...t, stage_id: stageId, updated_at: new Date().toISOString() }
-              : t
-          )
-        );
-      }
+      const next = prev?.map((t) =>
+        t.id === id
+          ? { ...t, stage_id: stageId, updated_at: new Date().toISOString() }
+          : t
+      );
+      if (next) qc.setQueryData<Track[]>(key, next);
+      await qc.cancelQueries({ queryKey: key });
+      if (next) qc.setQueryData<Track[]>(key, next);
       return { prev };
     },
     onError: (_e, _v, ctx) => {
@@ -128,36 +125,37 @@ export function useTrackMutations(spaceId: string | null) {
       }[]
     ) => reorderTracks(ordered),
     onMutate: async (ordered) => {
-      await qc.cancelQueries({ queryKey: key });
       const prev = qc.getQueryData<Track[]>(key);
-      if (prev) {
-        const byId = new Map(
-          ordered.map((o) => [
-            o.id,
-            {
-              list_sort: o.list_sort,
-              list_group_id: o.list_group_id,
-            },
-          ])
-        );
-        const next = prev
-          .map((t) => {
-            const patch = byId.get(t.id);
-            if (!patch) return t;
-            return {
-              ...t,
-              list_sort: patch.list_sort,
-              ...(patch.list_group_id !== undefined
-                ? { list_group_id: patch.list_group_id }
-                : {}),
-            };
-          })
-          .sort(
-            (a, b) =>
-              a.list_sort - b.list_sort || a.title.localeCompare(b.title)
-          );
-        qc.setQueryData<Track[]>(key, next);
-      }
+      const byId = new Map(
+        ordered.map((o) => [
+          o.id,
+          {
+            list_sort: o.list_sort,
+            list_group_id: o.list_group_id,
+          },
+        ])
+      );
+      const next = prev
+        ? prev
+            .map((t) => {
+              const patch = byId.get(t.id);
+              if (!patch) return t;
+              return {
+                ...t,
+                list_sort: patch.list_sort,
+                ...(patch.list_group_id !== undefined
+                  ? { list_group_id: patch.list_group_id }
+                  : {}),
+              };
+            })
+            .sort(
+              (a, b) =>
+                a.list_sort - b.list_sort || a.title.localeCompare(b.title)
+            )
+        : undefined;
+      if (next) qc.setQueryData<Track[]>(key, next);
+      await qc.cancelQueries({ queryKey: key });
+      if (next) qc.setQueryData<Track[]>(key, next);
       return { prev };
     },
     onError: (_e, _v, ctx) => {

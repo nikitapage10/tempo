@@ -18,7 +18,7 @@ import {
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+import { LayoutGroup, motion } from "framer-motion";
 import {
   FolderPlus,
   GripVertical,
@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/filter-row";
 import { HeaderMenu } from "@/components/ui/header-menu";
 import { Input } from "@/components/ui/input";
+import { useLayoutMove } from "@/components/ui/layout-item";
 import { useToast } from "@/components/ui/toast";
 import { PageHeader } from "@/components/ui/page-header";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
@@ -695,12 +696,11 @@ export default function TracksPage() {
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
-    setOverGroupId(undefined);
-    setActiveDrag(null);
-    if (!over || active.id === over.id || !canDrag) return;
+    try {
+      if (!over || active.id === over.id || !canDrag) return;
 
-    const activeId = String(active.id);
-    const overId = String(over.id);
+      const activeId = String(active.id);
+      const overId = String(over.id);
 
     // A whole group was dragged by its handle: reorder the groups themselves
     // rather than anything inside them.
@@ -806,6 +806,10 @@ export default function TracksPage() {
       }
     }
     reorder.mutate(flattened);
+    } finally {
+      setOverGroupId(undefined);
+      setActiveDrag(null);
+    }
   }
 
   async function handleSaveOrder() {
@@ -1526,6 +1530,7 @@ export default function TracksPage() {
               setActiveDrag(null);
             }}
           >
+            <LayoutGroup id="tempo-tracks-list">
             <SortableContext
               items={displayed.map((t) => t.id)}
               strategy={verticalListSortingStrategy}
@@ -1589,15 +1594,27 @@ export default function TracksPage() {
             </SortableContext>
             <DragOverlay dropAnimation={null}>
               {activeDrag?.kind === "track" ? (
-                <div className="cursor-grabbing rounded-card border border-ice/40 bg-bg-1 px-3 py-2.5 shadow-raise">
-                  <p className="truncate text-sm text-text-hi">{activeDrag.track.title}</p>
-                </div>
+                <TrackRowView
+                  track={activeDrag.track}
+                  stageLabel={stageName(activeDrag.track.stage_id)}
+                  selecting={false}
+                  selected={false}
+                  canDrag={canDrag}
+                  compact={density === "compact"}
+                  overlay
+                  onToggleSelect={() => {}}
+                  onOpen={() => {}}
+                  playable={false}
+                  isPlaying={false}
+                  onPlay={() => {}}
+                />
               ) : activeDrag?.kind === "group" ? (
                 <div className="cursor-grabbing rounded-card border border-ice/40 bg-bg-1 px-3 py-2.5 shadow-raise">
                   <p className="font-display text-sm text-text-hi">{activeDrag.title}</p>
                 </div>
               ) : null}
             </DragOverlay>
+            </LayoutGroup>
           </DndContext>
         </section>
       )}
@@ -1945,35 +1962,79 @@ function SortableTrackRow({
   isPlaying: boolean;
   onPlay: () => void;
 }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({
+  const { attributes, listeners, setNodeRef, isDragging } = useSortable({
     id: track.id,
     disabled: !canDrag,
     animateLayoutChanges: () => false,
   });
+  const layoutMove = useLayoutMove(`tracks-row-${track.id}`);
 
+  return (
+    <motion.li
+      ref={setNodeRef}
+      {...layoutMove}
+      className={cn(isDragging && "relative z-10 opacity-40")}
+    >
+      <TrackRowView
+        track={track}
+        stageLabel={stageLabel}
+        selecting={selecting}
+        selected={selected}
+        canDrag={canDrag}
+        compact={compact}
+        onToggleSelect={onToggleSelect}
+        onOpen={onOpen}
+        playable={playable}
+        isPlaying={isPlaying}
+        onPlay={onPlay}
+        dragHandle={{ attributes, listeners }}
+      />
+    </motion.li>
+  );
+}
+
+function TrackRowView({
+  track,
+  stageLabel,
+  selecting,
+  selected,
+  canDrag,
+  compact,
+  overlay,
+  onToggleSelect,
+  onOpen,
+  playable,
+  isPlaying,
+  onPlay,
+  dragHandle,
+}: {
+  track: Track;
+  stageLabel: string;
+  selecting: boolean;
+  selected: boolean;
+  canDrag: boolean;
+  compact?: boolean;
+  overlay?: boolean;
+  onToggleSelect: () => void;
+  onOpen: () => void;
+  playable: boolean;
+  isPlaying: boolean;
+  onPlay: () => void;
+  dragHandle?: {
+    attributes: object;
+    listeners?: object;
+  };
+}) {
   const meta: string[] = [];
   if (track.bpm != null) meta.push(`${track.bpm} BPM`);
   if (track.musical_key) meta.push(track.musical_key);
 
   const blocked = !!track.blocked_reason?.trim();
+  const showHandle = canDrag || overlay;
 
   return (
-    <li
-      ref={setNodeRef}
-      style={{
-        transform: CSS.Translate.toString(transform),
-        transition: isDragging
-          ? undefined
-          : transition ?? "transform 180ms cubic-bezier(0.22, 1, 0.36, 1)",
-      }}
-      className={cn(isDragging && "relative z-10 opacity-40")}
+    <div
+      className={cn(overlay && "cursor-grabbing shadow-raise")}
     >
       <SpotlightCard
         tone={blocked ? "warn" : "ramp"}
@@ -1984,19 +2045,26 @@ function SortableTrackRow({
           <div
             className={cn(
               "well relative flex w-full items-center gap-2 px-2 py-1 text-left",
-              selecting && selected && "!border-ice/40 !bg-ice/5"
+              selecting && selected && "!border-ice/40 !bg-ice/5",
+              overlay && "ring-1 ring-ice/60"
             )}
           >
-            {canDrag ? (
-              <button
-                type="button"
-                className="cursor-grab touch-none p-0.5 text-text-lo active:cursor-grabbing"
-                aria-label={`Reorder ${track.title}`}
-                {...attributes}
-                {...listeners}
-              >
-                <GripVertical className="size-3.5" />
-              </button>
+            {showHandle ? (
+              overlay ? (
+                <span className="p-0.5 text-text-lo" aria-hidden>
+                  <GripVertical className="size-3.5" />
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  className="cursor-grab touch-none p-0.5 text-text-lo active:cursor-grabbing"
+                  aria-label={`Reorder ${track.title}`}
+                  {...dragHandle?.attributes}
+                  {...dragHandle?.listeners}
+                >
+                  <GripVertical className="size-3.5" />
+                </button>
+              )
             ) : null}
 
             {playable ? (
@@ -2066,19 +2134,26 @@ function SortableTrackRow({
           <div
             className={cn(
               "well lift relative flex w-full items-center gap-3 p-4 text-left sm:gap-4",
-              selecting && selected && "!border-ice/40 !bg-ice/5"
+              selecting && selected && "!border-ice/40 !bg-ice/5",
+              overlay && "ring-1 ring-ice/60"
             )}
           >
-            {canDrag ? (
-              <button
-                type="button"
-                className="cursor-grab touch-none p-1 text-text-lo active:cursor-grabbing"
-                aria-label={`Reorder ${track.title}`}
-                {...attributes}
-                {...listeners}
-              >
-                <GripVertical className="size-4" />
-              </button>
+            {showHandle ? (
+              overlay ? (
+                <span className="p-1 text-text-lo" aria-hidden>
+                  <GripVertical className="size-4" />
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  className="cursor-grab touch-none p-1 text-text-lo active:cursor-grabbing"
+                  aria-label={`Reorder ${track.title}`}
+                  {...dragHandle?.attributes}
+                  {...dragHandle?.listeners}
+                >
+                  <GripVertical className="size-4" />
+                </button>
+              )
             ) : null}
 
             <div className="group relative size-14 shrink-0 overflow-hidden rounded-input border border-line shadow-e1">
@@ -2199,6 +2274,6 @@ function SortableTrackRow({
           </div>
         )}
       </SpotlightCard>
-    </li>
+    </div>
   );
 }

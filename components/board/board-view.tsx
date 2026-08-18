@@ -477,16 +477,23 @@ export function BoardView() {
   function handleDragEnd(event: DragEndEvent) {
     const drag = activeDrag;
     const slot = overSlot;
-    clearDragState();
     const { over } = event;
-    if (!over || !drag) return;
+    if (!over || !drag) {
+      clearDragState();
+      return;
+    }
 
     const slotCollision = event.collisions?.find((collision) =>
       isDropSlotId(String(collision.id))
     );
+    const fromCollision = slotCollision
+      ? parseDropSlotId(String(slotCollision.id))
+      : null;
     const rawOverId = slotCollision?.id ?? over.id;
-    let resolved = slot ?? resolveDropSlot(String(rawOverId), drag.kind);
+    let resolved = fromCollision ?? slot ?? resolveDropSlot(String(rawOverId), drag.kind);
     if (
+      !fromCollision &&
+      !slot &&
       resolved?.kind === "track" &&
       drag.kind === "track" &&
       !isDropSlotId(String(rawOverId))
@@ -499,9 +506,18 @@ export function BoardView() {
         tracks.find((track) => track.id === String(rawOverId))?.id ?? null
       );
     }
-    if (!resolved) return;
-    if (resolved.kind === "note" && drag.kind !== "note") return;
-    if (resolved.kind === "track" && drag.kind !== "track") return;
+    if (!resolved) {
+      clearDragState();
+      return;
+    }
+    if (resolved.kind === "note" && drag.kind !== "note") {
+      clearDragState();
+      return;
+    }
+    if (resolved.kind === "track" && drag.kind !== "track") {
+      clearDragState();
+      return;
+    }
 
     if (drag.kind === "note") {
       void persistNotePlacement(
@@ -509,6 +525,7 @@ export function BoardView() {
         resolved.containerId,
         resolved.beforeId
       );
+      clearDragState();
       return;
     }
 
@@ -517,6 +534,7 @@ export function BoardView() {
       resolved.containerId,
       resolved.beforeId
     );
+    clearDragState();
   }
 
   async function removeFromBoard(track: Track) {

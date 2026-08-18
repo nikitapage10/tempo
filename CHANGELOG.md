@@ -4,6 +4,9 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-18
 
+- Changed (v0.197.0): Rearranging on Tracks now matches the Board. The list stays still while you drag; drop, and the row slides into its new place instead of stretching or snapping around.
+- Fixed (v0.197.0): Dropping a track between two others on the Board no longer jumps to the top or bottom of the column first, then slides to the gap you aimed at. It goes straight to that spot.
+
 - Changed (v0.196.5): the boot film is the current one now. Desktop had kept playing the earlier video because it still had that old file cached; that copy is gone, so you get the new film.
 
 - Fixed (v0.196.4): the once-a-day boot film plays on TEMPO Desktop again. It was disappearing because the app often comes up hidden, or is just brought back from the tray without a fresh load, so the film either ran out of sight or never got another chance. It now waits until the window is in front, and the first time you open TEMPO that day — including from the tray — it plays.

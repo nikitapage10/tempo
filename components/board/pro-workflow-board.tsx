@@ -31,7 +31,7 @@ import { useActiveSpace } from "@/components/active-space-provider";
 import { BoardStageSlot } from "@/components/board/board-stage-slot";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { DropIndicator } from "@/components/ui/drop-indicator";
+import { InsertEnd, InsertSlot } from "@/components/ui/drop-indicator";
 import { Input } from "@/components/ui/input";
 import { useLayoutMove, useLayoutOverflowUnlock } from "@/components/ui/layout-item";
 import { PageHeader } from "@/components/ui/page-header";
@@ -233,16 +233,15 @@ function ProFlowColumn({
       <div className="relative flex flex-1 flex-col gap-2">
         {cards.length === 0 ? (
           <>
-            {showInsertSlots ? (
-              <DropIndicator
-                slot={{ kind: "pro", containerId: stage.id, beforeId: null }}
-                active={
-                  activeSlot?.kind === "pro" &&
-                  activeSlot.containerId === stage.id &&
-                  activeSlot.beforeId == null
-                }
-              />
-            ) : null}
+            <InsertEnd
+              show={showInsertSlots}
+              slot={{ kind: "pro", containerId: stage.id, beforeId: null }}
+              active={
+                activeSlot?.kind === "pro" &&
+                activeSlot.containerId === stage.id &&
+                activeSlot.beforeId == null
+              }
+            />
             <div className="flex min-h-28 flex-1 items-center justify-center rounded-card border border-dashed border-line/70 bg-bg-0/25 px-3 text-center text-xs text-text-lo/70">
               {isOver ? <span className="text-ice">Drop to move here</span> : "This stage is clear."}
             </div>
@@ -255,37 +254,35 @@ function ProFlowColumn({
               beforeId: card.id,
             };
             return (
-              <React.Fragment key={card.id}>
-                {showInsertSlots ? (
-                  <DropIndicator
-                    slot={slot}
-                    active={
-                      activeSlot?.kind === "pro" &&
-                      activeSlot.containerId === stage.id &&
-                      activeSlot.beforeId === card.id
-                    }
-                  />
-                ) : null}
+              <InsertSlot
+                key={card.id}
+                show={showInsertSlots}
+                slot={slot}
+                active={
+                  activeSlot?.kind === "pro" &&
+                  activeSlot.containerId === stage.id &&
+                  activeSlot.beforeId === card.id
+                }
+              >
                 <ProFlowCard
                   card={card}
                   stages={stages}
                   onMove={(stageId) => onMove(card, stageId)}
                   onRemove={() => onRemove(card)}
                 />
-              </React.Fragment>
+              </InsertSlot>
             );
           })
         )}
-        {showInsertSlots && cards.length > 0 ? (
-          <DropIndicator
-            slot={{ kind: "pro", containerId: stage.id, beforeId: null }}
-            active={
-              activeSlot?.kind === "pro" &&
-              activeSlot.containerId === stage.id &&
-              activeSlot.beforeId == null
-            }
-          />
-        ) : null}
+        <InsertEnd
+          show={showInsertSlots && cards.length > 0}
+          slot={{ kind: "pro", containerId: stage.id, beforeId: null }}
+          active={
+            activeSlot?.kind === "pro" &&
+            activeSlot.containerId === stage.id &&
+            activeSlot.beforeId == null
+          }
+        />
       </div>
       <button
         type="button"
@@ -504,12 +501,18 @@ export function ProWorkflowBoard() {
   function handleDragEnd(event: DragEndEvent) {
     const card = (event.active.data.current?.card as ProWorkflowCard | undefined) ?? null;
     const slot = overSlot;
-    clearDragState();
     const { over } = event;
-    if (!card || !over) return;
+    if (!card || !over) {
+      clearDragState();
+      return;
+    }
     const resolved = slot ?? resolveDropSlot(String(over.id));
-    if (!resolved || resolved.kind !== "pro") return;
+    if (!resolved || resolved.kind !== "pro") {
+      clearDragState();
+      return;
+    }
     void persistCardPlacement(card.id, resolved.containerId, resolved.beforeId);
+    clearDragState();
   }
 
   if (spaceLoading || bundleQuery.isLoading || (!bundleQuery.data?.initialized && mutations.installSeeds.isPending)) {
