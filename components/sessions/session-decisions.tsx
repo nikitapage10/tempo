@@ -23,7 +23,7 @@ export function SessionDecisions({
   const meets = data?.meets ?? [];
   const meetTitle = (id: string) => {
     const meet = meets.find((item) => item.id === id);
-    if (!meet) return "A hang";
+    if (!meet) return "A past session";
     return new Date(meet.started_at).toLocaleString(undefined, {
       month: "short",
       day: "numeric",
@@ -57,7 +57,7 @@ export function SessionDecisions({
           </Button>
         </form>
       ) : (
-        <p className="text-sm text-text-lo">Start a hang to pin a decision to this occasion.</p>
+        <p className="text-sm text-text-lo">Start the session to pin a decision to this instance.</p>
       )}
       {decisions.length === 0 ? (
         <p className="text-sm text-text-lo">No decisions yet.</p>

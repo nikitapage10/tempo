@@ -12,7 +12,7 @@ describe("Sessions nav registration", () => {
     expect(shell).toContain(
       '"/sessions": "Rooms where you and your people plan, talk, and work on a song together."'
     );
-    expect(shell).toContain("Plan hangs, deadlines, milestones, and release dates.");
+    expect(shell).toContain("Plan sessions, deadlines, milestones, and release dates.");
     expect(shell).toContain("Sessions is roster-based like Scenes, not an AreaKey");
     expect(shell).not.toContain('"/sessions": "catalog"');
   });
@@ -28,7 +28,7 @@ describe("Sessions nav registration", () => {
   it("indexes Sessions in search", () => {
     const search = read("lib/search/match.ts");
     expect(search).toContain('id: "page-sessions"');
-    expect(search).toContain('"hang"');
+    expect(search).toContain('"instance"');
     expect(search).toContain('"studio"');
   });
 });

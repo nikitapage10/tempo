@@ -350,14 +350,14 @@ export async function createSessionTask(input: {
   return data as Task;
 }
 
-export async function startSessionHang(roomId: string): Promise<string> {
+export async function startSessionInstance(roomId: string): Promise<string> {
   const supabase = createClient();
   const { data, error } = await supabase.rpc("start_session_hang", { p_room: roomId });
   if (error) throw error;
   return data as string;
 }
 
-export async function endSessionHang(meetId: string, summary = "") {
+export async function endSessionInstance(meetId: string, summary = "") {
   const supabase = createClient();
   const { error } = await supabase.rpc("end_session_hang", {
     p_meet_id: meetId,

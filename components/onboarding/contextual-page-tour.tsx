@@ -93,9 +93,9 @@ const TOURS: Record<string, PageTour> = {
   "/sessions": {
     id: "sessions",
     steps: [
-      pageStep("Shared workrooms", "Open a Session.", "Sessions are rooms for you and your people to plan, talk, and work on a song together. Agenda, notes, chat, and hangs stay here."),
+      pageStep("Shared workrooms", "Open a Session.", "Sessions are rooms for you and your people to plan, talk, and work on a song together. Agenda, notes, chat, and past sessions stay here."),
       { selector: 'main button, main [class*="flex-wrap"]', kicker: "Start one", title: "Make a room, invite the people.", copy: "Name the Session, add who should be in it, and pin the track or project you are actually working on." },
-      { selector: 'main a[href^="/sessions/"], main .panel-quiet', matchIndex: 1, kicker: "Inside the room", title: "The hang lives here.", copy: "Open a Session for agenda, shared notes, tasks, chat, and a call when you are ready. A Session never opens anyone's catalog." },
+      { selector: 'main a[href^="/sessions/"], main .panel-quiet', matchIndex: 1, kicker: "Inside the room", title: "The room lives here.", copy: "Open a Session for agenda, shared notes, tasks, chat, and a call when you are ready. A Session never opens anyone's catalog." },
     ],
   },
   "/stats": {
@@ -199,7 +199,7 @@ const PRO_TOURS: Record<string, PageTour> = {
   "/sessions": {
     id: "pro-sessions",
     steps: [
-      pageStep("Shared workrooms", "Open a Session.", "Sessions are rooms for you and the people around a song. Plan, talk, hang, and keep the notes in one place."),
+      pageStep("Shared workrooms", "Open a Session.", "Sessions are rooms for you and the people around a song. Plan, talk, meet live, and keep the notes in one place."),
       { selector: 'main button, main [class*="flex-wrap"]', kicker: "Start one", title: "Make a room for the work.", copy: "Name it, add the people, and pin what you are actually working on. Being in the room never opens the catalog." },
     ],
   },

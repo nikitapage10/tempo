@@ -6,13 +6,13 @@ import { LivePill, SessionAvatarStack } from "@/components/sessions/session-peop
 import type { SessionRoom } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-function hangSummary(room: SessionRoom): string {
-  if (room.hang_count <= 0) return "No hangs yet";
-  const hangs = room.hang_count === 1 ? "1 hang" : `${room.hang_count} hangs`;
-  if (!room.last_hang_at) return hangs;
+function instanceSummary(room: SessionRoom): string {
+  if (room.hang_count <= 0) return "No sessions yet";
+  const sessions = room.hang_count === 1 ? "1 session" : `${room.hang_count} sessions`;
+  if (!room.last_hang_at) return sessions;
   const last = new Date(room.last_hang_at);
   const label = last.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-  return `${hangs} · last ${label}`;
+  return `${sessions}, last ${label}`;
 }
 
 export function SessionCard({ room }: { room: SessionRoom }) {
@@ -56,13 +56,13 @@ export function SessionCard({ room }: { room: SessionRoom }) {
       <div className="relative mt-auto pt-3">
         {live ? (
           <div className="mb-2">
-            <LivePill label="Hang is open" />
+            <LivePill label="LIVE" />
           </div>
         ) : null}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-data text-[11px] text-text-lo">
           <span className="inline-flex items-center gap-1">
             <Radio className="size-3 text-text-lo" />
-            {hangSummary(room)}
+            {instanceSummary(room)}
           </span>
           <span className="inline-flex items-center gap-1">
             <ListChecks className="size-3 text-text-lo" />

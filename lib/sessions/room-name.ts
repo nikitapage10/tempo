@@ -1,4 +1,4 @@
-/** LiveKit room name for a Session. Stable across hangs. */
+/** LiveKit room name for a Session. Stable across instances. */
 export function sessionRoomName(sessionRoomId: string): string {
   return `tempo-session-${sessionRoomId}`;
 }

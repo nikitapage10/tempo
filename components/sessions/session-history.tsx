@@ -3,6 +3,15 @@
 import { useSessionHistory } from "@/hooks/use-session-rooms";
 import { formatDuration } from "@/lib/format";
 
+function ordinal(value: number): string {
+  const mod100 = value % 100;
+  if (mod100 >= 11 && mod100 <= 13) return `${value}th`;
+  if (value % 10 === 1) return `${value}st`;
+  if (value % 10 === 2) return `${value}nd`;
+  if (value % 10 === 3) return `${value}rd`;
+  return `${value}th`;
+}
+
 export function SessionHistory({ roomId }: { roomId: string }) {
   const { data } = useSessionHistory(roomId);
   const meets = data?.meets ?? [];
@@ -10,17 +19,29 @@ export function SessionHistory({ roomId }: { roomId: string }) {
   const decisions = data?.decisions ?? [];
 
   if (meets.length === 0) {
-    return <p className="text-sm text-text-lo">No hangs yet. Start one when people gather.</p>;
+    return <p className="text-sm text-text-lo">No past sessions yet. Start one when people gather.</p>;
   }
 
   return (
     <ul className="space-y-3">
-      {meets.map((meet) => {
+      {meets.map((meet, index) => {
         const people = attendance.filter((row) => row.session_meet_id === meet.id);
         const logged = decisions.filter((row) => row.session_meet_id === meet.id);
+        const endedAt = meet.ended_at ? new Date(meet.ended_at).getTime() : Date.now();
+        const startedAt = new Date(meet.started_at).getTime();
+        const duration = Math.max(0, Math.floor((endedAt - startedAt) / 1000));
+        const instanceNumber = meets.length - index;
         return (
           <li key={meet.id} className="well p-3">
-            <p className="text-sm text-text-hi">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <p className="font-display text-sm font-medium text-text-hi">
+                {ordinal(instanceNumber)} session
+              </p>
+              <p className="font-data text-xs text-text-lo">
+                {meet.ended_at ? formatDuration(duration) : "LIVE"}
+              </p>
+            </div>
+            <p className="mt-1 text-xs text-text-lo">
               {new Date(meet.started_at).toLocaleString(undefined, {
                 weekday: "short",
                 month: "short",
@@ -28,9 +49,8 @@ export function SessionHistory({ roomId }: { roomId: string }) {
                 hour: "numeric",
                 minute: "2-digit",
               })}
-              {meet.ended_at ? "" : " · open now"}
             </p>
-            {meet.summary ? <p className="mt-1 text-sm text-text-lo">{meet.summary}</p> : null}
+            {meet.summary ? <p className="mt-2 text-sm text-text-hi">{meet.summary}</p> : null}
             <p className="mt-2 text-xs text-text-lo">
               {people.length
                 ? people

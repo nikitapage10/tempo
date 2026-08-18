@@ -54,7 +54,7 @@ export function SessionAvatarStack({
   );
 }
 
-/** Amber "a hang is open" marker. The one place amber outranks ice in Sessions. */
+/** Amber live marker. The one place amber outranks ice in Sessions. */
 export function LivePill({ className, label = "Live" }: { className?: string; label?: string }) {
   return (
     <span
@@ -73,7 +73,7 @@ export function LivePill({ className, label = "Live" }: { className?: string; la
 }
 
 /**
- * Studio plate at the top of a room: amber and lit while a hang runs, dark and
+ * Studio plate at the top of a room: amber and lit while an instance runs, dark and
  * quiet otherwise. Members and guests see the same plate.
  */
 export function OnAirPlate({ live, className }: { live: boolean; className?: string }) {
@@ -97,7 +97,7 @@ export function OnAirPlate({ live, className }: { live: boolean; className?: str
           live ? "text-amber" : "text-text-lo"
         )}
       >
-        {live ? "On air" : "Standby"}
+        {live ? "LIVE" : "Standby"}
       </span>
     </span>
   );

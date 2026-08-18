@@ -61,7 +61,7 @@ const TAB_LABEL: Record<Tab, string> = {
   tasks: "Tasks",
   pinned: "Pinned",
   decisions: "Decisions",
-  history: "History",
+  history: "Past sessions",
   chat: "Chat",
 };
 
@@ -119,8 +119,8 @@ function elapsedLabel(startedAt: string | null): string {
   return hours > 0 ? `${hours}:${pad(minutes)}:${pad(rest)}` : `${minutes}:${pad(rest)}`;
 }
 
-/** Counts up for as long as the hang is open. */
-function HangClock({ startedAt }: { startedAt: string | null }) {
+/** Counts up for as long as the current instance is open. */
+function InstanceClock({ startedAt }: { startedAt: string | null }) {
   const [label, setLabel] = React.useState(() => elapsedLabel(startedAt));
 
   React.useEffect(() => {
@@ -132,6 +132,15 @@ function HangClock({ startedAt }: { startedAt: string | null }) {
 
   if (!label) return null;
   return <span className="font-data text-xs tabular-nums text-amber">{label}</span>;
+}
+
+function ordinal(value: number): string {
+  const mod100 = value % 100;
+  if (mod100 >= 11 && mod100 <= 13) return `${value}th`;
+  if (value % 10 === 1) return `${value}st`;
+  if (value % 10 === 2) return `${value}nd`;
+  if (value % 10 === 3) return `${value}rd`;
+  return `${value}th`;
 }
 
 export function SessionRoomShell({ roomId }: { roomId: string }) {
@@ -149,7 +158,7 @@ export function SessionRoomShell({ roomId }: { roomId: string }) {
   const [shareOpen, setShareOpen] = React.useState(false);
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [endOpen, setEndOpen] = React.useState(false);
-  const [hangSummary, setHangSummary] = React.useState("");
+  const [instanceSummary, setInstanceSummary] = React.useState("");
   const [relay, setRelay] = React.useState(false);
   const [warmupOpen, setWarmupOpen] = React.useState(false);
   const pingAttendance = mutations.pingAttendance.mutateAsync;
@@ -259,7 +268,10 @@ export function SessionRoomShell({ roomId }: { roomId: string }) {
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <OnAirPlate live={live} />
-              <HangClock startedAt={live ? room.open_meet_started_at : null} />
+              <InstanceClock startedAt={live ? room.open_meet_started_at : null} />
+              {live ? (
+                <span className="font-data text-xs text-text-lo">{ordinal(room.hang_count)} session</span>
+              ) : null}
             </div>
             <h1 className="mt-2 truncate font-display text-2xl font-semibold tracking-[0.02em] text-text-hi sm:text-[28px]">
               {room.title}
@@ -274,20 +286,20 @@ export function SessionRoomShell({ roomId }: { roomId: string }) {
             ) : null}
             {live ? (
               <Button type="button" size="sm" variant="secondary" onClick={() => setEndOpen(true)}>
-                End hang
+                End session
               </Button>
             ) : (
               <Button
                 type="button"
                 size="sm"
                 onClick={() =>
-                  void mutations.startHang
+                  void mutations.startInstance
                     .mutateAsync()
-                    .catch((err) => toast(err instanceof Error ? err.message : "Couldn’t start a hang."))
+                    .catch((err) => toast(err instanceof Error ? err.message : "Couldn’t start the session."))
                 }
               >
                 <Radio className="size-4" />
-                Start a hang
+                Start session
               </Button>
             )}
           </div>
@@ -374,7 +386,7 @@ export function SessionRoomShell({ roomId }: { roomId: string }) {
 
       <Dialog open={endOpen} onOpenChange={setEndOpen}>
         <DialogContent
-          title="End the hang"
+          title="End the session"
           description="The room stays. Only the live call closes."
           onClose={() => setEndOpen(false)}
         >
@@ -383,21 +395,21 @@ export function SessionRoomShell({ roomId }: { roomId: string }) {
             onSubmit={(event) => {
               event.preventDefault();
               if (!room.open_meet_id) return;
-              void mutations.endHang
-                .mutateAsync({ meetId: room.open_meet_id, summary: hangSummary })
+              void mutations.endInstance
+                .mutateAsync({ meetId: room.open_meet_id, summary: instanceSummary })
                 .then(() => {
-                  setHangSummary("");
+                  setInstanceSummary("");
                   setEndOpen(false);
                 })
-                .catch((err) => toast(err instanceof Error ? err.message : "Couldn’t end the hang."));
+                .catch((err) => toast(err instanceof Error ? err.message : "Couldn’t end the session."));
             }}
           >
             <div>
-              <Label htmlFor="hang-summary">What came out of it? (optional)</Label>
+              <Label htmlFor="session-summary">What came out of it? (optional)</Label>
               <Input
-                id="hang-summary"
-                value={hangSummary}
-                onChange={(event) => setHangSummary(event.target.value)}
+                id="session-summary"
+                value={instanceSummary}
+                onChange={(event) => setInstanceSummary(event.target.value)}
                 placeholder="Locked the second verse, Dave takes the bridge."
               />
             </div>
@@ -405,8 +417,8 @@ export function SessionRoomShell({ roomId }: { roomId: string }) {
               <Button type="button" variant="secondary" onClick={() => setEndOpen(false)}>
                 Keep it going
               </Button>
-              <Button type="submit" disabled={mutations.endHang.isPending}>
-                {mutations.endHang.isPending ? "Ending…" : "End hang"}
+              <Button type="submit" disabled={mutations.endInstance.isPending}>
+                {mutations.endInstance.isPending ? "Ending…" : "End session"}
               </Button>
             </div>
           </form>

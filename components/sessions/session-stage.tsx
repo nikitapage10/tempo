@@ -182,7 +182,7 @@ function Tile({
   );
 }
 
-/** Concentric rings that breathe while a hang is open. */
+/** Concentric rings that breathe while an instance is open. */
 function Beacon({ live }: { live: boolean }) {
   return (
     <span className="relative flex size-16 items-center justify-center">
@@ -224,7 +224,7 @@ export function SessionStage({
   onCall: SessionPresenceParticipant[];
   members: SessionRoomMember[];
   guestNames?: Map<string, string>;
-  /** A hang is open, so an empty stage reads as waiting rather than closed. */
+  /** An instance is open, so an empty stage reads as waiting rather than closed. */
   live?: boolean;
 }) {
   const people: Person[] = onCall.map((person) => {
@@ -264,8 +264,8 @@ export function SessionStage({
           </p>
           <p className="mx-auto mt-1 max-w-sm text-xs leading-5 text-text-lo">
             {live
-              ? "Everybody here can see the hang is running. Join when you are ready to talk."
-              : "Start a hang when you want to talk. The agenda, notes, and chat stay put either way."}
+              ? "Everybody here can see the session is live. Join when you are ready to talk."
+              : "Start the session when you want to talk. The agenda, notes, and chat stay put either way."}
           </p>
         </div>
       </div>

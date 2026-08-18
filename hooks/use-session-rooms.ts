@@ -10,7 +10,7 @@ import {
   createSessionTask,
   deleteSessionAgendaItem,
   deleteSessionPin,
-  endSessionHang,
+  endSessionInstance,
   fetchSessionAgenda,
   fetchSessionAttendance,
   fetchSessionDecisions,
@@ -23,7 +23,7 @@ import {
   logSessionDecision,
   removeSessionMember,
   reorderSessionAgenda,
-  startSessionHang,
+  startSessionInstance,
   updateSessionAgendaItem,
   updateSessionRoom,
   upsertSessionAttendance,
@@ -163,12 +163,12 @@ export function useSessionRoomMutations(artistId: string | null, roomId?: string
         void qc.invalidateQueries({ queryKey: ["tasks"] });
       },
     }),
-    startHang: useMutation({
-      mutationFn: () => startSessionHang(roomId!),
+    startInstance: useMutation({
+      mutationFn: () => startSessionInstance(roomId!),
       onSuccess: invalidate,
     }),
-    endHang: useMutation({
-      mutationFn: (input: { meetId: string; summary?: string }) => endSessionHang(input.meetId, input.summary),
+    endInstance: useMutation({
+      mutationFn: (input: { meetId: string; summary?: string }) => endSessionInstance(input.meetId, input.summary),
       onSuccess: () => {
         invalidate();
         void qc.invalidateQueries({ queryKey: ["session-history", roomId] });

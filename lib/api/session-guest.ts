@@ -14,7 +14,7 @@ export type GuestSessionState = {
   notes: string;
   pins: { id: string; title: string; artwork_url: string | null }[];
   messages: GuestSessionMessage[];
-  /** True while a hang is open, so a guest can see the room went live. */
+  /** True while an instance is open, so a guest can see the room went live. */
   live: boolean;
   hangStartedAt: string | null;
   allowChat: boolean;

@@ -100,7 +100,7 @@ export const SEARCH_PAGES: SearchPageDef[] = [
     title: "Sessions",
     subtitle: "Rooms to plan, talk, and work on a song together",
     href: "/sessions",
-    keywords: ["session", "hang", "room", "call", "video", "meet", "studio"],
+    keywords: ["session", "instance", "room", "call", "video", "live", "studio"],
   },
   {
     id: "page-artist",

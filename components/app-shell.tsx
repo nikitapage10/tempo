@@ -153,7 +153,7 @@ const WORK_MOBILE_NAV = [
 
 const NAV_DESCRIPTIONS: Record<string, string> = {
   "/": "See what is active, due, and ready for your attention today.",
-  "/calendar": "Plan hangs, deadlines, milestones, and release dates.",
+  "/calendar": "Plan sessions, deadlines, milestones, and release dates.",
   "/sessions": "Rooms where you and your people plan, talk, and work on a song together.",
   "/board": "Move tracks and notes through the stages of your process.",
   "/tracks": "Browse and manage every track in the active space.",

@@ -7,7 +7,7 @@ import {
 } from "@/lib/sessions/room-name";
 
 describe("Session LiveKit room names", () => {
-  it("keeps a stable room name across hangs", () => {
+  it("keeps a stable room name across instances", () => {
     expect(sessionRoomName("abc")).toBe("tempo-session-abc");
   });
 
