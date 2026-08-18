@@ -122,9 +122,9 @@ export function GuestSessionView({ token }: { token: string }) {
   const live = state.live || call.onCallRoster.length > 0;
 
   return (
-    <div className="flex min-h-[100dvh] flex-col bg-bg-0">
+    <div className="flex h-[100dvh] min-h-0 flex-col overflow-hidden bg-bg-0">
       <SessionAudio room={call.room} />
-      <header className="relative flex flex-wrap items-start justify-between gap-3 overflow-hidden border-b border-line px-4 py-3">
+      <header className="relative flex shrink-0 flex-wrap items-start justify-between gap-3 overflow-hidden border-b border-line px-4 py-3">
         <span
           aria-hidden
           className="pointer-events-none absolute inset-0 transition-opacity duration-300"
@@ -147,8 +147,8 @@ export function GuestSessionView({ token }: { token: string }) {
         </span>
       </header>
 
-      <div className="grid min-h-0 flex-1 gap-3 p-3 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <div className="flex min-h-0 flex-col gap-3">
+      <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,3fr)_minmax(0,2fr)] gap-3 overflow-hidden p-3 lg:grid-cols-[minmax(0,1fr)_20rem] lg:grid-rows-1">
+        <div className="flex min-h-0 flex-col gap-3 overflow-y-auto">
           <section className="panel prism-edge relative flex min-h-[20rem] flex-1 flex-col gap-3 overflow-hidden p-3">
             <div className="min-h-[14rem] flex-1">
               <SessionStage
@@ -156,13 +156,6 @@ export function GuestSessionView({ token }: { token: string }) {
                 onCall={call.onCallRoster}
                 members={[]}
                 live={live}
-                action={
-                  state.allowMedia && !call.onCall ? (
-                    <Button type="button" size="sm" onClick={() => void joinCall()} disabled={Boolean(call.error)}>
-                      Join the call
-                    </Button>
-                  ) : null
-                }
               />
             </div>
             {state.allowMedia ? (
@@ -181,6 +174,7 @@ export function GuestSessionView({ token }: { token: string }) {
                 audioBlocked={call.audioBlocked}
                 onEnableAudio={() => void call.unlockAudio()}
                 disabled={Boolean(call.error)}
+                className="mt-auto shrink-0"
               />
             ) : (
               <div className="flex flex-col items-center gap-2">
@@ -242,7 +236,7 @@ export function GuestSessionView({ token }: { token: string }) {
           </section>
         </div>
 
-        <aside className="panel-quiet flex min-h-[20rem] flex-col overflow-hidden">
+        <aside className="panel-quiet flex min-h-0 flex-col overflow-y-auto">
           <p className="label-mono border-b border-line/70 px-3 py-3">Room chat</p>
           <div className="flex min-h-0 flex-1 flex-col justify-end gap-2 overflow-y-auto p-3">
             {state.messages.length === 0 ? (

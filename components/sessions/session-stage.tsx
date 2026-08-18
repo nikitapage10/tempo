@@ -219,7 +219,6 @@ export function SessionStage({
   members,
   guestNames,
   live,
-  action,
 }: {
   room: Room;
   onCall: SessionPresenceParticipant[];
@@ -227,8 +226,6 @@ export function SessionStage({
   guestNames?: Map<string, string>;
   /** A hang is open, so an empty stage reads as waiting rather than closed. */
   live?: boolean;
-  /** Join control, so the invitation and the button live in the same place. */
-  action?: React.ReactNode;
 }) {
   const people: Person[] = onCall.map((person) => {
     const parsed = parseParticipantIdentity(person.identity);
@@ -271,7 +268,6 @@ export function SessionStage({
               : "Start a hang when you want to talk. The agenda, notes, and chat stay put either way."}
           </p>
         </div>
-        {action}
       </div>
     );
   }

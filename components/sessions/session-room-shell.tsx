@@ -242,10 +242,10 @@ export function SessionRoomShell({ roomId }: { roomId: string }) {
   );
 
   return (
-    <div className="flex min-h-[calc(100dvh-8rem)] flex-col gap-3">
+    <div className="flex h-[calc(100dvh-8rem)] min-h-0 flex-col gap-3 overflow-hidden">
       <SessionAudio room={call.room} />
 
-      <header className="panel relative overflow-hidden px-4 py-4">
+      <header className="panel relative shrink-0 overflow-hidden px-4 py-4">
         <span
           aria-hidden
           className="pointer-events-none absolute inset-0 transition-opacity duration-300"
@@ -313,8 +313,8 @@ export function SessionRoomShell({ roomId }: { roomId: string }) {
           }}
         />
       ) : (
-        <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[minmax(0,1fr)_21rem]">
-          <div className="flex min-h-0 flex-col gap-3">
+        <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,3fr)_minmax(0,2fr)] gap-3 overflow-hidden lg:grid-cols-[minmax(0,1fr)_21rem] lg:grid-rows-1">
+          <div className="flex min-h-0 flex-col gap-3 overflow-y-auto">
             <section className="panel prism-edge relative flex min-h-[20rem] flex-1 flex-col gap-3 overflow-hidden p-3">
               <div className="min-h-[14rem] flex-1">
                 <SessionStage
@@ -322,13 +322,6 @@ export function SessionRoomShell({ roomId }: { roomId: string }) {
                   onCall={call.onCallRoster}
                   members={room.members}
                   live={live}
-                  action={
-                    !call.onCall ? (
-                      <Button type="button" size="sm" onClick={() => void requestJoin()} disabled={Boolean(call.error)}>
-                        Join the call
-                      </Button>
-                    ) : null
-                  }
                 />
               </div>
               <CallControls
@@ -346,6 +339,7 @@ export function SessionRoomShell({ roomId }: { roomId: string }) {
                 audioBlocked={call.audioBlocked}
                 onEnableAudio={() => void call.unlockAudio()}
                 disabled={Boolean(call.error)}
+                className="mt-auto shrink-0"
               />
               {call.error ? <p className="text-center text-xs text-warn">{call.error}</p> : null}
               {desktop && !call.onCall ? (
@@ -360,11 +354,11 @@ export function SessionRoomShell({ roomId }: { roomId: string }) {
               {workbench}
             </div>
           </div>
-          <aside className="panel-quiet hidden min-h-0 flex-col overflow-hidden lg:flex">
+          <aside className="panel-quiet hidden min-h-0 flex-col overflow-y-auto lg:flex">
             <p className="label-mono border-b border-line/70 px-3 py-3">Room chat</p>
             <div className="min-h-0 flex-1">{chat}</div>
           </aside>
-          <div className="panel-quiet flex min-h-[20rem] flex-col overflow-hidden lg:hidden">{workbench}</div>
+          <div className="panel-quiet flex min-h-0 flex-col overflow-hidden lg:hidden">{workbench}</div>
         </div>
       )}
 

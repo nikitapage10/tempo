@@ -5,7 +5,7 @@ import { ArrowDown, Loader2 } from "lucide-react";
 import type { ConversationMessage } from "@/lib/types";
 import { isNearConversationBottom, preservedScrollTop, shouldAutoFollowConversation } from "@/lib/messages/behavior";
 
-export function ConversationTranscript({ messages, renderMessage, hasOlder, loadingOlder, loadOlder, peerTypingLabel, sentByMe }: {
+export function ConversationTranscript({ messages, renderMessage, hasOlder, loadingOlder, loadOlder, peerTypingLabel, sentByMe, bottomAnchored = false }: {
   messages: ConversationMessage[];
   renderMessage: (message: ConversationMessage) => React.ReactNode;
   hasOlder?: boolean;
@@ -13,6 +13,7 @@ export function ConversationTranscript({ messages, renderMessage, hasOlder, load
   loadOlder?: () => Promise<unknown> | void;
   peerTypingLabel?: string | null;
   sentByMe: (message: ConversationMessage) => boolean;
+  bottomAnchored?: boolean;
 }) {
   const scrollerRef = React.useRef<HTMLDivElement>(null);
   const initializedRef = React.useRef(false);
@@ -56,9 +57,9 @@ export function ConversationTranscript({ messages, renderMessage, hasOlder, load
   }
 
   return <div className="relative min-h-0 flex-1">
-    <div ref={scrollerRef} onScroll={(event) => { const node = event.currentTarget; const away = !isNearConversationBottom(node); setAwayFromBottom(away); if (!away) setUnseen(0); }} className="spectra-scrollbar absolute inset-0 overflow-x-hidden overflow-y-auto overscroll-contain py-4 pl-4 pr-7 sm:pr-8">
+    <div ref={scrollerRef} onScroll={(event) => { const node = event.currentTarget; const away = !isNearConversationBottom(node); setAwayFromBottom(away); if (!away) setUnseen(0); }} className={`spectra-scrollbar absolute inset-0 overflow-x-hidden overflow-y-auto overscroll-contain py-4 pl-4 pr-7 sm:pr-8${bottomAnchored ? " flex flex-col" : ""}`}>
       {hasOlder ? <div className="mb-4 flex justify-center"><button type="button" disabled={loadingOlder} onClick={() => void prependOlder()} className="inline-flex items-center gap-1 rounded-chip border border-line px-3 py-1.5 text-xs text-text-lo hover:text-ice disabled:opacity-50">{loadingOlder ? <Loader2 className="size-3 animate-spin"/> : null}Load older messages</button></div> : null}
-      <div className="space-y-3">{messages.map((message) => <div key={message.id} style={{ contentVisibility: "auto", containIntrinsicSize: "48px" }}>{renderMessage(message)}</div>)}</div>
+      <div className={`space-y-3${bottomAnchored ? " mt-auto" : ""}`}>{messages.map((message) => <div key={message.id} style={{ contentVisibility: "auto", containIntrinsicSize: "48px" }}>{renderMessage(message)}</div>)}</div>
       {peerTypingLabel ? <p role="status" className="mt-3 text-xs text-text-lo"><span className="text-ice">...</span> {peerTypingLabel} is typing</p> : null}
     </div>
     {awayFromBottom && unseen > 0 ? <button type="button" onClick={() => scrollToBottom()} className="absolute bottom-3 left-1/2 z-10 inline-flex -translate-x-1/2 items-center gap-1 rounded-chip border border-ice/30 bg-bg-1 px-3 py-1.5 text-xs text-ice shadow-e2"><ArrowDown className="size-3.5"/>{unseen} new {unseen === 1 ? "message" : "messages"}</button> : null}

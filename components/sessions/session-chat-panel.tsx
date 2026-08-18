@@ -59,6 +59,7 @@ export function SessionChatPanel({
         loadingOlder={messageQuery.isFetchingNextPage}
         loadOlder={messageQuery.fetchNextPage}
         peerTypingLabel={realtime.peerTypingLabel}
+        bottomAnchored
         sentByMe={(message) => isMyMessage({ senderUserId: message.sender_user_id, currentUserId: myUserId })}
         renderMessage={(message) => {
           const mine = isMyMessage({ senderUserId: message.sender_user_id, currentUserId: myUserId });
