@@ -4,6 +4,8 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-18
 
+- Added (v0.205.0): A Session call now stays connected when you leave the room page. A compact dock follows you around TEMPO with the room name, microphone control, leave button, and a link back to the stage.
+
 - Added (v0.204.0): A Session with a song now has a shared listening deck. One person can play, pause, seek, or switch bounces and everybody in the room follows. Drop a note at the playhead to create the same timestamped comment used on the track. Guests see the moving shared playhead but never receive or play the audio.
   Under the hood: run migration 117 in the Supabase SQL editor after migration 116.
 

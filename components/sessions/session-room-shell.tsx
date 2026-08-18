@@ -157,6 +157,7 @@ export function SessionRoomShell({ roomId }: { roomId: string }) {
   const focusTracks = useTracks(room?.space_id ?? null);
   const mutations = useSessionRoomMutations(activeArtist?.id ?? room?.artist_id ?? null, roomId);
   const call = useCall();
+  const activateCall = call.activate;
   const devices = useSessionDevices(call.room);
   const micMediaTrack =
     (call.micTrack as { mediaStreamTrack?: MediaStreamTrack } | null)?.mediaStreamTrack ?? null;
@@ -175,13 +176,13 @@ export function SessionRoomShell({ roomId }: { roomId: string }) {
 
   React.useEffect(() => {
     if (!room) return;
-    call.activate({
+    activateCall({
       scope: "session",
       id: room.id,
       title: room.title,
       href: `/sessions/${room.id}`,
     });
-  }, [call.activate, room]);
+  }, [activateCall, room]);
 
   React.useEffect(() => {
     if (room?.open_meet_id && user?.id) {
