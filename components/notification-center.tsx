@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Bell, Check } from "lucide-react";
+import { Bell, Check, Radio } from "lucide-react";
 import {
   useNotificationMutations,
   useNotifications,
@@ -92,7 +92,9 @@ export function NotificationCenter() {
                       )}
                     >
                       <div className="flex items-start gap-2">
-                        {unread ? (
+                        {n.type === "session_live" ? (
+                          <Radio className="mt-0.5 size-3.5 shrink-0 text-amber" />
+                        ) : unread ? (
                           <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-ice" />
                         ) : (
                           <span className="mt-1.5 size-1.5 shrink-0" />

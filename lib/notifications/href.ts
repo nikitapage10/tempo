@@ -7,6 +7,9 @@ export function notificationHref(n: AppNotification): string {
     if (n.entity_type === "conversation" && n.entity_id) {
       return `/messages?c=${n.entity_id}`;
     }
+    if (n.entity_type === "session_room" && n.entity_id) {
+      return `/sessions/${n.entity_id}`;
+    }
     if (n.entity_type === "post" && n.entity_id) {
       return `/social?post=${n.entity_id}`;
     }
@@ -72,6 +75,8 @@ export function notificationBreadth(n: AppNotification): Exclude<NotificationBre
   if (
     type === "dm_message" ||
     n.entity_type === "conversation" ||
+    n.entity_type === "session_room" ||
+    type === "session_live" ||
     type.startsWith("dm_")
   ) {
     return "messages";

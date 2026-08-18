@@ -342,6 +342,14 @@ export function SessionRoomShell({ roomId }: { roomId: string }) {
                 onClick={() =>
                   void mutations.startInstance
                     .mutateAsync()
+                    .then(async (instanceId) => {
+                      await fetch(`/api/sessions/${room.id}/instance-notify`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ instanceId }),
+                      }).catch(() => null);
+                      call.publishChat();
+                    })
                     .catch((err) => toast(err instanceof Error ? err.message : "Couldn’t start the session."))
                 }
               >

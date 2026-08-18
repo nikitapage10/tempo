@@ -25,7 +25,7 @@ import { SESSION_GUEST_UNAVAILABLE_MESSAGE } from "@/lib/sessions/copy";
 import { cn } from "@/lib/utils";
 
 /** A guest has no realtime channel of their own, so the room state is polled. */
-const STATE_POLL_MS = 15_000;
+const STATE_POLL_MS = 4_000;
 
 export function GuestSessionView({ token }: { token: string }) {
   const [gateTitle, setGateTitle] = React.useState<string | null>(null);
@@ -34,10 +34,14 @@ export function GuestSessionView({ token }: { token: string }) {
   const [error, setError] = React.useState<string | null>(null);
   const [draft, setDraft] = React.useState("");
   const [settingsOpen, setSettingsOpen] = React.useState(false);
+  const [livePrompt, setLivePrompt] = React.useState(false);
 
   const loadState = React.useCallback(async () => {
     const next = await fetchGuestSessionState(token);
-    setState(next);
+    setState((current) => {
+      if (current && !current.live && next.live) setLivePrompt(true);
+      return next;
+    });
     setJoined(true);
   }, [token]);
 
@@ -157,6 +161,14 @@ export function GuestSessionView({ token }: { token: string }) {
           You are here as a guest{state.guestName ? `, ${state.guestName}` : ""}.
         </span>
       </header>
+      {livePrompt ? (
+        <div role="status" className="flex shrink-0 items-center justify-between gap-3 border-b border-amber/30 bg-amber/10 px-4 py-2 text-sm text-amber">
+          <span>The session is live. Join when you are ready.</span>
+          <button type="button" className="text-xs hover:underline" onClick={() => setLivePrompt(false)}>
+            Dismiss
+          </button>
+        </div>
+      ) : null}
 
       <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,3fr)_minmax(0,2fr)] gap-3 overflow-hidden p-3 lg:grid-cols-[minmax(0,1fr)_20rem] lg:grid-rows-1">
         <div className="flex min-h-0 flex-col gap-3 overflow-y-auto">

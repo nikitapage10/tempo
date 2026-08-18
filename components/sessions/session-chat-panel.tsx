@@ -62,6 +62,13 @@ export function SessionChatPanel({
         bottomAnchored
         sentByMe={(message) => isMyMessage({ senderUserId: message.sender_user_id, currentUserId: myUserId })}
         renderMessage={(message) => {
+          if (message.body.startsWith("::system::")) {
+            return (
+              <p className="px-3 text-center text-xs text-text-lo">
+                {message.body.slice("::system::".length)}
+              </p>
+            );
+          }
           const mine = isMyMessage({ senderUserId: message.sender_user_id, currentUserId: myUserId });
           const member = message.sender_profile_id ? byProfile.get(message.sender_profile_id) : undefined;
           const guest = Boolean(message.sender_session_guest_id || message.sender_guest_name);
