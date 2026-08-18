@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Archive, ArchiveRestore, ChevronLeft, Files, Headphones, Lock, MessagesSquare, PenSquare, Phone, Pin, Radio, Search, Trash2, UserPlus, Users, Volume2, VolumeX, X } from "lucide-react";
+import { Archive, ArchiveRestore, ChevronLeft, Files, Headphones, Lock, MessagesSquare, PenSquare, Phone, Pin, Radio, Search, Trash2, UserPlus, Users, Video, Volume2, VolumeX, X } from "lucide-react";
 import { useCall } from "@/components/calls/call-provider";
 import { useActiveArtist } from "@/components/active-artist-provider";
 import { useWorkspaceMode } from "@/hooks/use-workspace-mode";
@@ -159,6 +159,21 @@ export default function MessagesView() {
               >
                 <Phone className="size-3.5" />
                 Call
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() =>
+                  call.startVideo({
+                    scope: "conversation",
+                    id: active.id,
+                    title: activeHeading,
+                    href: `/messages?c=${active.id}`,
+                  })
+                }
+              >
+                <Video className="size-3.5" />
+                Video
               </Button>
             </div>
           ) : null}
