@@ -8,6 +8,7 @@ describe("column layout move animation", () => {
   it("shares a layout-move helper instead of a demo Kanban", () => {
     const helper = read("components/ui/layout-item.tsx");
     expect(helper).toContain("useLayoutMove");
+    expect(helper).toContain('layout: animate ? ("position" as const) : false');
     expect(helper).toContain("layoutId");
     expect(helper).toContain("useReducedMotion");
     expect(helper).toContain("useLayoutOverflowUnlock");
@@ -49,6 +50,7 @@ describe("column layout move animation", () => {
     const lanes = read("components/tasks/lanes-view.tsx");
     const indicator = read("components/ui/drop-indicator.tsx");
     expect(board).toContain("insertIdBefore");
+    expect(board).toContain("slot ?? fromCollision");
     expect(board).toContain("parseDropSlotId");
     expect(tracks).toContain("{ ...listeners, ...attributes }");
     expect(column).toContain("InsertSlot");
@@ -56,5 +58,6 @@ describe("column layout move animation", () => {
     expect(lanes).toContain("InsertSlot");
     expect(indicator).toContain("absolute inset-x-0");
     expect(indicator).not.toContain("-my-2");
+    expect(indicator).not.toContain("if (!show) return null");
   });
 });

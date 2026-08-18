@@ -61,9 +61,11 @@ export function InsertSlot({
 }) {
   return (
     <div className="relative">
-      {show ? (
-        <DropIndicator slot={slot} active={active} disabled={disabled} />
-      ) : null}
+      <DropIndicator
+        slot={slot}
+        active={Boolean(show) && active}
+        disabled={!show || disabled}
+      />
       {children}
     </div>
   );
@@ -80,13 +82,12 @@ export function InsertEnd({
   active: boolean;
   disabled?: boolean;
 }) {
-  if (!show) return null;
   return (
     <div className="relative h-0">
       <DropIndicator
         slot={slot}
-        active={active}
-        disabled={disabled}
+        active={Boolean(show) && active}
+        disabled={!show || disabled}
         edge="end"
       />
     </div>

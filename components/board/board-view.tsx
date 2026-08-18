@@ -490,7 +490,9 @@ export function BoardView() {
       ? parseDropSlotId(String(slotCollision.id))
       : null;
     const rawOverId = slotCollision?.id ?? over.id;
-    let resolved = fromCollision ?? slot ?? resolveDropSlot(String(rawOverId), drag.kind);
+    // The ice line the user was aiming at wins over a drop-time hit on the
+    // whole column, which otherwise animates the card from the top or bottom.
+    let resolved = slot ?? fromCollision ?? resolveDropSlot(String(rawOverId), drag.kind);
     if (
       !fromCollision &&
       !slot &&

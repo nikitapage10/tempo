@@ -19,7 +19,7 @@ export function useLayoutMove(id: string, enabled = true) {
   const reduce = useReducedMotion();
   const animate = enabled && reduce !== true;
   return {
-    layout: animate,
+    layout: animate ? ("position" as const) : false,
     layoutId: animate ? id : undefined,
     transition: animate ? LAYOUT_MOVE_TRANSITION : { duration: 0 },
   };

@@ -6,18 +6,15 @@ import {
   DragOverlay,
   PointerSensor,
   closestCenter,
+  useDraggable,
+  useDroppable,
   useSensor,
   useSensors,
   type DragEndEvent,
   type DragOverEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-import {
-  SortableContext,
-  arrayMove,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
+import { arrayMove } from "@dnd-kit/sortable";
 import { LayoutGroup, motion } from "framer-motion";
 import {
   FolderPlus,
@@ -78,6 +75,7 @@ import {
 } from "@/hooks/use-projects";
 import { useTrackMutations, useTracks } from "@/hooks/use-tracks";
 import { useVersionsForTracks } from "@/hooks/use-versions";
+import { itemTargetId } from "@/lib/dnd/pointer-insert";
 import { deriveAttentionSignals } from "@/lib/attention/signals";
 import { TRACK_TYPES } from "@/lib/constants";
 import { assignTracksToGroupOrder } from "@/lib/tracks/bulk-group-assign";
@@ -310,9 +308,14 @@ function resolveDropGroup(
     if (fromDrop === null) return null;
     return groups.some((g) => g.id === fromDrop) ? fromDrop : undefined;
   }
-  const overTrack = tracks.find((t) => t.id === overId);
+  const overTrack = tracks.find((t) => t.id === trackIdFromOver(overId));
   if (!overTrack) return undefined;
   return trackGroupKey(overTrack, groups);
+}
+
+function trackIdFromOver(overId: string): string {
+  const prefix = "drop-track:";
+  return overId.startsWith(prefix) ? overId.slice(prefix.length) : overId;
 }
 
 export default function TracksPage() {
@@ -701,6 +704,7 @@ export default function TracksPage() {
 
       const activeId = String(active.id);
       const overId = String(over.id);
+      const overTrackId = trackIdFromOver(overId);
 
     // A whole group was dragged by its handle: reorder the groups themselves
     // rather than anything inside them.
@@ -721,8 +725,8 @@ export default function TracksPage() {
     if (!showGroups) {
       const visibleIds = displayed.map((t) => t.id);
       const oldIndex = visibleIds.indexOf(activeId);
-      const newIndex = visibleIds.indexOf(overId);
-      if (oldIndex < 0 || newIndex < 0) return;
+      const newIndex = visibleIds.indexOf(overTrackId);
+      if (oldIndex < 0 || newIndex < 0 || oldIndex === newIndex) return;
 
       const nextVisible = arrayMove(visibleIds, oldIndex, newIndex);
       const allOrdered = customOrderedIds();
@@ -758,8 +762,8 @@ export default function TracksPage() {
       // Same-group reorder onto another track
       const vis = visible.get(sourceGroup)!;
       const oldIndex = vis.indexOf(activeId);
-      const newIndex = vis.indexOf(overId);
-      if (oldIndex < 0 || newIndex < 0) return;
+      const newIndex = vis.indexOf(overTrackId);
+      if (oldIndex < 0 || newIndex < 0 || oldIndex === newIndex) return;
       const nextVis = arrayMove(vis, oldIndex, newIndex);
       full.set(
         sourceGroup,
@@ -779,7 +783,7 @@ export default function TracksPage() {
         .filter((id) => id !== activeId);
 
       let insertAt: number;
-      if (overIsDroppable || !targetFull.includes(overId)) {
+      if (overIsDroppable || !targetFull.includes(overTrackId)) {
         if (targetVis.length === 0) insertAt = targetFull.length;
         else {
           const lastId = targetVis[targetVis.length - 1]!;
@@ -787,7 +791,7 @@ export default function TracksPage() {
           insertAt = idx >= 0 ? idx + 1 : targetFull.length;
         }
       } else {
-        const idx = targetFull.indexOf(overId);
+        const idx = targetFull.indexOf(overTrackId);
         insertAt = idx >= 0 ? idx : targetFull.length;
       }
       targetFull.splice(insertAt, 0, activeId);
@@ -1034,7 +1038,7 @@ export default function TracksPage() {
 
   function renderTrackRow(track: Track) {
     return (
-      <SortableTrackRow
+      <TrackListRow
         key={track.id}
         track={track}
         stageLabel={stageName(track.stage_id)}
@@ -1531,11 +1535,6 @@ export default function TracksPage() {
             }}
           >
             <LayoutGroup id="tempo-tracks-list">
-            <SortableContext
-              items={displayed.map((t) => t.id)}
-              strategy={verticalListSortingStrategy}
-              disabled={!canDrag}
-            >
               {showGroups ? (
                 <div className={cn(density === "compact" ? "space-y-4" : "space-y-5")}>
                   {sections.map((section) => {
@@ -1591,7 +1590,6 @@ export default function TracksPage() {
                   {displayed.map((track) => renderTrackRow(track))}
                 </ul>
               )}
-            </SortableContext>
             <DragOverlay dropAnimation={null}>
               {activeDrag?.kind === "track" ? (
                 <TrackRowView
@@ -1937,7 +1935,7 @@ export default function TracksPage() {
   );
 }
 
-function SortableTrackRow({
+function TrackListRow({
   track,
   stageLabel,
   selecting,
@@ -1962,16 +1960,23 @@ function SortableTrackRow({
   isPlaying: boolean;
   onPlay: () => void;
 }) {
-  const { attributes, listeners, setNodeRef, isDragging } = useSortable({
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: track.id,
+    data: { kind: "track", track },
     disabled: !canDrag,
-    animateLayoutChanges: () => false,
+  });
+  const { setNodeRef: setDropRef } = useDroppable({
+    id: itemTargetId("track", track.id),
+    disabled: !canDrag || isDragging,
   });
   const layoutMove = useLayoutMove(`tracks-row-${track.id}`);
 
   return (
     <motion.li
-      ref={setNodeRef}
+      ref={(node) => {
+        setNodeRef(node);
+        setDropRef(node);
+      }}
       {...layoutMove}
       className={cn(isDragging && "relative z-10 opacity-40")}
     >

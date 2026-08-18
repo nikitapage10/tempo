@@ -113,7 +113,6 @@ export function useTrackMutations(spaceId: string | null) {
     onError: (_e, _v, ctx) => {
       if (ctx?.prev) qc.setQueryData(key, ctx.prev);
     },
-    onSettled: invalidateLists,
   });
 
   const reorder = useMutation({
@@ -161,7 +160,6 @@ export function useTrackMutations(spaceId: string | null) {
     onError: (_e, _v, ctx) => {
       if (ctx?.prev) qc.setQueryData(key, ctx.prev);
     },
-    onSettled: invalidateLists,
   });
 
   return { create, update, remove, moveStage, reorder };
