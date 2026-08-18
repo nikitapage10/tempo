@@ -4,6 +4,8 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-18
 
+- Changed (v0.196.3): Rearranging tracks on the Tracks page is smoother. Grab the handle and the row follows your pointer without stretching or stuttering, while the others slide out of the way.
+
 - Fixed (v0.196.2): Dropping a track between two others on the Board now aims from the cards themselves — the top half of the song below, or the bottom half of the song above — instead of only a thin gap, and the card slides straight to that spot instead of jumping to the top or bottom of the list first.
 
 ## 2026-08-17

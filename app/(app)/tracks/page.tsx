@@ -3,12 +3,14 @@
 import * as React from "react";
 import {
   DndContext,
+  DragOverlay,
   PointerSensor,
   closestCenter,
   useSensor,
   useSensors,
   type DragEndEvent,
   type DragOverEvent,
+  type DragStartEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -395,6 +397,11 @@ export default function TracksPage() {
   const [overGroupId, setOverGroupId] = React.useState<GroupKey | undefined>(
     undefined
   );
+  const [activeDrag, setActiveDrag] = React.useState<
+    | { kind: "track"; track: Track }
+    | { kind: "group"; title: string }
+    | null
+  >(null);
 
   // Drop a stale preset id from localStorage if it was deleted elsewhere.
   React.useEffect(() => {
@@ -492,7 +499,7 @@ export default function TracksPage() {
   const canDrag = sortSelection === "custom" && !selecting;
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
 
   function setSort(selection: SortSelection) {
@@ -661,6 +668,18 @@ export default function TracksPage() {
     setSelected(new Set());
   }
 
+  function handleDragStart(event: DragStartEvent) {
+    const id = String(event.active.id);
+    const groupId = parseGroupSortId(id);
+    if (groupId) {
+      const group = groups.find((item) => item.id === groupId);
+      setActiveDrag(group ? { kind: "group", title: group.name } : null);
+      return;
+    }
+    const track = tracks.find((item) => item.id === id);
+    setActiveDrag(track ? { kind: "track", track } : null);
+  }
+
   function handleDragOver(event: DragOverEvent) {
     if (!canDrag || !showGroups) {
       setOverGroupId(undefined);
@@ -677,6 +696,7 @@ export default function TracksPage() {
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     setOverGroupId(undefined);
+    setActiveDrag(null);
     if (!over || active.id === over.id || !canDrag) return;
 
     const activeId = String(active.id);
@@ -1498,9 +1518,13 @@ export default function TracksPage() {
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
             onDragOver={handleDragOver}
             onDragEnd={handleDragEnd}
-            onDragCancel={() => setOverGroupId(undefined)}
+            onDragCancel={() => {
+              setOverGroupId(undefined);
+              setActiveDrag(null);
+            }}
           >
             <SortableContext
               items={displayed.map((t) => t.id)}
@@ -1563,6 +1587,17 @@ export default function TracksPage() {
                 </ul>
               )}
             </SortableContext>
+            <DragOverlay dropAnimation={null}>
+              {activeDrag?.kind === "track" ? (
+                <div className="cursor-grabbing rounded-card border border-ice/40 bg-bg-1 px-3 py-2.5 shadow-raise">
+                  <p className="truncate text-sm text-text-hi">{activeDrag.track.title}</p>
+                </div>
+              ) : activeDrag?.kind === "group" ? (
+                <div className="cursor-grabbing rounded-card border border-ice/40 bg-bg-1 px-3 py-2.5 shadow-raise">
+                  <p className="font-display text-sm text-text-hi">{activeDrag.title}</p>
+                </div>
+              ) : null}
+            </DragOverlay>
           </DndContext>
         </section>
       )}
@@ -1917,7 +1952,11 @@ function SortableTrackRow({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: track.id, disabled: !canDrag });
+  } = useSortable({
+    id: track.id,
+    disabled: !canDrag,
+    animateLayoutChanges: () => false,
+  });
 
   const meta: string[] = [];
   if (track.bpm != null) meta.push(`${track.bpm} BPM`);
@@ -1929,16 +1968,17 @@ function SortableTrackRow({
     <li
       ref={setNodeRef}
       style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
+        transform: CSS.Translate.toString(transform),
+        transition: isDragging
+          ? undefined
+          : transition ?? "transform 180ms cubic-bezier(0.22, 1, 0.36, 1)",
       }}
-      className={cn(isDragging && "relative z-10")}
+      className={cn(isDragging && "relative z-10 opacity-40")}
     >
       <SpotlightCard
         tone={blocked ? "warn" : "ramp"}
         radius={compact ? 10 : 12}
         size={compact ? 160 : 240}
-        className={cn(isDragging && "opacity-90 shadow-raise")}
       >
         {compact ? (
           <div
