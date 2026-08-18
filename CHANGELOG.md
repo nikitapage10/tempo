@@ -4,6 +4,9 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-18
 
+- Added (v0.202.0): A Session can now be about a song. Choose one when creating the room or change it later, see its artwork and current bounce in the header and on Session cards, and see which song and version each past session worked on. Guests see the song title and artwork but never receive its audio.
+  Under the hood: run migration 116 in the Supabase SQL editor after migration 115.
+
 - Changed (v0.201.0): Sessions now use plain studio language throughout. Start session and End session control each live instance, LIVE replaces the old call label, cards count sessions, and Past sessions shows each instance with its date, duration, people, decisions, and recap.
 
 - Fixed (v0.200.1): Session rooms now stay inside the window while the stage, workspace, and chat scroll in their own areas. New chat messages sit directly above the composer, call controls stay at the bottom of the stage, and there is only one Join the call button. Guests get the same stable room layout.
