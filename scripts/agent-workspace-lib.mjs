@@ -120,8 +120,29 @@ export function isLeaseStale(lease, nowMs = Date.now()) {
   return nowMs - heartbeat > HEARTBEAT_STALE_MS;
 }
 
+/**
+ * A lease is alive while its heartbeat is fresh.
+ *
+ * The heartbeat is authoritative, NOT `lease.pid`. Every CLI invocation is a
+ * short-lived `node` process that exits the moment it prints its result, so
+ * `pid` is dead within milliseconds of a successful `acquire` — treating a dead
+ * pid as a free slot handed the same workspace to the next agent immediately
+ * and let two agents edit one checkout.
+ *
+ * A caller that really does own a long-lived process (an editor session, a
+ * shell wrapper) can record it as `ownerPid`; that one is checked, so a crashed
+ * owner frees its slot without waiting out the heartbeat window.
+ */
 export function isLeaseActive(lease, nowMs = Date.now()) {
-  return isProcessAlive(lease.pid) && !isLeaseStale(lease, nowMs);
+  if (isLeaseStale(lease, nowMs)) return false;
+  if (
+    Number.isInteger(lease.ownerPid) &&
+    lease.ownerPid > 0 &&
+    !isProcessAlive(lease.ownerPid)
+  ) {
+    return false;
+  }
+  return true;
 }
 
 function sleep(ms) {
@@ -207,9 +228,9 @@ class PoolStateLock {
   }
 }
 
-function runGit(mainRepoRoot, args) {
+function runGit(cwd, args) {
   const result = spawnSync("git", args, {
-    cwd: mainRepoRoot,
+    cwd,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
     shell: false,
@@ -285,30 +306,99 @@ export function ensureWorktrees(mainRepoRoot, worktreesRoot) {
   }
 }
 
+/**
+ * What is actually sitting in a slot folder right now.
+ *
+ * A free lease is not the same thing as an empty desk: an agent that crashed,
+ * or was killed mid-task, leaves uncommitted files and a feature branch behind.
+ * Handing that slot to the next agent silently mixes two people's work, so
+ * `acquire` skips a slot whose checkout is dirty.
+ */
+export function inspectSlotWorktree(rootPath) {
+  if (!fs.existsSync(rootPath) || !fs.existsSync(path.join(rootPath, ".git"))) {
+    return { exists: false, clean: true, dirtyCount: 0, branch: null, head: null };
+  }
+  const status = runGit(rootPath, ["status", "--porcelain"]);
+  if (!status.ok) {
+    return {
+      exists: true,
+      clean: false,
+      unreadable: true,
+      dirtyCount: 0,
+      branch: null,
+      head: null,
+    };
+  }
+  const dirty = status.stdout ? status.stdout.split(/\r?\n/).filter(Boolean) : [];
+  return {
+    exists: true,
+    clean: dirty.length === 0,
+    dirtyCount: dirty.length,
+    dirtySample: dirty.slice(0, 5).map((line) => line.slice(3)),
+    branch: runGit(rootPath, ["branch", "--show-current"]).stdout || null,
+    head: runGit(rootPath, ["rev-parse", "--short", "HEAD"]).stdout || null,
+  };
+}
+
+/**
+ * Put a clean slot on the newest main before the agent starts, so nobody
+ * begins work on a checkout that is a week behind. Never touches a dirty slot,
+ * and never fails an acquire: a stale worktree is worth a warning, not a block.
+ */
+export function syncSlotToMain(mainRepoRoot, rootPath) {
+  const state = inspectSlotWorktree(rootPath);
+  if (!state.exists) return { synced: false, reason: "missing" };
+  if (!state.clean) return { synced: false, reason: "dirty" };
+  runGit(mainRepoRoot, ["fetch", "--quiet", "origin"]);
+  for (const commitish of ["origin/main", "main"]) {
+    const attempt = runGit(rootPath, ["checkout", "--detach", commitish]);
+    if (attempt.ok) {
+      return {
+        synced: true,
+        at: runGit(rootPath, ["rev-parse", "--short", "HEAD"]).stdout || null,
+        from: commitish,
+      };
+    }
+  }
+  return { synced: false, reason: "checkout_failed" };
+}
+
 export function getWorkspaceStatus(mainRepoRoot, nowMs = Date.now(), worktreesRoot) {
   const state = readPoolState(mainRepoRoot, worktreesRoot);
   return WORKSPACE_SLOTS.map((slot) => {
     const rootPath = getSlotPath(mainRepoRoot, slot, worktreesRoot);
     const lease = state.slots[slot] ?? null;
     const active = lease ? isLeaseActive(lease, nowMs) : false;
+    const worktree = inspectSlotWorktree(rootPath);
     return {
       slot,
       rootPath,
       available: !active,
       lease: active ? lease : null,
       stale: Boolean(lease && !active),
+      worktree,
+      /** Free lease AND an empty desk — the only slots `acquire` hands out. */
+      ready: !active && worktree.clean,
     };
   });
 }
 
-function pickFreeSlot(state, nowMs = Date.now()) {
-  for (const slot of WORKSPACE_SLOTS) {
+/**
+ * Free slots in preference order: the requested slot first, then the rest in
+ * fixed order. Dirty slots come last so they are only ever chosen deliberately.
+ */
+function rankFreeSlots(state, mainRepoRoot, worktreesRoot, preferred, nowMs = Date.now()) {
+  const free = WORKSPACE_SLOTS.filter((slot) => {
     const lease = state.slots[slot];
-    if (!lease || !isLeaseActive(lease, nowMs)) {
-      return slot;
-    }
-  }
-  return null;
+    return !lease || !isLeaseActive(lease, nowMs);
+  });
+  const ordered = preferred && free.includes(preferred)
+    ? [preferred, ...free.filter((slot) => slot !== preferred)]
+    : free;
+  return ordered.map((slot) => ({
+    slot,
+    worktree: inspectSlotWorktree(getSlotPath(mainRepoRoot, slot, worktreesRoot)),
+  }));
 }
 
 export async function acquireWorkspace(options = {}) {
@@ -318,7 +408,16 @@ export async function acquireWorkspace(options = {}) {
   const maxWaitMs = options.maxWaitMs ?? DEFAULT_MAX_WAIT_MS;
   const ensure = options.ensure ?? true;
   const agentId = options.agentId ?? randomUUID();
+  const preferredSlot = options.slot ?? null;
+  const allowDirty = options.allowDirty ?? false;
+  const sync_ = options.sync ?? true;
   const started = Date.now();
+
+  if (preferredSlot && !WORKSPACE_SLOTS.includes(preferredSlot)) {
+    throw new Error(
+      `Invalid slot "${preferredSlot}". Expected one of: ${WORKSPACE_SLOTS.join(", ")}`,
+    );
+  }
 
   if (ensure) {
     ensureWorktrees(mainRepoRoot, worktreesRoot);
@@ -338,13 +437,24 @@ export async function acquireWorkspace(options = {}) {
 
     try {
       const pruned = pruneDeadLeases(readPoolState(mainRepoRoot, worktreesRoot));
-      const slot = pickFreeSlot(pruned);
-      if (slot) {
+      const candidates = rankFreeSlots(
+        pruned,
+        mainRepoRoot,
+        worktreesRoot,
+        preferredSlot,
+      );
+      const chosen =
+        candidates.find((entry) => entry.worktree.clean) ??
+        (allowDirty ? candidates[0] : undefined);
+
+      if (chosen) {
+        const slot = chosen.slot;
         const rootPath = getSlotPath(mainRepoRoot, slot, worktreesRoot);
         const now = new Date().toISOString();
         pruned.slots[slot] = {
           agentId,
           pid: process.pid,
+          ownerPid: options.ownerPid,
           tool: resolveAgentTool(options.tool),
           claimedAt: now,
           lastHeartbeatAt: now,
@@ -352,12 +462,35 @@ export async function acquireWorkspace(options = {}) {
           rootPath,
         };
         writePoolState(mainRepoRoot, pruned, worktreesRoot);
+        const sync =
+          sync_ && chosen.worktree.clean
+            ? syncSlotToMain(mainRepoRoot, rootPath)
+            : { synced: false, reason: chosen.worktree.clean ? "skipped" : "dirty" };
         return {
           ok: true,
           slot,
           rootPath,
           agentId,
           waitedMs: Date.now() - started,
+          worktree: chosen.worktree,
+          sync,
+        };
+      }
+
+      // Every free slot has someone's uncommitted work in it. Waiting will not
+      // clear that, so say which slot and what is in it instead of blocking.
+      if (candidates.length > 0) {
+        writePoolState(mainRepoRoot, pruned, worktreesRoot);
+        return {
+          ok: false,
+          reason: "free_slots_dirty",
+          waitedMs: Date.now() - started,
+          dirtySlots: candidates.map((entry) => ({
+            slot: entry.slot,
+            rootPath: getSlotPath(mainRepoRoot, entry.slot, worktreesRoot),
+            ...entry.worktree,
+          })),
+          slots: getWorkspaceStatus(mainRepoRoot, Date.now(), worktreesRoot),
         };
       }
       writePoolState(mainRepoRoot, pruned, worktreesRoot);

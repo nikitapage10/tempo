@@ -55,18 +55,38 @@ node scripts/agent-workspace.mjs ensure
 
 ### What counts as “busy”
 
-A slot is leased while:
+A slot is leased while its **heartbeat is younger than 15 minutes**. The
+heartbeat is the only thing that keeps a lease alive. Every CLI call is a
+short-lived `node` process, so the recorded `pid` is dead seconds after
+`acquire` returns — it is deliberately not used to free a slot. A caller that
+owns a genuinely long-lived process can pass `--owner-pid <pid>`; that one is
+checked, so a crash frees the slot without waiting out the window.
 
-- the holder process is still alive, **and**
-- the lease heartbeat is younger than **15 minutes**.
+Stale leases are cleared on the next `acquire`.
 
-Stale or dead leases are cleared on the next `acquire`.
-
-Refresh a long session:
+Refresh a long session — do this every few minutes, or a second agent takes
+your slot 15 minutes in:
 
 ```bash
 node scripts/agent-workspace.mjs heartbeat --agent-id <id>
 ```
+
+### A free lease is not the same as an empty desk
+
+`acquire` only hands out a slot whose checkout is **clean**. An agent that
+crashed mid-task leaves uncommitted files and a feature branch behind; dropping
+the next agent into that folder mixes two people's work. So:
+
+- Slots with uncommitted changes are skipped, and `status` reports them as
+  **needs cleanup** with the file count and branch.
+- If every free slot is dirty, `acquire` fails fast with the paths rather than
+  waiting (waiting cannot clean them) — commit, stash, or clear them, then
+  retry. `--allow-dirty` overrides, and shares the desk rather than deleting
+  anything.
+- A clean slot is checked out at the latest `origin/main` before you get it, so
+  nobody starts on a week-old tree. `--no-sync` skips that.
+- `--slot "Workspace 2"` asks for a particular slot; you still get a different
+  one if it is busy or dirty.
 
 Force-clear a stuck slot (human operator only):
 

@@ -1340,3 +1340,85 @@ html {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.72'/%3E%3C/svg%3E");
   mix-blend-mode: soft-light;
 }
+
+/* ---------------------------------------------------------------------------
+   Project workspace motion — surfaces arrive in reading order instead of
+   snapping in all at once, and schedule bars draw themselves left to right.
+   Stagger with `style={{ "--rise-delay": "80ms" }}`.
+   --------------------------------------------------------------------------- */
+@keyframes project-rise-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes project-bar-draw {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes project-dot-pop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.4);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.rise-in {
+  animation: project-rise-in 420ms cubic-bezier(0.22, 0.8, 0.28, 1) both;
+  animation-delay: var(--rise-delay, 0ms);
+}
+
+.bar-draw {
+  transform-origin: left center;
+  animation: project-bar-draw 560ms cubic-bezier(0.22, 0.8, 0.28, 1) both;
+  animation-delay: var(--rise-delay, 0ms);
+}
+
+.dot-pop {
+  animation: project-dot-pop 320ms cubic-bezier(0.22, 0.8, 0.28, 1) both;
+  animation-delay: var(--rise-delay, 0ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise-in,
+  .bar-draw,
+  .dot-pop {
+    animation: none;
+  }
+}
+
+@keyframes project-diamond-pop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(45deg) scale(0.4);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(45deg) scale(1);
+  }
+}
+
+.diamond-pop {
+  animation: project-diamond-pop 320ms cubic-bezier(0.22, 0.8, 0.28, 1) both;
+  animation-delay: var(--rise-delay, 0ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .diamond-pop {
+    animation: none;
+  }
+}

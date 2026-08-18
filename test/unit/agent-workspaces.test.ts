@@ -1,14 +1,17 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   HEARTBEAT_STALE_MS,
   acquireWorkspace,
   getWorkspaceStatus,
   heartbeatWorkspace,
+  inspectSlotWorktree,
   isLeaseActive,
   isLeaseStale,
+  isProcessAlive,
   readPoolState,
   releaseWorkspace,
   resolveAgentTool,
@@ -204,5 +207,102 @@ describe("agent workspace pool", () => {
     expect(resolveAgentTool()).toBe("claude");
     if (prev === undefined) delete process.env.CLAUDE_CODE;
     else process.env.CLAUDE_CODE = prev;
+  });
+
+  it("keeps a lease alive after the short-lived CLI process exits", () => {
+    // Every CLI call is a node process that exits immediately, so a dead pid
+    // must not free the slot — only a stale heartbeat does.
+    const deadPid = 2 ** 30;
+    expect(isProcessAlive(deadPid)).toBe(false);
+    expect(isLeaseActive(sampleLease({ pid: deadPid }))).toBe(true);
+  });
+
+  it("frees a slot when a recorded long-lived owner process is gone", () => {
+    expect(isLeaseActive(sampleLease({ ownerPid: 2 ** 30 }))).toBe(false);
+    expect(isLeaseActive(sampleLease({ ownerPid: process.pid }))).toBe(true);
+  });
+
+  it("honours a requested slot", async () => {
+    const { repo, worktreesRoot } = makeFakeRepo();
+    const acquired = await acquireWorkspace({
+      mainRepoRoot: repo,
+      worktreesRoot,
+      ensure: false,
+      sync: false,
+      slot: "Workspace 3",
+      agentId: "picky-agent",
+    });
+    expect(acquired.ok).toBe(true);
+    if (!acquired.ok) return;
+    expect(acquired.slot).toBe("Workspace 3");
+  });
+
+  it("refuses a free slot that still holds uncommitted work", async () => {
+    const { repo, worktreesRoot } = makeFakeRepo();
+    // Real git checkouts for the three slots, one of them left dirty.
+    for (const slot of ["Workspace 1", "Workspace 2", "Workspace 3"]) {
+      const dir = path.join(worktreesRoot, slot);
+      fs.mkdirSync(dir, { recursive: true });
+      spawnSync("git", ["init", "--quiet"], { cwd: dir });
+      fs.writeFileSync(path.join(dir, "README.md"), "seed\n");
+      spawnSync("git", ["add", "."], { cwd: dir });
+      spawnSync("git", ["-c", "user.email=a@b.c", "-c", "user.name=t", "commit", "-qm", "seed"], {
+        cwd: dir,
+      });
+    }
+    fs.writeFileSync(path.join(worktreesRoot, "Workspace 1", "leftover.txt"), "wip\n");
+
+    expect(inspectSlotWorktree(path.join(worktreesRoot, "Workspace 1")).clean).toBe(false);
+    expect(inspectSlotWorktree(path.join(worktreesRoot, "Workspace 2")).clean).toBe(true);
+
+    const acquired = await acquireWorkspace({
+      mainRepoRoot: repo,
+      worktreesRoot,
+      ensure: false,
+      sync: false,
+      slot: "Workspace 1",
+      agentId: "clean-desk-agent",
+    });
+    expect(acquired.ok).toBe(true);
+    if (!acquired.ok) return;
+    // Asked for the dirty one, got a clean one instead.
+    expect(acquired.slot).toBe("Workspace 2");
+  });
+
+  it("reports every free slot being dirty instead of handing one over", async () => {
+    const { repo, worktreesRoot } = makeFakeRepo();
+    for (const slot of ["Workspace 1", "Workspace 2", "Workspace 3"]) {
+      const dir = path.join(worktreesRoot, slot);
+      fs.mkdirSync(dir, { recursive: true });
+      spawnSync("git", ["init", "--quiet"], { cwd: dir });
+      fs.writeFileSync(path.join(dir, "README.md"), "seed\n");
+      spawnSync("git", ["add", "."], { cwd: dir });
+      spawnSync("git", ["-c", "user.email=a@b.c", "-c", "user.name=t", "commit", "-qm", "seed"], {
+        cwd: dir,
+      });
+      fs.writeFileSync(path.join(dir, "leftover.txt"), "wip\n");
+    }
+
+    const blocked = await acquireWorkspace({
+      mainRepoRoot: repo,
+      worktreesRoot,
+      ensure: false,
+      sync: false,
+      agentId: "blocked-agent",
+    });
+    expect(blocked.ok).toBe(false);
+    if (blocked.ok) return;
+    expect(blocked.reason).toBe("free_slots_dirty");
+    expect(blocked.dirtySlots).toHaveLength(3);
+
+    const forced = await acquireWorkspace({
+      mainRepoRoot: repo,
+      worktreesRoot,
+      ensure: false,
+      sync: false,
+      allowDirty: true,
+      agentId: "forcing-agent",
+    });
+    expect(forced.ok).toBe(true);
   });
 });

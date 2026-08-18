@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Chip } from "@/components/ui/chip";
+import { ProgressRing } from "@/components/projects/progress-ring";
 import { FlareLine } from "@/components/flare-line";
 import { PROJECT_TYPES } from "@/lib/constants";
 import { localDateString } from "@/lib/format";
@@ -29,6 +30,7 @@ export function ProjectHero({
   tasksOpen,
   tasksDone,
   progressPct,
+  nextUp,
   onStatusChange,
   onEditDetails,
 }: {
@@ -37,6 +39,7 @@ export function ProjectHero({
   tasksOpen: number;
   tasksDone: number;
   progressPct: number | null;
+  nextUp?: { label: string; date: string } | null;
   onStatusChange: (status: ProjectStatus) => void;
   onEditDetails: () => void;
 }) {
@@ -77,20 +80,36 @@ export function ProjectHero({
           </div>
         </div>
 
-        <div className="mt-5 flex flex-wrap gap-x-8 gap-y-3">
-          <Stat label="Tracks" value={trackCount} />
-          <Stat label="Tasks open" value={tasksOpen} />
-          <Stat label="Tasks done" value={tasksDone} />
+        <div className="mt-6 flex flex-wrap items-end justify-between gap-6">
+          <div className="min-w-[14rem] flex-1">
+            <div className="flex flex-wrap gap-x-8 gap-y-3">
+              <Stat label="Tracks" value={trackCount} />
+              <Stat label="Tasks open" value={tasksOpen} />
+              <Stat label="Tasks done" value={tasksDone} />
+            </div>
+            <div className="mt-4 max-w-md">
+              {progressPct != null ? (
+                <FlareLine variant="partial" pct={progressPct} />
+              ) : (
+                <FlareLine className="opacity-60" />
+              )}
+              {nextUp ? (
+                <p className="mt-2 text-xs text-text-lo">
+                  Next up <span className="text-text-hi">{nextUp.label}</span>{" "}
+                  <span className="font-data tabular-nums">
+                    {new Date(`${nextUp.date}T12:00:00`).toLocaleDateString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </span>
+                </p>
+              ) : null}
+            </div>
+          </div>
+
+          {progressPct != null ? <ProgressRing pct={progressPct} className="hidden sm:block" /> : null}
         </div>
 
-        {progressPct != null ? (
-          <div className="mt-4 max-w-md">
-            <FlareLine variant="partial" pct={progressPct} />
-            <p className="mt-1 text-xs text-text-lo">{progressPct}% complete</p>
-          </div>
-        ) : (
-          <FlareLine className="mt-4 max-w-md opacity-60" />
-        )}
       </div>
     </div>
   );

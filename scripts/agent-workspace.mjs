@@ -47,6 +47,18 @@ function parseArgs(argv) {
       flags.slot = argv[++i];
       continue;
     }
+    if (arg === "--allow-dirty") {
+      flags.allowDirty = true;
+      continue;
+    }
+    if (arg === "--no-sync") {
+      flags.sync = false;
+      continue;
+    }
+    if (arg === "--owner-pid") {
+      flags.ownerPid = Number(argv[++i]);
+      continue;
+    }
     if (arg === "--max-wait-ms") {
       flags.maxWaitMs = Number(argv[++i]);
       continue;
@@ -97,7 +109,15 @@ async function main() {
       return;
     }
     for (const row of rows) {
-      if (row.available) {
+      if (row.available && !row.worktree.clean) {
+        const where = row.worktree.branch ? ` on ${row.worktree.branch}` : "";
+        printHuman([
+          `${row.slot}: needs cleanup — ${row.worktree.dirtyCount} uncommitted file(s)${where} → ${row.rootPath}`,
+          row.worktree.dirtySample?.length
+            ? `    ${row.worktree.dirtySample.join(", ")}${row.worktree.dirtyCount > row.worktree.dirtySample.length ? ", …" : ""}`
+            : "",
+        ]);
+      } else if (row.available) {
         printHuman([`${row.slot}: available → ${row.rootPath}`]);
       } else if (row.lease) {
         const tool = row.lease.tool ? `, ${row.lease.tool}` : "";
@@ -112,8 +132,13 @@ async function main() {
   }
 
   if (command === "acquire") {
+    if (flags.slot) assertSlot(flags.slot);
     const result = await acquireWorkspace({
       mainRepoRoot,
+      slot: flags.slot,
+      allowDirty: flags.allowDirty ?? false,
+      sync: flags.sync ?? true,
+      ownerPid: Number.isFinite(flags.ownerPid) ? flags.ownerPid : undefined,
       wait: flags.wait ?? false,
       maxWaitMs:
         flags.maxWaitMs ??
@@ -137,12 +162,35 @@ async function main() {
         `Acquired ${result.slot}.`,
         `Root: ${result.rootPath}`,
         `Agent id: ${result.agentId}`,
+        result.sync?.synced
+          ? `Synced to ${result.sync.from} (${result.sync.at}).`
+          : `Not synced to main (${result.sync?.reason ?? "unknown"}) — rebase before you push.`,
         result.waitedMs > 0 ? `Waited ${Math.round(result.waitedMs / 1000)}s.` : "",
         "",
         "Open that folder in your editor before editing.",
         `Release when done: node scripts/agent-workspace.mjs release --agent-id ${result.agentId}`,
         "Export TEMPO_AGENT_ID=<id> in this shell so release/heartbeat find your lease.",
+        "Long session? Refresh the lease every few minutes:",
+        `  node scripts/agent-workspace.mjs heartbeat --agent-id ${result.agentId}`,
       ]);
+      return;
+    }
+
+    if (result.reason === "free_slots_dirty") {
+      printHuman([
+        "Could not acquire a workspace — every free slot still holds uncommitted work.",
+        "",
+        ...result.dirtySlots.flatMap((row) => [
+          `${row.slot}: ${row.dirtyCount} uncommitted file(s)${row.branch ? ` on ${row.branch}` : ""}`,
+          `  ${row.rootPath}`,
+          row.dirtySample?.length ? `  ${row.dirtySample.join(", ")}` : "",
+        ]),
+        "",
+        "Someone's work is sitting there. Commit it, stash it, or clear it, then retry.",
+        "To take the slot anyway (this does NOT delete their files, you just share the desk):",
+        "  node scripts/agent-workspace.mjs acquire --allow-dirty",
+      ]);
+      process.exitCode = 1;
       return;
     }
 
@@ -198,7 +246,8 @@ async function main() {
   }
 
   throw new Error(
-    `Unknown command "${command}". Use acquire | release | heartbeat | status | ensure`,
+    `Unknown command "${command}". Use acquire | release | heartbeat | status | ensure\n` +
+      "acquire flags: --wait --json --slot \"Workspace 2\" --allow-dirty --no-sync --owner-pid <pid> --task <text> --tool <name>",
   );
 }
 
