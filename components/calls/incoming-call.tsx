@@ -20,6 +20,10 @@ export function IncomingCall() {
   const router = useRouter();
   const call = useCall();
   const [incoming, setIncoming] = React.useState<Incoming | null>(null);
+  const markMissed = React.useCallback((call: Incoming) => {
+    const scope = call.entity_type === "support_report" ? "support" : "conversation";
+    void fetch(`/api/calls/${scope}/${call.entity_id}/missed`, { method: "POST" });
+  }, []);
 
   React.useEffect(() => {
     if (!user?.id) return;
@@ -43,9 +47,12 @@ export function IncomingCall() {
 
   React.useEffect(() => {
     if (!incoming) return;
-    const timer = window.setTimeout(() => setIncoming(null), 45_000);
+    const timer = window.setTimeout(() => {
+      markMissed(incoming);
+      setIncoming(null);
+    }, 45_000);
     return () => window.clearTimeout(timer);
-  }, [incoming]);
+  }, [incoming, markMissed]);
 
   if (!incoming) return null;
   const support = incoming.entity_type === "support_report";
@@ -56,7 +63,7 @@ export function IncomingCall() {
       <p className="mt-2 text-sm font-medium text-text-hi">{incoming.title}</p>
       {incoming.body ? <p className="mt-1 text-xs text-text-lo">{incoming.body}</p> : null}
       <div className="mt-4 flex justify-end gap-2">
-        <button type="button" className="inline-flex items-center gap-1 rounded-chip border border-line px-3 py-2 text-xs text-text-lo" onClick={() => setIncoming(null)}>
+        <button type="button" className="inline-flex items-center gap-1 rounded-chip border border-line px-3 py-2 text-xs text-text-lo" onClick={() => { markMissed(incoming); setIncoming(null); }}>
           <PhoneOff className="size-3.5" />
           Decline
         </button>
