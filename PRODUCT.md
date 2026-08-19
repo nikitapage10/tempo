@@ -303,6 +303,8 @@ Starting a live instance rings the other members through the notification bell, 
 
 A Session with a song also carries a shared listening deck. Play, pause, seek, and bounce changes follow everyone in the room, with drift corrected quietly. A note dropped at the playhead becomes a normal timestamped track comment. Guests can follow the shared playhead but never receive a signed audio link or play the bounce.
 
+During a live Session, any member can turn on **Take notes**. It is always off by default, and a visible indicator plus a chat line tells everyone, including guests, when it is active. Each member's own microphone is transcribed on that person's machine without recording the call. When the Session ends, TEMPO proposes an editable recap, decisions, and tasks using only real member names. You choose each line to keep; ending without the recap writes none of the proposals.
+
 Once you join a Session call, it stays connected while you move around TEMPO. Away from the room, a small dock keeps the room name, microphone, leave control, and a route back to the stage in reach.
 
 Calls also start from direct messages, artist groups, and team rooms. Everyone else gets a 45-second Answer or Decline card, and the thread records that the call started. Artists do not get a call button for TEMPO Support. Support staff can start a call from the private support desk, and the artist can answer from Messages.

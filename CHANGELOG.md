@@ -4,6 +4,9 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-18
 
+- Added (v0.207.0): Turn on Take notes during a live Session and TEMPO privately transcribes each member's own microphone. Everyone, including guests, can see when it is active. Ending the Session offers an editable recap with decisions and assigned tasks, and nothing is saved until you choose what to keep.
+- Under the hood: run migration 118 in Supabase before using Session note taking.
+
 - Added (v0.206.0): Direct messages, artist groups, and team rooms can now become voice or video calls. The other people get a 45-second Answer or Decline card, and the call follows everyone through TEMPO in the same dock as Session calls. Artists cannot call TEMPO Support, but support staff can call an artist from an open support thread.
 
 - Added (v0.205.0): A Session call now stays connected when you leave the room page. A compact dock follows you around TEMPO with the room name, microphone control, leave button, and a link back to the stage.
