@@ -1,5 +1,6 @@
 export type CallPacket =
   | { kind: "chat" }
+  | { kind: "notes"; active: boolean; byIdentity: string }
   | { kind: "transport"; versionId: string; positionSec: number; playing: boolean; atMs: number }
   | { kind: "deck"; versionId: string | null; byIdentity: string }
   | { kind: "marker"; commentId: string; versionId: string; timestampSec: number };
@@ -16,6 +17,9 @@ export function decodePacket(payload: Uint8Array): CallPacket | null {
   try {
     const value = JSON.parse(decoder.decode(payload)) as Record<string, unknown>;
     if (value.kind === "chat") return { kind: "chat" };
+    if (value.kind === "notes" && typeof value.active === "boolean" && typeof value.byIdentity === "string") {
+      return value as CallPacket;
+    }
     if (
       value.kind === "transport" &&
       typeof value.versionId === "string" &&

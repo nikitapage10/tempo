@@ -143,6 +143,7 @@ export function GuestSessionView({ token }: { token: string }) {
           <Wordmark size={18} />
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <OnAirPlate live={live} />
+            {state.notesActive ? <span className="rounded-chip border border-amber/30 bg-amber/10 px-2 py-1 text-[11px] text-amber">Taking notes</span> : null}
             <h1 className="truncate font-display text-lg font-semibold text-text-hi">{state.title}</h1>
           </div>
           {state.purpose ? <p className="mt-1 text-sm text-text-lo">{state.purpose}</p> : null}

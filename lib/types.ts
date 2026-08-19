@@ -714,6 +714,7 @@ export type SessionRoom = {
   open_meet_id: string | null;
   /** When the open instance started, for the running clock in the room. */
   open_meet_started_at: string | null;
+  open_meet_notes_enabled: boolean;
 };
 
 export type SessionAgendaItem = {
@@ -749,6 +750,7 @@ export type SessionMeet = {
   summary: string;
   track_id: string | null;
   version_id: string | null;
+  notes_enabled: boolean;
 };
 
 export type SessionAttendance = {

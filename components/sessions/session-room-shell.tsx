@@ -15,9 +15,6 @@ import {
   Video,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { SignedImage } from "@/components/ui/signed-image";
 import { AvSettingsDialog } from "@/components/sessions/av-settings-dialog";
 import { CallControls } from "@/components/sessions/call-controls";
@@ -29,6 +26,8 @@ import { SessionDecisions } from "@/components/sessions/session-decisions";
 import { SessionDeck } from "@/components/sessions/session-deck";
 import { SessionHistory } from "@/components/sessions/session-history";
 import { SessionNotes } from "@/components/sessions/session-notes";
+import { SessionNoteTaker } from "@/components/sessions/session-note-taker";
+import { SessionRecapDialog } from "@/components/sessions/session-recap-dialog";
 import { OnAirPlate, SessionAvatarStack } from "@/components/sessions/session-people";
 import { SessionPins } from "@/components/sessions/session-pins";
 import { SessionRoster } from "@/components/sessions/session-roster";
@@ -166,7 +165,7 @@ export function SessionRoomShell({ roomId }: { roomId: string }) {
   const [shareOpen, setShareOpen] = React.useState(false);
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [endOpen, setEndOpen] = React.useState(false);
-  const [instanceSummary, setInstanceSummary] = React.useState("");
+  const [notesActive, setNotesActive] = React.useState(false);
   const [relay, setRelay] = React.useState(false);
   const [warmupOpen, setWarmupOpen] = React.useState(false);
   const pingAttendance = mutations.pingAttendance.mutateAsync;
@@ -194,6 +193,14 @@ export function SessionRoomShell({ roomId }: { roomId: string }) {
   }, [me?.display_name, pingAttendance, room?.open_meet_id, user?.id]);
 
   React.useEffect(() => {
+    setNotesActive(Boolean(room?.open_meet_notes_enabled));
+  }, [room?.open_meet_id, room?.open_meet_notes_enabled]);
+
+  React.useEffect(() => {
+    if (call.callPacket?.packet.kind === "notes") setNotesActive(call.callPacket.packet.active);
+  }, [call.callPacket]);
+
+  React.useEffect(() => {
     if (!relay) return;
     try {
       window.sessionStorage.setItem("tempo:session-call-relay", "1");
@@ -209,6 +216,8 @@ export function SessionRoomShell({ roomId }: { roomId: string }) {
   const assignees = room.members.map((member) => ({ id: member.user_id, name: member.display_name }));
   const live = Boolean(room.open_meet_id);
   const currentVersion = focusedVersions.data?.find((version) => version.is_current) ?? null;
+  const currentRoomId = room.id;
+  const currentInstanceId = room.open_meet_id;
 
   async function requestJoin() {
     if (user?.id && desktop && !hasSeenCallWarmup(user.id)) {
@@ -220,6 +229,28 @@ export function SessionRoomShell({ roomId }: { roomId: string }) {
       await devices.applyAll();
     } catch (err) {
       toast(err instanceof Error ? err.message : "Couldn’t join the call.");
+    }
+  }
+
+  async function changeNoteTaking(enabled: boolean) {
+    if (!currentInstanceId) return;
+    try {
+      const response = await fetch(`/api/sessions/${currentRoomId}/notes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ instanceId: currentInstanceId, enabled }),
+      });
+      const body = (await response.json().catch(() => ({}))) as { error?: string };
+      if (!response.ok) throw new Error(body.error || "Couldn’t change note taking.");
+      setNotesActive(enabled);
+      void call.publishCallPacket({
+        kind: "notes",
+        active: enabled,
+        byIdentity: call.room.localParticipant.identity,
+      });
+      call.publishChat();
+    } catch (error) {
+      toast(error instanceof Error ? error.message : "Couldn’t change note taking.");
     }
   }
 
@@ -335,6 +366,19 @@ export function SessionRoomShell({ roomId }: { roomId: string }) {
             ) : null}
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            {live ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                aria-pressed={notesActive}
+                onClick={() => void changeNoteTaking(!notesActive)}
+                className={notesActive ? "text-amber" : undefined}
+              >
+                <NotebookPen className="size-4" />
+                {notesActive ? "Taking notes" : "Take notes"}
+              </Button>
+            ) : null}
             {isHost ? (
               <Button type="button" size="sm" variant="secondary" onClick={() => setShareOpen(true)}>
                 Share link
@@ -417,6 +461,19 @@ export function SessionRoomShell({ roomId }: { roomId: string }) {
                 disabled={Boolean(call.error)}
                 className="mt-auto shrink-0"
               />
+              {room.open_meet_id ? (
+                <SessionNoteTaker
+                  roomId={room.id}
+                  instanceId={room.open_meet_id}
+                  speakerLabel={me?.display_name || "Member"}
+                  active={notesActive}
+                  canListen={call.onCall && call.micEnabled}
+                  onQuota={() => {
+                    toast("Daily note taking time is used up. The session can keep going without it.");
+                    void changeNoteTaking(false);
+                  }}
+                />
+              ) : null}
               {call.error ? <p className="text-center text-xs text-warn">{call.error}</p> : null}
               {desktop && !call.onCall ? (
                 <p className="flex items-center justify-center gap-1 text-center text-[11px] text-text-lo">
@@ -455,46 +512,35 @@ export function SessionRoomShell({ roomId }: { roomId: string }) {
         liveCamera={call.cameraEnabled}
       />
 
-      <Dialog open={endOpen} onOpenChange={setEndOpen}>
-        <DialogContent
-          title="End the session"
-          description="The room stays. Only the live call closes."
-          onClose={() => setEndOpen(false)}
-        >
-          <form
-            className="space-y-4"
-            onSubmit={(event) => {
-              event.preventDefault();
-              if (!room.open_meet_id) return;
-              void mutations.endInstance
-                .mutateAsync({ meetId: room.open_meet_id, summary: instanceSummary })
-                .then(() => {
-                  setInstanceSummary("");
-                  setEndOpen(false);
-                })
-                .catch((err) => toast(err instanceof Error ? err.message : "Couldn’t end the session."));
-            }}
-          >
-            <div>
-              <Label htmlFor="session-summary">What came out of it? (optional)</Label>
-              <Input
-                id="session-summary"
-                value={instanceSummary}
-                onChange={(event) => setInstanceSummary(event.target.value)}
-                placeholder="Locked the second verse, Dave takes the bridge."
-              />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="secondary" onClick={() => setEndOpen(false)}>
-                Keep it going
-              </Button>
-              <Button type="submit" disabled={mutations.endInstance.isPending}>
-                {mutations.endInstance.isPending ? "Ending…" : "End session"}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <SessionRecapDialog
+        open={endOpen}
+        onOpenChange={setEndOpen}
+        roomId={room.id}
+        instanceId={room.open_meet_id}
+        notesActive={notesActive}
+        pending={mutations.endInstance.isPending}
+        onApply={async (recap) => {
+          if (!room.open_meet_id) return;
+          try {
+            for (const decision of recap.decisions) {
+              if (decision.trim()) await mutations.logDecision.mutateAsync(decision.trim());
+            }
+            for (const task of recap.tasks) {
+              const assignee = room.members.find((member) => member.display_name === task.assigneeName)?.user_id ?? null;
+              await mutations.addTask.mutateAsync({
+                title: task.title.trim(),
+                assignee,
+                dueDate: task.dueDate,
+                category: "other",
+              });
+            }
+            await mutations.endInstance.mutateAsync({ meetId: room.open_meet_id, summary: recap.summary });
+            setEndOpen(false);
+          } catch (error) {
+            toast(error instanceof Error ? error.message : "Couldn’t finish the recap.");
+          }
+        }}
+      />
     </div>
   );
 }

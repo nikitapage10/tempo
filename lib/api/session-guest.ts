@@ -18,6 +18,7 @@ export type GuestSessionState = {
   /** True while an instance is open, so a guest can see the room went live. */
   live: boolean;
   hangStartedAt: string | null;
+  notesActive: boolean;
   allowChat: boolean;
   allowMedia: boolean;
   guestName: string;

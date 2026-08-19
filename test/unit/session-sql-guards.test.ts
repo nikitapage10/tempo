@@ -24,4 +24,13 @@ describe("Session SQL guards", () => {
     expect(sql).toContain("where track_id = v_track and is_current = true");
     expect(sql).toContain("values (p_room, auth.uid(), v_track, v_version)");
   });
+
+  it("keeps transcripts private to active Session members", () => {
+    const sql = read("migrations/118_session_transcripts.sql");
+    expect(sql).toContain("alter table session_transcript_lines enable row level security");
+    expect(sql).toContain("member.user_id = auth.uid()");
+    expect(sql).toContain("speaker_user_id = auth.uid()");
+    expect(sql).toContain("meet.notes_enabled = true");
+    expect(sql).toContain("add column if not exists audio_seconds");
+  });
 });

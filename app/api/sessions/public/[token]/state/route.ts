@@ -38,7 +38,7 @@ export async function GET(_req: NextRequest, { params }: { params: { token: stri
     admin.from("conversations").select("id").eq("session_room_id", roomId).maybeSingle(),
     admin
       .from("session_meets")
-      .select("started_at")
+      .select("started_at, notes_enabled")
       .eq("session_room_id", roomId)
       .is("ended_at", null)
       .maybeSingle(),
@@ -113,6 +113,7 @@ export async function GET(_req: NextRequest, { params }: { params: { token: stri
       messages,
       live: Boolean(openMeet),
       hangStartedAt: (openMeet?.started_at as string | undefined) ?? null,
+      notesActive: Boolean(openMeet?.notes_enabled),
       allowChat: ctx.link.allow_guest_chat,
       allowMedia: ctx.link.allow_guest_media,
       guestName: ctx.guest.display_name,

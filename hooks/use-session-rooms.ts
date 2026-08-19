@@ -55,6 +55,7 @@ export function useSessionRoom(id: string | null) {
     queryKey: roomKey(id),
     queryFn: () => fetchSessionRoom(id!),
     enabled: !!id,
+    refetchInterval: 4_000,
   });
 }
 
