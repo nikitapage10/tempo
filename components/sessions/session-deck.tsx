@@ -16,6 +16,7 @@ import {
 import { formatDuration } from "@/lib/format";
 import { playbackCoordinator } from "@/lib/playback-coordinator";
 import { getSignedUrl, peekSignedUrl } from "@/lib/storage";
+import { cn } from "@/lib/utils";
 
 type RemotePacket = {
   packet: Exclude<CallPacket, { kind: "chat" }>;
@@ -30,6 +31,7 @@ export function SessionDeck({
   callPacket,
   publish,
   guest = false,
+  embedded = false,
 }: {
   roomId: string;
   trackId: string | null;
@@ -37,6 +39,7 @@ export function SessionDeck({
   callPacket: RemotePacket;
   publish?: (packet: Exclude<CallPacket, { kind: "chat" }>) => Promise<unknown> | void;
   guest?: boolean;
+  embedded?: boolean;
 }) {
   const palette = useActiveArtistPalette();
   const queryClient = useQueryClient();
@@ -47,6 +50,7 @@ export function SessionDeck({
   const comments = useComments(guest ? null : trackId, selected?.id ?? "all");
   const commentMutations = useCommentMutations(trackId, selected?.id ?? "all");
   const containerRef = React.useRef<HTMLDivElement>(null);
+  const noteInputRef = React.useRef<HTMLInputElement>(null);
   const wsRef = React.useRef<WaveSurfer | null>(null);
   const pendingRemote = React.useRef<RemotePacket>(null);
   const suppressPublish = React.useRef(false);
@@ -203,7 +207,7 @@ export function SessionDeck({
   }, [guest, playing, publishTransport]);
 
   if (!trackId) {
-    return <div className="well flex h-24 items-center justify-center text-sm text-text-lo">Choose a song to put a bounce on the deck.</div>;
+    return <div className={cn(embedded ? "flex h-24 items-center justify-center bg-bg-1/70" : "well flex h-24 items-center justify-center", "text-sm text-text-lo")}>Choose a song to put a bounce on the deck.</div>;
   }
 
   if (guest) {
@@ -216,12 +220,12 @@ export function SessionDeck({
   }
 
   if (!selected) {
-    return <div className="well flex h-24 items-center justify-center text-sm text-text-lo">Nothing to play yet. Upload a bounce on the track.</div>;
+    return <div className={cn(embedded ? "flex h-24 items-center justify-center bg-bg-1/70" : "well flex h-24 items-center justify-center", "text-sm text-text-lo")}>Nothing to play yet. Upload a bounce on the track.</div>;
   }
 
   const markers = (comments.data ?? []).filter((comment) => comment.timestamp_sec != null);
   return (
-    <div className="well relative overflow-hidden p-3">
+    <div className={cn("relative overflow-hidden p-3", embedded ? "border-t border-line/70 bg-bg-1/80" : "well")}>
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <select
           aria-label="Bounce on the deck"
@@ -239,7 +243,31 @@ export function SessionDeck({
         <span className="font-data text-xs text-text-lo">{formatDuration(position)} / {formatDuration(duration)}</span>
       </div>
       <div className="relative">
-        <div ref={containerRef} role="slider" aria-label="Shared bounce playhead" aria-valuemin={0} aria-valuemax={duration} aria-valuenow={position} />
+        <div
+          ref={containerRef}
+          role="slider"
+          tabIndex={0}
+          aria-label="Shared bounce playhead"
+          aria-valuemin={0}
+          aria-valuemax={duration}
+          aria-valuenow={position}
+          aria-valuetext={`${formatDuration(position)} of ${formatDuration(duration)}`}
+          onKeyDown={(event) => {
+            const ws = wsRef.current;
+            if (!ws) return;
+            if (event.key === " ") {
+              event.preventDefault();
+              void ws.playPause();
+            } else if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+              event.preventDefault();
+              ws.setTime(Math.max(0, Math.min(duration, ws.getCurrentTime() + (event.key === "ArrowRight" ? 5 : -5))));
+              publishTransport(ws);
+            } else if (event.key.toLowerCase() === "m") {
+              event.preventDefault();
+              noteInputRef.current?.focus();
+            }
+          }}
+        />
         {duration > 0 ? markers.map((marker) => (
           <button
             key={marker.id}
@@ -257,6 +285,7 @@ export function SessionDeck({
           {playing ? "Pause" : "Play"}
         </Button>
         <input
+          ref={noteInputRef}
           value={note}
           onChange={(event) => setNote(event.target.value)}
           placeholder="Drop a note here"

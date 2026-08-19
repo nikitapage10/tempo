@@ -13,11 +13,15 @@ export function SessionAvatarStack({
   size = 26,
   max = 4,
   className,
+  inRoom = [],
+  onCall = [],
 }: {
   members: SessionRoomMember[];
   size?: number;
   max?: number;
   className?: string;
+  inRoom?: string[];
+  onCall?: string[];
 }) {
   const shown = members.slice(0, max);
   const extra = members.length - shown.length;
@@ -27,7 +31,14 @@ export function SessionAvatarStack({
       {shown.map((member, index) => (
         <span
           key={member.user_id}
-          className="inline-flex overflow-hidden rounded-full ring-1 ring-bg-0/80"
+          className={cn(
+            "inline-flex overflow-hidden rounded-full ring-2 ring-bg-0/80",
+            onCall.includes(member.user_id)
+              ? "ring-amber"
+              : inRoom.includes(member.user_id)
+                ? "ring-ice"
+                : "ring-line",
+          )}
           style={{ width: size, height: size, marginLeft: index === 0 ? 0 : -Math.round(size * 0.3) }}
           title={member.display_name}
         >

@@ -63,7 +63,7 @@ export function SessionTasks({
         </Button>
       </form>
       {tasks.length === 0 ? (
-        <p className="text-sm text-text-lo">No tasks in this Session yet. They also show up on Tasks and Today.</p>
+        <p className="text-sm text-text-lo">Nothing to carry out yet. Add the next move when it becomes clear.</p>
       ) : (
         <ul className="space-y-2">
           {tasks.map((task) => (

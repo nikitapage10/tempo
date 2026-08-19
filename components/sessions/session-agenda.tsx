@@ -91,7 +91,7 @@ export function SessionAgenda({
         </Button>
       </form>
       {items.length === 0 ? (
-        <p className="text-sm text-text-lo">Nothing on the agenda yet. Add what you want to cover.</p>
+        <p className="text-sm text-text-lo">Nothing to cover yet. Add what you want to get through.</p>
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={items.map((item) => item.id)} strategy={verticalListSortingStrategy}>

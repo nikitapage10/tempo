@@ -64,7 +64,7 @@ export function SessionPins({
         </form>
       ) : null}
       {pins.length === 0 ? (
-        <p className="text-sm text-text-lo">Nothing pinned yet.</p>
+        <p className="text-sm text-text-lo">Nothing on the rack yet. Pin the references you keep coming back to.</p>
       ) : (
         <ul className="grid gap-2 sm:grid-cols-2">
           {pins.map((pin) => {

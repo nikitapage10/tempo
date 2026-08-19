@@ -60,7 +60,7 @@ export function SessionDecisions({
         <p className="text-sm text-text-lo">Start the session to pin a decision to this instance.</p>
       )}
       {decisions.length === 0 ? (
-        <p className="text-sm text-text-lo">No decisions yet.</p>
+        <p className="text-sm text-text-lo">Nothing decided yet. Pin a message when you settle something.</p>
       ) : (
         <ul className="space-y-2">
           {decisions.map((decision) => (
