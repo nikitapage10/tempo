@@ -4,6 +4,9 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-18
 
+- Changed (v0.208.0): A Session room now reads as a music desk. The stage and listening deck share one continuous surface, call controls sit over the waveform, the compact roster uses ice and amber status rings, and agenda, notes, tasks, pins, decisions, history, and mobile chat live in one rack. Mobile keeps the stage below 40% of the screen, and keyboard and reduced-motion behavior have been tightened throughout.
+- Fixed (v0.208.0): Declined or unanswered message and support calls now leave a Missed call line in the thread.
+
 - Added (v0.207.0): Turn on Take notes during a live Session and TEMPO privately transcribes each member's own microphone. Everyone, including guests, can see when it is active. Ending the Session offers an editable recap with decisions and assigned tasks, and nothing is saved until you choose what to keep.
 - Under the hood: run migration 118 in Supabase before using Session note taking.
 
