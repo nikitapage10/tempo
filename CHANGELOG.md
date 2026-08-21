@@ -2,6 +2,10 @@
 
 Plain-English history of what changed in TEMPO, newest first.
 
+## 2026-08-21
+
+- Fixed (v0.208.1): Busy month-calendar days no longer clip a long list of events. Each day shows at most two items, then a “+N more” line for the rest, and clicking anywhere on the day opens that day’s full schedule on the right.
+
 ## 2026-08-18
 
 - Changed (v0.208.0): A Session room now reads as a music desk. The stage and listening deck share one continuous surface, call controls sit over the waveform, the compact roster uses ice and amber status rings, and agenda, notes, tasks, pins, decisions, history, and mobile chat live in one rack. Mobile keeps the stage below 40% of the screen, and keyboard and reduced-motion behavior have been tightened throughout.

@@ -11,8 +11,10 @@ describe("calendar month day cells", () => {
   it("clips day-cell items instead of nesting a scroll frame", () => {
     expect(month).toContain("overflow-hidden");
     expect(month).not.toContain("overflow-y-auto");
-    expect(month).toContain("visible = dateItems.slice(0, 3)");
+    expect(month).toContain("visible = dateItems.slice(0, 2)");
     expect(month).toContain("+{dateItems.length - visible.length} more");
+    expect(month).toContain("onClick={() => onSelectDate(date)}");
+    expect(month).toContain("cursor-pointer");
   });
 
   it("does not clip the cursor-edge glow on the event list itself", () => {

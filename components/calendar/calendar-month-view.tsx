@@ -80,12 +80,21 @@ export function CalendarMonthView({
           const outside = day.getMonth() !== month;
           const selected = date === selectedDate;
           const isToday = date === today;
-          const visible = dateItems.slice(0, 3);
+          const visible = dateItems.slice(0, 2);
           return (
             <div
               key={date}
               role="gridcell"
               aria-selected={selected}
+              aria-label={formatDayHeading(date)}
+              tabIndex={0}
+              onClick={() => onSelectDate(date)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onSelectDate(date);
+                }
+              }}
               onDragOver={(event) => {
                 if (event.dataTransfer.types.includes("text/tempo-calendar") || event.dataTransfer.types.includes("text/tempo-unscheduled")) event.preventDefault();
               }}
@@ -98,7 +107,7 @@ export function CalendarMonthView({
                 if (pending) onSchedule(pending, date);
               }}
               className={cn(
-                "group relative min-h-0 min-w-0 overflow-hidden border-line/70 p-1 sm:p-1.5",
+                "group relative min-h-0 min-w-0 cursor-pointer overflow-hidden border-line/70 p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ice sm:p-1.5",
                 index % 7 !== 6 && "border-r",
                 index < 35 && "border-b",
                 selected && "bg-bg-2/45",
@@ -106,12 +115,9 @@ export function CalendarMonthView({
               )}
             >
               <div className="mb-1 flex items-center justify-between gap-1">
-                <button
-                  type="button"
-                  onClick={() => onSelectDate(date)}
-                  aria-label={formatDayHeading(date)}
+                <span
                   className={cn(
-                    "relative flex size-6 items-center justify-center rounded-input font-mono text-[11px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice sm:text-xs",
+                    "relative flex size-6 items-center justify-center rounded-input font-mono text-[11px] sm:text-xs",
                     outside ? "text-text-lo/45" : "text-text-lo",
                     isToday && "text-ice",
                     selected && "bg-bg-2 text-text-hi"
@@ -122,11 +128,14 @@ export function CalendarMonthView({
                   ) : null}
                   {isToday ? <span className="absolute bottom-0.5 size-1 rounded-full bg-ice" /> : null}
                   {day.getDate()}
-                </button>
+                </span>
                 <WorkloadWarning date={date} count={dateItems.length} />
                 <button
                   type="button"
-                  onClick={() => onCreate(date)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onCreate(date);
+                  }}
                   className="flex size-6 items-center justify-center rounded-input text-text-lo/40 opacity-0 transition-opacity duration-hover hover:bg-bg-2 hover:text-ice focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice group-hover:opacity-100"
                   aria-label={`New event on ${formatDayHeading(date)}`}
                 >
@@ -135,23 +144,31 @@ export function CalendarMonthView({
               </div>
               <div className="min-h-0 min-w-0 space-y-1">
                 {visible.map((item) => (
-                  <CalendarItemSurface
+                  <div
                     key={`${date}:${item.id}`}
-                    item={item}
-                    compact
-                    showSpace={showSpace}
-                    onActivate={onActivate}
-                    onDragStart={(dragged, event) => event.dataTransfer.setData("text/tempo-calendar", dragged.id)}
-                    selected={selectedIds.has(item.id)}
-                    onSelect={onSelect}
-                    displayTimezone={displayTimezone}
-                    selectMode={selectMode}
-                  />
+                    onClick={(event) => event.stopPropagation()}
+                    onKeyDown={(event) => event.stopPropagation()}
+                  >
+                    <CalendarItemSurface
+                      item={item}
+                      compact
+                      showSpace={showSpace}
+                      onActivate={onActivate}
+                      onDragStart={(dragged, event) => event.dataTransfer.setData("text/tempo-calendar", dragged.id)}
+                      selected={selectedIds.has(item.id)}
+                      onSelect={onSelect}
+                      displayTimezone={displayTimezone}
+                      selectMode={selectMode}
+                    />
+                  </div>
                 ))}
                 {dateItems.length > visible.length ? (
                   <button
                     type="button"
-                    onClick={() => onMore(date)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onMore(date);
+                    }}
                     className="block w-full truncate px-1 text-left text-[11px] text-text-lo hover:text-ice focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
                   >
                     +{dateItems.length - visible.length} more
