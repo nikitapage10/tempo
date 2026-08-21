@@ -23,13 +23,11 @@ import { useTracks } from "@/hooks/use-tracks";
 import { useReleaseDetails } from "@/hooks/use-release";
 import { localDateString } from "@/lib/format";
 import { nextDueDate, recurrenceExhausted } from "@/lib/tasks/recurrence";
-import { SpectraCoverArt } from "@/components/spectra/spectra-cover-art";
-import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { PROJECT_TYPES } from "@/lib/constants";
 import { useTaskCategoryPalette } from "@/components/tasks/task-category-provider";
 import { ReleaseWorkspace } from "@/components/projects/release-workspace";
 import { ProjectHero } from "@/components/projects/project-hero";
-import { ProjectHealth } from "@/components/projects/project-health";
+import { ProjectTracksPanel } from "@/components/projects/project-tracks-panel";
 import { ProjectTimeline, type ProjectTimelineEvent } from "@/components/projects/project-timeline";
 import {
   ProjectMiniCalendar,
@@ -204,7 +202,7 @@ export default function ProjectDetailPage() {
 
   const today = localDateString();
 
-  // Milestones feed the health band, mini calendar, and sidebar timeline.
+  // Milestones feed the mini calendar and sidebar timeline.
   const milestones: ProjectMilestone[] = [
     { key: "created", date: project.created_at.slice(0, 10), label: "Project created", tone: "ok" },
   ];
@@ -298,39 +296,9 @@ export default function ProjectDetailPage() {
         />
       </div>
 
-      <ProjectHealth
-        tasks={tasks}
-        tracks={tracks}
-        stages={stages}
-        rollupByTrack={rollupByTrack}
-        milestones={milestones}
-        today={today}
-        onToggleTask={(task) => void toggleTaskDone(task)}
-      />
-
-      {project.project_type !== "general" ? (
-        <div
-          id="release-workspace"
-          className={
-            calendarEdit === "release-date" || calendarEdit === "pitching-deadline"
-              ? "rounded-panel ring-2 ring-ice/60"
-              : undefined
-          }
-        >
-          <ReleaseWorkspace
-            project={project}
-            tracks={tracks}
-            tasks={tasks}
-            onUpdateTask={async (taskId, patch) => {
-              await updateTask.mutateAsync({ id: taskId, patch });
-            }}
-          />
-        </div>
-      ) : null}
-
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="space-y-5">
-          <section className="panel-quiet rise-in p-5" style={{ ["--rise-delay" as string]: "120ms" }}>
+          <section className="panel-quiet rise-in p-5" style={{ ["--rise-delay" as string]: "60ms" }}>
             <SectionHeader
               label="Tasks"
               count={tasks.length}
@@ -414,104 +382,71 @@ export default function ProjectDetailPage() {
               />
             )}
           </section>
+        </div>
 
-          <section className="panel-quiet rise-in p-5" style={{ ["--rise-delay" as string]: "180ms" }}>
-            <SectionHeader
-              label="Tracks"
-              count={tracks.length}
-              aside={
-                <Link href="/tracks" className="text-xs text-ice hover:underline">
-                  New track
-                </Link>
-              }
-            />
-            <div className="mb-3 flex flex-wrap gap-2">
-              <select
-                className="h-8 min-w-[12rem] flex-1 rounded-input border border-line bg-bg-2 px-2 text-xs"
-                value={attachTrackId}
-                onChange={(e) => setAttachTrackId(e.target.value)}
-              >
-                <option value="">Attach a track…</option>
-                {availableTracks.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.title}
-                  </option>
-                ))}
-              </select>
-              <Button
-                type="button"
-                size="sm"
-                disabled={!attachTrackId}
-                onClick={async () => {
+        <aside className="space-y-5">
+          <section className="panel-quiet rise-in p-5" style={{ ["--rise-delay" as string]: "90ms" }}>
+            <h2 className="label-mono mb-4">Calendar</h2>
+            <ProjectMiniCalendar items={calendarItems} today={today} />
+          </section>
+
+          <div className="rise-in" style={{ ["--rise-delay" as string]: "120ms" }}>
+            <ProjectTimeline events={timelineEvents} />
+          </div>
+
+          <div className="rise-in" style={{ ["--rise-delay" as string]: "150ms" }}>
+            <ProjectTracksPanel
+              tracks={tracks}
+              stages={stages}
+              rollupByTrack={rollupByTrack}
+              today={today}
+              availableTracks={availableTracks}
+              attachTrackId={attachTrackId}
+              onAttachTrackIdChange={setAttachTrackId}
+              onAttach={() => {
+                void (async () => {
                   try {
                     await attachTrack.mutateAsync({ trackId: attachTrackId, projectId: id });
                     setAttachTrackId("");
                   } catch (err) {
                     toast(err instanceof Error ? err.message : "Couldn’t attach track.");
                   }
-                }}
-              >
-                Attach
-              </Button>
-            </div>
-            {tracks.length === 0 ? (
-              <QuietEmpty>No tracks attached yet.</QuietEmpty>
-            ) : (
-              <ul className="space-y-1.5">
-                {tracks.map((t, i) => (
-                  <SpotlightCard
-                    as="li"
-                    key={t.id}
-                    radius={8}
-                    size={200}
-                    className="rise-in flex items-center gap-3 rounded-input border border-line bg-bg-2/40 px-2.5 py-2 transition-colors duration-hover hover:border-ice/30"
-                    style={{ ["--rise-delay" as string]: `${200 + i * 30}ms` } as React.CSSProperties}
-                  >
-                    <div className="relative size-8 shrink-0 overflow-hidden rounded-input border border-line">
-                      <SpectraCoverArt
-                        trackId={t.id}
-                        title={t.title}
-                        artworkUrl={t.artwork_url}
-                        animate={false}
-                      />
-                    </div>
-                    <Link
-                      href={`/track/${t.id}`}
-                      className="min-w-0 flex-1 truncate text-sm text-text-hi hover:text-ice"
-                    >
-                      {t.title}
-                    </Link>
-                    <button
-                      type="button"
-                      className="text-xs text-text-lo hover:text-warn"
-                      onClick={async () => {
-                        try {
-                          await attachTrack.mutateAsync({ trackId: t.id, projectId: null });
-                        } catch (err) {
-                          toast(err instanceof Error ? err.message : "Couldn’t detach track.");
-                        }
-                      }}
-                    >
-                      Detach
-                    </button>
-                  </SpotlightCard>
-                ))}
-              </ul>
-            )}
-          </section>
-        </div>
-
-        <aside className="space-y-5">
-          <section className="panel-quiet rise-in p-5" style={{ ["--rise-delay" as string]: "150ms" }}>
-            <h2 className="label-mono mb-4">Calendar</h2>
-            <ProjectMiniCalendar items={calendarItems} today={today} />
-          </section>
-
-          <div className="rise-in" style={{ ["--rise-delay" as string]: "210ms" }}>
-            <ProjectTimeline events={timelineEvents} />
+                })();
+              }}
+              onDetach={(trackId) => {
+                void (async () => {
+                  try {
+                    await attachTrack.mutateAsync({ trackId, projectId: null });
+                  } catch (err) {
+                    toast(err instanceof Error ? err.message : "Couldn’t detach track.");
+                  }
+                })();
+              }}
+              attachPending={attachTrack.isPending}
+            />
           </div>
         </aside>
       </div>
+
+      {project.project_type !== "general" ? (
+        <div
+          id="release-workspace"
+          className={
+            calendarEdit === "release-date" || calendarEdit === "pitching-deadline"
+              ? "rounded-panel ring-2 ring-ice/60"
+              : undefined
+          }
+        >
+          <ReleaseWorkspace
+            project={project}
+            tracks={tracks}
+            tasks={tasks}
+            onUpdateTask={async (taskId, patch) => {
+              await updateTask.mutateAsync({ id: taskId, patch });
+            }}
+          />
+        </div>
+      ) : null}
 
       <div className="flex justify-end">
         <DeleteProjectButton

@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  attentionGroups,
   checklistRollupByTrack,
   pickNextUp,
   projectProgressPct,
@@ -75,22 +74,6 @@ function track(partial: Partial<Track> & Pick<Track, "id" | "title">): Track {
 }
 
 describe("project health helpers", () => {
-  it("splits open tasks into overdue, this week, and needs a date", () => {
-    const groups = attentionGroups(
-      [
-        task({ id: "1", title: "Late", due_date: "2026-08-10", status: "todo" }),
-        task({ id: "2", title: "Soon", due_date: "2026-08-24", status: "todo" }),
-        task({ id: "3", title: "Later", due_date: "2026-09-01", status: "todo" }),
-        task({ id: "4", title: "Undated", due_date: null, status: "todo" }),
-        task({ id: "5", title: "Done late", due_date: "2026-08-10", status: "done" }),
-      ],
-      "2026-08-21"
-    );
-    expect(groups.overdue.map((t) => t.id)).toEqual(["1"]);
-    expect(groups.thisWeek.map((t) => t.id)).toEqual(["2"]);
-    expect(groups.needsDate.map((t) => t.id)).toEqual(["4"]);
-  });
-
   it("weights progress by tasks and checklist items without diluting empty tracks", () => {
     const rollup = checklistRollupByTrack([
       { track_id: "a", done: true } as ChecklistItem,

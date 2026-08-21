@@ -1,4 +1,3 @@
-import { addDateKey } from "@/lib/calendar/date";
 import type { ChecklistItem, Task, Track } from "@/lib/types";
 
 export type ProjectMilestone = {
@@ -51,27 +50,6 @@ export function projectProgressPct(
   }
   if (total === 0) return null;
   return Math.round((done / total) * 100);
-}
-
-export type AttentionGroups = {
-  overdue: Task[];
-  thisWeek: Task[];
-  needsDate: Task[];
-};
-
-/** Open tasks split into overdue / due in the next 7 days / no date. */
-export function attentionGroups(tasks: Task[], today: string): AttentionGroups {
-  const weekEnd = addDateKey(today, 6);
-  const open = tasks.filter((t) => t.status !== "done");
-  return {
-    overdue: open
-      .filter((t) => t.due_date && t.due_date < today)
-      .sort((a, b) => (a.due_date! < b.due_date! ? -1 : 1)),
-    thisWeek: open
-      .filter((t) => t.due_date && t.due_date >= today && t.due_date <= weekEnd)
-      .sort((a, b) => (a.due_date! < b.due_date! ? -1 : 1)),
-    needsDate: open.filter((t) => !t.due_date),
-  };
 }
 
 export type NextUpCandidate = { label: string; date: string; kind: "milestone" | "task" | "track" };
@@ -139,15 +117,4 @@ export function sortTrackHealthRows(
       if (!aDue && bDue) return 1;
       return a.track.title.localeCompare(b.track.title);
     });
-}
-
-export function nextMilestone(
-  milestones: ProjectMilestone[],
-  today: string
-): ProjectMilestone | null {
-  return (
-    [...milestones]
-      .filter((m) => m.key !== "created" && m.date >= today)
-      .sort((a, b) => (a.date < b.date ? -1 : 1))[0] ?? null
-  );
 }
