@@ -2,11 +2,12 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowLeft, ImagePlus } from "lucide-react";
+import { ArrowLeft, FolderKanban, ImagePlus } from "lucide-react";
 import { FlareLine } from "@/components/flare-line";
 import { SpectraCoverArt } from "@/components/spectra/spectra-cover-art";
 import { useToast } from "@/components/ui/toast";
 import { useAssetMutations } from "@/hooks/use-assets";
+import { useProject } from "@/hooks/use-projects";
 import { MOMENTUM_OPTIONS } from "@/lib/constants";
 import {
   formatTrackType,
@@ -47,6 +48,7 @@ export function TrackHeader({
   const coverInputRef = React.useRef<HTMLInputElement>(null);
   const { upload } = useAssetMutations(track.id);
   const { toast } = useToast();
+  const projectQuery = useProject(track.project_id);
 
   React.useEffect(() => {
     setTitle(track.title);
@@ -137,13 +139,24 @@ export function TrackHeader({
 
         <div className="min-w-0 flex-1">
           <div className="mb-2 flex min-h-8 items-center justify-between gap-3">
-            <Link
-              href="/board"
-              className="inline-flex items-center gap-1.5 text-xs text-text-lo transition-colors duration-hover hover:text-ice"
-            >
-              <ArrowLeft className="size-3.5" />
-              Board
-            </Link>
+            <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+              <Link
+                href="/board"
+                className="inline-flex items-center gap-1.5 text-xs text-text-lo transition-colors duration-hover hover:text-ice"
+              >
+                <ArrowLeft className="size-3.5" />
+                Board
+              </Link>
+              {track.project_id && projectQuery.data ? (
+                <Link
+                  href={`/projects/${track.project_id}`}
+                  className="inline-flex min-w-0 items-center gap-1.5 text-xs text-text-lo transition-colors duration-hover hover:text-ice"
+                >
+                  <FolderKanban className="size-3.5 shrink-0" />
+                  <span className="truncate">In project {projectQuery.data.name}</span>
+                </Link>
+              ) : null}
+            </div>
             {navigation}
           </div>
 

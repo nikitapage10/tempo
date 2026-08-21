@@ -27,20 +27,23 @@ import { SpectraCoverArt } from "@/components/spectra/spectra-cover-art";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { PROJECT_TYPES } from "@/lib/constants";
 import { useTaskCategoryPalette } from "@/components/tasks/task-category-provider";
-import { normalizeTaskCategoryColor } from "@/lib/tasks/categories";
 import { ReleaseWorkspace } from "@/components/projects/release-workspace";
 import { ProjectHero } from "@/components/projects/project-hero";
+import { ProjectHealth } from "@/components/projects/project-health";
 import { ProjectTimeline, type ProjectTimelineEvent } from "@/components/projects/project-timeline";
-import {
-  ProjectSchedule,
-  type ScheduleMilestone,
-  type ScheduleTask,
-} from "@/components/projects/project-schedule";
 import {
   ProjectMiniCalendar,
   type MiniCalendarItem,
 } from "@/components/projects/project-mini-calendar";
 import { ProjectTaskList } from "@/components/projects/project-task-list";
+import { useChecklistForTracks } from "@/hooks/use-checklist";
+import { useStages } from "@/hooks/use-stages";
+import {
+  checklistRollupByTrack,
+  pickNextUp,
+  projectProgressPct,
+  type ProjectMilestone,
+} from "@/lib/projects/health";
 import type { ProjectStatus, ProjectType, Task } from "@/lib/types";
 
 export default function ProjectDetailPage() {
@@ -58,6 +61,7 @@ export default function ProjectDetailPage() {
   const projectTasksQuery = useProjectTasks(id);
   const { update, remove, attachTrack, attachTask } = useProjectMutations();
   const releaseQuery = useReleaseDetails(id);
+  const stagesQuery = useStages(activeSpaceId);
 
   const allTracksQuery = useTracks(activeSpaceId);
   const allTasksQuery = useTasks(activeSpaceId);
@@ -68,6 +72,13 @@ export default function ProjectDetailPage() {
   const tasks = projectTasksQuery.data ?? [];
   const allTracks = allTracksQuery.data ?? [];
   const allTasks = allTasksQuery.data ?? [];
+  const stages = stagesQuery.data ?? [];
+  const trackIds = React.useMemo(() => tracks.map((t) => t.id), [tracks]);
+  const checklistQuery = useChecklistForTracks(trackIds);
+  const rollupByTrack = React.useMemo(
+    () => checklistRollupByTrack(checklistQuery.data ?? []),
+    [checklistQuery.data]
+  );
 
   const [name, setName] = React.useState("");
   const [description, setDescription] = React.useState("");
@@ -189,15 +200,12 @@ export default function ProjectDetailPage() {
 
   const tasksOpen = tasks.filter((t) => t.status !== "done").length;
   const tasksDone = tasks.filter((t) => t.status === "done").length;
-  const totalUnits = tracks.length + tasks.length;
-  const doneUnits = tasks.filter((t) => t.status === "done").length + 0;
-  const progressPct = totalUnits > 0 ? Math.round((doneUnits / totalUnits) * 100) : null;
+  const progressPct = projectProgressPct(tasks, rollupByTrack, trackIds);
 
   const today = localDateString();
 
-  // Milestones feed three surfaces: the schedule rail, the mini calendar, and
-  // the sidebar timeline. Build them once.
-  const milestones: ScheduleMilestone[] = [
+  // Milestones feed the health band, mini calendar, and sidebar timeline.
+  const milestones: ProjectMilestone[] = [
     { key: "created", date: project.created_at.slice(0, 10), label: "Project created", tone: "ok" },
   ];
   if (releaseQuery.data?.release_date) {
@@ -232,27 +240,7 @@ export default function ProjectDetailPage() {
     status: m.tone === "ok" ? "done" : m.tone === "warn" ? "overdue" : "upcoming",
   }));
 
-  const scheduleTasks: ScheduleTask[] = tasks
-    .filter((t) => t.due_date)
-    .map((t) => {
-      const category = categories.find((item) => item.key === t.category);
-      return {
-        id: t.id,
-        title: t.title,
-        // A task's bar starts the day it appeared, so its length is real time
-        // rather than an invented span. Guard a due date set before creation.
-        startDate:
-          t.created_at.slice(0, 10) < (t.due_date as string)
-            ? t.created_at.slice(0, 10)
-            : (t.due_date as string),
-        date: t.due_date as string,
-        categoryLabel: category?.label ?? t.category,
-        color: normalizeTaskCategoryColor(category?.color ?? "#8b8b96"),
-        done: t.status === "done",
-        overdue: t.status !== "done" && (t.due_date as string) < today,
-      };
-    });
-
+  const datedTasks = tasks.filter((t) => t.due_date);
   const calendarItems: MiniCalendarItem[] = [
     ...milestones.map((m) => ({
       key: `milestone-${m.key}`,
@@ -261,30 +249,31 @@ export default function ProjectDetailPage() {
       color: m.tone === "warn" ? "var(--warn)" : m.tone === "amber" ? "var(--amber)" : "var(--ice)",
       done: m.tone === "ok",
     })),
-    ...scheduleTasks.map((t) => ({
+    ...datedTasks.map((t) => ({
       key: `task-${t.id}`,
-      date: t.date,
+      date: t.due_date as string,
       label: t.title,
-      color: t.overdue ? "var(--warn)" : t.color,
+      color:
+        t.status !== "done" && (t.due_date as string) < today
+          ? "var(--warn)"
+          : (categories.find((c) => c.key === t.category)?.color ?? "var(--ice)"),
       href: `/tasks?edit=${t.id}`,
-      done: t.done,
+      done: t.status === "done",
     })),
+    ...tracks
+      .filter((t) => t.next_action_due)
+      .map((t) => ({
+        key: `track-next-${t.id}`,
+        date: t.next_action_due as string,
+        label: t.next_action?.trim() ? `${t.title}: ${t.next_action.trim()}` : t.title,
+        color:
+          (t.next_action_due as string) < today ? "var(--warn)" : "var(--violet)",
+        href: `/track/${t.id}`,
+        done: false,
+      })),
   ];
 
-  const nextUp = [
-    ...milestones
-      .filter((m) => m.key !== "created" && m.date >= today)
-      .map((m) => ({ label: m.label, date: m.date })),
-    ...scheduleTasks
-      .filter((t) => !t.done && t.date >= today)
-      .map((t) => ({ label: t.title, date: t.date })),
-  ].sort((a, b) => (a.date < b.date ? -1 : 1))[0];
-
-  const scheduleDates = new Set([
-    ...milestones.map((m) => m.date),
-    ...scheduleTasks.map((t) => t.date),
-  ]);
-  const showSchedule = scheduleDates.size > 1;
+  const nextUp = pickNextUp(milestones, tasks, tracks, today);
 
   return (
     <div className="space-y-5">
@@ -303,33 +292,21 @@ export default function ProjectDetailPage() {
           tasksOpen={tasksOpen}
           tasksDone={tasksDone}
           progressPct={progressPct}
-          nextUp={nextUp ?? null}
+          nextUp={nextUp}
           onStatusChange={(status) => void saveMeta({ status })}
           onEditDetails={() => setEditOpen(true)}
         />
       </div>
 
-      {showSchedule ? (
-        <section className="panel-quiet rise-in p-5" style={{ ["--rise-delay" as string]: "60ms" }}>
-          <SectionHeader
-            label="Schedule"
-            aside={
-              <span className="hidden items-center gap-3 text-[10px] uppercase tracking-[0.12em] text-text-lo/70 sm:flex">
-                <span className="flex items-center gap-1">
-                  <span className="size-1.5 rotate-45 rounded-[1px] bg-ice" /> Milestone
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="size-1.5 rounded-full bg-ok" /> Done
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="h-3 w-px bg-amber" /> Today
-                </span>
-              </span>
-            }
-          />
-          <ProjectSchedule milestones={milestones} tasks={scheduleTasks} today={today} />
-        </section>
-      ) : null}
+      <ProjectHealth
+        tasks={tasks}
+        tracks={tracks}
+        stages={stages}
+        rollupByTrack={rollupByTrack}
+        milestones={milestones}
+        today={today}
+        onToggleTask={(task) => void toggleTaskDone(task)}
+      />
 
       {project.project_type !== "general" ? (
         <div
