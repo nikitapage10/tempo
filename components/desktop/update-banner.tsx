@@ -9,29 +9,19 @@ import {
   isDesktopApp,
   onDesktopUpdateStateChange,
 } from "@/lib/desktop/bridge";
-import { APP_VERSION } from "@/lib/version";
 
-const WEB_UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000;
 const DEFERRED_FOR_SESSION_KEY = "tempo:update-deferred-for-session";
 
-type BuildResponse = {
-  buildId?: string;
-  version?: string;
-};
-
 /**
- * One calm, desktop-only prompt for both kinds of TEMPO delivery: a new web
- * deployment or a downloaded native shell. The difference stays internal so
- * the person using TEMPO only has one update decision to make.
+ * Desktop-only prompt when a new native shell installer is downloaded and ready.
+ * Ordinary web/UI deploys do not use this bar — the Electron window loads the live
+ * site, so a page change picks those up without a reinstall.
  */
 export function DesktopUpdateBanner() {
   const [mounted, setMounted] = React.useState(false);
   const [nativeUpdateReady, setNativeUpdateReady] = React.useState(false);
-  const [webUpdateReady, setWebUpdateReady] = React.useState(false);
   const [deferred, setDeferred] = React.useState(false);
   const [updating, setUpdating] = React.useState(false);
-  const initialBuildId = React.useRef<string | null>(null);
-  const webCheckInFlight = React.useRef(false);
 
   React.useEffect(() => {
     setMounted(true);
@@ -51,65 +41,16 @@ export function DesktopUpdateBanner() {
       if (active) setNativeUpdateReady(state.ready);
     });
 
-    async function checkWebBuild() {
-      if (webCheckInFlight.current) return;
-      webCheckInFlight.current = true;
-
-      try {
-        const response = await fetch(`/api/app-build?t=${Date.now()}`, {
-          cache: "no-store",
-        });
-        if (!response.ok) return;
-
-        const result = (await response.json()) as BuildResponse;
-        if (!result.buildId) return;
-
-        // This also catches an update if the first network check happens only
-        // after a deployment: APP_VERSION belongs to the renderer already on
-        // screen, while result.version belongs to the server now online.
-        if (result.version && result.version !== APP_VERSION && active) {
-          setWebUpdateReady(true);
-        }
-
-        if (initialBuildId.current === null) {
-          initialBuildId.current = result.buildId;
-        } else if (initialBuildId.current !== result.buildId && active) {
-          setWebUpdateReady(true);
-        }
-      } catch {
-        // An update check should never interrupt work or create an error toast.
-      } finally {
-        webCheckInFlight.current = false;
-      }
-    }
-
-    function checkWhenVisible() {
-      if (document.visibilityState === "visible") void checkWebBuild();
-    }
-
-    void checkWebBuild();
-    const interval = window.setInterval(checkWebBuild, WEB_UPDATE_CHECK_INTERVAL_MS);
-    window.addEventListener("focus", checkWebBuild);
-    document.addEventListener("visibilitychange", checkWhenVisible);
-
     return () => {
       active = false;
       unsubscribe();
-      window.clearInterval(interval);
-      window.removeEventListener("focus", checkWebBuild);
-      document.removeEventListener("visibilitychange", checkWhenVisible);
     };
   }, [mounted]);
 
   async function updateNow() {
     setUpdating(true);
-
-    if (nativeUpdateReady) {
-      const started = await installDesktopUpdate();
-      if (started) return;
-    }
-
-    window.location.reload();
+    const started = await installDesktopUpdate();
+    if (!started) setUpdating(false);
   }
 
   function deferForSession() {
@@ -117,12 +58,7 @@ export function DesktopUpdateBanner() {
     setDeferred(true);
   }
 
-  if (
-    !mounted ||
-    !isDesktopApp() ||
-    deferred ||
-    (!nativeUpdateReady && !webUpdateReady)
-  ) {
+  if (!mounted || !isDesktopApp() || deferred || !nativeUpdateReady) {
     return null;
   }
 
@@ -137,9 +73,9 @@ export function DesktopUpdateBanner() {
           <RefreshCw className="size-4" strokeWidth={1.75} />
         </span>
         <div className="min-w-0">
-          <p className="text-sm font-medium text-text-hi">A TEMPO update is available.</p>
+          <p className="text-sm font-medium text-text-hi">A TEMPO app update is ready.</p>
           <p className="mt-0.5 text-xs text-text-lo">
-            Update now to get the latest improvements.
+            Install it to get the latest desktop app. Everyday site updates arrive on their own when you move around TEMPO.
           </p>
         </div>
       </div>

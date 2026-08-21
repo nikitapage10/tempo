@@ -69,13 +69,14 @@ as well and is recorded in `CHANGELOG.md`.
 
 Packaged desktop builds use `electron-updater`. They check the public
 `tempo-desktop-releases` repository **on first launch** and every six hours
-while the app remains open. When a newer release exists, the update is
-downloaded in the background. Once it is ready, TEMPO shows the same
-desktop-only in-app banner used for a newly deployed web version: **Update now**
-applies it, while **After this session** dismisses the prompt for the current
-app session. The copy never asks the artist to distinguish between web and
-native delivery. TEMPO does not restart or interrupt active work automatically;
-a downloaded native update can still install on a normal full quit.
+while the app remains open. When a newer **native shell** release exists, the
+update is downloaded in the background. Once it is ready, TEMPO shows a
+desktop-only in-app banner: **Update now** installs the new app, while
+**After this session** dismisses the prompt for the current app session.
+Ordinary web/UI deploys on `main` do **not** show this banner — the Electron
+window loads the live site, so those changes arrive when you navigate or
+reload. TEMPO does not restart or interrupt active work automatically; a
+downloaded native update can still install on a normal full quit.
 
 **Important split:** ordinary product/UI changes on `main` update desktop
 through the live web app — no new installer. A new installer is published only
@@ -139,9 +140,10 @@ the newest version and verify the downloaded file.
    `NEXT_PUBLIC_DESKTOP_MAC_URL` in Vercel only if you need to pin a specific
    asset instead of `latest`.
 7. In Vercel project settings, keep **Automatically expose System Environment
-   Variables** enabled. The unified desktop banner uses
-   `VERCEL_GIT_COMMIT_SHA` to notice every newly deployed build, with the
-   required TEMPO product-version bump as its fallback.
+   Variables** enabled when other tooling still relies on
+   `VERCEL_GIT_COMMIT_SHA` (for example `/api/app-build`). The desktop
+   **Update now** banner is driven only by a downloaded native shell update,
+   not by that web build fingerprint.
 
 The existing `0.100.6` Windows beta was built against the private source
 repository's update feed. It cannot discover the new public feed. Existing

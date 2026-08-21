@@ -4,6 +4,7 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-21
 
+- Changed (v0.209.1): On TEMPO Desktop, the Update now bar only appears when a new desktop app install is ready. Everyday site updates no longer ask you to click anything — they show up as you move around TEMPO.
 - Changed (v0.209.0): Project pages drop the Gantt-style schedule. In its place you get two health modules — Attention (overdue, due this week, needs a date, next milestone) and Tracks on this project (stage, checklist progress, next action). Attaching a track now moves the project dial when checklists advance, can become “Next up,” and shows on the track as In project with a link back.
 - Fixed (v0.208.1): Busy month-calendar days no longer clip a long list of events. Each day shows at most two items, then a “+N more” line for the rest, and clicking anywhere on the day opens that day’s full schedule on the right.
 

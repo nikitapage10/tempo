@@ -9,11 +9,17 @@ describe("desktop update banner", () => {
   const shell = read("components/app-shell.tsx");
   const main = read("electron/main.js");
   const buildRoute = read("app/api/app-build/route.ts");
+  const policy = read("docs/WEB-DESKTOP-RELEASE-POLICY.md");
 
-  it("presents one update message with the two approved actions", () => {
-    expect(banner).toContain("A TEMPO update is available.");
+  it("prompts only for a ready native shell install", () => {
+    expect(banner).toContain("A TEMPO app update is ready.");
     expect(banner).toContain("Update now");
     expect(banner).toContain("After this session");
+    expect(banner).toContain("nativeUpdateReady");
+    expect(banner).toContain("installDesktopUpdate");
+    expect(banner).not.toContain("webUpdateReady");
+    expect(banner).not.toContain("APP_VERSION");
+    expect(banner).not.toContain("/api/app-build");
   });
 
   it("is desktop-only and remains outside distraction-free focus sessions", () => {
@@ -31,9 +37,12 @@ describe("desktop update banner", () => {
     expect(main).toContain("autoUpdater.quitAndInstall(false, true)");
   });
 
-  it("uses the current deployment fingerprint without caching it", () => {
-    expect(banner).toContain("result.version !== APP_VERSION");
+  it("keeps the app-build probe for other callers without wiring it to the banner", () => {
     expect(buildRoute).toContain("VERCEL_GIT_COMMIT_SHA");
     expect(buildRoute).toContain('"Cache-Control": "no-store, max-age=0"');
+    expect(policy).toContain("native shell");
+    expect(policy).toContain("do **not** show this banner");
+    expect(policy).not.toContain("same desktop-only in-app banner used for a newly deployed web version");
+    expect(policy).toContain("driven only by a downloaded native shell update");
   });
 });
