@@ -167,6 +167,24 @@ export function LightfieldWindowsProvider({
   );
 }
 
+function readRadius(el: Element): number {
+  const parsed = parseFloat(getComputedStyle(el).borderRadius);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
+/** Prefer the element's radius; otherwise take the nearest rounded ancestor. */
+function resolvedFieldRadius(el: HTMLElement): number {
+  const own = readRadius(el);
+  if (own > 0) return own;
+  let node: HTMLElement | null = el.parentElement;
+  for (let i = 0; i < 5 && node; i += 1) {
+    const inherited = readRadius(node);
+    if (inherited > 0) return inherited;
+    node = node.parentElement;
+  }
+  return 0;
+}
+
 const upsertHoleRef: { current: ((h: LfHole) => void) | null } = {
   current: null,
 };
@@ -196,7 +214,12 @@ export function useLfWindow<T extends HTMLElement = HTMLDivElement>(
 
     const publish = () => {
       const r = el.getBoundingClientRect();
-      const radius = parseFloat(getComputedStyle(el).borderRadius) || 0;
+      // Field windows are often `absolute inset-0` inside a rounded glass
+      // shell. Their own radius is 0, so the overlay hole must inherit the
+      // parent curve or Spectra punches a square behind the rounded card.
+      const radius = field
+        ? resolvedFieldRadius(el)
+        : parseFloat(getComputedStyle(el).borderRadius) || 0;
       // Inset large field windows by 1px so Spectra can't fringe outside the
       // parent glass border and read as a stray line under the card.
       const inset = field && r.width > 24 && r.height > 24 ? 1 : 0;

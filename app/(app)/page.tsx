@@ -177,7 +177,7 @@ export default function TodayPage() {
           className="today-hero glass-hero prism-edge relative min-h-[224px] overflow-hidden sm:min-h-[244px]"
         >
           <div className="absolute inset-0" aria-hidden>
-            <LfWindow field className="today-hero__field absolute inset-0" />
+            <LfWindow field className="today-hero__field absolute inset-0 rounded-panel" />
             {activeArtist ? (
               <ArtistBanner
                 artist={activeArtist}
