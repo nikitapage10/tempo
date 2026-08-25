@@ -4,6 +4,12 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-24
 
+- Fixed (v0.211.7): Removed the blur and scaling that could break Today’s animated banner into visible rectangular tiles. Its edge softening now comes from a smooth light vignette instead.
+- Changed (v0.211.6): Album covers in Today’s workbench shelf are slightly larger and more spacious. The studio banner’s atmospheric layers now extend and soften past their own edges, with a gentle inner vignette that removes visible rectangular cutoffs.
+- Changed (v0.211.5): The album reel no longer overlaps Today’s greeting. It now forms the compact top shelf of one shared workbench with Continue working and Incoming, giving the banner a clean ending and keeping browsing connected to the work it leads into.
+- Changed (v0.211.4): Today’s album reel is now a shallow floating dock that crosses the banner’s lower edge instead of filling a separate dark strip. Covers keep their colour, use the page itself as the space between them, and leave much less distance before Continue working.
+- Changed (v0.211.3): The album covers under Today’s banner are larger, calmer and further apart — they sit back as atmosphere and come forward in full colour only when you hover one, so the top of the page reads as one continuous surface instead of a strip of thumbnails. The Spotify tag only appears on hover.
+- Changed (v0.211.2): Today’s moving album covers now form a smaller shelf attached directly to the studio banner, without an extra heading or divider, so the page flows naturally into Continue working.
 - Changed (v0.211.1): The moving album-cover reel is back directly under Today’s banner. The artist logo now rests in the banner’s lower-right corner, and the compact Start something controls live inside Continue working instead of taking up a separate full-width row.
 
 ## 2026-08-22

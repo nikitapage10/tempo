@@ -166,75 +166,74 @@ export default function TodayPage() {
     : null;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <ActiveSessionBanner />
 
-      {/* One cinematic Spectra window sets the atmosphere; copy stays over a
-          dense scrim while the field and artist identity breathe on the right. */}
-      <div
-        data-tour="today"
-        className="today-hero glass-hero prism-edge relative min-h-[224px] overflow-hidden sm:min-h-[244px]"
-      >
-        <div className="absolute inset-0" aria-hidden>
-          <LfWindow field className="today-hero__field absolute inset-0" />
-          {activeArtist ? (
-            <ArtistBanner
-              artist={activeArtist}
-              fadeRight
-              className="today-hero__banner absolute inset-0"
-            />
-          ) : null}
-          <div className="today-hero__aperture absolute inset-0" />
-          <div className="scrim-reveal absolute inset-0" />
-        </div>
-        {activeArtist?.logo_url ? (
-          <div className="today-hero__logo pointer-events-none absolute inset-y-0 right-0 z-[1] flex w-[min(43%,24rem)] items-end justify-end p-5 sm:p-7">
-            <SignedImage
-              path={activeArtist.logo_url}
-              alt={activeArtist.name}
-              className="h-auto max-h-[8rem] w-auto max-w-full object-contain sm:max-h-[11rem]"
-            />
-          </div>
-        ) : null}
-        <div className="today-hero__content relative z-[1] flex min-h-[224px] max-w-[58%] flex-col justify-between gap-6 px-6 py-6 sm:min-h-[244px] sm:px-8 sm:py-7">
-          <div className="min-w-0">
-            <p className="label-mono mb-2.5 text-text-lo/80">Today in the studio</p>
-            <h1 className="font-display text-3xl font-semibold tracking-[-0.02em] text-text-hi sm:text-[42px] sm:leading-none">
-              {greetingForHour(now.getHours())}
-            </h1>
-            <p className="mt-2 text-sm text-text-lo">{dateLabel}</p>
-            {!tasksFocused && weeklyLabel ? (
-              <p className="mt-3 flex max-w-full items-center gap-2 text-xs text-text-lo">
-                <span className="size-1.5 shrink-0 rounded-full bg-amber shadow-[0_0_10px_rgb(255_181_107_/_0.7)]" />
-                <span>{weeklyLabel}</span>
-              </p>
+      {/* The greeting is its own clean moment. Music browsing belongs to the
+          workbench below, where it leads directly into current work. */}
+      <div>
+        <div
+          data-tour="today"
+          className="today-hero glass-hero prism-edge relative min-h-[224px] overflow-hidden sm:min-h-[244px]"
+        >
+          <div className="absolute inset-0" aria-hidden>
+            <LfWindow field className="today-hero__field absolute inset-0" />
+            {activeArtist ? (
+              <ArtistBanner
+                artist={activeArtist}
+                fadeRight
+                className="today-hero__banner absolute inset-0"
+              />
             ) : null}
+            <div className="today-hero__aperture absolute inset-0" />
+            <div className="scrim-reveal absolute inset-0" />
           </div>
+          {activeArtist?.logo_url ? (
+            <div className="today-hero__logo pointer-events-none absolute inset-y-0 right-0 z-[1] flex w-[min(43%,24rem)] items-end justify-end p-5 sm:p-7">
+              <SignedImage
+                path={activeArtist.logo_url}
+                alt={activeArtist.name}
+                className="h-auto max-h-[8rem] w-auto max-w-full object-contain sm:max-h-[11rem]"
+              />
+            </div>
+          ) : null}
+          <div className="today-hero__content relative z-[1] flex min-h-[224px] max-w-[58%] flex-col justify-between gap-6 px-6 py-6 sm:min-h-[244px] sm:px-8 sm:py-7">
+            <div className="min-w-0">
+              <p className="label-mono mb-2.5 text-text-lo/80">Today in the studio</p>
+              <h1 className="font-display text-3xl font-semibold tracking-[-0.02em] text-text-hi sm:text-[42px] sm:leading-none">
+                {greetingForHour(now.getHours())}
+              </h1>
+              <p className="mt-2 text-sm text-text-lo">{dateLabel}</p>
+              {!tasksFocused && weeklyLabel ? (
+                <p className="mt-3 flex max-w-full items-center gap-2 text-xs text-text-lo">
+                  <span className="size-1.5 shrink-0 rounded-full bg-amber shadow-[0_0_10px_rgb(255_181_107_/_0.7)]" />
+                  <span>{weeklyLabel}</span>
+                </p>
+              ) : null}
+            </div>
 
-          <div>
-            <FlareLine className="mb-3 opacity-70" />
-            <div className="flex items-start gap-8 sm:gap-10">
-              {tasksFocused ? (
-                <>
-                  <Stat value={statsQuery.data?.due} label="Due" />
-                  <Stat value={openTasks.length} label="Open" tone="amber" />
-                  <Stat value={activeProjects.length} label="Projects" />
-                </>
-              ) : (
-                <>
-                  <Stat value={activeTracks.length} label="Active" tone="amber" />
-                  <Stat value={statsQuery.data?.due} label="Due" />
-                  <Stat value={statsQuery.data?.sessions} label="Sessions" />
-                </>
-              )}
+            <div>
+              <FlareLine className="mb-3 opacity-70" />
+              <div className="flex items-start gap-8 sm:gap-10">
+                {tasksFocused ? (
+                  <>
+                    <Stat value={statsQuery.data?.due} label="Due" />
+                    <Stat value={openTasks.length} label="Open" tone="amber" />
+                    <Stat value={activeProjects.length} label="Projects" />
+                  </>
+                ) : (
+                  <>
+                    <Stat value={activeTracks.length} label="Active" tone="amber" />
+                    <Stat value={statsQuery.data?.due} label="Due" />
+                    <Stat value={statsQuery.data?.sessions} label="Sessions" />
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {!tasksFocused && tracks.length > 0 ? (
-        <TrackCoverSlider tracks={tracks} />
-      ) : null}
+      </div>
 
       {tasksFocused ? (
         <div
@@ -302,7 +301,9 @@ export default function TodayPage() {
         />
       ) : (
         <div className="space-y-4">
-          <div className="grid gap-4 lg:grid-cols-12">
+          <section className="panel overflow-hidden">
+            <TrackCoverSlider tracks={tracks} />
+            <div className="grid border-t border-line/60 lg:grid-cols-12">
             <FeaturedTrackCard
               track={featuredTrack}
               stageName={
@@ -366,7 +367,7 @@ export default function TodayPage() {
               }
             />
 
-            <section className="panel-quiet p-5 sm:p-6 lg:col-span-5">
+            <section className="border-t border-line/60 bg-bg-1/35 p-5 sm:p-6 lg:col-span-5 lg:border-l lg:border-t-0">
               <div className="mb-4 flex items-center gap-3">
                 <span className="flex size-8 items-center justify-center rounded-full border border-ice/20 bg-ice/10 text-ice">
                   <Inbox className="size-4" />
@@ -396,6 +397,7 @@ export default function TodayPage() {
               </div>
             </section>
           </div>
+          </section>
 
           <section className="panel p-5 sm:p-6">
             <div className="flex flex-wrap items-end justify-between gap-3">
@@ -679,7 +681,7 @@ function FeaturedTrackCard({
   actions: React.ReactNode;
 }) {
   return (
-    <section className="glass-hero prism-edge relative overflow-hidden p-5 sm:p-6 lg:col-span-7">
+    <section className="relative overflow-hidden p-5 sm:p-6 lg:col-span-7">
       <LfWindow field className="absolute inset-y-0 right-0 w-[58%] opacity-75" aria-hidden />
       <div
         className="absolute inset-0 bg-[linear-gradient(96deg,rgb(var(--bg-0-rgb)_/_0.96)_0%,rgb(var(--bg-0-rgb)_/_0.88)_46%,rgb(var(--bg-0-rgb)_/_0.3)_100%)]"

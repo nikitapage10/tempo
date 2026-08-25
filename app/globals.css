@@ -864,6 +864,28 @@
   /* Today is a single studio window rather than a stack of decorative cards.
    * The right-side aperture lets Spectra breathe while the copy side remains
    * dark enough to read over artist banners and the persistent video wash. */
+  /* The catalog is the workbench's shallow media header. It shares the same
+   * surface as Continue working and Incoming instead of touching the hero. */
+  .today-workbench__reel {
+    background:
+      linear-gradient(
+        90deg,
+        rgb(var(--bg-2-rgb) / 0.24),
+        transparent 52%,
+        rgb(var(--bg-0-rgb) / 0.16)
+      );
+  }
+
+  .today-reel-tile {
+    opacity: 0.88;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .today-reel-tile {
+      transition: none;
+    }
+  }
+
   .today-hero {
     isolation: isolate;
   }
@@ -873,12 +895,16 @@
   }
 
   .today-hero__banner {
-    opacity: 0.56;
-    filter: saturate(0.82) contrast(1.06);
+    opacity: 0.52;
   }
 
   .today-hero__aperture {
     background:
+      radial-gradient(
+        ellipse 94% 112% at 50% 48%,
+        transparent 58%,
+        rgb(var(--bg-0-rgb) / 0.3) 100%
+      ),
       radial-gradient(
         ellipse 46% 78% at 78% 46%,
         rgb(var(--ice-rgb) / 0.13) 0%,
