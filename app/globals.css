@@ -102,12 +102,33 @@
 
   html {
     color-scheme: dark;
+    font-size: 16px;
+  }
+
+  /* Large displays keep a laptop-sized column and 15px type unless we grow
+   * the root. Desktop uses its own content zoom, so skip it there. */
+  @media (min-width: 1800px) {
+    html:not([data-tempo-shell="desktop"]) {
+      font-size: 17px;
+    }
+  }
+
+  @media (min-width: 2560px) {
+    html:not([data-tempo-shell="desktop"]) {
+      font-size: 18px;
+    }
+  }
+
+  @media (min-width: 3200px) {
+    html:not([data-tempo-shell="desktop"]) {
+      font-size: 18.5px;
+    }
   }
 
   body {
     @apply bg-bg-0 text-text-hi font-sans antialiased;
     font-family: var(--font-jura), sans-serif;
-    font-size: 15px;
+    font-size: 0.9375rem;
     font-weight: 500;
     line-height: 1.5;
   }
@@ -119,6 +140,26 @@
 }
 
 @layer utilities {
+  /* The working column grows on wide screens so ultrawide isn't empty gutter. */
+  .tempo-page-col {
+    width: 100%;
+    max-width: 1440px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  @media (min-width: 1800px) {
+    .tempo-page-col {
+      max-width: 1680px;
+    }
+  }
+
+  @media (min-width: 2800px) {
+    .tempo-page-col {
+      max-width: 1840px;
+    }
+  }
+
   /* Static prismatic fallback — reduced motion, no WebGL, kill-switch.
    * Spectra keeps the classic gradient; other palettes tint via --ice/--amber. */
   .flare-static {

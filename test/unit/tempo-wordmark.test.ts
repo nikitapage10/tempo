@@ -23,9 +23,8 @@ describe("TEMPO supplied wordmark", () => {
     expect(wordmark).toContain('src="/tempo-wordmark.png"');
     expect(wordmark).not.toContain("TypeWordmark");
     expect(wordmark).toContain("w-px");
-    expect(read("components/app-shell.tsx")).toContain(
-      '<Wordmark size={26} withMark className="hidden lg:inline-flex" />'
-    );
+    expect(read("components/app-shell.tsx")).toContain("withMark");
+    expect(read("components/app-shell.tsx")).toContain("overflow-hidden px-2 pt-6 pb-4 lg:px-3");
     for (const path of [
       "app/login/page.tsx",
       "app/invite/[token]/page.tsx",
@@ -39,13 +38,9 @@ describe("TEMPO supplied wordmark", () => {
 });
 
 describe("workspace header alignment", () => {
-  it("keeps Search on the same 1440 column as the page panels", () => {
+  it("keeps Search on the same working column as the page panels", () => {
     const shell = read("components/app-shell.tsx");
-    expect(shell).toContain(
-      'relative z-10 mx-auto flex w-full max-w-[1440px] items-center justify-end gap-1.5 px-4 pb-2 pt-5 md:px-8'
-    );
-    expect(shell).toContain(
-      'relative z-[1] mx-auto w-full max-w-[1440px] px-4 md:px-8'
-    );
+    expect(shell).toContain("tempo-page-col relative z-10 flex items-center justify-end");
+    expect(shell).toContain("tempo-page-col relative z-[1] px-4 md:px-8");
   });
 });

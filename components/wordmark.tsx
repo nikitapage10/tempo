@@ -30,7 +30,7 @@ type WordmarkProps = {
 function LightBarMark({ size }: { size: number }) {
   return (
     <span
-      className="relative flex shrink-0 items-center gap-[3.5px]"
+      className="relative flex shrink-0 items-center gap-[3.5px] overflow-hidden"
       style={{ height: size }}
       aria-hidden
     >
@@ -68,7 +68,7 @@ function RailWordmark({ size }: { size: number }) {
       width={1008}
       height={140}
       draggable={false}
-      className="block max-w-none shrink-0 select-none object-contain"
+      className="block min-w-0 max-w-full select-none object-contain object-left"
       style={{ height: Math.max(12, size * 0.72), width: "auto" }}
     />
   );
@@ -82,7 +82,10 @@ export function Wordmark({
 }: WordmarkProps) {
   return (
     <span
-      className={cn("inline-flex select-none items-center", className)}
+      className={cn(
+        "inline-flex min-w-0 select-none items-center",
+        className
+      )}
       aria-label="TEMPO"
       role="img"
     >
@@ -93,7 +96,7 @@ export function Wordmark({
           <LightBarMark size={size} />
           <span
             aria-hidden
-            className="mx-2 w-px shrink-0"
+            className="mx-1.5 w-px shrink-0"
             style={{
               height: size * 0.92,
               background:

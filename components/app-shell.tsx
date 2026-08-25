@@ -308,14 +308,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             className="pointer-events-none absolute inset-y-0 right-[-1px] w-px"
             aria-hidden
           />
-          <div className="px-2 pt-6 pb-4 lg:px-5">
-            <div className="flex items-center justify-center gap-2 lg:justify-start">
+          <div className="overflow-hidden px-2 pt-6 pb-4 lg:px-3">
+            <div className="flex min-w-0 items-center justify-center lg:justify-start">
               <Link
                 href="/"
-                className="rounded-input focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+                className="min-w-0 max-w-full rounded-input focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
               >
                 <Wordmark size={22} markOnly className="lg:hidden" />
-                <Wordmark size={26} withMark className="hidden lg:inline-flex" />
+                <Wordmark
+                  size={24}
+                  withMark
+                  className="hidden min-w-0 max-w-full lg:inline-flex"
+                />
               </Link>
             </div>
             <FlareLine className="mt-3" />
@@ -326,7 +330,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <SpaceSwitcher />
           </div>
 
-          <nav data-tour="workspace-nav" className="flex flex-1 flex-col gap-0.5 px-1.5 lg:px-3">
+          <nav data-tour="workspace-nav" className="flex flex-1 flex-col gap-1 px-1.5 lg:px-3">
             <RailFlyoutScope>
               {mainNav.map((item) => (
                 <RailNavItem
@@ -351,7 +355,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               title={NAV_DESCRIPTIONS["/settings"]}
               aria-label="Settings"
               className={cn(
-                "group relative flex items-center justify-center gap-2.5 rounded-input px-2 py-2 text-sm transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice lg:justify-start lg:px-3",
+                "group relative flex items-center justify-center gap-2.5 rounded-input px-2 py-2.5 text-sm transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice lg:justify-start lg:px-3",
                 isActive(pathname, "/settings")
                   ? "font-semibold text-text-hi"
                   : "font-medium text-text-lo hover:bg-bg-2/60 hover:text-text-hi"
@@ -370,7 +374,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 )}
                 strokeWidth={1.75}
               />
-              <span className="hidden lg:inline">Settings</span>
+              <span className="hidden whitespace-nowrap lg:inline">Settings</span>
               <span className="pointer-events-none absolute left-[calc(100%+12px)] top-1/2 z-[90] hidden w-60 -translate-y-1/2 rounded-input border border-line bg-bg-1 px-3 py-2 text-xs leading-relaxed text-text-lo opacity-0 shadow-e3 transition-opacity delay-150 group-hover:opacity-100 group-focus-visible:opacity-100 lg:block">
                 {NAV_DESCRIPTIONS["/settings"]}
               </span>
@@ -404,7 +408,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               ["--tempo-content-zoom" as string]: String(contentZoom),
             }}
           >
-          {/* Sticky chrome lives outside the 1440px column so the scroll
+          {/* Sticky chrome lives outside the page column so the scroll
               glass can span the whole workspace (rail edge → window edge).
               Search and the header buttons still share that column's
               right edge with the page panels. [-webkit-app-region:drag]
@@ -423,7 +427,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   : "-translate-y-2 opacity-0"
               )}
             />
-            <div className="relative z-10 mx-auto flex w-full max-w-[1440px] items-center justify-end gap-1.5 px-4 pb-2 pt-5 md:px-8">
+            <div className="tempo-page-col relative z-10 flex items-center justify-end gap-1.5 px-4 pb-2 pt-5 md:px-8">
               <div className="[-webkit-app-region:no-drag]">
                 <NotificationCenter />
               </div>
@@ -441,7 +445,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </div>
             </div>
           </div>
-          <div className="relative z-[1] mx-auto w-full max-w-[1440px] px-4 md:px-8">
+          <div className="tempo-page-col relative z-[1] px-4 md:px-8">
             {/* Above the page, not inside it: whether this catalog is real is
                 context for every screen, not a fact about any one of them. */}
             <DemoBanner />

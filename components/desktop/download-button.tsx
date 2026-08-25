@@ -59,12 +59,12 @@ export function DownloadButton({ className }: { className?: string }) {
       title={handoff.label}
       aria-label={handoff.label}
       className={cn(
-        "flex items-center justify-center gap-2.5 rounded-input px-2 py-2 text-sm text-text-lo transition-colors duration-hover hover:bg-bg-2/60 hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice xl:justify-start xl:px-3",
+        "flex items-center justify-center gap-2.5 rounded-input px-2 py-2.5 text-sm text-text-lo transition-colors duration-hover hover:bg-bg-2/60 hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice lg:justify-start lg:px-3",
         className
       )}
     >
       <Icon className="size-4 shrink-0" strokeWidth={1.75} />
-      <span className="hidden xl:inline">{handoff.label}</span>
+      <span className="hidden whitespace-nowrap lg:inline">{handoff.label}</span>
     </a>
   );
 }

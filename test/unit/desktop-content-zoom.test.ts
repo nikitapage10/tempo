@@ -51,7 +51,7 @@ describe("suggestedContentZoom", () => {
         screenWidth: 3440,
         screenHeight: 1440,
       })
-    ).toBe(1.3);
+    ).toBe(1.4);
     expect(
       suggestedContentZoom({
         devicePixelRatio: 1,
@@ -131,8 +131,8 @@ describe("readContentZoom default migration", () => {
       height: 1440,
       dpr: 1,
     });
-    expect(readContentZoom()).toBe(1.3);
-    expect(store.get(CONTENT_ZOOM_STORAGE_KEY)).toBe("1.3");
+    expect(readContentZoom()).toBe(1.4);
+    expect(store.get(CONTENT_ZOOM_STORAGE_KEY)).toBe("1.4");
     expect(store.get(CONTENT_ZOOM_DEFAULT_GEN_KEY)).toBe(
       String(CONTENT_ZOOM_DEFAULT_GEN)
     );
@@ -141,12 +141,23 @@ describe("readContentZoom default migration", () => {
   it("keeps an explicit 100% after the new default generation", () => {
     stubDisplay({
       zoom: "1",
-      gen: "2",
+      gen: "3",
       width: 3440,
       height: 1440,
       dpr: 1,
     });
     expect(readContentZoom()).toBe(1);
+  });
+
+  it("migrates a previous-generation 100% on ultrawide to the new default", () => {
+    stubDisplay({
+      zoom: "1",
+      gen: "2",
+      width: 3440,
+      height: 1440,
+      dpr: 1,
+    });
+    expect(readContentZoom()).toBe(1.4);
   });
 
   it("keeps a customized zoom", () => {
@@ -167,7 +178,7 @@ describe("readContentZoom default migration", () => {
       height: 1440,
       dpr: 1,
     });
-    expect(nudgeContentZoom(0)).toBe(1.3);
+    expect(nudgeContentZoom(0)).toBe(1.4);
   });
 });
 

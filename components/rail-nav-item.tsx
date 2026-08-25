@@ -307,7 +307,7 @@ export function RailNavItem({
         aria-haspopup={hasFlyout ? "menu" : undefined}
         aria-expanded={hasFlyout ? open : undefined}
         className={cn(
-          "group relative flex items-center justify-center gap-2.5 rounded-input px-2 py-2 text-sm transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice lg:justify-start lg:px-3",
+          "group relative flex items-center justify-center gap-2.5 rounded-input px-2 py-2.5 text-sm transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice lg:justify-start lg:px-3",
           active
             ? "font-semibold text-text-hi"
             : "font-medium text-text-lo hover:bg-bg-2/60 hover:text-text-hi"
@@ -323,7 +323,7 @@ export function RailNavItem({
           className={cn("size-4 shrink-0", active ? "text-ice" : "text-text-lo")}
           strokeWidth={1.75}
         />
-        <span className="hidden min-w-0 flex-1 truncate lg:inline">{item.label}</span>
+        <span className="hidden min-w-0 flex-1 truncate whitespace-nowrap lg:inline">{item.label}</span>
         {hasFlyout ? (
           <ChevronRight
             className={cn(

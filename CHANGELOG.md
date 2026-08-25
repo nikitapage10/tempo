@@ -4,6 +4,7 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-24
 
+- Changed (v0.212.0): On a wide monitor TEMPO is no longer sized like a laptop sitting in the middle of the screen. Type and the working column grow with the display, the left menu is a little roomier so Report a problem stays on one line, the TEMPO wordmark stays inside the rail instead of hanging off the edge, and TEMPO Desktop on an ultrawide 1440p screen starts larger than 100% (click the percentage to keep 100% if you prefer it).
 - Fixed (v0.211.9): Today’s studio banner no longer shows a faint square behind its rounded corners. The moving light now follows the same curve as the card instead of punching a rectangular hole through it.
 - Fixed (v0.211.8): Today’s banner now uses an explicit rounded GPU clip, preventing its animated layers from faintly bleeding past the curved corners.
 - Fixed (v0.211.7): Removed the blur and scaling that could break Today’s animated banner into visible rectangular tiles. Its edge softening now comes from a smooth light vignette instead.

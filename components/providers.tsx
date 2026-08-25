@@ -83,6 +83,10 @@ export function Providers({ children }: { children: ReactNode }) {
   const [hydrated, setHydrated] = useState(true);
 
   useEffect(() => {
+    if (isDesktopApp()) {
+      document.documentElement.dataset.tempoShell = "desktop";
+    }
+
     if (!isDesktopApp()) return;
 
     let active = true;

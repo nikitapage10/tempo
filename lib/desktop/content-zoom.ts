@@ -16,12 +16,12 @@ export const CONTENT_ZOOM_MAX = 2.0;
 export const CONTENT_ZOOM_STEP = 0.1;
 /** Labeled rail type/scale ceiling — grows with zoom only while there's width. */
 export const RAIL_TYPE_ZOOM_MAX = 1.35;
-export const RAIL_LABELED_WIDTH_PX = 196;
+export const RAIL_LABELED_WIDTH_PX = 220;
 export const RAIL_COMPACT_WIDTH_PX = 68;
 export const CONTENT_ZOOM_STORAGE_KEY = "tempo.contentZoom";
 export const CONTENT_ZOOM_EVENT = "tempo:content-zoom";
 /** Bumped when the implicit 100% default is replaced so old 1.0 prefs migrate. */
-export const CONTENT_ZOOM_DEFAULT_GEN = 2;
+export const CONTENT_ZOOM_DEFAULT_GEN = 3;
 export const CONTENT_ZOOM_DEFAULT_GEN_KEY = "tempo.contentZoom.defaultGen";
 
 export type DisplayMetrics = {
@@ -70,6 +70,7 @@ export function suggestedContentZoom(
   }
 
   // ~1x: 1440p / ultrawide CSS pixels are physically small.
+  if (width >= 3000 && height >= 1320) return 1.4;
   if (height >= 1320 || width >= 3000) return 1.3;
   if (height >= 1080 || width >= 1920) return 1.2;
   return 1;
