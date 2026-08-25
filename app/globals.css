@@ -888,6 +888,8 @@
 
   .today-hero {
     isolation: isolate;
+    clip-path: inset(0 round var(--radius-panel));
+    -webkit-clip-path: inset(0 round var(--radius-panel));
   }
 
   .today-hero__field {

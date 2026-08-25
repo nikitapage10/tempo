@@ -4,6 +4,7 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-08-24
 
+- Fixed (v0.211.8): Today’s banner now uses an explicit rounded GPU clip, preventing its animated layers from faintly bleeding past the curved corners.
 - Fixed (v0.211.7): Removed the blur and scaling that could break Today’s animated banner into visible rectangular tiles. Its edge softening now comes from a smooth light vignette instead.
 - Changed (v0.211.6): Album covers in Today’s workbench shelf are slightly larger and more spacious. The studio banner’s atmospheric layers now extend and soften past their own edges, with a gentle inner vignette that removes visible rectangular cutoffs.
 - Changed (v0.211.5): The album reel no longer overlaps Today’s greeting. It now forms the compact top shelf of one shared workbench with Continue working and Incoming, giving the banner a clean ending and keeping browsing connected to the work it leads into.
