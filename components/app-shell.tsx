@@ -276,7 +276,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       />
 
       <div className="flex min-h-0 flex-1">
-        {/* Compact icon rail from md→xl; full labels from xl up. Width grows
+        {/* Compact icon rail from md→lg; full labels from lg up. Width grows
             with content zoom only while labeled (so type can scale when there
             is room). Left 2px gutter stays transparent for active-nav windows. */}
         <aside
@@ -308,25 +308,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             className="pointer-events-none absolute inset-y-0 right-[-1px] w-px"
             aria-hidden
           />
-          <div className="px-2 pt-6 pb-4 xl:px-5">
-            <div className="flex items-center justify-center gap-2 xl:justify-start">
+          <div className="px-2 pt-6 pb-4 lg:px-5">
+            <div className="flex items-center justify-center gap-2 lg:justify-start">
               <Link
                 href="/"
                 className="rounded-input focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
               >
-                <Wordmark size={22} markOnly className="xl:hidden" />
-                <Wordmark size={26} withMark className="hidden xl:inline-flex" />
+                <Wordmark size={22} markOnly className="lg:hidden" />
+                <Wordmark size={26} withMark className="hidden lg:inline-flex" />
               </Link>
             </div>
             <FlareLine className="mt-3" />
           </div>
 
-          <div className="flex flex-col gap-1.5 px-1.5 pb-4 xl:px-3">
+          <div className="flex flex-col gap-1.5 px-1.5 pb-4 lg:px-3">
             <ArtistSwitcher />
             <SpaceSwitcher />
           </div>
 
-          <nav data-tour="workspace-nav" className="flex flex-1 flex-col gap-0.5 px-1.5 xl:px-3">
+          <nav data-tour="workspace-nav" className="flex flex-1 flex-col gap-0.5 px-1.5 lg:px-3">
             <RailFlyoutScope>
               {mainNav.map((item) => (
                 <RailNavItem
@@ -343,7 +343,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <GlobalPlayerBar />
 
           <SlitDivider />
-          <div className="px-1.5 py-4 xl:px-3">
+          <div className="px-1.5 py-4 lg:px-3">
             <DownloadButton />
             <Link
               href="/settings"
@@ -351,7 +351,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               title={NAV_DESCRIPTIONS["/settings"]}
               aria-label="Settings"
               className={cn(
-                "group relative flex items-center justify-center gap-2.5 rounded-input px-2 py-2 text-sm transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice xl:justify-start xl:px-3",
+                "group relative flex items-center justify-center gap-2.5 rounded-input px-2 py-2 text-sm transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice lg:justify-start lg:px-3",
                 isActive(pathname, "/settings")
                   ? "font-semibold text-text-hi"
                   : "font-medium text-text-lo hover:bg-bg-2/60 hover:text-text-hi"
@@ -359,7 +359,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             >
               {isActive(pathname, "/settings") ? (
                 <LfWindow
-                  className="absolute left-[-6px] top-1.5 bottom-1.5 w-[2px] xl:left-[-12px]"
+                  className="absolute left-[-6px] top-1.5 bottom-1.5 w-[2px] lg:left-[-12px]"
                   aria-hidden
                 />
               ) : null}
@@ -370,8 +370,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 )}
                 strokeWidth={1.75}
               />
-              <span className="hidden xl:inline">Settings</span>
-              <span className="pointer-events-none absolute left-[calc(100%+12px)] top-1/2 z-[90] hidden w-60 -translate-y-1/2 rounded-input border border-line bg-bg-1 px-3 py-2 text-xs leading-relaxed text-text-lo opacity-0 shadow-e3 transition-opacity delay-150 group-hover:opacity-100 group-focus-visible:opacity-100 xl:block">
+              <span className="hidden lg:inline">Settings</span>
+              <span className="pointer-events-none absolute left-[calc(100%+12px)] top-1/2 z-[90] hidden w-60 -translate-y-1/2 rounded-input border border-line bg-bg-1 px-3 py-2 text-xs leading-relaxed text-text-lo opacity-0 shadow-e3 transition-opacity delay-150 group-hover:opacity-100 group-focus-visible:opacity-100 lg:block">
                 {NAV_DESCRIPTIONS["/settings"]}
               </span>
             </Link>
@@ -379,7 +379,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Link
               href="/beta"
               title={`v${APP_VERSION}`}
-              className="mt-3 hidden rounded-input px-3 py-1 font-mono text-xs text-text-lo/70 transition-colors hover:bg-bg-2 hover:text-ice xl:block"
+              className="mt-3 hidden rounded-input px-3 py-1 font-mono text-xs text-text-lo/70 transition-colors hover:bg-bg-2 hover:text-ice lg:block"
             >
               v{APP_VERSION}
             </Link>

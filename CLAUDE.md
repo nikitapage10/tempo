@@ -28,10 +28,9 @@ day of work), not per commit:
 3. **PRODUCT.md** — update when the product's feature set actually changed.
    It describes TEMPO as it exists today, never the roadmap.
 
-A pre-push hook (`.claude/hooks/check-release-rules.sh`) enforces this at
-`git push` time by checking the *whole range* of commits since the last push,
-not each commit individually — so commit freely while working, and only do the
-version bump / CHANGELOG / PRODUCT.md pass once, right before pushing.
+A pre-push hook (`.claude/hooks/check-release-rules.sh`) enforces this when the
+user explicitly asks for a push by checking the *whole range* of commits since
+the last push. Do not commit or push unless the user asks.
 Tooling-only pushes with no app-facing change opt out by putting
 `[skip-release-check]` in the commit message — every commit in the push needs
 the marker, not just one.
@@ -48,15 +47,20 @@ node scripts/agent-workspace.mjs acquire --wait --json
 That assigns **Workspace 1**, **Workspace 2**, or **Workspace 3**
 (`../TEMPO-worktrees/…`). Works the same whether you are in **Cursor**, **Claude
 Code**, or **Codex** — one pool, one mutex. If all three are busy, `--wait`
-queues until a slot frees. Open the returned folder as your project root, work
-on `main` there, stage narrowly (never `git add -A`), rebase before the release
-pass, then:
+queues until a slot frees. Open the returned folder as your project root and
+work only there. Finish the release pass and verification, then:
 
 ```bash
 node scripts/agent-workspace.mjs release --agent-id <id>
 ```
 
-Read `AGENTS.md` for status, heartbeat, force-clear, and push protocol.
+That command integrates the completed work into the clean primary local
+`TEMPO` checkout, cleans the slot, and releases it. It never pushes. If primary
+is dirty or conflicts, integration stops without stashing or overwriting human
+work. Cloud agents cannot access local `TEMPO`; they use a remote branch or PR,
+and the next foreground local session fast-forwards the clean local checkout.
+
+Read `AGENTS.md` for status, heartbeat, force-clear, and handoff protocol.
 
 ## Other things that bite
 

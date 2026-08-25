@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronUp, Plus } from "lucide-react";
+import { ArrowUpRight, Inbox, ListMusic, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -43,12 +43,10 @@ import {
   sortTracksByAttention,
 } from "@/lib/attention/signals";
 import { useQuery } from "@tanstack/react-query";
-import { SlitDivider } from "@/components/ui/slit";
-import { SpotlightCard } from "@/components/ui/spotlight-card";
-import { TrackCoverSlider } from "@/components/today/track-cover-slider";
 import { ActivationGuideModule } from "@/components/today/activation-guide-module";
 import { PulseModule } from "@/components/today/pulse-module";
 import { ProTodayHub } from "@/components/today/pro-today-hub";
+import { TrackCoverSlider } from "@/components/today/track-cover-slider";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useWorkspaceMode } from "@/hooks/use-workspace-mode";
 
@@ -84,10 +82,7 @@ export default function TodayPage() {
   const [focusPickerOpen, setFocusPickerOpen] = React.useState(false);
   const [focusPickTrackId, setFocusPickTrackId] = React.useState("");
   const [focusTrackId, setFocusTrackId] = React.useState<string | null>(null);
-  const [attentionExpanded, setAttentionExpanded] = React.useState(false);
   const weeklyQuery = useWeeklyElapsed();
-
-  React.useEffect(() => setAttentionExpanded(false), [activeSpaceId]);
 
   const statsQuery = useQuery({
     queryKey: ["today-stats", activeSpaceId],
@@ -112,9 +107,8 @@ export default function TodayPage() {
   const prioritized = sortTracksByAttention(
     activeTracks.map((track) => ({ track }))
   );
-  const visibleAttention = attentionExpanded
-    ? prioritized
-    : prioritized.slice(0, 4);
+  const featuredTrack = prioritized[0]?.track ?? null;
+  const queuedAttention = prioritized.slice(1, 4);
   const waiting = prioritized.filter((x) =>
     deriveAttentionSignals(x).some((s) => s.id === "waiting" || s.id === "blocked")
   );
@@ -126,6 +120,10 @@ export default function TodayPage() {
   const tasksDue = tasks
     .filter((t) => t.status !== "done" && t.due_date && t.due_date < weekEnd)
     .sort((a, b) => (a.due_date! < b.due_date! ? -1 : 1));
+  const overdueTasks = tasksDue.filter((task) => task.due_date! < today).slice(0, 3);
+  const upcomingTasks = tasksDue
+    .filter((task) => task.due_date! >= today)
+    .slice(0, Math.max(0, 4 - overdueTasks.length));
   const openTasks = tasks.filter((t) => t.status !== "done");
   const activeProjects = projects.filter((p) => p.status === "active");
 
@@ -148,6 +146,17 @@ export default function TodayPage() {
     router.push(`/track/${track.id}`);
   }
 
+  async function handleToggleTodayTask(task: Task) {
+    try {
+      await updateTask.mutateAsync({
+        id: task.id,
+        patch: { status: task.status === "done" ? "todo" : "done" },
+      });
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Couldn’t update task.");
+    }
+  }
+
   const focusTrack = tracks.find((t) => t.id === focusTrackId) ?? null;
   const weekly = weeklyQuery.data;
   const weeklyLabel = weekly
@@ -157,128 +166,65 @@ export default function TodayPage() {
     : null;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <ActiveSessionBanner />
 
-      {/* Today hero — glass shell holds the card; an inner field window lets
-          Spectra wash the background without fringing a hole under the border. */}
-      <div data-tour="today" className="glass-hero prism-edge relative overflow-hidden">
-        <div className="absolute inset-0">
-          <LfWindow field className="absolute inset-0" aria-hidden />
+      {/* One cinematic Spectra window sets the atmosphere; copy stays over a
+          dense scrim while the field and artist identity breathe on the right. */}
+      <div
+        data-tour="today"
+        className="today-hero glass-hero prism-edge relative min-h-[224px] overflow-hidden sm:min-h-[244px]"
+      >
+        <div className="absolute inset-0" aria-hidden>
+          <LfWindow field className="today-hero__field absolute inset-0" />
           {activeArtist ? (
             <ArtistBanner
               artist={activeArtist}
               fadeRight
-              className="absolute inset-0"
+              className="today-hero__banner absolute inset-0"
             />
           ) : null}
-          <div className="scrim-reveal absolute inset-0" aria-hidden />
+          <div className="today-hero__aperture absolute inset-0" />
+          <div className="scrim-reveal absolute inset-0" />
         </div>
         {activeArtist?.logo_url ? (
-          <div className="pointer-events-none absolute inset-y-0 right-0 z-[1] flex w-[min(48%,24rem)] items-end justify-end p-2 sm:p-3">
+          <div className="today-hero__logo pointer-events-none absolute inset-y-0 right-0 z-[1] flex w-[min(43%,24rem)] items-end justify-end p-5 sm:p-7">
             <SignedImage
               path={activeArtist.logo_url}
               alt={activeArtist.name}
-              className="h-auto max-h-[min(70%,11rem)] w-auto max-w-full object-contain sm:max-h-[13rem]"
+              className="h-auto max-h-[8rem] w-auto max-w-full object-contain sm:max-h-[11rem]"
             />
           </div>
         ) : null}
-        <div className="relative z-[1] flex flex-col gap-6 px-6 py-7 sm:px-8 sm:py-9">
+        <div className="today-hero__content relative z-[1] flex min-h-[224px] max-w-[58%] flex-col justify-between gap-6 px-6 py-6 sm:min-h-[244px] sm:px-8 sm:py-7">
           <div className="min-w-0">
-            <h1 className="font-display text-3xl font-semibold tracking-[0.02em] text-text-hi sm:text-[40px] sm:leading-[1.05]">
+            <p className="label-mono mb-2.5 text-text-lo/80">Today in the studio</p>
+            <h1 className="font-display text-3xl font-semibold tracking-[-0.02em] text-text-hi sm:text-[42px] sm:leading-none">
               {greetingForHour(now.getHours())}
             </h1>
-            <p className="mt-1.5 text-sm text-text-lo">{dateLabel}</p>
+            <p className="mt-2 text-sm text-text-lo">{dateLabel}</p>
+            {!tasksFocused && weeklyLabel ? (
+              <p className="mt-3 flex max-w-full items-center gap-2 text-xs text-text-lo">
+                <span className="size-1.5 shrink-0 rounded-full bg-amber shadow-[0_0_10px_rgb(255_181_107_/_0.7)]" />
+                <span>{weeklyLabel}</span>
+              </p>
+            ) : null}
           </div>
 
-          {tasksFocused ? (
-            <div className="flex flex-wrap items-start gap-x-10 gap-y-5">
-              <Stat value={statsQuery.data?.due} label="Due" />
-              <Stat value={openTasks.length} label="Open" tone="amber" />
-              <Stat value={activeProjects.length} label="Projects" />
-            </div>
-          ) : (
-            <div className="flex flex-wrap items-start gap-x-10 gap-y-5">
-              <Stat value={activeTracks.length} label="Active" tone="amber" />
-              <Stat value={statsQuery.data?.due} label="Due" />
-              <Stat value={statsQuery.data?.sessions} label="Sessions" />
-            </div>
-          )}
-
-          {!tasksFocused && weeklyLabel ? (
-            <p className="-mt-1 text-xs text-text-lo">{weeklyLabel}</p>
-          ) : null}
-
-          <div
-            className={cn(
-              activeArtist?.logo_url && "pr-[min(50%,280px)] sm:pr-[360px]"
-            )}
-          >
-            <FlareLine className="mb-4 max-w-[420px] opacity-60" />
-            <div data-tour="today-actions" className="flex flex-wrap gap-2">
+          <div>
+            <FlareLine className="mb-3 opacity-70" />
+            <div className="flex items-start gap-8 sm:gap-10">
               {tasksFocused ? (
                 <>
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={() => setTaskOpen(true)}
-                  >
-                    <Plus className="size-3.5" />
-                    Task
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => router.push("/projects")}
-                  >
-                    <Plus className="size-3.5" />
-                    Project
-                  </Button>
+                  <Stat value={statsQuery.data?.due} label="Due" />
+                  <Stat value={openTasks.length} label="Open" tone="amber" />
+                  <Stat value={activeProjects.length} label="Projects" />
                 </>
               ) : (
                 <>
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={() => setTrackModalOpen(true)}
-                  >
-                    <Plus className="size-3.5" />
-                    Track
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setTaskOpen(true)}
-                  >
-                    <Plus className="size-3.5" />
-                    Task
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => {
-                      setSessionTrackId(activeTracks[0]?.id ?? tracks[0]?.id ?? "");
-                      setSessionOpen(true);
-                    }}
-                  >
-                    Log session
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => {
-                      setFocusPickTrackId(
-                        activeTracks[0]?.id ?? tracks[0]?.id ?? ""
-                      );
-                      setFocusPickerOpen(true);
-                    }}
-                  >
-                    Start focus
-                  </Button>
+                  <Stat value={activeTracks.length} label="Active" tone="amber" />
+                  <Stat value={statsQuery.data?.due} label="Due" />
+                  <Stat value={statsQuery.data?.sessions} label="Sessions" />
                 </>
               )}
             </div>
@@ -286,16 +232,43 @@ export default function TodayPage() {
         </div>
       </div>
 
+      {!tasksFocused && tracks.length > 0 ? (
+        <TrackCoverSlider tracks={tracks} />
+      ) : null}
+
+      {tasksFocused ? (
+        <div
+          data-tour="today-actions"
+          className="well flex flex-wrap items-center gap-2 px-3 py-2"
+        >
+          <p className="label-mono mr-2 hidden text-text-lo/70 sm:block">
+            Start something
+          </p>
+          <>
+            <Button type="button" size="sm" onClick={() => setTaskOpen(true)}>
+              <Plus className="size-3.5" />
+              Task
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => router.push("/projects")}
+            >
+              <Plus className="size-3.5" />
+              Project
+            </Button>
+          </>
+        </div>
+      ) : null}
+
       {!empty && !tasksFocused && activeArtist && currentUser ? (
-        <>
-          <ActivationGuideModule
-            spaceId={activeSpaceId ?? ""}
-            artistId={activeArtist.id}
-            ownerId={currentUser.id}
-            isExistingMember={activeArtist.origin_status === "legacy_complete"}
-          />
-          <PulseModule />
-        </>
+        <ActivationGuideModule
+          spaceId={activeSpaceId ?? ""}
+          artistId={activeArtist.id}
+          ownerId={currentUser.id}
+          isExistingMember={activeArtist.origin_status === "legacy_complete"}
+        />
       ) : null}
 
       {empty ? (
@@ -325,41 +298,143 @@ export default function TodayPage() {
           today={today}
           tasksLoading={tasksQuery.isLoading}
           projectsLoading={projectsQuery.isLoading}
-          onToggleTask={async (task) => {
-            try {
-              await updateTask.mutateAsync({
-                id: task.id,
-                patch: { status: task.status === "done" ? "todo" : "done" },
-              });
-            } catch (err) {
-              toast(err instanceof Error ? err.message : "Couldn’t update task.");
-            }
-          }}
+          onToggleTask={handleToggleTodayTask}
         />
       ) : (
-        <div className="grid gap-4 lg:grid-cols-5">
-          {/* Primary: what the musician should act on. */}
-          <section className="panel p-5 lg:col-span-3">
-            <SectionHeader label="Needs attention" count={prioritized.length} />
-            {tracksQuery.isLoading ? (
-              <div className="h-20 animate-pulse rounded-card bg-bg-2" />
-            ) : prioritized.length === 0 ? (
-              <QuietEmpty>
-                No active tracks in {activeSpace?.name ?? "this space"}. Mark
-                momentum Active on a track to see it here.
-              </QuietEmpty>
+        <div className="space-y-4">
+          <div className="grid gap-4 lg:grid-cols-12">
+            <FeaturedTrackCard
+              track={featuredTrack}
+              stageName={
+                featuredTrack
+                  ? stages.find((stage) => stage.id === featuredTrack.stage_id)?.name
+                  : undefined
+              }
+              reason={
+                featuredTrack
+                  ? deriveAttentionSignals({ track: featuredTrack })[0]?.explanation
+                  : undefined
+              }
+              onAddTrack={() => setTrackModalOpen(true)}
+              actions={
+                <>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => setTrackModalOpen(true)}
+                  >
+                    <Plus className="size-3.5" />
+                    Track
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setTaskOpen(true)}
+                  >
+                    <Plus className="size-3.5" />
+                    Task
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setSessionTrackId(
+                        activeTracks[0]?.id ?? tracks[0]?.id ?? ""
+                      );
+                      setSessionOpen(true);
+                    }}
+                  >
+                    Log session
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setFocusPickTrackId(
+                        activeTracks[0]?.id ?? tracks[0]?.id ?? ""
+                      );
+                      setFocusPickerOpen(true);
+                    }}
+                  >
+                    Start focus
+                  </Button>
+                </>
+              }
+            />
+
+            <section className="panel-quiet p-5 sm:p-6 lg:col-span-5">
+              <div className="mb-4 flex items-center gap-3">
+                <span className="flex size-8 items-center justify-center rounded-full border border-ice/20 bg-ice/10 text-ice">
+                  <Inbox className="size-4" />
+                </span>
+                <div>
+                  <p className="label-mono">Incoming</p>
+                  <p className="mt-1 text-xs text-text-lo">What changed and what is waiting.</p>
+                </div>
+              </div>
+              <PulseModule embedded />
+              <div className="mt-4 divide-y divide-line/60 border-y border-line/60">
+                <Link
+                  href="/tasks"
+                  className="flex items-center justify-between py-3 text-sm text-text-hi hover:text-ice"
+                >
+                  <span>Commitments due</span>
+                  <span className="font-data tabular-nums text-amber">{tasksDue.length}</span>
+                </Link>
+                <div className="flex items-center justify-between py-3 text-sm text-text-lo">
+                  <span>Waiting or blocked</span>
+                  <span className="font-data tabular-nums text-text-hi">{waiting.length}</span>
+                </div>
+                <div className="flex items-center justify-between py-3 text-sm text-text-lo">
+                  <span>Ready for review</span>
+                  <span className="font-data tabular-nums text-text-hi">{review.length}</span>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <section className="panel p-5 sm:p-6">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <span className="flex size-8 items-center justify-center rounded-full border border-amber/20 bg-amber/10 text-amber">
+                  <ListMusic className="size-4" />
+                </span>
+                <div>
+                  <p className="label-mono">Next up</p>
+                  <p className="mt-1 text-sm text-text-lo">
+                    The work worth touching after your current song.
+                  </p>
+                </div>
+              </div>
+              <span className="font-data text-xs tabular-nums text-text-lo">
+                {Math.max(0, prioritized.length - 1) + tasksDue.length} queued
+              </span>
+            </div>
+            {queuedAttention.length === 0 &&
+            overdueTasks.length === 0 &&
+            upcomingTasks.length === 0 ? (
+              <QuietEmpty>You are clear after this. Stay with the song in front of you.</QuietEmpty>
             ) : (
-              <ul className="space-y-2">
-                {visibleAttention.map(({ track }) => {
-                  const signals = deriveAttentionSignals({ track });
-                  const top = signals[0];
+              <ul className="mt-4 divide-y divide-line/60 border-t border-line/60">
+                {overdueTasks.map((task) => (
+                  <TodayTaskRow
+                    key={task.id}
+                    task={task}
+                    today={today}
+                    onToggle={() => handleToggleTodayTask(task)}
+                  />
+                ))}
+                {queuedAttention.map(({ track }) => {
+                  const top = deriveAttentionSignals({ track })[0];
                   return (
                     <InMotionRow
                       key={track.id}
                       track={track}
-                      stageName={
-                        stages.find((s) => s.id === track.stage_id)?.name
-                      }
+                      stageName={stages.find((stage) => stage.id === track.stage_id)?.name}
                       reason={top?.explanation}
                       actionHref={
                         top?.id === "unresolved-feedback"
@@ -376,87 +451,33 @@ export default function TodayPage() {
                     />
                   );
                 })}
-              </ul>
-            )}
-            {prioritized.length > 4 ? (
-              <button
-                type="button"
-                onClick={() => setAttentionExpanded((value) => !value)}
-                className="mt-3 inline-flex items-center gap-1.5 text-xs text-ice transition-colors hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
-                aria-expanded={attentionExpanded}
-              >
-                {attentionExpanded ? (
-                  <>
-                    <ChevronUp className="size-3.5" /> Show four
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown className="size-3.5" /> Show {prioritized.length - 4} more
-                  </>
-                )}
-              </button>
-            ) : null}
-            {waiting.length > 0 || review.length > 0 ? (
-              <>
-                <SlitDivider className="mt-4" />
-                <div className="flex flex-wrap gap-x-4 gap-y-1 pt-3">
-                {waiting.length > 0 ? (
-                  <span className="label-mono">
-                    Waiting / blocked{" "}
-                    <span className="text-amber">{waiting.length}</span>
-                  </span>
-                ) : null}
-                {review.length > 0 ? (
-                  <span className="label-mono">
-                    Review <span className="text-amber">{review.length}</span>
-                  </span>
-                ) : null}
-                </div>
-              </>
-            ) : null}
-          </section>
-
-          {/* Secondary: quieter surface so it doesn't compete. */}
-          <section className="panel-quiet p-5 lg:col-span-2">
-            <SectionHeader label="Tasks due" count={tasksDue.length} />
-            {tasksQuery.isLoading ? (
-              <div className="h-20 animate-pulse rounded-card bg-bg-2" />
-            ) : tasksDue.length === 0 ? (
-              <QuietEmpty>Nothing due this week.</QuietEmpty>
-            ) : (
-              <ul className="space-y-1">
-                {tasksDue.map((task) => (
+                {upcomingTasks.map((task) => (
                   <TodayTaskRow
                     key={task.id}
                     task={task}
                     today={today}
-                    onToggle={async () => {
-                      try {
-                        await updateTask.mutateAsync({
-                          id: task.id,
-                          patch: {
-                            status: task.status === "done" ? "todo" : "done",
-                          },
-                        });
-                      } catch (err) {
-                        toast(
-                          err instanceof Error
-                            ? err.message
-                            : "Couldn’t update task."
-                        );
-                      }
-                    }}
+                    onToggle={() => handleToggleTodayTask(task)}
                   />
                 ))}
               </ul>
             )}
+            {prioritized.length > 4 || tasksDue.length > 4 ? (
+              <div className="mt-4 flex flex-wrap gap-4 border-t border-line/60 pt-4 text-xs">
+                {prioritized.length > 4 ? (
+                  <Link href="/tracks" className="text-ice hover:underline">
+                    See every active track
+                  </Link>
+                ) : null}
+                {tasksDue.length > 4 ? (
+                  <Link href="/tasks" className="text-ice hover:underline">
+                    Open all due tasks
+                  </Link>
+                ) : null}
+              </div>
+            ) : null}
           </section>
         </div>
       )}
-
-      {!tasksFocused && tracks.length > 0 ? (
-        <TrackCoverSlider tracks={tracks} className="pt-2" />
-      ) : null}
 
       {isProHome ? <ProTodayHub /> : null}
 
@@ -644,6 +665,88 @@ export default function TodayPage() {
   );
 }
 
+function FeaturedTrackCard({
+  track,
+  stageName,
+  reason,
+  onAddTrack,
+  actions,
+}: {
+  track: Track | null;
+  stageName?: string;
+  reason?: string;
+  onAddTrack: () => void;
+  actions: React.ReactNode;
+}) {
+  return (
+    <section className="glass-hero prism-edge relative overflow-hidden p-5 sm:p-6 lg:col-span-7">
+      <LfWindow field className="absolute inset-y-0 right-0 w-[58%] opacity-75" aria-hidden />
+      <div
+        className="absolute inset-0 bg-[linear-gradient(96deg,rgb(var(--bg-0-rgb)_/_0.96)_0%,rgb(var(--bg-0-rgb)_/_0.88)_46%,rgb(var(--bg-0-rgb)_/_0.3)_100%)]"
+        aria-hidden
+      />
+      <div className="relative">
+        <p className="label-mono text-amber">Continue working</p>
+        {track ? (
+          <div className="mt-4 grid gap-5 sm:grid-cols-[132px_minmax(0,1fr)] sm:items-center">
+            <Link
+              href={`/track/${track.id}`}
+              className="group relative aspect-square w-[132px] overflow-hidden rounded-card border border-line shadow-e2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+            >
+              <SpectraCoverArt
+                trackId={track.id}
+                title={track.title}
+                artworkUrl={track.artwork_url}
+              />
+              <span className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/10" />
+            </Link>
+            <div className="min-w-0">
+              <p className="font-data text-[11px] uppercase tracking-[0.12em] text-text-lo">
+                {stageName ?? "No stage"}
+              </p>
+              <h2 className="mt-1 truncate font-display text-2xl font-semibold tracking-tight text-text-hi">
+                {track.title}
+              </h2>
+              {reason ? <p className="mt-2 text-sm text-amber">{reason}</p> : null}
+              <p className="mt-2 line-clamp-2 text-sm text-text-lo">
+                {track.next_action?.trim() || "Open the track and name the next move."}
+              </p>
+              <Button asChild size="sm" className="mt-4">
+                <Link href={`/track/${track.id}`}>
+                  Open track
+                  <ArrowUpRight className="size-3.5" />
+                </Link>
+              </Button>
+              <div
+                data-tour="today-actions"
+                className="mt-4 border-t border-line/60 pt-3"
+              >
+                <p className="label-mono mb-2 text-[10px] text-text-lo/70">
+                  Start something
+                </p>
+                <div className="flex flex-wrap gap-1">{actions}</div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="relative mt-4 max-w-md py-5">
+            <h2 className="font-display text-xl font-semibold text-text-hi">
+              Put a song in motion
+            </h2>
+            <p className="mt-2 text-sm text-text-lo">
+              Mark a track Active and it will become the center of Today.
+            </p>
+            <Button type="button" size="sm" className="mt-4" onClick={onAddTrack}>
+              <Plus className="size-3.5" />
+              Track
+            </Button>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function formatHoursMinutes(totalSec: number): string {
   const totalMin = Math.round(totalSec / 60);
   const h = Math.floor(totalMin / 60);
@@ -653,7 +756,7 @@ function formatHoursMinutes(totalSec: number): string {
   return `${h}h ${m}m`;
 }
 
-/** Big glanceable numeral + label. Mono per spec — all data is mono. */
+/** Big glanceable numeral + label. */
 function Stat({
   value,
   label,
@@ -664,7 +767,7 @@ function Stat({
   tone?: "amber";
 }) {
   return (
-    <div>
+    <div className="min-w-11">
       <p
         className={cn(
           "stat-value",
@@ -678,7 +781,7 @@ function Stat({
       >
         {value ?? "—"}
       </p>
-      <p className="label-mono mt-2">{label}</p>
+      <p className="label-mono mt-1.5 text-[10px]">{label}</p>
     </div>
   );
 }
@@ -875,20 +978,14 @@ function InMotionRow({
   });
 
   return (
-    <SpotlightCard
-      as="li"
-      tone={track.blocked_reason?.trim() ? "warn" : "ramp"}
-      radius={12}
-      size={220}
-      className="well lift px-3 py-2.5"
-    >
+    <li className="lift rounded-input px-2 py-3">
       <div className="relative flex items-center gap-3">
         <Link
           href={actionHref ?? `/track/${track.id}`}
           className="flex min-w-0 flex-1 items-center gap-3"
         >
           <div
-            className="relative size-11 shrink-0 overflow-hidden rounded-input border border-line shadow-e1"
+            className="relative size-12 shrink-0 overflow-hidden rounded-input border border-line shadow-e1"
           >
             <SpectraCoverArt
               trackId={track.id}
@@ -920,6 +1017,6 @@ function InMotionRow({
           </Link>
         ) : null}
       </div>
-    </SpotlightCard>
+    </li>
   );
 }

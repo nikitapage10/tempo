@@ -14,6 +14,7 @@ import {
 } from "@/components/spotify/spotify-embed-player";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { InfiniteSlider } from "@/components/ui/infinite-slider-horizontal";
+import { LfWindow } from "@/components/lf-windows";
 import { useVersionsForTracks } from "@/hooks/use-versions";
 import type { Track } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -24,8 +25,8 @@ type TrackCoverSliderProps = {
 };
 
 /**
- * Dual-row infinite marquee of track covers on Today. The artwork plays the
- * current bounce; the revealed title strip opens the track workspace.
+ * One restrained reel of the current catalog. Artwork stays secondary to the
+ * Today hero; the cover plays and its title strip opens the track workspace.
  */
 export function TrackCoverSlider({ tracks, className }: TrackCoverSliderProps) {
   const versionsQuery = useVersionsForTracks(tracks.map((track) => track.id));
@@ -100,63 +101,52 @@ export function TrackCoverSlider({ tracks, className }: TrackCoverSliderProps) {
 
   return (
     <>
-      <div
-        className={cn("relative -mx-1 overflow-hidden py-1", className)}
-        style={{
-          maskImage:
-            "linear-gradient(to right, transparent, black 8%, black 92%, transparent)",
-          WebkitMaskImage:
-            "linear-gradient(to right, transparent, black 8%, black 92%, transparent)",
-        }}
-      >
-        <div className="flex flex-col gap-4">
-        <InfiniteSlider
-          direction="horizontal"
-          gap={14}
-          duration={110}
-          durationOnHover={420}
-        >
-          {tiles.map((track, index) => (
-            <CoverTile
-              key={`a-${track.id}-${index}`}
-              track={track}
-              source={
-                playableTracks.has(track.id)
-                  ? "bounce"
-                  : resolveSpotifyTrackId(track.spotify_track_id, track.spotify_url)
-                    ? "spotify"
-                    : null
-              }
-              playing={current?.id === track.id && playing}
-              onPlay={() => handlePlay(track)}
-            />
-          ))}
-        </InfiniteSlider>
-        <InfiniteSlider
-          direction="horizontal"
-          reverse
-          gap={14}
-          duration={125}
-          durationOnHover={460}
-        >
-          {tiles.map((track, index) => (
-            <CoverTile
-              key={`b-${track.id}-${index}`}
-              track={track}
-              source={
-                playableTracks.has(track.id)
-                  ? "bounce"
-                  : resolveSpotifyTrackId(track.spotify_track_id, track.spotify_url)
-                    ? "spotify"
-                    : null
-              }
-              playing={current?.id === track.id && playing}
-              onPlay={() => handlePlay(track)}
-            />
-          ))}
-        </InfiniteSlider>
+      <section className={cn("relative", className)} aria-labelledby="studio-reel-heading">
+        <div className="mb-3 flex items-center gap-3 px-1">
+          <h2 id="studio-reel-heading" className="label-mono shrink-0">
+            In your studio
+          </h2>
+          <span className="font-data text-[11px] tabular-nums text-text-lo/60">
+            {tracks.length}
+          </span>
+          <LfWindow className="h-px flex-1 opacity-70" aria-hidden />
         </div>
-      </div>
+        <div
+          className="today-studio-reel relative -mx-1 overflow-hidden py-2"
+          style={{
+            maskImage:
+              "linear-gradient(to right, transparent, black 7%, black 93%, transparent)",
+            WebkitMaskImage:
+              "linear-gradient(to right, transparent, black 7%, black 93%, transparent)",
+          }}
+        >
+          <InfiniteSlider
+            direction="horizontal"
+            gap={18}
+            duration={155}
+            durationOnHover={560}
+          >
+            {tiles.map((track, index) => (
+              <CoverTile
+                key={`${track.id}-${index}`}
+                track={track}
+                source={
+                  playableTracks.has(track.id)
+                    ? "bounce"
+                    : resolveSpotifyTrackId(
+                          track.spotify_track_id,
+                          track.spotify_url
+                        )
+                      ? "spotify"
+                      : null
+                }
+                playing={current?.id === track.id && playing}
+                onPlay={() => handlePlay(track)}
+              />
+            ))}
+          </InfiniteSlider>
+        </div>
+      </section>
       <Dialog
         open={spotifyTrack != null}
         onOpenChange={(open) => !open && setSpotifyTrack(null)}
@@ -195,7 +185,7 @@ function CoverTile({
 }) {
   const playable = source != null;
   return (
-    <article className="group relative aspect-square w-[148px] shrink-0 overflow-hidden rounded-card border border-line/60 shadow-e1 opacity-[0.55] transition-[opacity,border-color,box-shadow,transform] duration-300 ease-out hover:z-10 hover:scale-[1.02] hover:border-ice/40 hover:opacity-100 hover:shadow-e2 focus-within:z-10 focus-within:border-ice/40 focus-within:opacity-100 focus-within:shadow-e2 sm:w-[168px]">
+    <article className="group relative aspect-square w-[152px] shrink-0 overflow-hidden rounded-card border border-line/60 shadow-e1 opacity-[0.66] transition-[opacity,border-color,box-shadow,transform] duration-300 ease-out hover:z-10 hover:scale-[1.025] hover:border-ice/40 hover:opacity-100 hover:shadow-e2 focus-within:z-10 focus-within:border-ice/40 focus-within:opacity-100 focus-within:shadow-e2 sm:w-[176px]">
       <SpectraCoverArt
         trackId={track.id}
         title={track.title}

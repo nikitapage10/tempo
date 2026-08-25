@@ -861,6 +861,81 @@
     );
   }
 
+  /* Today is a single studio window rather than a stack of decorative cards.
+   * The right-side aperture lets Spectra breathe while the copy side remains
+   * dark enough to read over artist banners and the persistent video wash. */
+  .today-hero {
+    isolation: isolate;
+  }
+
+  .today-hero__field {
+    opacity: 0.92;
+  }
+
+  .today-hero__banner {
+    opacity: 0.56;
+    filter: saturate(0.82) contrast(1.06);
+  }
+
+  .today-hero__aperture {
+    background:
+      radial-gradient(
+        ellipse 46% 78% at 78% 46%,
+        rgb(var(--ice-rgb) / 0.13) 0%,
+        rgb(var(--amber-rgb) / 0.05) 42%,
+        transparent 72%
+      ),
+      linear-gradient(
+        112deg,
+        transparent 48%,
+        rgb(var(--bg-0-rgb) / 0.05) 70%,
+        rgb(var(--bg-0-rgb) / 0.18) 100%
+      );
+  }
+
+  .today-hero .scrim-reveal {
+    background: linear-gradient(
+      96deg,
+      rgb(var(--bg-0-rgb) / 0.96) 0%,
+      rgb(var(--bg-0-rgb) / 0.9) 34%,
+      rgb(var(--bg-0-rgb) / 0.62) 57%,
+      rgb(var(--bg-0-rgb) / 0.24) 78%,
+      rgb(var(--bg-0-rgb) / 0.12) 100%
+    );
+  }
+
+  .today-hero__logo {
+    opacity: 0.74;
+    filter: drop-shadow(0 10px 24px rgb(var(--bg-0-rgb) / 0.72));
+  }
+
+  @media (max-width: 640px) {
+    .today-hero__banner {
+      opacity: 0.42;
+    }
+
+    .today-hero .scrim-reveal {
+      background: linear-gradient(
+        168deg,
+        rgb(var(--bg-0-rgb) / 0.95) 0%,
+        rgb(var(--bg-0-rgb) / 0.86) 54%,
+        rgb(var(--bg-0-rgb) / 0.42) 100%
+      );
+    }
+
+    .today-hero__logo {
+      align-items: flex-end;
+      justify-content: flex-end;
+      width: 44%;
+      padding: 1rem;
+      opacity: 0.4;
+    }
+
+    .today-hero__content {
+      max-width: 100%;
+    }
+  }
+
   /* ---------------------------------------------------------------------
    * Spotlight card (v0.16)
    *

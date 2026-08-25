@@ -24,7 +24,7 @@ describe("TEMPO supplied wordmark", () => {
     expect(wordmark).not.toContain("TypeWordmark");
     expect(wordmark).toContain("w-px");
     expect(read("components/app-shell.tsx")).toContain(
-      '<Wordmark size={26} withMark className="hidden xl:inline-flex" />'
+      '<Wordmark size={26} withMark className="hidden lg:inline-flex" />'
     );
     for (const path of [
       "app/login/page.tsx",

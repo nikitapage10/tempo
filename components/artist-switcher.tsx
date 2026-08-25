@@ -123,14 +123,14 @@ export function ArtistSwitcher() {
         onClick={() => setOpen((v) => !v)}
         title={label}
         aria-label={mode === "work" ? `Working as ${label}` : `Artist: ${label}`}
-        className="flex w-full items-center justify-center gap-2.5 rounded-input px-1.5 py-1.5 text-left text-sm text-text-hi transition-colors duration-hover hover:bg-bg-2/60 xl:justify-start xl:px-2"
+        className="flex w-full items-center justify-center gap-2.5 rounded-input px-1.5 py-1.5 text-left text-sm text-text-hi transition-colors duration-hover hover:bg-bg-2/60 lg:justify-start lg:px-2"
         aria-expanded={open}
         aria-haspopup="listbox"
       >
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-input border border-line bg-bg-2 font-display text-[11px] tracking-wide text-text-hi xl:hidden">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-input border border-line bg-bg-2 font-display text-[11px] tracking-wide text-text-hi lg:hidden">
           {initials(label)}
         </span>
-        <span className="hidden min-w-0 truncate font-display text-[13px] tracking-wide xl:inline">
+        <span className="hidden min-w-0 truncate font-display text-[13px] tracking-wide lg:inline">
           {label}
         </span>
         <ChevronDown

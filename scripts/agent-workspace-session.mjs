@@ -12,10 +12,11 @@ import {
   heartbeatWorkspace,
   getWorktreesRoot,
   resolveAgentTool,
+  resolveMainRepoRoot,
 } from "./agent-workspace-lib.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(__dirname, "..");
+const repoRoot = resolveMainRepoRoot(path.resolve(__dirname, ".."));
 
 function jsonOut(additionalContext) {
   const escaped = additionalContext
@@ -55,7 +56,7 @@ async function main() {
         agentId: existing.lease.agentId,
       });
       jsonOut(
-        `Already in ${existing.slot} (${cwd}). Agent id ${existing.lease.agentId}. Release when finished: node scripts/agent-workspace.mjs release --agent-id ${existing.lease.agentId}`,
+        `Already in ${existing.slot} (${cwd}). Agent id ${existing.lease.agentId}. Finish by integrating into local TEMPO and releasing: node scripts/agent-workspace.mjs release --agent-id ${existing.lease.agentId}`,
       );
       return;
     }
@@ -83,7 +84,7 @@ async function main() {
           ? `Waited ${Math.round(result.waitedMs / 1000)}s for a free workspace.`
           : "",
         "REQUIRED before editing: open that folder as your project root (Cursor: move_agent_to_root; Claude/Codex: cd there).",
-        `Export TEMPO_AGENT_ID=${result.agentId} and release when done: node scripts/agent-workspace.mjs release --agent-id ${result.agentId}`,
+        `Export TEMPO_AGENT_ID=${result.agentId}. When done, integrate into local TEMPO and release: node scripts/agent-workspace.mjs release --agent-id ${result.agentId}`,
       ]
         .filter(Boolean)
         .join(" "),

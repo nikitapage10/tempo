@@ -2,8 +2,8 @@
 
 import * as React from "react";
 
-/** Tailwind `xl` is 1280px — labeled rail vs compact icon rail. */
-const LABELED_RAIL_MQ = "(min-width: 1280px)";
+/** Match Tailwind `lg`: ordinary desktop windows should keep readable labels. */
+const LABELED_RAIL_MQ = "(min-width: 1024px)";
 
 export function useLabeledRail(): boolean {
   const [labeled, setLabeled] = React.useState(() => {

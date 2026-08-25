@@ -13,6 +13,8 @@ import {
   heartbeatWorkspace,
   getWorkspaceStatus,
   ensureWorktrees,
+  integrateWorkspace,
+  resolveMainRepoRoot,
 } from "./agent-workspace-lib.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -55,6 +57,10 @@ function parseArgs(argv) {
       flags.sync = false;
       continue;
     }
+    if (arg === "--lease-only") {
+      flags.leaseOnly = true;
+      continue;
+    }
     if (arg === "--owner-pid") {
       flags.ownerPid = Number(argv[++i]);
       continue;
@@ -94,7 +100,9 @@ function printHuman(lines) {
 async function main() {
   const { positional, flags } = parseArgs(process.argv.slice(2));
   const command = positional[0] ?? "status";
-  const mainRepoRoot = path.resolve(flags.repo ?? repoRoot);
+  const mainRepoRoot = resolveMainRepoRoot(
+    path.resolve(flags.repo ?? repoRoot),
+  );
 
   if (command === "ensure") {
     ensureWorktrees(mainRepoRoot);
@@ -208,23 +216,75 @@ async function main() {
 
   if (command === "release") {
     if (flags.slot) assertSlot(flags.slot);
+    const agentId = flags.agentId ?? process.env.TEMPO_AGENT_ID;
+    let integration = null;
+    if (!flags.force && !flags.leaseOnly) {
+      integration = integrateWorkspace({
+        mainRepoRoot,
+        slot: flags.slot,
+        agentId,
+      });
+      if (!integration.ok) {
+        if (flags.json) {
+          process.stdout.write(
+            `${JSON.stringify({ released: false, integration }, null, 2)}\n`,
+          );
+        } else {
+          printHuman([
+            `Workspace not released — local integration blocked (${integration.reason}).`,
+            integration.reason === "primary_dirty"
+              ? `Keep the local TEMPO checkout clean, then retry. Changed there: ${(integration.dirtySample ?? []).join(", ")}`
+              : integration.detail ?? "",
+            "Your workspace and lease were kept intact.",
+          ]);
+        }
+        process.exitCode = 1;
+        return;
+      }
+    }
     const result = await releaseWorkspace({
       mainRepoRoot,
       slot: flags.slot,
-      agentId: flags.agentId ?? process.env.TEMPO_AGENT_ID,
+      agentId,
       force: flags.force ?? false,
     });
     if (flags.json) {
-      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      process.stdout.write(
+        `${JSON.stringify({ ...result, integration }, null, 2)}\n`,
+      );
       process.exitCode = result.released ? 0 : 1;
       return;
     }
     printHuman([
       result.released
-        ? `Released ${result.slot ?? "workspace"}.`
+        ? integration
+          ? `Integrated ${result.slot ?? "workspace"} into ${integration.primaryRoot} and released it.`
+          : `Released ${result.slot ?? "workspace"} without integration.`
         : "Nothing released — slot not held by this agent.",
     ]);
     process.exitCode = result.released ? 0 : 1;
+    return;
+  }
+
+  if (command === "integrate") {
+    if (flags.slot) assertSlot(flags.slot);
+    const result = integrateWorkspace({
+      mainRepoRoot,
+      slot: flags.slot,
+      agentId: flags.agentId ?? process.env.TEMPO_AGENT_ID,
+      cleanSlot: true,
+    });
+    if (flags.json) {
+      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    } else {
+      printHuman([
+        result.ok
+          ? `Integrated ${result.slot} into local main at ${result.primaryRoot}.`
+          : `Integration blocked (${result.reason}).`,
+        result.detail ?? "",
+      ]);
+    }
+    process.exitCode = result.ok ? 0 : 1;
     return;
   }
 
@@ -246,8 +306,9 @@ async function main() {
   }
 
   throw new Error(
-    `Unknown command "${command}". Use acquire | release | heartbeat | status | ensure\n` +
-      "acquire flags: --wait --json --slot \"Workspace 2\" --allow-dirty --no-sync --owner-pid <pid> --task <text> --tool <name>",
+    `Unknown command "${command}". Use acquire | integrate | release | heartbeat | status | ensure\n` +
+      "acquire flags: --wait --json --slot \"Workspace 2\" --allow-dirty --no-sync --owner-pid <pid> --task <text> --tool <name>\n" +
+      "release integrates into local main by default; --lease-only skips integration (operator use only).",
   );
 }
 

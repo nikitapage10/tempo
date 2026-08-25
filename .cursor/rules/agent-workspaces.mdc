@@ -13,10 +13,14 @@ Before **any** file edit, terminal command that mutates the repo, or commit:
    ```
 2. **Move** Cursor to that root (`move_agent_to_root`). Claude Code / Codex: **`cd` there**.
 3. Work on **`main`** inside that checkout only. Never edit the shared `TEMPO` root while another agent may be using it.
-4. **Release** when the task is done (or before ending the session):
+4. **Finish locally** when the task is done (or before ending the session):
    ```bash
    node scripts/agent-workspace.mjs release --agent-id <id-from-acquire>
    ```
+ `release` first integrates the slot into the primary local `TEMPO` checkout,
+ then cleans and releases the slot. It never pushes. If primary `TEMPO` is
+ dirty, not on `main`, or conflicts, integration stops and the lease remains
+ held; report the blocker instead of stashing or overwriting human work.
 
 ## Pool rules
 
@@ -27,8 +31,13 @@ Before **any** file edit, terminal command that mutates the repo, or commit:
 - Check status: `npm run agent:workspace:status`
 - Never create extra worktrees beyond the three named slots.
 
-## Push / release checklist (unchanged)
+## Local handoff checklist
 
-Commit in your slot, then `git fetch origin && git rebase origin/main`, then version bump + CHANGELOG + PRODUCT.md, then push. Stage only your paths — never `git add -A`.
+Finish and validate in your slot, update version + CHANGELOG + PRODUCT.md, then
+run `release`. Do not commit or push unless the user explicitly asks. The
+primary local checkout receives the working changes and is left ready for human
+review. Cloud/background agents cannot access the local checkout: they use a
+remote branch or PR, and the next foreground local session fast-forwards local
+`TEMPO`.
 
 See `AGENTS.md` for the full protocol.

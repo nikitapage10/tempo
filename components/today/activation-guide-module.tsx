@@ -78,10 +78,14 @@ export function ActivationGuideModule({
 
   if (isExistingMember && !expanded) {
     return (
-      <section className="panel-quiet p-4">
+      <section className="panel-quiet flex min-h-[72px] items-center gap-3 px-4 py-3">
+        <span
+          className="size-1.5 shrink-0 rounded-full bg-amber shadow-[0_0_10px_rgb(255_181_107_/_0.55)]"
+          aria-hidden
+        />
         <button
           type="button"
-          className="text-left text-sm text-text-lo transition-colors hover:text-text-hi"
+          className="text-left text-sm text-text-lo transition-colors hover:text-text-hi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
           onClick={() => setExpanded(true)}
         >
           Want a quick path through TEMPO&apos;s core loop?
@@ -94,12 +98,12 @@ export function ActivationGuideModule({
 
   return (
     <section
-      className="panel p-5"
+      className="panel-quiet px-4 py-4 sm:px-5"
       aria-labelledby="activation-guide-heading"
       role="region"
     >
-      <div className="flex items-start justify-between gap-3">
-        <div>
+      <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+        <div className="min-w-0">
           <p className="label-mono mb-1">Getting started guide</p>
           <h2
             id="activation-guide-heading"
@@ -111,6 +115,58 @@ export function ActivationGuideModule({
             {journey.reason}
           </p>
         </div>
+        <div className="flex flex-wrap items-center gap-3 sm:justify-end">
+          {journey.recommendedStep !== "loop_complete" ? (
+            <>
+              <Button
+                asChild
+                size="sm"
+                onClick={() =>
+                  recordProductEvent("activation_guide_actioned", {
+                    recommended_step: journey.recommendedStep,
+                  })
+                }
+              >
+                <Link href={stepInfo.href(journey.targetTrackId)}>{stepInfo.primaryAction}</Link>
+              </Button>
+              <button
+                type="button"
+                className="text-xs text-text-lo hover:text-text-hi"
+                onClick={async () => {
+                  await snoozeActivationGuide(artistId);
+                  recordProductEvent("activation_guide_snoozed", {
+                    recommended_step: journey.recommendedStep,
+                    days: 7,
+                  });
+                  refetch();
+                }}
+              >
+                Not now
+              </button>
+            </>
+          ) : (
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={async () => {
+                await acknowledgeActivationLoopComplete(artistId);
+                recordProductEvent("activation_loop_completed", {
+                  activation_definition_version: journey.definitionVersion,
+                });
+                queryClient.invalidateQueries({ queryKey: ["activation-guide-preference", artistId] });
+              }}
+            >
+              Nice — got it
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-line/70 pt-3">
+        <p className="text-xs text-text-lo">
+          <span className="font-medium text-text-mid">Completed so far:</span>{" "}
+          {progressText}
+        </p>
         <button
           type="button"
           className="shrink-0 text-xs text-text-lo hover:text-text-hi hover:underline"
@@ -125,55 +181,6 @@ export function ActivationGuideModule({
           Hide this guide
         </button>
       </div>
-
-      {journey.recommendedStep !== "loop_complete" ? (
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <Button
-            asChild
-            onClick={() =>
-              recordProductEvent("activation_guide_actioned", {
-                recommended_step: journey.recommendedStep,
-              })
-            }
-          >
-            <Link href={stepInfo.href(journey.targetTrackId)}>{stepInfo.primaryAction}</Link>
-          </Button>
-          <button
-            type="button"
-            className="text-sm text-text-lo hover:text-text-hi"
-            onClick={async () => {
-              await snoozeActivationGuide(artistId);
-              recordProductEvent("activation_guide_snoozed", {
-                recommended_step: journey.recommendedStep,
-                days: 7,
-              });
-              refetch();
-            }}
-          >
-            Not now
-          </button>
-        </div>
-      ) : (
-        <div className="mt-4">
-          <Button
-            variant="secondary"
-            onClick={async () => {
-              await acknowledgeActivationLoopComplete(artistId);
-              recordProductEvent("activation_loop_completed", {
-                activation_definition_version: journey.definitionVersion,
-              });
-              queryClient.invalidateQueries({ queryKey: ["activation-guide-preference", artistId] });
-            }}
-          >
-            Nice — got it
-          </Button>
-        </div>
-      )}
-
-      <p className="mt-4 border-t border-line pt-3 text-xs text-text-lo">
-        <span className="font-medium text-text-mid">Completed so far:</span>{" "}
-        {progressText}
-      </p>
     </section>
   );
 }

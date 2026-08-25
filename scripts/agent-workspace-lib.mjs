@@ -228,19 +228,36 @@ class PoolStateLock {
   }
 }
 
-function runGit(cwd, args) {
+function runGit(cwd, args, options = {}) {
   const result = spawnSync("git", args, {
     cwd,
     encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"],
+    input: options.input,
+    stdio: [options.input === undefined ? "ignore" : "pipe", "pipe", "pipe"],
     shell: false,
   });
+  const stdout = result.stdout ?? "";
+  const stderr = result.stderr ?? "";
   return {
     ok: result.status === 0,
-    stdout: (result.stdout ?? "").trim(),
-    stderr: (result.stderr ?? "").trim(),
+    stdout: options.trim === false ? stdout : stdout.trim(),
+    stderr: options.trim === false ? stderr : stderr.trim(),
     code: result.status,
   };
+}
+
+/**
+ * Find the primary checkout even when this script is running from a linked
+ * worktree. All linked worktrees share the primary checkout's .git directory.
+ */
+export function resolveMainRepoRoot(fromPath = process.cwd()) {
+  const probe = path.resolve(fromPath);
+  const commonDir = runGit(probe, ["rev-parse", "--git-common-dir"]);
+  if (!commonDir.ok || !commonDir.stdout) return probe;
+  const resolvedCommonDir = path.resolve(probe, commonDir.stdout);
+  return path.basename(resolvedCommonDir).toLowerCase() === ".git"
+    ? path.dirname(resolvedCommonDir)
+    : probe;
 }
 
 function listWorktreePaths(mainRepoRoot) {
@@ -443,7 +460,11 @@ export async function acquireWorkspace(options = {}) {
         worktreesRoot,
         preferredSlot,
       );
+      const preferred = candidates[0]?.slot === preferredSlot
+        ? candidates[0]
+        : undefined;
       const chosen =
+        (allowDirty && preferred ? preferred : undefined) ??
         candidates.find((entry) => entry.worktree.clean) ??
         (allowDirty ? candidates[0] : undefined);
 
@@ -619,4 +640,215 @@ export function findLeaseForRoot(mainRepoRoot, cwd, worktreesRoot) {
   const lease = state.slots[slot];
   if (!lease || !isLeaseActive(lease)) return null;
   return { slot, lease };
+}
+
+function splitNullTerminated(value) {
+  return value ? value.split("\0").filter(Boolean) : [];
+}
+
+function copyUntrackedFile(sourceRoot, targetRoot, relativePath) {
+  const source = path.join(sourceRoot, relativePath);
+  const target = path.join(targetRoot, relativePath);
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  const stat = fs.lstatSync(source);
+  if (stat.isSymbolicLink()) {
+    fs.symlinkSync(fs.readlinkSync(source), target);
+    return;
+  }
+  fs.copyFileSync(source, target);
+}
+
+/**
+ * Move completed slot work into the primary local checkout without pushing.
+ *
+ * Safety contract:
+ * - primary must be clean, on main, and linearly related to the slot;
+ * - conflicts block integration and leave the lease/workspace intact;
+ * - the slot is cleaned only after its commits, tracked diff, and untracked
+ *   files are all present in the primary checkout.
+ */
+export function integrateWorkspace(options = {}) {
+  const mainRepoRoot = resolveMainRepoRoot(
+    options.mainRepoRoot ?? process.cwd(),
+  );
+  const worktreesRoot = options.worktreesRoot;
+  const state = pruneDeadLeases(readPoolState(mainRepoRoot, worktreesRoot));
+  let targetSlot = options.slot;
+
+  if (!targetSlot && options.agentId) {
+    targetSlot = WORKSPACE_SLOTS.find(
+      (slot) => state.slots[slot]?.agentId === options.agentId,
+    );
+  }
+  if (!targetSlot || !WORKSPACE_SLOTS.includes(targetSlot)) {
+    return { ok: false, reason: "slot_not_found" };
+  }
+
+  const lease = state.slots[targetSlot];
+  if (
+    lease &&
+    isLeaseActive(lease) &&
+    options.agentId &&
+    lease.agentId !== options.agentId
+  ) {
+    return { ok: false, reason: "slot_owned_by_another_agent", slot: targetSlot };
+  }
+
+  const slotRoot = getSlotPath(mainRepoRoot, targetSlot, worktreesRoot);
+  const slotState = inspectSlotWorktree(slotRoot);
+  if (!slotState.exists || slotState.unreadable) {
+    return { ok: false, reason: "slot_unreadable", slot: targetSlot };
+  }
+
+  const primaryState = inspectSlotWorktree(mainRepoRoot);
+  if (!primaryState.exists || primaryState.unreadable) {
+    return { ok: false, reason: "primary_unreadable", slot: targetSlot };
+  }
+  if (!primaryState.clean) {
+    return {
+      ok: false,
+      reason: "primary_dirty",
+      slot: targetSlot,
+      dirtyCount: primaryState.dirtyCount,
+      dirtySample: primaryState.dirtySample,
+    };
+  }
+  if (primaryState.branch !== "main") {
+    return {
+      ok: false,
+      reason: "primary_not_main",
+      slot: targetSlot,
+      branch: primaryState.branch,
+    };
+  }
+
+  const primaryHead = runGit(mainRepoRoot, ["rev-parse", "HEAD"]);
+  const slotHead = runGit(slotRoot, ["rev-parse", "HEAD"]);
+  if (!primaryHead.ok || !slotHead.ok) {
+    return { ok: false, reason: "head_unreadable", slot: targetSlot };
+  }
+
+  const primaryBeforeSlot = runGit(mainRepoRoot, [
+    "merge-base",
+    "--is-ancestor",
+    primaryHead.stdout,
+    slotHead.stdout,
+  ]).ok;
+  const slotBeforePrimary = runGit(mainRepoRoot, [
+    "merge-base",
+    "--is-ancestor",
+    slotHead.stdout,
+    primaryHead.stdout,
+  ]).ok;
+  if (!primaryBeforeSlot && !slotBeforePrimary) {
+    return {
+      ok: false,
+      reason: "histories_diverged",
+      slot: targetSlot,
+      primaryHead: primaryHead.stdout,
+      slotHead: slotHead.stdout,
+    };
+  }
+
+  const patch = runGit(slotRoot, ["diff", "--binary", "HEAD", "--"], {
+    trim: false,
+  });
+  const untrackedResult = runGit(slotRoot, [
+    "ls-files",
+    "--others",
+    "--exclude-standard",
+    "-z",
+  ]);
+  if (!patch.ok || !untrackedResult.ok) {
+    return { ok: false, reason: "slot_diff_failed", slot: targetSlot };
+  }
+  const untracked = splitNullTerminated(untrackedResult.stdout);
+  const occupied = untracked.filter((relativePath) =>
+    fs.existsSync(path.join(mainRepoRoot, relativePath)),
+  );
+  if (occupied.length > 0) {
+    return {
+      ok: false,
+      reason: "untracked_collision",
+      slot: targetSlot,
+      paths: occupied,
+    };
+  }
+
+  let fastForwarded = false;
+  if (primaryHead.stdout !== slotHead.stdout && primaryBeforeSlot) {
+    const merge = runGit(mainRepoRoot, [
+      "merge",
+      "--ff-only",
+      slotHead.stdout,
+    ]);
+    if (!merge.ok) {
+      return {
+        ok: false,
+        reason: "primary_fast_forward_failed",
+        slot: targetSlot,
+        detail: merge.stderr,
+      };
+    }
+    fastForwarded = true;
+  }
+
+  if (patch.stdout) {
+    const check = runGit(
+      mainRepoRoot,
+      ["apply", "--check", "--whitespace=nowarn", "-"],
+      { input: patch.stdout },
+    );
+    if (!check.ok) {
+      return {
+        ok: false,
+        reason: "patch_conflict",
+        slot: targetSlot,
+        detail: check.stderr,
+        fastForwarded,
+      };
+    }
+    const apply = runGit(
+      mainRepoRoot,
+      ["apply", "--whitespace=nowarn", "-"],
+      { input: patch.stdout },
+    );
+    if (!apply.ok) {
+      return {
+        ok: false,
+        reason: "patch_apply_failed",
+        slot: targetSlot,
+        detail: apply.stderr,
+        fastForwarded,
+      };
+    }
+  }
+
+  for (const relativePath of untracked) {
+    copyUntrackedFile(slotRoot, mainRepoRoot, relativePath);
+  }
+
+  if (options.cleanSlot !== false) {
+    const reset = runGit(slotRoot, ["reset", "--hard", "HEAD"]);
+    const clean = runGit(slotRoot, ["clean", "-fd"]);
+    if (!reset.ok || !clean.ok) {
+      return {
+        ok: false,
+        reason: "slot_cleanup_failed",
+        slot: targetSlot,
+        integrated: true,
+        detail: reset.stderr || clean.stderr,
+      };
+    }
+  }
+
+  return {
+    ok: true,
+    slot: targetSlot,
+    primaryRoot: mainRepoRoot,
+    fastForwarded,
+    trackedChanges: Boolean(patch.stdout),
+    untrackedCount: untracked.length,
+    primaryHead: runGit(mainRepoRoot, ["rev-parse", "--short", "HEAD"]).stdout,
+  };
 }

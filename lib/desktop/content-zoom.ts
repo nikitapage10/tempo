@@ -16,7 +16,7 @@ export const CONTENT_ZOOM_MAX = 2.0;
 export const CONTENT_ZOOM_STEP = 0.1;
 /** Labeled rail type/scale ceiling — grows with zoom only while there's width. */
 export const RAIL_TYPE_ZOOM_MAX = 1.35;
-export const RAIL_LABELED_WIDTH_PX = 220;
+export const RAIL_LABELED_WIDTH_PX = 196;
 export const RAIL_COMPACT_WIDTH_PX = 68;
 export const CONTENT_ZOOM_STORAGE_KEY = "tempo.contentZoom";
 export const CONTENT_ZOOM_EVENT = "tempo:content-zoom";

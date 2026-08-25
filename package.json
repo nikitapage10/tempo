@@ -1,6 +1,6 @@
 {
   "name": "tempo",
-  "version": "0.209.2",
+  "version": "0.211.1",
   "private": true,
   "scripts": {
     "postinstall": "node scripts/copy-ffmpeg.js",
@@ -16,6 +16,7 @@
     "test:e2e": "playwright test",
     "agent:workspace": "node scripts/agent-workspace.mjs acquire --wait",
     "agent:workspace:status": "node scripts/agent-workspace.mjs status",
+    "agent:workspace:integrate": "node scripts/agent-workspace.mjs integrate",
     "agent:workspace:release": "node scripts/agent-workspace.mjs release",
     "agent:workspace:ensure": "node scripts/agent-workspace.mjs ensure",
     "check:desktop-release": "node scripts/check-desktop-release.mjs",

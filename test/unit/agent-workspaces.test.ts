@@ -8,12 +8,14 @@ import {
   acquireWorkspace,
   getWorkspaceStatus,
   heartbeatWorkspace,
+  integrateWorkspace,
   inspectSlotWorktree,
   isLeaseActive,
   isLeaseStale,
   isProcessAlive,
   readPoolState,
   releaseWorkspace,
+  resolveMainRepoRoot,
   resolveAgentTool,
 } from "../../scripts/agent-workspace-lib.mjs";
 
@@ -44,6 +46,41 @@ function sampleLease(overrides: Record<string, unknown> = {}) {
     rootPath: "/tmp/workspace",
     ...overrides,
   };
+}
+
+function git(cwd: string, args: string[]) {
+  return spawnSync("git", args, {
+    cwd,
+    encoding: "utf8",
+  });
+}
+
+function makeIntegrationRepo(): {
+  repo: string;
+  slot: string;
+  worktreesRoot: string;
+} {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "tempo-agent-integrate-"));
+  tempRoots.push(root);
+  const repo = path.join(root, "TEMPO");
+  const worktreesRoot = path.join(root, "TEMPO-worktrees");
+  const slot = path.join(worktreesRoot, "Workspace 1");
+  fs.mkdirSync(repo, { recursive: true });
+  git(repo, ["init", "--quiet", "-b", "main"]);
+  fs.writeFileSync(path.join(repo, "tracked.txt"), "before\n");
+  git(repo, ["add", "tracked.txt"]);
+  git(repo, [
+    "-c",
+    "user.email=test@tempo.local",
+    "-c",
+    "user.name=TEMPO Test",
+    "commit",
+    "-qm",
+    "seed",
+  ]);
+  fs.mkdirSync(worktreesRoot, { recursive: true });
+  git(repo, ["worktree", "add", "--detach", slot, "HEAD"]);
+  return { repo, slot, worktreesRoot };
 }
 
 describe("agent workspace pool", () => {
@@ -304,5 +341,91 @@ describe("agent workspace pool", () => {
       agentId: "forcing-agent",
     });
     expect(forced.ok).toBe(true);
+  });
+
+  it("honours an explicitly requested dirty slot with allowDirty", async () => {
+    const { repo, worktreesRoot } = makeFakeRepo();
+    for (const slot of ["Workspace 1", "Workspace 2", "Workspace 3"]) {
+      const dir = path.join(worktreesRoot, slot);
+      fs.mkdirSync(dir, { recursive: true });
+      git(dir, ["init", "--quiet"]);
+      fs.writeFileSync(path.join(dir, "README.md"), "seed\n");
+      git(dir, ["add", "README.md"]);
+      git(dir, [
+        "-c",
+        "user.email=test@tempo.local",
+        "-c",
+        "user.name=TEMPO Test",
+        "commit",
+        "-qm",
+        "seed",
+      ]);
+    }
+    fs.writeFileSync(
+      path.join(worktreesRoot, "Workspace 1", "leftover.txt"),
+      "wip\n",
+    );
+
+    const acquired = await acquireWorkspace({
+      mainRepoRoot: repo,
+      worktreesRoot,
+      ensure: false,
+      sync: false,
+      slot: "Workspace 1",
+      allowDirty: true,
+      agentId: "resume-agent",
+    });
+
+    expect(acquired.ok).toBe(true);
+    if (!acquired.ok) return;
+    expect(acquired.slot).toBe("Workspace 1");
+  });
+});
+
+describe("local workspace integration", () => {
+  it("resolves the primary checkout from a linked worktree", () => {
+    const { repo, slot } = makeIntegrationRepo();
+    expect(resolveMainRepoRoot(slot)).toBe(path.resolve(repo));
+  });
+
+  it("copies tracked and untracked slot work into local main and cleans the slot", () => {
+    const { repo, slot, worktreesRoot } = makeIntegrationRepo();
+    fs.writeFileSync(path.join(slot, "tracked.txt"), "after\n");
+    fs.writeFileSync(path.join(slot, "new-file.txt"), "new\n");
+
+    const result = integrateWorkspace({
+      mainRepoRoot: slot,
+      worktreesRoot,
+      slot: "Workspace 1",
+    });
+
+    expect(result.ok, JSON.stringify(result)).toBe(true);
+    expect(
+      fs
+        .readFileSync(path.join(repo, "tracked.txt"), "utf8")
+        .replace(/\r\n/g, "\n"),
+    ).toBe("after\n");
+    expect(fs.readFileSync(path.join(repo, "new-file.txt"), "utf8")).toBe(
+      "new\n",
+    );
+    expect(inspectSlotWorktree(slot).clean).toBe(true);
+  });
+
+  it("refuses to overwrite a dirty primary checkout", () => {
+    const { repo, slot, worktreesRoot } = makeIntegrationRepo();
+    fs.writeFileSync(path.join(repo, "human-note.txt"), "keep me\n");
+    fs.writeFileSync(path.join(slot, "tracked.txt"), "agent change\n");
+
+    const result = integrateWorkspace({
+      mainRepoRoot: slot,
+      worktreesRoot,
+      slot: "Workspace 1",
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.reason).toBe("primary_dirty");
+    expect(fs.readFileSync(path.join(slot, "tracked.txt"), "utf8")).toBe(
+      "agent change\n",
+    );
   });
 });

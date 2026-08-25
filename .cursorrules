@@ -185,14 +185,20 @@ on TEMPO at the same time. **Do not share one checkout for writes.** Use the
    **Workspace 3** under `../TEMPO-worktrees/`. If all three are busy,
    `--wait` blocks on the pool mutex until one frees.
 2. **Move** Cursor to that root (`move_agent_to_root`) before editing.
-3. Work on **`main`** inside that workspace only. The primary `TEMPO` folder is
-   for the human or read-only use — not agent feature work.
+3. Work inside that workspace only. The primary `TEMPO` folder is for the
+   human and the guarded integration command — never edit it directly.
 4. **Stage narrowly** — never `git add -A`.
-5. **Rebase onto fresh `origin/main` at push time**, then version bump,
-   CHANGELOG, PRODUCT.md against what `main` actually is.
-6. **Run typecheck + tests after the rebase**, before pushing.
-7. Push only your own commits (`git log origin/main..HEAD`).
-8. **Release** when done: `node scripts/agent-workspace.mjs release --agent-id <id>`.
+5. Finish the version bump, CHANGELOG, and PRODUCT.md in the slot, then run
+   typecheck + tests.
+6. **Do not commit or push unless the user explicitly asks.**
+7. **Finish locally** with
+   `node scripts/agent-workspace.mjs release --agent-id <id>`. Release first
+   integrates the slot into the primary local `TEMPO` checkout, then cleans and
+   frees the slot. It never pushes.
+8. If primary `TEMPO` is dirty, not on `main`, or conflicts, integration must
+   stop and preserve both checkouts. Never auto-stash or overwrite human work.
+9. Cloud/background agents cannot access the local checkout. They use a remote
+   branch or PR; the next foreground local session fast-forwards local `TEMPO`.
 
 Never create extra worktrees beyond the three named slots. See `AGENTS.md` and
 `.cursor/rules/agent-workspaces.mdc` for acquire/release, heartbeats, and

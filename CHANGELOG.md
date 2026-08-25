@@ -2,6 +2,16 @@
 
 Plain-English history of what changed in TEMPO, newest first.
 
+## 2026-08-24
+
+- Changed (v0.211.1): The moving album-cover reel is back directly under Today’s banner. The artist logo now rests in the banner’s lower-right corner, and the compact Start something controls live inside Continue working instead of taking up a separate full-width row.
+
+## 2026-08-22
+
+- Changed (v0.211.0): Today now works like a studio desk instead of a rearranged dashboard. Your current song gets the main artwork and next move, updates and waiting counts live together in Incoming, and every remaining song or task falls into one Next up queue. Quick actions have their own clean bar, the greeting is tighter, and ordinary desktop windows keep readable menu labels.
+- Changed (v0.210.1): Finished local agent work now arrives in the main TEMPO folder automatically, ready to review, without publishing anything. If that folder contains your own unfinished changes or a conflict, the handoff stops safely and keeps the agent workspace intact.
+- Changed (v0.210.0): Today now opens as a deeper, more cinematic studio view. The Spectra light has more room in the greeting, your weekly pulse and quick actions scan more clearly, and your catalog drifts in one slower artwork reel near the top instead of two competing rows at the bottom. Needs attention still leads the work, while the TEMPO loop and Pulse sit in a quieter status band.
+
 ## 2026-08-21
 
 - Changed (v0.209.2): Project pages lead with Tasks and the month calendar. The health band is gone (it repeated the task list). Attached tracks sit in a compact panel under Timeline on the right, still with stage, checklist, and next action.

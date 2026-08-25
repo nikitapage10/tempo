@@ -19,7 +19,7 @@ Pool state (who holds which slot) lives in
 `../TEMPO-worktrees/.agent-pool/state.json` with a directory mutex
 (`state.lock`).
 
-### Acquire → work → release
+### Acquire → work → integrate locally → release
 
 **Every agent, every session, before the first edit:**
 
@@ -32,19 +32,26 @@ node scripts/agent-workspace.mjs acquire --wait --json
    2s until a slot frees (default max wait: 2 hours).
 3. Move Cursor to the returned root (`move_agent_to_root`) **before** editing.
    Claude Code and Codex: **`cd` to `rootPath`** in that tool's shell instead.
-4. Work on `main` inside that checkout only.
-5. When finished:
+4. Work inside that checkout only.
+5. When finished, use the same release command:
 
 ```bash
 node scripts/agent-workspace.mjs release --agent-id <id-from-acquire>
 ```
+
+`release` is now the guarded local handoff. It first integrates the slot's
+commits and working changes into the primary local `TEMPO` checkout, cleans the
+slot, and only then releases the lease. It **never pushes**. If local `TEMPO` is
+dirty, not on `main`, diverged, or has a patch collision, release stops and
+keeps the slot and lease intact.
 
 Shortcuts:
 
 ```bash
 npm run agent:workspace          # acquire --wait
 npm run agent:workspace:status   # who holds what
-npm run agent:workspace:release  # release (needs TEMPO_AGENT_ID env or --agent-id)
+npm run agent:workspace:integrate # integrate without releasing
+npm run agent:workspace:release  # integrate + release (needs TEMPO_AGENT_ID)
 ```
 
 Bootstrap worktrees once (or let `acquire` do it):
@@ -86,7 +93,8 @@ the next agent into that folder mixes two people's work. So:
 - A clean slot is checked out at the latest `origin/main` before you get it, so
   nobody starts on a week-old tree. `--no-sync` skips that.
 - `--slot "Workspace 2"` asks for a particular slot; you still get a different
-  one if it is busy or dirty.
+  one if it is busy or dirty. Add `--allow-dirty` to deliberately resume that
+  exact dirty slot.
 
 Force-clear a stuck slot (human operator only):
 
@@ -96,8 +104,11 @@ node scripts/agent-workspace.mjs release --slot "Workspace 1" --force
 
 ### Main `TEMPO` checkout
 
-The primary repo folder is for **you** (the human) or read-only inspection.
-Agents should **not** land feature work there — use the pool.
+The primary repo folder is for **you** (the human), read-only inspection, and
+the guarded integration command. Agents never edit it directly. A successful
+release leaves the completed working changes there for immediate local review.
+If you have uncommitted work in primary `TEMPO`, integration refuses to run;
+agents must not stash, overwrite, or clean human work.
 
 Cursor's sessionStart hook tries to acquire automatically (waits up to ~2
 minutes). If all slots stay busy, follow the hook message and run
@@ -114,6 +125,11 @@ run Node and `git` uses the same CLI and the same three folders:
 | **Claude Code** | SessionStart hook in `.claude/settings.json`; `cd` to the acquired path |
 | **Codex / others** | Run `node scripts/agent-workspace.mjs acquire --wait --json` before edits; `cd` to `rootPath` |
 
+Cloud/background agents do not share this filesystem and cannot update the
+local checkout. They work on a remote branch or PR. After that work reaches
+remote `main`, the next foreground Cursor/Claude session fast-forwards the
+clean primary local `TEMPO` checkout through the existing start hook.
+
 Optional env vars (all tools):
 
 - `TEMPO_AGENT_TOOL=cursor|claude|codex|other` — label shown in `status`
@@ -124,19 +140,22 @@ Leases track **process id + heartbeat**, not which IDE owns the window — so
 Claude and Codex sessions queue the same way Cursor does when all three slots
 are full.
 
-## Push protocol (inside your workspace)
+## Finish protocol (inside your workspace)
 
-Same release rules as always — just scoped to **your** slot:
+Same release rules as always — scoped to **your** slot:
 
-1. Confirm branch: `git branch --show-current` → should be `main`.
-2. **Stage narrowly** — never `git add -A`. Only paths your change touched.
-3. Commit your work.
-4. Sync: `git fetch origin && git rebase origin/main`
-5. **Then** version bump (`lib/version.ts` + `package.json`), CHANGELOG,
+1. Inspect your changes and keep them limited to the requested task.
+2. **Do not commit or push unless the user explicitly asks.**
+3. Complete the version bump (`lib/version.ts` + `package.json`), CHANGELOG,
    PRODUCT.md if the feature set changed.
-6. Validate: `npx tsc --noEmit` and `npm test`
-7. Push only your commits: `git log origin/main..HEAD`
-8. **Release** the workspace slot.
+4. Validate: `npx tsc --noEmit` and `npm test`.
+5. Run `release --agent-id <id>`. It integrates locally, cleans the slot, and
+   frees the lease only after success.
+6. If integration blocks, report the exact reason and keep both checkouts.
+
+When the user explicitly requests a commit or push, follow the repository's
+normal Git safety protocol first; local integration still happens before the
+lease is released.
 
 CHANGELOG conflicts: keep both agents' bullets under the shared date heading.
 

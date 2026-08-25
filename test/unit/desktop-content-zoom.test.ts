@@ -5,6 +5,7 @@ import {
   CONTENT_ZOOM_DEFAULT_GEN,
   CONTENT_ZOOM_DEFAULT_GEN_KEY,
   CONTENT_ZOOM_STORAGE_KEY,
+  RAIL_LABELED_WIDTH_PX,
   clampContentZoom,
   nudgeContentZoom,
   railLayoutWidthPx,
@@ -179,7 +180,9 @@ describe("railTypeZoom", () => {
   it("scales labeled rail type up to the ceiling", () => {
     expect(railTypeZoom(1.2, true)).toBe(1.2);
     expect(railTypeZoom(1.8, true)).toBe(1.35);
-    expect(railLayoutWidthPx(1.4, true)).toBe(Math.round(220 * 1.35));
+    expect(railLayoutWidthPx(1.4, true)).toBe(
+      Math.round(RAIL_LABELED_WIDTH_PX * 1.35)
+    );
   });
 });
 
