@@ -9,6 +9,8 @@ describe("desktop update banner", () => {
   const shell = read("components/app-shell.tsx");
   const main = read("electron/main.js");
   const buildRoute = read("app/api/app-build/route.ts");
+  const webRefresh = read("components/desktop/web-release-refresh.tsx");
+  const providers = read("components/providers.tsx");
   const policy = read("docs/WEB-DESKTOP-RELEASE-POLICY.md");
 
   it("prompts only for a ready native shell install", () => {
@@ -44,5 +46,16 @@ describe("desktop update banner", () => {
     expect(policy).toContain("do **not** show this banner");
     expect(policy).not.toContain("same desktop-only in-app banner used for a newly deployed web version");
     expect(policy).toContain("driven only by a downloaded native shell update");
+  });
+
+  it("refreshes a stale live web build when the artist returns to Desktop", () => {
+    expect(webRefresh).toContain("isDesktopApp()");
+    expect(webRefresh).toContain("/api/app-build");
+    expect(webRefresh).toContain("APP_VERSION");
+    expect(webRefresh).toContain('window.addEventListener("focus"');
+    expect(webRefresh).toContain('document.addEventListener("visibilitychange"');
+    expect(webRefresh).toContain("window.location.reload()");
+    expect(providers).toContain("<DesktopWebReleaseRefresh />");
+    expect(policy).toContain("when the artist returns");
   });
 });

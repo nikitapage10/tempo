@@ -78,7 +78,7 @@ export function ArtistSwitcher() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto h-9 w-9 animate-pulse rounded-input border border-line bg-bg-2 xl:mx-0 xl:w-full" />
+      <div className="mx-auto h-9 w-9 animate-pulse rounded-input border border-line bg-bg-2 min-[960px]:mx-0 min-[960px]:w-full" />
     );
   }
 
@@ -123,19 +123,19 @@ export function ArtistSwitcher() {
         onClick={() => setOpen((v) => !v)}
         title={label}
         aria-label={mode === "work" ? `Working as ${label}` : `Artist: ${label}`}
-        className="flex w-full items-center justify-center gap-2.5 rounded-input px-1.5 py-1.5 text-left text-sm text-text-hi transition-colors duration-hover hover:bg-bg-2/60 lg:justify-start lg:px-2"
+        className="flex w-full items-center justify-center gap-2.5 rounded-input px-1.5 py-1.5 text-left text-sm text-text-hi transition-colors duration-hover hover:bg-bg-2/60 min-[960px]:justify-start min-[960px]:px-2"
         aria-expanded={open}
         aria-haspopup="listbox"
       >
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-input border border-line bg-bg-2 font-display text-[11px] tracking-wide text-text-hi lg:hidden">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-input border border-line bg-bg-2 font-display text-[11px] tracking-wide text-text-hi min-[960px]:hidden">
           {initials(label)}
         </span>
-        <span className="hidden min-w-0 truncate font-display text-[13px] tracking-wide lg:inline">
+        <span className="hidden min-w-0 truncate font-display text-[13px] tracking-wide min-[960px]:inline">
           {label}
         </span>
         <ChevronDown
           className={cn(
-            "ml-auto hidden size-3 shrink-0 text-text-lo transition-transform duration-hover xl:block",
+            "ml-auto hidden size-3 shrink-0 text-text-lo transition-transform duration-hover min-[960px]:block",
             open && "rotate-180"
           )}
         />
@@ -144,7 +144,7 @@ export function ArtistSwitcher() {
       {open ? (
         <div
           role="listbox"
-          className="absolute left-full top-0 z-50 ml-1.5 w-56 overflow-hidden rounded-card border border-line bg-bg-1 shadow-raise xl:left-0 xl:right-0 xl:top-auto xl:ml-0 xl:mt-1.5 xl:w-auto"
+          className="absolute left-full top-0 z-50 ml-1.5 w-56 overflow-hidden rounded-card border border-line bg-bg-1 shadow-raise min-[960px]:left-0 min-[960px]:right-0 min-[960px]:top-auto min-[960px]:ml-0 min-[960px]:mt-1.5 min-[960px]:w-auto"
         >
           <ul className="max-h-56 overflow-y-auto py-1">
             {showGroups ? (

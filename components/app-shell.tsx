@@ -276,9 +276,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       />
 
       <div className="flex min-h-0 flex-1">
-        {/* Compact icon rail from md→lg; full labels from lg up. Width grows
-            with content zoom only while labeled (so type can scale when there
-            is room). Left 2px gutter stays transparent for active-nav windows. */}
+        {/* Compact icon rail below 960px; full labels above it. Workspace zoom
+            never changes navigation size. Left 2px stays transparent for
+            active-nav windows. */}
         <aside
           className="sticky top-0 z-40 hidden h-screen shrink-0 flex-col overflow-visible border-r border-line md:flex"
           style={{
@@ -287,8 +287,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               "linear-gradient(to right, transparent 2px, var(--bg-1) 2px)",
           }}
         >
-          {/* Inner column is designed at compact/labeled widths; zoom scales
-              type when labeled. Layout width above matches so no black gap. */}
+          {/* Inner column is designed at compact/labeled widths. */}
           <div
             className="relative flex h-full min-h-0 flex-col"
             style={
@@ -308,29 +307,29 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             className="pointer-events-none absolute inset-y-0 right-[-1px] w-px"
             aria-hidden
           />
-          <div className="overflow-hidden px-2 pt-6 pb-4 lg:px-3">
-            <div className="flex min-w-0 items-center justify-center lg:justify-start">
+          <div className="px-2 pb-4 pt-6 min-[960px]:px-3">
+            <div className="flex min-w-0 items-center justify-center min-[960px]:justify-start">
               <Link
                 href="/"
                 className="min-w-0 max-w-full rounded-input focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
               >
-                <Wordmark size={22} markOnly className="lg:hidden" />
+                <Wordmark size={22} markOnly className="min-[960px]:hidden" />
                 <Wordmark
                   size={24}
                   withMark
-                  className="hidden min-w-0 max-w-full lg:inline-flex"
+                  className="hidden min-w-0 max-w-full min-[960px]:inline-flex"
                 />
               </Link>
             </div>
             <FlareLine className="mt-3" />
           </div>
 
-          <div className="flex flex-col gap-1.5 px-1.5 pb-4 lg:px-3">
+          <div className="flex flex-col gap-1.5 px-1.5 pb-4 min-[960px]:px-3">
             <ArtistSwitcher />
             <SpaceSwitcher />
           </div>
 
-          <nav data-tour="workspace-nav" className="flex flex-1 flex-col gap-1 px-1.5 lg:px-3">
+          <nav data-tour="workspace-nav" className="flex flex-1 flex-col gap-1 px-1.5 min-[960px]:px-3">
             <RailFlyoutScope>
               {mainNav.map((item) => (
                 <RailNavItem
@@ -347,7 +346,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <GlobalPlayerBar />
 
           <SlitDivider />
-          <div className="px-1.5 py-4 lg:px-3">
+          <div className="px-1.5 py-4 min-[960px]:px-3">
             <DownloadButton />
             <Link
               href="/settings"
@@ -355,7 +354,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               title={NAV_DESCRIPTIONS["/settings"]}
               aria-label="Settings"
               className={cn(
-                "group relative flex items-center justify-center gap-2.5 rounded-input px-2 py-2.5 text-sm transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice lg:justify-start lg:px-3",
+                "group relative flex items-center justify-center gap-2.5 rounded-input px-2 py-2.5 text-sm transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice min-[960px]:justify-start min-[960px]:px-3",
                 isActive(pathname, "/settings")
                   ? "font-semibold text-text-hi"
                   : "font-medium text-text-lo hover:bg-bg-2/60 hover:text-text-hi"
@@ -363,7 +362,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             >
               {isActive(pathname, "/settings") ? (
                 <LfWindow
-                  className="absolute left-[-6px] top-1.5 bottom-1.5 w-[2px] lg:left-[-12px]"
+                  className="absolute bottom-1.5 left-[-6px] top-1.5 w-[2px] min-[960px]:left-[-12px]"
                   aria-hidden
                 />
               ) : null}
@@ -374,8 +373,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 )}
                 strokeWidth={1.75}
               />
-              <span className="hidden whitespace-nowrap lg:inline">Settings</span>
-              <span className="pointer-events-none absolute left-[calc(100%+12px)] top-1/2 z-[90] hidden w-60 -translate-y-1/2 rounded-input border border-line bg-bg-1 px-3 py-2 text-xs leading-relaxed text-text-lo opacity-0 shadow-e3 transition-opacity delay-150 group-hover:opacity-100 group-focus-visible:opacity-100 lg:block">
+              <span className="hidden whitespace-nowrap min-[960px]:inline">Settings</span>
+              <span className="pointer-events-none absolute left-[calc(100%+12px)] top-1/2 z-[90] hidden w-60 -translate-y-1/2 rounded-input border border-line bg-bg-1 px-3 py-2 text-xs leading-relaxed text-text-lo opacity-0 shadow-e3 transition-opacity delay-150 group-hover:opacity-100 group-focus-visible:opacity-100 min-[960px]:block">
                 {NAV_DESCRIPTIONS["/settings"]}
               </span>
             </Link>
@@ -383,7 +382,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Link
               href="/beta"
               title={`v${APP_VERSION}`}
-              className="mt-3 hidden rounded-input px-3 py-1 font-mono text-xs text-text-lo/70 transition-colors hover:bg-bg-2 hover:text-ice lg:block"
+              className="mt-3 hidden rounded-input px-3 py-1 font-mono text-xs text-text-lo/70 transition-colors hover:bg-bg-2 hover:text-ice min-[960px]:block"
             >
               v{APP_VERSION}
             </Link>

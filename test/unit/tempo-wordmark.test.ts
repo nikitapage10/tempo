@@ -23,8 +23,9 @@ describe("TEMPO supplied wordmark", () => {
     expect(wordmark).toContain('src="/tempo-wordmark.png"');
     expect(wordmark).not.toContain("TypeWordmark");
     expect(wordmark).toContain("w-px");
-    expect(read("components/app-shell.tsx")).toContain("withMark");
-    expect(read("components/app-shell.tsx")).toContain("overflow-hidden px-2 pt-6 pb-4 lg:px-3");
+    const shell = read("components/app-shell.tsx");
+    expect(shell).toContain("withMark");
+    expect(shell).toContain("max-w-full min-[960px]:inline-flex");
     for (const path of [
       "app/login/page.tsx",
       "app/invite/[token]/page.tsx",

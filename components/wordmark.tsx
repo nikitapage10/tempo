@@ -30,7 +30,7 @@ type WordmarkProps = {
 function LightBarMark({ size }: { size: number }) {
   return (
     <span
-      className="relative flex shrink-0 items-center gap-[3.5px] overflow-hidden"
+      className="relative flex shrink-0 items-center gap-[3.5px]"
       style={{ height: size }}
       aria-hidden
     >

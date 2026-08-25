@@ -35,7 +35,7 @@ export function SpaceSwitcher() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto h-9 w-9 animate-pulse rounded-input border border-line bg-bg-2 xl:mx-0 xl:w-full" />
+      <div className="mx-auto h-9 w-9 animate-pulse rounded-input border border-line bg-bg-2 min-[960px]:mx-0 min-[960px]:w-full" />
     );
   }
 
@@ -46,17 +46,17 @@ export function SpaceSwitcher() {
         onClick={() => setOpen((v) => !v)}
         title={label}
         aria-label={`Space: ${label}`}
-        className="flex w-full items-center justify-center rounded-input border border-line bg-bg-2 px-1.5 py-1.5 text-left text-sm text-text-hi transition-colors duration-hover hover:border-ice/40 lg:justify-between lg:px-3 lg:py-2"
+        className="flex w-full items-center justify-center rounded-input border border-line bg-bg-2 px-1.5 py-1.5 text-left text-sm text-text-hi transition-colors duration-hover hover:border-ice/40 min-[960px]:justify-between min-[960px]:px-3 min-[960px]:py-2"
         aria-expanded={open}
         aria-haspopup="listbox"
       >
-        <span className="flex size-7 shrink-0 items-center justify-center rounded-input font-mono text-[11px] text-text-hi lg:hidden">
+        <span className="flex size-7 shrink-0 items-center justify-center rounded-input font-mono text-[11px] text-text-hi min-[960px]:hidden">
           {initials(label)}
         </span>
-        <span className="hidden min-w-0 truncate lg:inline">{label}</span>
+        <span className="hidden min-w-0 truncate min-[960px]:inline">{label}</span>
         <ChevronDown
           className={cn(
-            "hidden size-3.5 shrink-0 text-text-lo transition-transform duration-hover xl:block",
+            "hidden size-3.5 shrink-0 text-text-lo transition-transform duration-hover min-[960px]:block",
             open && "rotate-180"
           )}
         />
@@ -65,7 +65,7 @@ export function SpaceSwitcher() {
       {open ? (
         <div
           role="listbox"
-          className="absolute left-full top-0 z-50 ml-1.5 w-56 overflow-hidden rounded-card border border-line bg-bg-1 shadow-raise xl:left-0 xl:right-0 xl:top-auto xl:ml-0 xl:mt-1.5 xl:w-auto"
+          className="absolute left-full top-0 z-50 ml-1.5 w-56 overflow-hidden rounded-card border border-line bg-bg-1 shadow-raise min-[960px]:left-0 min-[960px]:right-0 min-[960px]:top-auto min-[960px]:ml-0 min-[960px]:mt-1.5 min-[960px]:w-auto"
         >
           <ul className="max-h-56 overflow-y-auto py-1">
             {spaces.map((space) => {

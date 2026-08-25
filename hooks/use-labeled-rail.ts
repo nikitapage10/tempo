@@ -2,8 +2,8 @@
 
 import * as React from "react";
 
-/** Match Tailwind `lg`: ordinary desktop windows should keep readable labels. */
-const LABELED_RAIL_MQ = "(min-width: 1024px)";
+/** Ordinary desktop windows should keep readable labels. */
+export const LABELED_RAIL_MQ = "(min-width: 960px)";
 
 export function useLabeledRail(): boolean {
   const [labeled, setLabeled] = React.useState(() => {

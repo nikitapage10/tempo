@@ -307,7 +307,7 @@ export function RailNavItem({
         aria-haspopup={hasFlyout ? "menu" : undefined}
         aria-expanded={hasFlyout ? open : undefined}
         className={cn(
-          "group relative flex items-center justify-center gap-2.5 rounded-input px-2 py-2.5 text-sm transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice lg:justify-start lg:px-3",
+          "group relative flex items-center justify-center gap-2.5 rounded-input px-2 py-2.5 text-sm transition-colors duration-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice min-[960px]:justify-start min-[960px]:px-3",
           active
             ? "font-semibold text-text-hi"
             : "font-medium text-text-lo hover:bg-bg-2/60 hover:text-text-hi"
@@ -315,7 +315,7 @@ export function RailNavItem({
       >
         {active ? (
           <LfWindow
-            className="absolute left-[-6px] top-1.5 bottom-1.5 w-[2px] lg:left-[-12px]"
+            className="absolute bottom-1.5 left-[-6px] top-1.5 w-[2px] min-[960px]:left-[-12px]"
             aria-hidden
           />
         ) : null}
@@ -323,11 +323,11 @@ export function RailNavItem({
           className={cn("size-4 shrink-0", active ? "text-ice" : "text-text-lo")}
           strokeWidth={1.75}
         />
-        <span className="hidden min-w-0 flex-1 truncate whitespace-nowrap lg:inline">{item.label}</span>
+        <span className="hidden min-w-0 flex-1 truncate whitespace-nowrap min-[960px]:inline">{item.label}</span>
         {hasFlyout ? (
           <ChevronRight
             className={cn(
-              "hidden size-3 shrink-0 text-text-lo/70 transition-transform duration-200 lg:block motion-reduce:transition-none",
+              "hidden size-3 shrink-0 text-text-lo/70 transition-transform duration-200 min-[960px]:block motion-reduce:transition-none",
               open && "translate-x-0.5 text-ice"
             )}
             strokeWidth={2}
@@ -335,7 +335,7 @@ export function RailNavItem({
           />
         ) : null}
         {!hasFlyout ? (
-          <span className="pointer-events-none absolute left-[calc(100%+12px)] top-1/2 z-[90] hidden w-60 -translate-y-1/2 rounded-input border border-line bg-bg-1 px-3 py-2 text-xs leading-relaxed text-text-lo opacity-0 shadow-e3 transition-opacity delay-150 group-hover:opacity-100 group-focus-visible:opacity-100 lg:block">
+          <span className="pointer-events-none absolute left-[calc(100%+12px)] top-1/2 z-[90] hidden w-60 -translate-y-1/2 rounded-input border border-line bg-bg-1 px-3 py-2 text-xs leading-relaxed text-text-lo opacity-0 shadow-e3 transition-opacity delay-150 group-hover:opacity-100 group-focus-visible:opacity-100 min-[960px]:block">
             {descriptions[item.href]}
           </span>
         ) : null}

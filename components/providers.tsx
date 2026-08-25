@@ -18,6 +18,7 @@ import {
 } from "@/lib/offline/query-persistence";
 import { flushOutbox } from "@/lib/offline/outbox";
 import { ensureDeviceRegistered } from "@/lib/desktop/device";
+import { DesktopWebReleaseRefresh } from "@/components/desktop/web-release-refresh";
 
 // Reconnects don't always fire a clean 'online' event inside a long-lived
 // desktop session (sleep/wake, VPN flaps), so a slow poll backstops it —
@@ -83,10 +84,6 @@ export function Providers({ children }: { children: ReactNode }) {
   const [hydrated, setHydrated] = useState(true);
 
   useEffect(() => {
-    if (isDesktopApp()) {
-      document.documentElement.dataset.tempoShell = "desktop";
-    }
-
     if (!isDesktopApp()) return;
 
     let active = true;
@@ -126,6 +123,7 @@ export function Providers({ children }: { children: ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <AuthSessionBoundary>
         <ToastProvider>
+          <DesktopWebReleaseRefresh />
           {hydrated ? children : null}
           <WebGlassAlertHost />
         </ToastProvider>

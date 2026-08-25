@@ -106,22 +106,23 @@
   }
 
   /* Large displays keep a laptop-sized column and 15px type unless we grow
-   * the root. Desktop uses its own content zoom, so skip it there. */
+   * the root. This is the 100% baseline for web and Desktop alike; Desktop's
+   * zoom control remains an optional preference on top. */
   @media (min-width: 1800px) {
-    html:not([data-tempo-shell="desktop"]) {
+    html {
       font-size: 17px;
     }
   }
 
   @media (min-width: 2560px) {
-    html:not([data-tempo-shell="desktop"]) {
+    html {
       font-size: 18px;
     }
   }
 
   @media (min-width: 3200px) {
-    html:not([data-tempo-shell="desktop"]) {
-      font-size: 18.5px;
+    html {
+      font-size: 19.2px;
     }
   }
 

@@ -3,25 +3,19 @@
  * hit-target chrome. Native Electron page zoom (setZoomFactor) is forced to
  * 1.0 so window chrome stays stable.
  *
- * When the labeled (xl) rail has room, menu type can grow with content zoom
- * up to RAIL_TYPE_ZOOM_MAX; the compact icon rail never scales.
- *
- * The first-run default is display-aware: 1x high-resolution Windows screens
- * (1440p, ultrawide) start above 100%, while Retina / 150%+ OS scaling stays
- * at 100% because CSS pixels are already enlarged.
+ * The rail remains at its designed size at every zoom. Large-screen baseline
+ * sizing belongs to responsive CSS, so 100% means 100% on every display.
  */
 
 export const CONTENT_ZOOM_MIN = 0.5;
 export const CONTENT_ZOOM_MAX = 2.0;
 export const CONTENT_ZOOM_STEP = 0.1;
-/** Labeled rail type/scale ceiling — grows with zoom only while there's width. */
-export const RAIL_TYPE_ZOOM_MAX = 1.35;
 export const RAIL_LABELED_WIDTH_PX = 220;
 export const RAIL_COMPACT_WIDTH_PX = 68;
 export const CONTENT_ZOOM_STORAGE_KEY = "tempo.contentZoom";
 export const CONTENT_ZOOM_EVENT = "tempo:content-zoom";
-/** Bumped when the implicit 100% default is replaced so old 1.0 prefs migrate. */
-export const CONTENT_ZOOM_DEFAULT_GEN = 3;
+/** Bumped when display-generated zoom changes so old defaults can migrate. */
+export const CONTENT_ZOOM_DEFAULT_GEN = 4;
 export const CONTENT_ZOOM_DEFAULT_GEN_KEY = "tempo.contentZoom.defaultGen";
 
 export type DisplayMetrics = {
@@ -52,27 +46,10 @@ function readDisplayMetrics(): DisplayMetrics {
  * metrics without stubbing `window`.
  */
 export function suggestedContentZoom(
-  metrics: DisplayMetrics = readDisplayMetrics()
+  _metrics: DisplayMetrics = readDisplayMetrics()
 ): number {
-  const dpr = metrics.devicePixelRatio || 1;
-  const width = metrics.screenWidth || 0;
-  const height = metrics.screenHeight || 0;
-
-  // OS already scaling CSS pixels (Mac Retina, Windows 150% / 200%).
-  if (dpr >= 1.5) return 1;
-
-  // Windows 125%: CSS is already a quarter larger — only a modest extra bump
-  // on very large desktops, otherwise a single step.
-  if (dpr >= 1.25) {
-    if (width >= 3000 || height >= 1320) return 1.2;
-    if (width >= 1920 || height >= 1080) return 1.1;
-    return 1;
-  }
-
-  // ~1x: 1440p / ultrawide CSS pixels are physically small.
-  if (width >= 3000 && height >= 1320) return 1.4;
-  if (height >= 1320 || width >= 3000) return 1.3;
-  if (height >= 1080 || width >= 1920) return 1.2;
+  // Responsive CSS now supplies the larger physical baseline. Keep the
+  // control honest: reset and first run both mean exactly 100%.
   return 1;
 }
 
@@ -80,21 +57,20 @@ export function defaultContentZoom(): number {
   return clampContentZoom(suggestedContentZoom());
 }
 
-/** Scale for labeled-rail type when content zoom is up; 1 for compact rail. */
-export function railTypeZoom(contentZoom: number, labeledRail: boolean): number {
-  if (!labeledRail) return 1;
-  const z = clampContentZoom(contentZoom);
-  if (z <= 1) return 1;
-  return Math.min(z, RAIL_TYPE_ZOOM_MAX);
+/** The zoom control affects the workspace, never the navigation rail. */
+export function railTypeZoom(
+  _contentZoom: number,
+  _labeledRail: boolean
+): number {
+  return 1;
 }
 
 export function railLayoutWidthPx(
-  contentZoom: number,
+  _contentZoom: number,
   labeledRail: boolean
 ): number {
   if (!labeledRail) return RAIL_COMPACT_WIDTH_PX;
-  const scale = railTypeZoom(contentZoom, true);
-  return Math.round(RAIL_LABELED_WIDTH_PX * scale);
+  return RAIL_LABELED_WIDTH_PX;
 }
 
 export function readContentZoom(): number {
@@ -106,8 +82,15 @@ export function readContentZoom(): number {
     );
     if (raw != null && raw !== "") {
       const stored = clampContentZoom(Number(raw));
-      // Keep a real choice, including an explicit 100% after this generation.
-      if (stored !== 1 || gen >= CONTENT_ZOOM_DEFAULT_GEN) return stored;
+      // v0.212.0 generated 140% on 3440×1440. Move that implicit default back
+      // to 100%, while preserving every other explicit zoom choice.
+      const generatedUltrawideDefault = gen === 3 && stored === 1.4;
+      if (
+        gen >= CONTENT_ZOOM_DEFAULT_GEN ||
+        (stored !== 1 && !generatedUltrawideDefault)
+      ) {
+        return stored;
+      }
     }
     return writeContentZoom(defaultContentZoom());
   } catch {

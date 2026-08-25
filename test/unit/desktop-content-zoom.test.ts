@@ -27,63 +27,19 @@ describe("clampContentZoom", () => {
 });
 
 describe("suggestedContentZoom", () => {
-  it("keeps 100% when the OS already scales CSS pixels", () => {
-    expect(
-      suggestedContentZoom({
-        devicePixelRatio: 2,
-        screenWidth: 1728,
-        screenHeight: 1117,
-      })
-    ).toBe(1);
-    expect(
-      suggestedContentZoom({
-        devicePixelRatio: 1.5,
-        screenWidth: 2560,
-        screenHeight: 1440,
-      })
-    ).toBe(1);
-  });
-
-  it("opens larger on 1x high-resolution displays", () => {
+  it("keeps the control at honest 100% on every display", () => {
     expect(
       suggestedContentZoom({
         devicePixelRatio: 1,
         screenWidth: 3440,
         screenHeight: 1440,
       })
-    ).toBe(1.4);
+    ).toBe(1);
     expect(
       suggestedContentZoom({
-        devicePixelRatio: 1,
+        devicePixelRatio: 2,
         screenWidth: 2560,
         screenHeight: 1440,
-      })
-    ).toBe(1.3);
-    expect(
-      suggestedContentZoom({
-        devicePixelRatio: 1,
-        screenWidth: 1920,
-        screenHeight: 1080,
-      })
-    ).toBe(1.2);
-  });
-
-  it("adds only a modest bump at 125% Windows scaling", () => {
-    expect(
-      suggestedContentZoom({
-        devicePixelRatio: 1.25,
-        screenWidth: 2752,
-        screenHeight: 1152,
-      })
-    ).toBe(1.1);
-  });
-
-  it("leaves small 1x screens at 100%", () => {
-    expect(
-      suggestedContentZoom({
-        devicePixelRatio: 1,
-        screenWidth: 1366,
-        screenHeight: 768,
       })
     ).toBe(1);
   });
@@ -124,15 +80,15 @@ describe("readContentZoom default migration", () => {
     return store;
   }
 
-  it("migrates an old 100% default on a 3440×1440 Windows screen", () => {
+  it("records 100% as the current default", () => {
     const store = stubDisplay({
       zoom: "1",
       width: 3440,
       height: 1440,
       dpr: 1,
     });
-    expect(readContentZoom()).toBe(1.4);
-    expect(store.get(CONTENT_ZOOM_STORAGE_KEY)).toBe("1.4");
+    expect(readContentZoom()).toBe(1);
+    expect(store.get(CONTENT_ZOOM_STORAGE_KEY)).toBe("1");
     expect(store.get(CONTENT_ZOOM_DEFAULT_GEN_KEY)).toBe(
       String(CONTENT_ZOOM_DEFAULT_GEN)
     );
@@ -141,7 +97,7 @@ describe("readContentZoom default migration", () => {
   it("keeps an explicit 100% after the new default generation", () => {
     stubDisplay({
       zoom: "1",
-      gen: "3",
+      gen: "4",
       width: 3440,
       height: 1440,
       dpr: 1,
@@ -149,15 +105,15 @@ describe("readContentZoom default migration", () => {
     expect(readContentZoom()).toBe(1);
   });
 
-  it("migrates a previous-generation 100% on ultrawide to the new default", () => {
+  it("removes the previous generated 140% ultrawide default", () => {
     stubDisplay({
-      zoom: "1",
-      gen: "2",
+      zoom: "1.4",
+      gen: "3",
       width: 3440,
       height: 1440,
       dpr: 1,
     });
-    expect(readContentZoom()).toBe(1.4);
+    expect(readContentZoom()).toBe(1);
   });
 
   it("keeps a customized zoom", () => {
@@ -170,7 +126,7 @@ describe("readContentZoom default migration", () => {
     expect(readContentZoom()).toBe(1.1);
   });
 
-  it("resets to the display default rather than 100%", () => {
+  it("resets to 100%", () => {
     stubDisplay({
       zoom: "1.6",
       gen: "2",
@@ -178,22 +134,16 @@ describe("readContentZoom default migration", () => {
       height: 1440,
       dpr: 1,
     });
-    expect(nudgeContentZoom(0)).toBe(1.4);
+    expect(nudgeContentZoom(0)).toBe(1);
   });
 });
 
 describe("railTypeZoom", () => {
-  it("never scales the compact rail", () => {
+  it("never scales navigation with workspace zoom", () => {
     expect(railTypeZoom(1.4, false)).toBe(1);
     expect(railLayoutWidthPx(1.4, false)).toBe(68);
-  });
-
-  it("scales labeled rail type up to the ceiling", () => {
-    expect(railTypeZoom(1.2, true)).toBe(1.2);
-    expect(railTypeZoom(1.8, true)).toBe(1.35);
-    expect(railLayoutWidthPx(1.4, true)).toBe(
-      Math.round(RAIL_LABELED_WIDTH_PX * 1.35)
-    );
+    expect(railTypeZoom(1.8, true)).toBe(1);
+    expect(railLayoutWidthPx(1.8, true)).toBe(RAIL_LABELED_WIDTH_PX);
   });
 });
 

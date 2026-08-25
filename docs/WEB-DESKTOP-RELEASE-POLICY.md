@@ -74,8 +74,9 @@ update is downloaded in the background. Once it is ready, TEMPO shows a
 desktop-only in-app banner: **Update now** installs the new app, while
 **After this session** dismisses the prompt for the current app session.
 Ordinary web/UI deploys on `main` do **not** show this banner — the Electron
-window loads the live site, so those changes arrive when you navigate or
-reload. TEMPO does not restart or interrupt active work automatically; a
+window loads the live site and checks the current product build. If a newer web
+build lands while Desktop stays open, it refreshes when the artist returns to
+the window or changes pages, never in the middle of active editing. A
 downloaded native update can still install on a normal full quit.
 
 **Important split:** ordinary product/UI changes on `main` update desktop
