@@ -36,7 +36,8 @@ common case.
   quitting. Realtime delivery remains awake while the window is hidden.
 - Distinct quiet message/notification chimes, glass background alerts that
   restore the relevant destination when clicked, and packaged TEMPO tray art.
-- Launch-at-login via `app.setLoginItemSettings`.
+- Does not open at OS login (`openAtLogin: false`); clears any leftover
+  launch-at-login entry from earlier builds.
 - A background sync-tick stub on a 5-minute interval — the seam later
   packages (media vault, offline cache) attach real work to.
 - Auto-update checks via `electron-updater` at launch and every six hours,

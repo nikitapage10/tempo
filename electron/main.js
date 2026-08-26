@@ -860,7 +860,9 @@ app.whenReady().then(() => {
     Menu.setApplicationMenu(null);
   }
 
-  app.setLoginItemSettings({ openAtLogin: true, openAsHidden: true });
+  // Do not open with OS login. Explicit false clears any leftover registry /
+  // Login Items entry from earlier builds that opted in.
+  app.setLoginItemSettings({ openAtLogin: false });
 
   createWindow();
   createTray();

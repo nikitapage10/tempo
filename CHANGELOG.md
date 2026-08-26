@@ -2,6 +2,10 @@
 
 Plain-English history of what changed in TEMPO, newest first.
 
+## 2026-08-26
+
+- Fixed (v0.213.1 / desktop 0.100.29): TEMPO Desktop no longer starts when you sign into Windows or Mac. After you open this update once, it also turns off any leftover “open at login” setting from earlier installs.
+
 ## 2026-08-24
 
 - Changed (v0.213.0): Wide screens now get their larger, roomier TEMPO layout at a true 100% on both web and Desktop. The left menu stays the same size when workspace zoom changes, keeps its labels at ordinary desktop widths, and the corner TEMPO marks no longer look clipped. Desktop also notices a newly deployed web version while it remains open and refreshes safely when you return to the window or change pages.
