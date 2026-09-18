@@ -4,6 +4,8 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-09-18
 
+- Fixed (v0.222.1): PRESIDENT no longer shows as “Profile unavailable” under Follows. Social now fills in your own demo’s name when the usual profile lookup blanks it out, and the database lets you read profiles for artists you own even if that row stayed private.
+  - Under the hood: migration 122 applies automatically on push.
 - Fixed (v0.222.0): your demo artist no longer shows up on Social as “Unknown profile.” Follows lists the real name even before an @handle is ready, and opening Social re-links PRESIDENT both ways when you already have the demo. Top 8 picks from the search list stick again — the outside-click handler was still beating the tap on some setups.
   - Under the hood: migration 121 repairs demo profile ownership and missing handles (applied automatically on push).
 - Fixed (v0.221.1): the automated Pulse delivery check no longer fails after digests started covering more than unread messages. It now turns the category switches off for that empty-digest path, so CI still proves scheduling without needing a real email send.

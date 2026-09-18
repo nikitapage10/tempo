@@ -328,7 +328,7 @@ export async function ensureOwnerDemoMutualFollows(
 
   const { data: demoProfile } = await supabase
     .from("artist_profiles")
-    .select("id, handle, owner_user_id")
+    .select("id, handle, display_name, owner_user_id")
     .eq("artist_id", demoArtistId)
     .maybeSingle();
   if (!demoProfile) return;
@@ -342,6 +342,12 @@ export async function ensureOwnerDemoMutualFollows(
   }
   if (!demoProfile.handle) {
     await claimHandle(supabase, demoProfile.id, DEMO_PROFILE.handle);
+  }
+  if (!demoProfile.display_name?.trim()) {
+    await supabase
+      .from("artist_profiles")
+      .update({ display_name: DEMO_PROFILE.displayName })
+      .eq("id", demoProfile.id);
   }
 
   const { data: ownedProfiles } = await supabase

@@ -16,6 +16,39 @@ type ProfileCard = Pick<
   | "country_code"
 >;
 
+type FollowRow = ProfileFollow & { profile: ProfileCard | null };
+
+function asCard(profileRaw: unknown): ProfileCard | null {
+  const profile = (Array.isArray(profileRaw) ? profileRaw[0] : profileRaw) as ProfileCard | null;
+  if (!profile?.id) return null;
+  if (!profile.display_name?.trim() && !profile.handle) return null;
+  return profile;
+}
+
+/** Fill in private/own profiles the embed left blank (e.g. demo artist). */
+async function hydrateMissingProfiles(
+  rows: FollowRow[],
+  idKey: "followee_profile_id" | "follower_profile_id"
+) {
+  const missing = rows.filter((row) => !row.profile).map((row) => row[idKey]);
+  if (!missing.length) return rows;
+
+  const res = await fetch("/api/social/profile-cards", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ids: missing }),
+  });
+  if (!res.ok) return rows;
+  const body = await res.json().catch(() => null);
+  const byId = new Map<string, ProfileCard>();
+  for (const card of body?.profiles ?? []) {
+    if (card?.id) byId.set(card.id, card as ProfileCard);
+  }
+  return rows.map((row) =>
+    row.profile ? row : { ...row, profile: byId.get(row[idKey]) ?? null }
+  );
+}
+
 export async function followProfile(
   followerProfileId: string,
   followeeProfileId: string
@@ -56,9 +89,7 @@ export async function isFollowingProfile(
   return !!data;
 }
 
-export async function fetchFollowing(
-  profileId: string
-): Promise<(ProfileFollow & { profile: ProfileCard | null })[]> {
+export async function fetchFollowing(profileId: string): Promise<FollowRow[]> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("profile_follows")
@@ -73,21 +104,16 @@ export async function fetchFollowing(
     .eq("follower_profile_id", profileId)
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return (data ?? []).map((row) => {
-    const profileRaw = row.profile as unknown;
-    const profile = (Array.isArray(profileRaw) ? profileRaw[0] : profileRaw) as ProfileCard | null;
-    return {
-      follower_profile_id: row.follower_profile_id,
-      followee_profile_id: row.followee_profile_id,
-      created_at: row.created_at,
-      profile: profile ?? null,
-    };
-  });
+  const rows: FollowRow[] = (data ?? []).map((row) => ({
+    follower_profile_id: row.follower_profile_id,
+    followee_profile_id: row.followee_profile_id,
+    created_at: row.created_at,
+    profile: asCard(row.profile),
+  }));
+  return hydrateMissingProfiles(rows, "followee_profile_id");
 }
 
-export async function fetchFollowers(
-  profileId: string
-): Promise<(ProfileFollow & { profile: ProfileCard | null })[]> {
+export async function fetchFollowers(profileId: string): Promise<FollowRow[]> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("profile_follows")
@@ -102,16 +128,13 @@ export async function fetchFollowers(
     .eq("followee_profile_id", profileId)
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return (data ?? []).map((row) => {
-    const profileRaw = row.profile as unknown;
-    const profile = (Array.isArray(profileRaw) ? profileRaw[0] : profileRaw) as ProfileCard | null;
-    return {
-      follower_profile_id: row.follower_profile_id,
-      followee_profile_id: row.followee_profile_id,
-      created_at: row.created_at,
-      profile: profile ?? null,
-    };
-  });
+  const rows: FollowRow[] = (data ?? []).map((row) => ({
+    follower_profile_id: row.follower_profile_id,
+    followee_profile_id: row.followee_profile_id,
+    created_at: row.created_at,
+    profile: asCard(row.profile),
+  }));
+  return hydrateMissingProfiles(rows, "follower_profile_id");
 }
 
 export async function blockProfile(
