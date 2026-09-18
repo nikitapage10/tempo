@@ -22,6 +22,11 @@ const SKIP_HINT_AFTER_MS = 600;
 const SAFETY_TIMEOUT_MS = 60000;
 /** Longest we'll sit on black waiting for enough video to play smoothly. */
 const BUFFER_WAIT_MS = 2500;
+/**
+ * Playback level for the film's baked-in soundtrack: 4 dB under the authored
+ * level (10 ** (-4 / 20)). The mix was landing louder than the rest of TEMPO.
+ */
+const INTRO_VOLUME = 0.631;
 
 /**
  * Boot intro: the supplied TEMPO film plays full-bleed with its authored logo
@@ -161,6 +166,8 @@ export function IntroMoment({
     const video = videoRef.current;
     if (!video) return;
 
+    video.volume = INTRO_VOLUME;
+
     let cancelled = false;
     let hintTimer: number | null = null;
     let bufferTimer: number | null = null;
@@ -171,10 +178,9 @@ export function IntroMoment({
       const duration = video.duration;
       if (!duration || !Number.isFinite(duration)) return;
       const remaining = Math.max(0, duration - video.currentTime);
-      video.volume = Math.max(
-        0,
-        Math.min(1, remaining / FADE_OUT_SECONDS)
-      );
+      // Ramp down from the reduced level, not back up to the authored one.
+      video.volume =
+        Math.max(0, Math.min(1, remaining / FADE_OUT_SECONDS)) * INTRO_VOLUME;
     };
 
     const onTimeUpdate = () => {

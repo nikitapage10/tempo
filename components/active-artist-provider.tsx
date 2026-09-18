@@ -70,6 +70,21 @@ function readPreferDemoArtistId(): string | null {
   }
 }
 
+/**
+ * Handoff pointers are for the *one* navigation that set them. Leaving one in
+ * place makes it win over every later choice for the rest of the tab session —
+ * which is what stopped the artist switcher from opening the demo: the Origin
+ * pointer re-applied itself on each pass and snapped straight back.
+ */
+function consumeSessionPointer(key: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.removeItem(key);
+  } catch {
+    /* private mode / quota */
+  }
+}
+
 export function ActiveArtistProvider({
   children,
 }: {
@@ -107,17 +122,17 @@ export function ActiveArtistProvider({
     const preferDemo = readPreferDemoArtistId();
     if (preferDemo && artists.some((a) => a.id === preferDemo && a.demo_kind)) {
       explicitDemoActiveRef.current = true;
-      try {
-        sessionStorage.removeItem(PREFER_DEMO_ARTIST_KEY);
-      } catch {
-        /* ignore */
-      }
+      consumeSessionPointer(PREFER_DEMO_ARTIST_KEY);
+      // Choosing the demo supersedes an Origin handoff from earlier in this
+      // tab — otherwise that pointer pulls them back out of the demo.
+      consumeSessionPointer(PREFER_ORIGIN_ARTIST_KEY);
       setActiveArtistIdState(preferDemo);
       writeStoredArtistId(userId, preferDemo);
       return;
     }
-    let preferOrigin: string | null = readPreferOriginArtistId();
+    const preferOrigin = readPreferOriginArtistId();
     if (preferOrigin && artists.some((a) => a.id === preferOrigin)) {
+      consumeSessionPointer(PREFER_ORIGIN_ARTIST_KEY);
       setActiveArtistIdState(preferOrigin);
       writeStoredArtistId(userId, preferOrigin);
       return;
@@ -129,11 +144,7 @@ export function ActiveArtistProvider({
       preferPersonal = null;
     }
     if (preferPersonal && artists.some((a) => a.id === preferPersonal)) {
-      try {
-        sessionStorage.removeItem("tempo.preferPersonalHome");
-      } catch {
-        /* ignore */
-      }
+      consumeSessionPointer("tempo.preferPersonalHome");
       setActiveArtistIdState(preferPersonal);
       writeStoredArtistId(userId, preferPersonal);
       return;

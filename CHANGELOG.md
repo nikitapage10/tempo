@@ -2,6 +2,13 @@
 
 Plain-English history of what changed in TEMPO, newest first.
 
+## 2026-09-18
+
+- Fixed (v0.214.0): “Continue with Google” and “Continue with Microsoft” can no longer be used to *join* TEMPO. Until now, anyone who found the sign-in page could tap Google and get a working account without an invite. Those buttons now only sign in people who are already members — someone who isn’t gets a plain “TEMPO is invite-only” message, and the empty account their sign-in attempt created is removed on the spot. Everyone who already uses TEMPO is unaffected, including members from before invite codes existed, and email-and-password sign-in is untouched. If you invited someone by email and they tap Google instead of using the code, they still get in and their invite is recorded as used.
+  - Note: accounts that already got in this way before today keep working. Suspend or delete them from Admin → Members if you don’t want them.
+- Fixed (v0.214.2): the demo artist works again. PRESIDENT was being built and listed next to your own artist, but opening it — or picking it in the artist switcher — dropped you straight back into your own workspace. A leftover pointer from finishing onboarding was overriding every later choice for the rest of the browser session; it now applies once, to the screen it was meant for, and then gets out of the way. Switching between your artist and the demo works in both directions.
+- Changed (v0.214.1): the once-a-day TEMPO intro film plays about 4 dB quieter, so its soundtrack sits closer to the rest of the app instead of arriving louder than everything else. Its fade into the workspace still tapers from the new level.
+
 ## 2026-08-26
 
 - Fixed (v0.213.1 / desktop 0.100.29): TEMPO Desktop no longer starts when you sign into Windows or Mac. After you open this update once, it also turns off any leftover “open at login” setting from earlier installs.

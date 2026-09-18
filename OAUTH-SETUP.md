@@ -8,6 +8,16 @@ Those buttons call Supabase OAuth. Until each provider is turned on in Supabase
 Apple Sign In is not offered in the UI right now; the Apple section below is
 kept only as a reference if you add it later.
 
+**These buttons sign in existing members only.** Supabase OAuth creates an auth
+user when the provider account is unknown, so TEMPO checks membership in
+`/api/auth/oauth-gate` right after the code exchange (see
+`lib/auth/oauth-access.ts` and SECURITY-AND-PERMISSIONS.md §T4b). A provider
+account that isn't a member is signed back out to
+`/login?error=not_invited`, and the account the exchange just created is
+deleted. Do not "fix" a support report of that message by loosening the gate —
+issue an invite from Admin → Invites instead, or, if that email already holds a
+usable invite code, the gate admits them and records the code automatically.
+
 Production site: `https://mytempo.dev`  
 Auth callback TEMPO uses: `https://mytempo.dev/auth/callback`
 

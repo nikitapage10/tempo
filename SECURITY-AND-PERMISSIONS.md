@@ -57,6 +57,26 @@
 | Project/task leakage via FKs | Do not grant SELECT on projects/tasks merely because `track.project_id` is set |
 | Recursive RLS bugs | SECURITY DEFINER helpers for `is_track_owner` / `track_role` |
 
+### T4b — Provider sign-in as an unintended signup path
+
+`/register` is invite-gated, but Supabase OAuth **creates** an auth user when the
+Google / Microsoft account is unknown. "Continue with Google" on `/login` was
+therefore a working self-serve signup: a stranger who reached the sign-in page
+got an Artist account with no invite record.
+
+| Threat | Mitigation |
+|--------|------------|
+| Uninvited provider signup | `/auth/callback` calls `/api/auth/oauth-gate` after the code exchange and before the app mounts; anything but an explicit pass signs the session back out to `/login?error=not_invited` |
+| Refusal bypassed by retrying | The gate runs on every callback, so the refusal is not one-time cleanup — a refused account can never enter even if deletion fails |
+| Orphan accounts in the member list | The just-created account is deleted with the service role, but **only** inside a 10-minute creation window and only when every membership lookup succeeded |
+| Locking out real members | Any evidence of membership passes: invite redemption, `member_onboarding`, `platform_admins`/`ADMIN_EMAILS`, an active team seat or track collaboration, or an owned artist row. Accounts predating invite records are unaffected |
+| Invited person arriving through Google | A usable `invites` row bound to that email is redeemed in place, so the admin console still shows how they joined; a pending team/track invite admits them without a code |
+| Incomplete read used as proof of non-membership | Lookup failure never deletes; an account older than the window is allowed rather than stranded, and a fresh one is refused |
+| Password accounts caught by the gate | Skipped when the provider is `email` — they already passed the `/register` invite gate |
+
+Suspension still belongs to Supabase Auth: a suspended member is refused at
+sign-in regardless of this gate.
+
 ### T5 — RLS changes
 | Threat | Mitigation |
 |--------|------------|
@@ -209,6 +229,7 @@ During beta, a member may invite team members and track collaborators directly. 
 | `/invite/[token]`, `/team-invite/[token]` | Landing may be public; accept requires auth + matching email | Prompt 10 / team |
 | `/api/team-invite/create`, `/pending`, `/respond` | No | Artist owner invites; the named person lists and approves. Handle/email matches use the service role and never expose other accounts. |
 | `/api/auth/verify-invite`, `/api/auth/redeem-invite` | Yes; redemption still requires an authenticated signup session. A pending team or track invite token bound to the same email may stand in for a platform invite code — it does not open signup for other addresses. | Registration gate |
+| `/api/auth/oauth-gate` | No — requires the session just created by the provider code exchange | Provider sign-in gate (below) |
 | `/admin/*`, `/api/admin/*` | No | Session required; server guard additionally requires `platform_admins` membership |
 | All `app/(app)/*` | No | Redirect login |
 

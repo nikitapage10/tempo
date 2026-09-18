@@ -53,7 +53,8 @@ describe("demo startup for Pro accounts", () => {
     expect(provider).toContain("explicitDemoActiveRef");
     expect(provider).toContain("active?.demo_kind");
     expect(provider).toContain("setActiveArtistIdState(keeper.id)");
-    expect(provider).toContain("sessionStorage.removeItem(PREFER_DEMO_ARTIST_KEY)");
+    // The demo pointer is still good for exactly one navigation.
+    expect(provider).toContain("consumeSessionPointer(PREFER_DEMO_ARTIST_KEY)");
   });
 
   it("does not treat a partial seed as an existing finished demo", () => {

@@ -25,13 +25,19 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect");
   const inviteCode = searchParams.get("invite")?.trim() ?? "";
-  const authError = searchParams.get("error") === "auth";
+  const errorParam = searchParams.get("error");
+  const authError = errorParam === "auth";
+  // Google / Microsoft refused by /api/auth/oauth-gate — the provider account
+  // isn't a TEMPO member, so no account was created for it.
+  const notInvited = errorParam === "not_invited";
   const [email, setEmail] = useState(() => searchParams.get("email")?.trim() ?? "");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [error, setError] = useState<string | null>(
-    authError
+    notInvited
+      ? "TEMPO is invite-only. Google and Microsoft sign-in only works for an account that already exists — if you have an invite code, create your account first."
+      : authError
       ? "That sign-in didn’t finish — try again, or use email and password."
       : null
   );
