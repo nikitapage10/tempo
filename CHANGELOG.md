@@ -4,6 +4,9 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-09-18
 
+- Fixed (v0.223.0): Top 8 would not accept anyone, and the reason was hiding in plain sight. All eight slots were already taken by people whose profiles were deleted a while back when an old sample cast was cleared out. Because those picks could not be drawn, the grid still showed "Add someone" buttons, but the list was full, so every tap was refused in silence. Slots that point at someone who is gone now show as "No longer available" with an X, there is a "Free N slots" shortcut in the Top 8 header, and dead picks are cleared from every account automatically.
+- Changed (v0.223.0): a follow you cannot see now reads "Private profile" instead of "Profile unavailable", which is what it actually means — that person keeps their artist page private. The row in your Follows that looked like a broken PRESIDENT was one of these all along; you do not currently have a demo artist on this account. Choose **Explore demo** from Import if you want PRESIDENT back, and it will link itself to your Social both ways.
+  - Under the hood: migration 123 applies automatically on push and clears deleted Top 8 picks.
 - Fixed (v0.222.2): Top 8 picks finally stick when you tap a name. The list was resetting the pick on every redraw, and the outside-click dismiss was still fighting the tap — the picker now uses a simple backdrop and keeps your choice until save finishes.
 - Fixed (v0.222.1): PRESIDENT no longer shows as “Profile unavailable” under Follows. Social now fills in your own demo’s name when the usual profile lookup blanks it out, and the database lets you read profiles for artists you own even if that row stayed private.
   - Under the hood: migration 122 applies automatically on push.

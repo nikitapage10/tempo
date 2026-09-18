@@ -112,8 +112,12 @@ export default function SocialView() {
     enabled: ownerIds.length > 0 && onNetwork,
     staleTime: 60_000,
   });
-  const { data: following = [] } = useFollowing(socialDataProfileId);
-  const { data: followers = [] } = useFollowers(onNetwork ? myProfileId : null);
+  // isLoading (not isPending) so a disabled query doesn't read as "loading".
+  const { data: following = [], isLoading: followingLoading } =
+    useFollowing(socialDataProfileId);
+  const { data: followers = [], isLoading: followersLoading } = useFollowers(
+    onNetwork ? myProfileId : null
+  );
   const { data: timeline = [], isLoading: feedLoading } = useHomeTimeline(
     socialDataProfileId
   );
@@ -490,6 +494,7 @@ export default function SocialView() {
               <Top8Rail
                 top8={top8}
                 candidates={top8Candidates}
+                candidatesReady={!followingLoading && !followersLoading}
                 editable={onNetwork}
                 saving={save.isPending}
                 onChange={saveTop8}
@@ -518,7 +523,7 @@ export default function SocialView() {
                           return (
                             <li key={f.followee_profile_id}>
                               <span className="text-sm text-text-lo">
-                                Profile unavailable
+                                Private profile
                               </span>
                             </li>
                           );
@@ -579,7 +584,7 @@ export default function SocialView() {
                           return (
                             <li key={f.follower_profile_id}>
                               <span className="text-sm text-text-lo">
-                                Profile unavailable
+                                Private profile
                               </span>
                             </li>
                           );

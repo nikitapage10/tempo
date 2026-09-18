@@ -8,6 +8,8 @@ import { ArtistMark } from "@/components/artists/artist-mark";
 import { Input } from "@/components/ui/input";
 import {
   filterTop8Candidates,
+  partitionTop8,
+  TOP8_SLOTS,
   type Top8Candidate,
 } from "@/lib/social/top8";
 import { cn } from "@/lib/utils";
@@ -21,10 +23,14 @@ type Top8RailProps = {
   candidates: Top8Candidate[];
   editable: boolean;
   saving?: boolean;
+  /**
+   * False while follows are still loading. A saved pick can't be told apart
+   * from a dead one until they arrive, so placeholders wait for this.
+   */
+  candidatesReady?: boolean;
   onChange: (next: string[]) => void;
 };
 
-const SLOTS = 8;
 const EMPTY_TOP8: string[] = [];
 
 /**
@@ -37,6 +43,7 @@ export function Top8Rail({
   candidates,
   editable,
   saving,
+  candidatesReady = true,
   onChange,
 }: Top8RailProps) {
   const stableTop8 = top8.length ? top8 : EMPTY_TOP8;
@@ -64,9 +71,9 @@ export function Top8Rail({
     () => new Map(candidates.map((c) => [c.id, c])),
     [candidates]
   );
-  const picked = localTop8
-    .map((id) => byId.get(id))
-    .filter((c): c is Top8Candidate => !!c);
+  const { picked, unavailable } = partitionTop8(localTop8, candidates, {
+    candidatesReady,
+  });
   const pickable = candidates.filter((c) => !localTop8.includes(c.id));
   const matches = filterTop8Candidates(pickable, query);
   const picking = pickingIndex !== null;
@@ -121,8 +128,12 @@ export function Top8Rail({
     commit(localTop8.filter((x) => x !== id));
   }
 
+  function clearUnavailable() {
+    commit(localTop8.filter((id) => byId.has(id)));
+  }
+
   function add(id: string) {
-    if (localTop8.includes(id) || localTop8.length >= SLOTS) return;
+    if (localTop8.includes(id) || localTop8.length >= TOP8_SLOTS) return;
     commit([...localTop8, id]);
     closePicker();
   }
@@ -137,7 +148,9 @@ export function Top8Rail({
     setPickingIndex(index);
   }
 
-  const emptyCount = editable ? Math.max(0, SLOTS - picked.length) : 0;
+  const emptyCount = editable
+    ? Math.max(0, TOP8_SLOTS - localTop8.length)
+    : 0;
 
   return (
     <section className="space-y-3">
@@ -145,7 +158,20 @@ export function Top8Rail({
         <p className="label-mono flex items-center gap-1.5">
           <Star className="size-3" /> Top 8
         </p>
-        {saving ? <span className="text-[11px] text-text-lo">Saving…</span> : null}
+        <div className="flex items-center gap-2">
+          {editable && unavailable.length ? (
+            <button
+              type="button"
+              onClick={clearUnavailable}
+              className="text-[11px] text-text-lo underline-offset-2 hover:text-ice hover:underline"
+            >
+              Free {unavailable.length} slot{unavailable.length === 1 ? "" : "s"}
+            </button>
+          ) : null}
+          {saving ? (
+            <span className="text-[11px] text-text-lo">Saving…</span>
+          ) : null}
+        </div>
       </div>
 
       {picked.length === 0 && !editable ? (
@@ -185,6 +211,28 @@ export function Top8Rail({
                   className="absolute -right-1.5 -top-1.5 flex size-5 items-center justify-center rounded-full border border-line bg-bg-1 text-text-lo opacity-0 shadow-e1 transition-opacity hover:text-warn group-hover:opacity-100"
                 >
                   <X className="size-3" />
+                </button>
+              ) : null}
+            </div>
+          ))}
+
+          {unavailable.map((id) => (
+            <div
+              key={id}
+              className="well flex items-center gap-3 rounded-card p-3 opacity-70"
+            >
+              <span className="size-[22px] shrink-0 rounded-full border border-dashed border-line" />
+              <p className="min-w-0 flex-1 truncate text-sm text-text-lo">
+                No longer available
+              </p>
+              {editable ? (
+                <button
+                  type="button"
+                  onClick={() => remove(id)}
+                  aria-label="Free this Top 8 slot"
+                  className="shrink-0 text-text-lo hover:text-warn"
+                >
+                  <X className="size-3.5" />
                 </button>
               ) : null}
             </div>

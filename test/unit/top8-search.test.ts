@@ -1,7 +1,11 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { filterTop8Candidates, type Top8Candidate } from "@/lib/social/top8";
+import {
+  filterTop8Candidates,
+  partitionTop8,
+  type Top8Candidate,
+} from "@/lib/social/top8";
 
 function person(over: Partial<Top8Candidate> & Pick<Top8Candidate, "id" | "name">): Top8Candidate {
   return {
@@ -35,6 +39,32 @@ describe("filterTop8Candidates", () => {
 
   it("returns nothing when nobody matches", () => {
     expect(filterTop8Candidates(pool, "illenium")).toEqual([]);
+  });
+});
+
+describe("partitionTop8", () => {
+  it("counts unresolved picks against the eight slots", () => {
+    // Every id here belongs to a profile that was deleted, so none resolve.
+    const dead = ["a", "b", "c", "d", "e", "f", "g", "h"];
+    const slots = partitionTop8(dead, pool);
+    expect(slots.picked).toEqual([]);
+    expect(slots.unavailable).toEqual(dead);
+    // The bug: emptyCount used to be 8, offering slots that add() refused.
+    expect(slots.emptyCount).toBe(0);
+  });
+
+  it("frees a slot once the dead pick is dropped", () => {
+    const slots = partitionTop8(["1", "gone"], pool);
+    expect(slots.picked.map((c) => c.id)).toEqual(["1"]);
+    expect(slots.unavailable).toEqual(["gone"]);
+    expect(slots.emptyCount).toBe(6);
+    expect(partitionTop8(["1"], pool).emptyCount).toBe(7);
+  });
+
+  it("holds placeholders back until follows have loaded", () => {
+    const slots = partitionTop8(["1", "gone"], [], { candidatesReady: false });
+    expect(slots.picked).toEqual([]);
+    expect(slots.unavailable).toEqual([]);
   });
 });
 
