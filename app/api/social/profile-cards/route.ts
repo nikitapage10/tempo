@@ -25,7 +25,11 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => null);
   const ids = Array.isArray(body?.ids)
-    ? [...new Set(body.ids.filter((id: unknown) => typeof id === "string" && id.length > 0))]
+    ? Array.from(
+        new Set(
+          body.ids.filter((id: unknown): id is string => typeof id === "string" && id.length > 0)
+        )
+      )
     : [];
   if (!ids.length) {
     return NextResponse.json({ profiles: [] }, { headers });

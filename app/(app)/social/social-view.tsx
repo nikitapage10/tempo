@@ -292,7 +292,10 @@ export default function SocialView() {
     return Array.from(seen.values());
   }, [following, followers, allPeople, profile?.top8]);
 
-  const top8 = profile?.top8 ?? [];
+  const top8 = React.useMemo(
+    () => (Array.isArray(profile?.top8) ? profile.top8 : []),
+    [profile?.top8]
+  );
   function saveTop8(next: string[]) {
     if (!profile || !authorArtistId) {
       toast("Couldn’t update Top 8 — try refreshing.");

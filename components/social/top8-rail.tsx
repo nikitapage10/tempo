@@ -25,13 +25,12 @@ type Top8RailProps = {
 };
 
 const SLOTS = 8;
+const EMPTY_TOP8: string[] = [];
 
 /**
  * A MySpace-style Top 8 — the owner's fixed set of quick-access people.
- * Styled like the Network tab's contact cards (same row, same footprint) so
- * it reads as a variant of that list rather than a new visual language.
- * Filled slots link straight to a profile; the owner can add from followers
- * and people they follow via a search popup above Add someone.
+ * Picker uses a full-screen backdrop (not a document pointer listener) so a
+ * tap on a name cannot race an outside-dismiss handler.
  */
 export function Top8Rail({
   top8,
@@ -40,13 +39,15 @@ export function Top8Rail({
   saving,
   onChange,
 }: Top8RailProps) {
-  // Keep a local copy so a pick shows up the moment it is chosen, instead of
-  // waiting on the network round-trip — and so a failed save can still toast
-  // without looking like the click did nothing.
-  const [localTop8, setLocalTop8] = React.useState(top8);
+  const stableTop8 = top8.length ? top8 : EMPTY_TOP8;
+  const top8Key = stableTop8.join("\0");
+
+  // Local copy so a pick shows immediately; sync only when the saved list
+  // actually changes (not on every parent re-render with a fresh [] ref).
+  const [localTop8, setLocalTop8] = React.useState(stableTop8);
   React.useEffect(() => {
-    setLocalTop8(top8);
-  }, [top8]);
+    setLocalTop8(stableTop8);
+  }, [top8Key, stableTop8]);
 
   const [pickingIndex, setPickingIndex] = React.useState<number | null>(null);
   const [query, setQuery] = React.useState("");
@@ -58,7 +59,6 @@ export function Top8Rail({
     maxHeight: number;
   } | null>(null);
   const anchorRef = React.useRef<HTMLButtonElement | null>(null);
-  const panelRef = React.useRef<HTMLDivElement>(null);
 
   const byId = React.useMemo(
     () => new Map(candidates.map((c) => [c.id, c])),
@@ -101,31 +101,14 @@ export function Top8Rail({
   React.useEffect(() => {
     if (!picking) return;
     placePanel();
-    function onPointer(e: PointerEvent) {
-      const target = e.target;
-      if (!(target instanceof Node)) {
-        closePicker();
-        return;
-      }
-      // Bubble phase (not capture): option buttons get pointerdown first and
-      // stopPropagation, so a pick never races the outside-dismiss.
-      if (panelRef.current?.contains(target) || anchorRef.current?.contains(target)) {
-        return;
-      }
-      closePicker();
-    }
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") closePicker();
     }
-    document.addEventListener("pointerdown", onPointer);
-    document.addEventListener("keydown", onKey);
     window.addEventListener("resize", placePanel);
-    window.addEventListener("scroll", placePanel, true);
+    window.addEventListener("keydown", onKey);
     return () => {
-      document.removeEventListener("pointerdown", onPointer);
-      document.removeEventListener("keydown", onKey);
       window.removeEventListener("resize", placePanel);
-      window.removeEventListener("scroll", placePanel, true);
+      window.removeEventListener("keydown", onKey);
     };
   }, [picking, pickingIndex, placePanel]);
 
@@ -232,80 +215,89 @@ export function Top8Rail({
 
       {mounted && picking && panelPos
         ? createPortal(
-            <div
-              ref={panelRef}
-              role="dialog"
-              aria-label="Search followers and follows"
-              style={{
-                position: "fixed",
-                left: panelPos.left,
-                width: panelPos.width,
-                bottom: panelPos.bottom,
-                maxHeight: panelPos.maxHeight,
-              }}
-              className="z-[100] flex flex-col overflow-hidden rounded-card border border-line bg-bg-1 p-1.5 shadow-e2"
-            >
-              <div className="relative shrink-0">
-                <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-text-lo" />
-                <Input
-                  autoFocus
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search followers and follows"
-                  aria-label="Search followers and follows"
-                  className="h-8 pl-8 text-sm"
-                />
-              </div>
-              <div className="mt-1 min-h-0 flex-1 overflow-y-auto" role="listbox">
-                {pickable.length === 0 ? (
-                  <p className="px-2 py-2 text-xs text-text-lo">
-                    Nobody left to add — follow people, or wait for followers.
-                  </p>
-                ) : matches.length === 0 ? (
-                  <p className="px-2 py-2 text-xs text-text-lo">
-                    No followers or follows match that.
-                  </p>
-                ) : (
-                  matches.map((c) => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      role="option"
-                      onPointerDown={(e) => {
-                        // Stop the bubble-phase outside-dismiss from seeing this.
-                        e.stopPropagation();
-                      }}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        add(c.id);
-                      }}
-                      className="flex w-full items-center gap-2.5 rounded-input px-2 py-1.5 text-left hover:bg-bg-2"
-                    >
-                      <ArtistMark
-                        emblemUrl={c.emblemUrl}
-                        paletteId={c.paletteId}
-                        iceColor={c.iceColor}
-                        amberColor={c.amberColor}
-                        name={c.name}
-                        size={20}
-                        className="size-5"
-                      />
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm text-text-hi">
-                          {c.name}
-                        </span>
-                        {c.handle ? (
-                          <span className="block truncate text-[11px] text-text-lo">
-                            @{c.handle}
+            <>
+              {/* Explicit dismiss layer — no document-wide pointer listeners. */}
+              <div
+                aria-hidden
+                className="fixed inset-0 z-[99]"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  closePicker();
+                }}
+              />
+              <div
+                role="dialog"
+                aria-label="Search followers and follows"
+                style={{
+                  position: "fixed",
+                  left: panelPos.left,
+                  width: panelPos.width,
+                  bottom: panelPos.bottom,
+                  maxHeight: panelPos.maxHeight,
+                }}
+                className="z-[100] flex flex-col overflow-hidden rounded-card border border-line bg-bg-1 p-1.5 shadow-e2"
+                onPointerDown={(e) => e.stopPropagation()}
+              >
+                <div className="relative shrink-0">
+                  <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-text-lo" />
+                  <Input
+                    autoFocus
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Search followers and follows"
+                    aria-label="Search followers and follows"
+                    className="h-8 pl-8 text-sm"
+                  />
+                </div>
+                <div className="mt-1 min-h-0 flex-1 overflow-y-auto" role="listbox">
+                  {pickable.length === 0 ? (
+                    <p className="px-2 py-2 text-xs text-text-lo">
+                      Nobody left to add — follow people, or wait for followers.
+                    </p>
+                  ) : matches.length === 0 ? (
+                    <p className="px-2 py-2 text-xs text-text-lo">
+                      No followers or follows match that.
+                    </p>
+                  ) : (
+                    matches.map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        role="option"
+                        // Commit on pointerdown so focus-stealing from the
+                        // search field cannot cancel the pick before click.
+                        onPointerDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          add(c.id);
+                        }}
+                        className="flex w-full items-center gap-2.5 rounded-input px-2 py-1.5 text-left hover:bg-bg-2"
+                      >
+                        <ArtistMark
+                          emblemUrl={c.emblemUrl}
+                          paletteId={c.paletteId}
+                          iceColor={c.iceColor}
+                          amberColor={c.amberColor}
+                          name={c.name}
+                          size={20}
+                          className="size-5"
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm text-text-hi">
+                            {c.name}
                           </span>
-                        ) : null}
-                      </span>
-                    </button>
-                  ))
-                )}
+                          {c.handle ? (
+                            <span className="block truncate text-[11px] text-text-lo">
+                              @{c.handle}
+                            </span>
+                          ) : null}
+                        </span>
+                      </button>
+                    ))
+                  )}
+                </div>
               </div>
-            </div>,
+            </>,
             document.body
           )
         : null}

@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { filterTop8Candidates, type Top8Candidate } from "@/lib/social/top8";
 
@@ -33,5 +35,18 @@ describe("filterTop8Candidates", () => {
 
   it("returns nothing when nobody matches", () => {
     expect(filterTop8Candidates(pool, "illenium")).toEqual([]);
+  });
+});
+
+describe("Top 8 picker dismiss", () => {
+  it("uses an explicit backdrop instead of a document pointer listener", () => {
+    const src = readFileSync(
+      resolve(process.cwd(), "components/social/top8-rail.tsx"),
+      "utf8"
+    );
+    expect(src).toContain('className="fixed inset-0 z-[99]"');
+    expect(src).not.toContain('document.addEventListener("pointerdown"');
+    expect(src).toContain("add(c.id)");
+    expect(src).toContain("e.preventDefault()");
   });
 });
