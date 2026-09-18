@@ -23,6 +23,11 @@ describe("Social discovery", () => {
     expect(social).toContain("for (const f of following)");
     expect(rail).toContain("Search followers and follows");
     expect(rail).toContain("bottom: panelPos.bottom");
+    // Picks register on pointerdown so an outside-dismiss cannot beat the click.
+    expect(rail).toContain("onPointerDown");
+    expect(rail).toContain("e.stopPropagation()");
+    expect(rail).toContain("setLocalTop8");
+    expect(social).toContain("Couldn’t save that Top 8 pick");
     expect(read("lib/social/top8.ts")).toContain("export function filterTop8Candidates");
   });
 

@@ -85,7 +85,10 @@ export function ProjectTracksPanel({
       {trackRows.length === 0 ? (
         <QuietEmpty>No tracks attached yet.</QuietEmpty>
       ) : (
-        <ul className="space-y-1.5">
+        // A record's worth of tracks would otherwise make this sidebar taller
+        // than the rest of the page and push the release workspace below it
+        // far out of view.
+        <ul className="max-h-[26rem] space-y-1.5 overflow-y-auto pr-1">
           {trackRows.map(({ track, checklistPct, overdue }) => (
             <li key={track.id} className="well flex items-start gap-2.5 px-2 py-2">
               <div className="relative mt-0.5 size-7 shrink-0 overflow-hidden rounded-input border border-line">

@@ -873,6 +873,103 @@ export const DEMO_CALENDAR_EVENTS: DemoCalendarEvent[] = [
   },
 ];
 
+export type DemoTeamMember = {
+  ref: string;
+  name: string;
+  /** The TEMPO role this person would be invited as. */
+  role: "manager" | "agent" | "tour_manager" | "label" | "assistant" | "custom";
+  /** What they are called day to day, which is not always the role name. */
+  title: string;
+  org: string | null;
+  photo: string | null;
+  /** What this person is actually holding on this record, in their words. */
+  holding: string;
+  /** Sample teammates who have not accepted yet, so the waiting state shows. */
+  pending?: true;
+};
+
+/**
+ * The people around PRESIDENT, for the demo only.
+ *
+ * These are not TEMPO accounts and never become `artist_members` rows — a real
+ * membership needs a real signed-in person. They exist so someone opening the
+ * demo sees what a working team looks like instead of an empty room, and every
+ * surface that shows them says so.
+ *
+ * The band itself stays anonymous, because that is the whole premise: the
+ * players here are the touring band, and the guitarist is credited the way a
+ * masked band credits people. The rest of the team are the ordinary,
+ * unmasked jobs around a record — which is exactly the part a new artist is
+ * trying to picture.
+ */
+export const DEMO_TEAM: DemoTeamMember[] = [
+  {
+    ref: "manager",
+    name: "Ray Halloran",
+    role: "manager",
+    title: "Manager",
+    org: "Hollow Crown Management",
+    photo: "/demo/president/team/manager.png",
+    holding:
+      "The release plan end to end, and the conversations nobody else wants — including the split sheet holding up Hate Figure.",
+  },
+  {
+    ref: "agent",
+    name: "Theo Marchetti",
+    role: "agent",
+    title: "Booking agent",
+    org: "Quarter Circle",
+    photo: "/demo/president/team/agent.png",
+    holding: "The autumn headline run: routing, holds, load-in times, and the guest list that closes at noon.",
+  },
+  {
+    ref: "engineer",
+    name: "Ellis Quinn",
+    role: "custom",
+    title: "Mix engineer",
+    org: null,
+    photo: "/demo/president/team/engineer.png",
+    holding: "Mixes and mix notes. Locked This Will Divide Us; waiting on the paperwork before Hate Figure can go.",
+  },
+  {
+    ref: "vocals",
+    name: "Nadia Faye",
+    role: "custom",
+    title: "Live vocals and keys",
+    org: null,
+    photo: "/demo/president/team/vocals.jpg",
+    holding: "The release-week set. Carrying the top line live so the record's stacked vocals still land in a room.",
+  },
+  {
+    ref: "drums",
+    name: "Kit Brannan",
+    role: "custom",
+    title: "Live drums",
+    org: null,
+    photo: "/demo/president/team/drums.png",
+    holding: "Tempo map and click for the live set — Sleepwalker drifts without one.",
+  },
+  {
+    ref: "guitar",
+    name: "V",
+    role: "custom",
+    title: "Live guitar",
+    org: null,
+    photo: "/demo/president/team/guitar.jpg",
+    holding: "The White Devil arrangement the whole set is being built around. Credited by initial only, like everyone on stage.",
+  },
+  {
+    ref: "press",
+    name: "Imogen Blake",
+    role: "custom",
+    title: "Press and marketing",
+    org: "Third Rail PR",
+    photo: null,
+    holding: "Review embargo for release week, the playlist pitch, and the announce beats around the mask reveal teaser.",
+    pending: true,
+  },
+];
+
 export type DemoSocialArtist = {
   name: string;
   genres: string[];

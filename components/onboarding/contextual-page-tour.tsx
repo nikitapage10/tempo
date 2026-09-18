@@ -11,6 +11,13 @@ import { cn } from "@/lib/utils";
 type TourStep = {
   selector: string;
   matchIndex?: number;
+  /**
+   * Steps about something the page only has once there is content — a Session
+   * room, a track, a post. With nothing to point at, the tour used to land on
+   * whatever else the selector caught, so these are dropped instead when the
+   * page is still empty.
+   */
+  needsTarget?: true;
   kicker: string;
   title: string;
   copy: string;
@@ -19,8 +26,16 @@ type TourStep = {
 type PageTour = { id: string; steps: TourStep[] };
 type Point = { top: number; left: number };
 
+/**
+ * Every step points at an element that opted in with `data-tour`, or at an
+ * ARIA role the page already guarantees. Guessing with element and class
+ * selectors does not survive a redesign — and worse, it fails silently by
+ * highlighting whatever else matched first.
+ */
+const anchor = (name: string) => `main [data-tour="${name}"]`;
+
 const pageStep = (kicker: string, title: string, copy: string): TourStep => ({
-  selector: "main header, main h1",
+  selector: anchor("page-header"),
   kicker,
   title,
   copy,
@@ -32,78 +47,78 @@ const TOURS: Record<string, PageTour> = {
     steps: [
       pageStep("Hold the timing", "Your music in time.", "Deadlines, sessions, releases, and milestones meet here. Month, Week, Agenda, and Timeline cover it from every angle, with Filters and More tucked out of the way until you need them."),
       { selector: 'main [aria-label="Quick schedule with AI"]', kicker: "Just say it", title: "Type it, or speak it.", copy: "“Studio session Friday at 7pm” becomes a real event — tap the microphone to dictate instead of typing. Start with “task:” to add a task instead." },
-      { selector: 'main [aria-label="Creative timeline"], main [role="grid"], main .glass', kicker: "See the whole arc", title: "Plan visually.", copy: "Use the timeline, month grid, or the new hour-by-hour Week view to see where creative work, deadlines, and releases overlap." },
-      { selector: 'main [aria-label="Upcoming schedule"], main .glass-quiet', kicker: "What is next", title: "Keep the near future close.", copy: "The schedule view collects upcoming work so the next commitment never gets buried." },
+      { selector: anchor("calendar-canvas"), kicker: "See the whole arc", title: "Plan visually.", copy: "Use the timeline, month grid, or the new hour-by-hour Week view to see where creative work, deadlines, and releases overlap." },
+      { selector: anchor("calendar-upcoming"), needsTarget: true, kicker: "What is next", title: "Keep the near future close.", copy: "The day and agenda panels collect upcoming work so the next commitment never gets buried." },
     ],
   },
   "/board": {
     id: "board",
     steps: [
       pageStep("Shape the pipeline", "Move work by momentum.", "The board turns your process into stages. Use the top controls to sort, filter, edit stages, or add a track."),
-      { selector: 'main [class*="lg:flex-row"], main .panel, main .panel-quiet', kicker: "Your stages", title: "See the whole process.", copy: "Each column represents a stage. Drag tracks forward as they develop, and keep notes beside the work they belong to." },
+      { selector: anchor("board-stages"), needsTarget: true, kicker: "Your stages", title: "See the whole process.", copy: "Each column represents a stage. Drag tracks forward as they develop, and keep notes beside the work they belong to." },
     ],
   },
   "/tracks": {
     id: "tracks",
     steps: [
       pageStep("The catalog", "Every track, close at hand.", "Search, sort, group, and filter the catalog from the controls at the top. Add a track whenever an idea is ready to become real."),
-      { selector: 'main [role="group"][aria-label="List density"], main .panel, main .panel-quiet', kicker: "Choose the view", title: "Make the catalog readable.", copy: "Change the density, grouping, and order to match how you want to scan the work today." },
-      { selector: 'main article, main a[href^="/track/"], main .panel', kicker: "Open the work", title: "Each track has its own room.", copy: "Open any track to find its bounces, notes, collaborators, details, and next move together." },
+      { selector: 'main [role="group"][aria-label="List density"]', needsTarget: true, kicker: "Choose the view", title: "Make the catalog readable.", copy: "Change the density, grouping, and order to match how you want to scan the work today." },
+      { selector: anchor("track-list"), needsTarget: true, kicker: "Open the work", title: "Each track has its own room.", copy: "Open any track to find its bounces, notes, collaborators, details, and next move together." },
     ],
   },
   "/projects": {
     id: "projects",
     steps: [
       pageStep("Gather the work", "Projects hold the bigger arc.", "Use projects for releases, campaigns, or any body of work that needs tracks and tasks moving together."),
-      { selector: 'main a[href^="/projects/"], main .panel, main [class*="grid"]', kicker: "Project rooms", title: "Keep the release together.", copy: "Open a project to manage its tracks, milestones, notes, links, and release plan in one place." },
+      { selector: anchor("project-grid"), needsTarget: true, kicker: "Project rooms", title: "Keep the release together.", copy: "Open a project to manage its tracks, milestones, notes, links, and release plan in one place." },
     ],
   },
   "/tasks": {
     id: "tasks",
     steps: [
       pageStep("The next action", "Keep small moves visible.", "Tasks hold the work that does not belong inside a single track, including pitching, social, and admin."),
-      { selector: "main form", kicker: "Capture it quickly", title: "Get it out of your head.", copy: "Type the next action here, choose a category, and add more detail only when it helps." },
-      { selector: "main section, main .panel-quiet", kicker: "Work the list", title: "Focus on what matters now.", copy: "Use the views below to find overdue work, upcoming tasks, and completed progress without losing the creative thread." },
+      { selector: anchor("task-composer"), kicker: "Capture it quickly", title: "Get it out of your head.", copy: "Type the next action here, choose a category, and add more detail only when it helps." },
+      { selector: anchor("task-views"), kicker: "Work the list", title: "Focus on what matters now.", copy: "Filter by type, priority, and status to find overdue work, upcoming tasks, and what you already closed out." },
     ],
   },
   "/artist": {
     id: "artist",
     steps: [
       pageStep("Your identity", "This is how you show up.", "This profile carries your artist story, visual identity, and the context people see when they connect with you."),
-      { selector: "#profile-visibility", kicker: "You control the door", title: "Private until you say otherwise.", copy: "Choose whether your profile stays private, appears to TEMPO members, or has a public link." },
-      { selector: "main .panel-quiet", kicker: "Shape the story", title: "Make the profile sound like you.", copy: "Review what TEMPO drafted, then edit the story, roles, genres, links, and other details whenever they evolve." },
+      { selector: "main #profile-visibility", needsTarget: true, kicker: "You control the door", title: "Private until you say otherwise.", copy: "Choose whether your profile stays private, appears to TEMPO members, or has a public link." },
+      { selector: anchor("artist-story"), needsTarget: true, kicker: "Shape the story", title: "Make the profile sound like you.", copy: "Review what TEMPO drafted, then edit the story, roles, genres, links, and other details whenever they evolve." },
     ],
   },
   "/social": {
     id: "social",
     steps: [
       pageStep("The network", "Find the people around the work.", "Social is separate from your private workspace. Join when you want other artists to discover and follow you."),
-      { selector: "main textarea, main .panel", kicker: "Share the signal", title: "Post without leaving the work behind.", copy: "Share an update, follow artists, and keep creative relationships moving in the same place." },
-      { selector: "main aside, main .panel-quiet", matchIndex: 1, kicker: "Your circle", title: "Keep collaborators nearby.", copy: "The people and activity around your network stay visible alongside the main feed." },
+      { selector: anchor("social-composer"), needsTarget: true, kicker: "Share the signal", title: "Post without leaving the work behind.", copy: "Share an update, follow artists, and keep creative relationships moving in the same place." },
+      { selector: anchor("social-people"), needsTarget: true, kicker: "Your circle", title: "Keep collaborators nearby.", copy: "The people around your network stay here, beside the feed rather than buried behind it." },
     ],
   },
   "/scenes": {
     id: "scenes",
     steps: [
       pageStep("Shared rooms", "Step into a scene.", "Scenes are focused communities with their own people, conversations, events, and welcome steps."),
-      { selector: 'main a[href="/scenes/new"], main [class*="flex-wrap"]', kicker: "Find your rooms", title: "Browse or start a scene.", copy: "Use the tabs to move between your scenes and discovery, or create a room for a community you already know." },
-      { selector: 'main a[href^="/scenes/"], main .panel-quiet', matchIndex: 1, kicker: "Inside a scene", title: "Each community has its own rhythm.", copy: "Open a scene to see its feed, events, members, chat, and any onboarding steps from its hosts." },
+      { selector: anchor("scenes-browse"), needsTarget: true, kicker: "Find your rooms", title: "Browse or start a scene.", copy: "Use the tabs to move between your scenes and discovery, or create a room for a community you already know." },
+      { selector: anchor("scene-open"), needsTarget: true, kicker: "Inside a scene", title: "Each community has its own rhythm.", copy: "Open a scene to see its feed, events, members, chat, and any onboarding steps from its hosts." },
     ],
   },
   "/sessions": {
     id: "sessions",
     steps: [
       pageStep("Shared workrooms", "Open a Session.", "Sessions are rooms for you and your people to plan, talk, and work on a song together. Agenda, notes, chat, and past sessions stay here."),
-      { selector: 'main button, main [class*="flex-wrap"]', kicker: "Start one", title: "Make a room, invite the people.", copy: "Name the Session, add who should be in it, and pin the track or project you are actually working on." },
-      { selector: 'main a[href^="/sessions/"], main .panel-quiet', matchIndex: 1, kicker: "Inside the room", title: "The room lives here.", copy: "Open a Session for agenda, shared notes, tasks, chat, and a call when you are ready. A Session never opens anyone's catalog." },
+      { selector: anchor("session-create"), needsTarget: true, kicker: "Start one", title: "Make a room, invite the people.", copy: "Name the Session, add who should be in it, and pin the track or project you are actually working on." },
+      { selector: anchor("session-room"), needsTarget: true, kicker: "Inside the room", title: "The room lives here.", copy: "Open a Session for agenda, shared notes, tasks, chat, and a call when you are ready. A Session never opens anyone's catalog." },
     ],
   },
   "/stats": {
     id: "stats",
     steps: [
       pageStep("Read the signal", "See how the work is moving.", "The opening summary rolls up tracks, bounces, progress, releases, and focus time across this artist."),
-      { selector: "main section, main .panel", kicker: "Arrange the readout", title: "Your useful numbers, your way.", copy: "The modules below reveal output, momentum, catalog patterns, and work rhythm. Rearrange them to keep the most useful signals first." },
-      { selector: "main section, main .panel-quiet", matchIndex: 1, kicker: "Bring in context", title: "Connect or track what matters.", copy: "Platform connections and custom statistics let you add signals TEMPO cannot infer from the catalog alone." },
+      { selector: anchor("stats-modules"), needsTarget: true, kicker: "Arrange the readout", title: "Your useful numbers, your way.", copy: "The modules below reveal output, momentum, catalog patterns, and work rhythm. Rearrange them to keep the most useful signals first." },
+      { selector: anchor("stats-platforms"), needsTarget: true, kicker: "Bring in context", title: "Connect or track what matters.", copy: "Platform connections and custom statistics let you add signals TEMPO cannot infer from the catalog alone." },
     ],
   },
   "/settings": {
@@ -134,8 +149,9 @@ const PRO_TOURS: Record<string, PageTour> = {
   "/": {
     id: "pro-today",
     steps: [
-      pageStep("Where the day starts", "Everything waiting on you.", "Today gathers what is due, what is moving, and what the artists you work with have been up to, across every workspace you have access to."),
-      { selector: "main [data-tour='pro-today-hub']", kicker: "Across the roster", title: "One view, not one artist.", copy: "Open tasks and projects are yours. Below them, waiting work and the artists you work with sit together so nothing stays buried in a room you did not open today." },
+      // Today opens with the greeting banner rather than a shared page header.
+      { selector: anchor("today"), kicker: "Where the day starts", title: "Everything waiting on you.", copy: "Today gathers what is due, what is moving, and what the artists you work with have been up to, across every workspace you have access to." },
+      { selector: anchor("pro-today-hub"), kicker: "Across the roster", title: "One view, not one artist.", copy: "Open tasks and projects are yours. Below them, waiting work and the artists you work with sit together so nothing stays buried in a room you did not open today." },
     ],
   },
   "/calendar": {
@@ -143,64 +159,64 @@ const PRO_TOURS: Record<string, PageTour> = {
     steps: [
       pageStep("Hold the timing", "The schedule you are keeping.", "Sessions, deadlines, releases, and shows for the people you support. Month, Week, Agenda, and Timeline each answer a different question about the same dates."),
       { selector: 'main [aria-label="Quick schedule with AI"]', kicker: "Just say it", title: "Type it, or speak it.", copy: "“Mix review Friday at 7pm” becomes a real event. Tap the microphone to dictate instead of typing, or start with “task:” to capture an action instead." },
-      { selector: 'main [aria-label="Creative timeline"], main [role="grid"], main .glass', kicker: "See the whole arc", title: "Spot the collisions early.", copy: "The timeline and month grid make overlapping deadlines, travel, and release dates visible before they become a problem." },
+      { selector: anchor("calendar-canvas"), kicker: "See the whole arc", title: "Spot the collisions early.", copy: "The timeline and month grid make overlapping deadlines, travel, and release dates visible before they become a problem." },
     ],
   },
   "/board": {
     id: "pro-board",
     steps: [
       pageStep("Shape the flow", "Move work, not songs.", "This board turns the tasks in your current Pro Space into a simple flow: To do, In progress, and Done. It is separate from every artist's song pipeline."),
-      { selector: "main [data-pro-board]", kicker: "One shared state", title: "Drag the work forward.", copy: "Move a card between columns as its status changes. The same update appears on Tasks, so the board and list never drift apart." },
+      { selector: "main [data-pro-board]", needsTarget: true, kicker: "One shared state", title: "Drag the work forward.", copy: "Move a card between columns as its status changes. The same update appears on Tasks, so the board and list never drift apart." },
     ],
   },
   "/projects": {
     id: "pro-projects",
     steps: [
       pageStep("Gather the work", "Projects hold the bigger arc.", "Releases, campaigns, and any body of work with more than one moving part. This is usually where your day actually lives."),
-      { selector: 'main a[href^="/projects/"], main .panel, main [class*="grid"]', kicker: "Project rooms", title: "Keep the release together.", copy: "Open a project for its tracks, milestones, notes, links, and plan. Everyone with access sees the same state, so status meetings get shorter." },
+      { selector: anchor("project-grid"), needsTarget: true, kicker: "Project rooms", title: "Keep the release together.", copy: "Open a project for its tracks, milestones, notes, links, and plan. Everyone with access sees the same state, so status meetings get shorter." },
     ],
   },
   "/tasks": {
     id: "pro-tasks",
     steps: [
       pageStep("The next action", "The work between the work.", "Pitching, admin, travel, follow-ups, and everything that does not belong inside a single song."),
-      { selector: "main form", kicker: "Capture it quickly", title: "Get it out of your head.", copy: "Type the next action, pick a category, and add detail only when it helps. Anything you capture here is visible to the people you share the workspace with." },
-      { selector: "main section, main .panel-quiet", kicker: "Work the list", title: "Find what is actually overdue.", copy: "The views below separate overdue, upcoming, and done, so a long list stays workable." },
+      { selector: anchor("task-composer"), kicker: "Capture it quickly", title: "Get it out of your head.", copy: "Type the next action, pick a category, and add detail only when it helps. Anything you capture here is visible to the people you share the workspace with." },
+      { selector: anchor("task-views"), kicker: "Work the list", title: "Find what is actually overdue.", copy: "These filters separate overdue, upcoming, and done, so a long list stays workable." },
     ],
   },
   "/team": {
     id: "pro-team",
     steps: [
       pageStep("Who you work with", "Every artist, in one place.", "The artists whose workspaces you have been given access to, with what is overdue, what is coming, and how big the catalog is."),
-      { selector: 'main a[href^="/artist/"], main .panel, main .panel-quiet', kicker: "Step inside", title: "Enter a workspace.", copy: "Opening an artist puts you in their room with exactly the areas they granted you. Their catalog, calendar, and releases, none of your own." },
+      { selector: anchor("roster-artist"), needsTarget: true, kicker: "Step inside", title: "Enter a workspace.", copy: "Opening an artist puts you in their room with exactly the areas they granted you. Their catalog, calendar, and releases, none of your own." },
     ],
   },
   "/profile": {
     id: "pro-profile",
     steps: [
       pageStep("How you show up", "Your own presence.", "The name, photo, and story you gave in Passage live here. This is what artists you work with and people on Social see."),
-      { selector: "main .panel-quiet, main .panel", kicker: "Yours to change", title: "Nothing here is fixed.", copy: "Edit any of it whenever it stops being true. This is a professional profile, not an artist page: it never implies you make the music." },
+      { selector: anchor("pro-identity"), needsTarget: true, kicker: "Yours to change", title: "Nothing here is fixed.", copy: "Edit any of it whenever it stops being true. This is a professional profile, not an artist page: it never implies you make the music." },
     ],
   },
   "/social": {
     id: "pro-social",
     steps: [
       pageStep("The network", "The people around the work.", "Social is separate from the workspaces you have access to. Join it when you want to be findable by the artists and industry people you do not already know."),
-      { selector: "main textarea, main .panel", kicker: "Post as yourself", title: "You post as you.", copy: "Anything you share here goes out under your own name, never as one of the artists you work with." },
+      { selector: anchor("social-composer"), needsTarget: true, kicker: "Post as yourself", title: "You post as you.", copy: "Anything you share here goes out under your own name, never as one of the artists you work with." },
     ],
   },
   "/scenes": {
     id: "pro-scenes",
     steps: [
       pageStep("Shared rooms", "Step into a scene.", "Scenes are focused communities with their own people, conversations, and events. Labels, collectives, and local circles tend to live here."),
-      { selector: 'main a[href="/scenes/new"], main [class*="flex-wrap"]', kicker: "Find your rooms", title: "Browse or start one.", copy: "Move between the scenes you are in and the ones you could join, or open a room for a community you already run." },
+      { selector: anchor("scenes-browse"), needsTarget: true, kicker: "Find your rooms", title: "Browse or start one.", copy: "Move between the scenes you are in and the ones you could join, or open a room for a community you already run." },
     ],
   },
   "/sessions": {
     id: "pro-sessions",
     steps: [
       pageStep("Shared workrooms", "Open a Session.", "Sessions are rooms for you and the people around a song. Plan, talk, meet live, and keep the notes in one place."),
-      { selector: 'main button, main [class*="flex-wrap"]', kicker: "Start one", title: "Make a room for the work.", copy: "Name it, add the people, and pin what you are actually working on. Being in the room never opens the catalog." },
+      { selector: anchor("session-create"), needsTarget: true, kicker: "Start one", title: "Make a room for the work.", copy: "Name it, add the people, and pin what you are actually working on. Being in the room never opens the catalog." },
     ],
   },
   "/settings": {
@@ -225,13 +241,36 @@ function tourFor(pathname: string, pro: boolean) {
   );
 }
 
-function visibleTarget(step: TourStep): HTMLElement | null {
+/**
+ * The step's own element, or null when the page does not have one.
+ *
+ * The shell toolbar and the banners above the page live inside `main` and come
+ * first in document order, and a selector list is resolved in document order
+ * rather than in the order it was written. Without the page scope, a loose
+ * fallback lands on the notification bell instead of the page's own control.
+ */
+function findTarget(step: TourStep): HTMLElement | null {
+  const page = document.querySelector<HTMLElement>("[data-page-content]");
   const matches = Array.from(document.querySelectorAll<HTMLElement>(step.selector)).filter((element) => {
+    if (page && !page.contains(element)) return false;
     const rect = element.getBoundingClientRect();
     const style = window.getComputedStyle(element);
     return rect.width > 0 && rect.height > 0 && style.visibility !== "hidden";
   });
-  return matches[step.matchIndex ?? 0] ?? matches[0] ?? document.querySelector<HTMLElement>("main");
+  return matches[step.matchIndex ?? 0] ?? matches[0] ?? null;
+}
+
+function visibleTarget(step: TourStep): HTMLElement | null {
+  return (
+    findTarget(step) ??
+    document.querySelector<HTMLElement>("[data-page-content]") ??
+    document.querySelector<HTMLElement>("main")
+  );
+}
+
+function stepsForPage(tour: PageTour): TourStep[] {
+  const shown = tour.steps.filter((step) => !step.needsTarget || findTarget(step));
+  return shown.length ? shown : tour.steps;
 }
 
 function paddedRect(element: HTMLElement): DOMRect {
@@ -252,6 +291,7 @@ export function ContextualPageTour() {
   const tour = tourFor(pathname, isPro);
   const [visible, setVisible] = React.useState(false);
   const [stepIndex, setStepIndex] = React.useState(0);
+  const [steps, setSteps] = React.useState<TourStep[]>([]);
   const [targetRect, setTargetRect] = React.useState<DOMRect | null>(null);
   const [panelPoint, setPanelPoint] = React.useState<Point>({ top: 24, left: 24 });
   const panelRef = React.useRef<HTMLDivElement>(null);
@@ -269,12 +309,19 @@ export function ContextualPageTour() {
   React.useEffect(() => {
     setVisible(false);
     setStepIndex(0);
+    setSteps([]);
     if (!shouldOffer || !tour) return;
-    const timer = window.setTimeout(() => setVisible(true), 650);
+    // The same delay that lets the page settle before the first highlight also
+    // decides the step list, so an empty page never offers a step about
+    // content it does not have.
+    const timer = window.setTimeout(() => {
+      setSteps(stepsForPage(tour));
+      setVisible(true);
+    }, 650);
     return () => window.clearTimeout(timer);
   }, [pathname, shouldOffer, tour]);
 
-  const step = tour?.steps[stepIndex];
+  const step = steps[stepIndex];
   const measure = React.useCallback(() => {
     if (!visible || !step) return;
     const target = visibleTarget(step);
@@ -354,7 +401,7 @@ export function ContextualPageTour() {
     onboarding.update.mutate(skipped ? { skippedPageTour: tour!.id } : { completedPageTour: tour!.id });
   }
 
-  const isLast = stepIndex === tour.steps.length - 1;
+  const isLast = stepIndex === steps.length - 1;
 
   return (
     <div className="fixed inset-0 z-[120]" role="dialog" aria-modal="true" aria-labelledby="contextual-tour-title">
@@ -378,7 +425,7 @@ export function ContextualPageTour() {
           <div>
             <span className="flex size-8 items-center justify-center rounded-full border border-ice/25 bg-ice/10 text-ice"><Sparkles className="size-3.5" /></span>
             <p className="label-mono mt-3 text-ice">{step.kicker}</p>
-            <p className="mt-2 font-mono text-xs tabular-nums text-text-lo">{String(stepIndex + 1).padStart(2, "0")} / {String(tour.steps.length).padStart(2, "0")}</p>
+            <p className="mt-2 font-mono text-xs tabular-nums text-text-lo">{String(stepIndex + 1).padStart(2, "0")} / {String(steps.length).padStart(2, "0")}</p>
           </div>
           <button type="button" onClick={() => finish(true)} className="rounded-input p-1.5 text-text-lo transition-colors hover:bg-bg-2 hover:text-text-hi" aria-label="Skip this page tour"><X className="size-4" /></button>
         </div>

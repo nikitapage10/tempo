@@ -123,7 +123,7 @@ function RosterRow({
   const handle = snapshot?.handle;
 
   return (
-    <div className="well flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:gap-4">
+    <div data-tour="roster-artist" className="well flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:gap-4">
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <ArtistMark artist={artist} />
         <div className="min-w-0">

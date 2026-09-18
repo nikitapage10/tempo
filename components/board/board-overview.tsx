@@ -18,7 +18,7 @@ export function BoardOverview({ stages, tracksByStage, notesByStage, onFocusStag
 }) {
   const hues = useActiveArtistPalette();
   return (
-    <div className="grid min-w-0 gap-1.5 pb-3" style={{ gridTemplateColumns: `repeat(${stages.length}, minmax(0, 1fr))` }} aria-label="All board stages overview">
+    <div data-tour="board-stages" className="grid min-w-0 gap-1.5 pb-3" style={{ gridTemplateColumns: `repeat(${stages.length}, minmax(0, 1fr))` }} aria-label="All board stages overview">
       {stages.map((stage, index) => {
         const tracks = tracksByStage.get(stage.id) ?? [];
         const notes = notesByStage.get(stage.id) ?? [];

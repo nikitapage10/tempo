@@ -79,7 +79,7 @@ export function CalendarAgendaView({
           <p className="text-sm text-text-lo">Nothing overdue.</p>
         )}
       </aside>
-      <section className="glass p-4 sm:p-5" aria-label="Upcoming schedule">
+      <section data-tour="calendar-upcoming" className="glass p-4 sm:p-5" aria-label="Upcoming schedule">
         <div className="space-y-6">
           {dates.map((date) => (
             <div

@@ -172,7 +172,7 @@ export default function ScenesView() {
         networkGate
       ) : (
         <div className="space-y-4">
-          <div className="flex flex-wrap gap-1.5">
+          <div data-tour="scenes-browse" className="flex flex-wrap gap-1.5">
             {tabs.map((t) => (
               <button
                 key={t.id}
@@ -216,7 +216,7 @@ export default function ScenesView() {
                 }
               />
             ) : (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div data-tour="scene-open" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {mine.map((scene) => (
                   <SceneCard key={scene.id} scene={scene} />
                 ))}
@@ -248,7 +248,7 @@ export default function ScenesView() {
                     : "No scenes to discover yet — be the first to start one."}
                 </p>
               ) : (
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div data-tour="scene-open" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {discover.map((scene) => (
                     <div key={scene.id} className="space-y-2">
                       <SceneCard scene={scene} />

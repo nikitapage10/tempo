@@ -28,7 +28,7 @@ export function JoinNetworkDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   artistId: string | null;
-  /** Seeds a suggested handle so most people only have to approve one. */
+  /** Offered as a one-tap suggestion, never typed into the field for them. */
   artistName?: string | null;
   currentHandle?: string | null;
   visibility?: "members" | "public";
@@ -41,11 +41,14 @@ export function JoinNetworkDialog({
 
   // Reset each time it opens: a handle abandoned last time should not be
   // sitting in the field, already checked, waiting to be submitted by habit.
+  // Only a handle they already hold is filled in — a suggestion from the
+  // artist name is offered beside the field instead, because a guess sitting
+  // in the box gets accepted as though it were a decision.
   React.useEffect(() => {
     if (!open) return;
-    setHandle(currentHandle ?? suggestHandle(artistName));
+    setHandle(currentHandle ?? "");
     setError(null);
-  }, [open, currentHandle, artistName]);
+  }, [open, currentHandle]);
 
   async function join() {
     if (!state.ready || !state.value) return;
@@ -81,6 +84,7 @@ export function JoinNetworkDialog({
             onStateChange={setState}
             currentArtistId={artistId ?? undefined}
             currentHandle={currentHandle}
+            suggestion={suggestHandle(artistName)}
             autoFocus
             disabled={publish.isPending}
           />

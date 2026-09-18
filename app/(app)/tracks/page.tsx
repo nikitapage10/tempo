@@ -1496,7 +1496,7 @@ export default function TracksPage() {
           </button>
         </div>
       ) : (
-        <section className="panel p-3 sm:p-4">
+        <section data-tour="track-list" className="panel p-3 sm:p-4">
           {sortSelection === "custom" && !selecting ? (
             <p className="mb-2 text-xs text-text-lo/70">
               {showGroups

@@ -156,7 +156,7 @@ export default function ProjectsPage() {
           }
         />
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div data-tour="project-grid" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {visible.map((p) => {
             const late = Boolean(p.deadline && p.deadline < today && p.status === "active");
             return (

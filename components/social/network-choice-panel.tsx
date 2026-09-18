@@ -17,7 +17,10 @@ import { cn } from "@/lib/utils";
  * Private is the default and stays a real answer, not a delay: everything in
  * TEMPO works alone, and joining later from Social costs nothing. Choosing to
  * join asks for a handle immediately, because that is the one thing the
- * network cannot fill in on someone's behalf.
+ * network cannot fill in on someone's behalf — and it asks rather than
+ * assumes. The field used to open pre-filled with a handle derived from the
+ * artist name, which people accepted by pressing Next without ever reading
+ * it, permanently.
  */
 
 export type NetworkChoice = "private" | "join";
@@ -30,6 +33,7 @@ export function NetworkChoicePanel({
   onHandleStateChange,
   artistId,
   artistName,
+  handleProblem,
   disabled,
 }: {
   choice: NetworkChoice;
@@ -39,17 +43,9 @@ export function NetworkChoicePanel({
   onHandleStateChange: (state: HandleState) => void;
   artistId?: string;
   artistName?: string | null;
+  handleProblem?: string | null;
   disabled?: boolean;
 }) {
-  // Fill the field the first time they open it, and never again: re-suggesting
-  // would overwrite whatever they had typed each time they changed their mind.
-  const seeded = React.useRef(false);
-  React.useEffect(() => {
-    if (choice !== "join" || seeded.current) return;
-    seeded.current = true;
-    if (!handle) onHandleChange(suggestHandle(artistName));
-  }, [choice, handle, artistName, onHandleChange]);
-
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-col gap-0.5">
@@ -83,12 +79,19 @@ export function NetworkChoicePanel({
 
       {choice === "join" ? (
         <div className="rounded-[10px] border border-ice/25 bg-ice/[0.04] px-3 py-3">
+          <p className="mb-2 text-xs leading-relaxed text-text-lo/85">
+            Pick the name people will find you by. It is yours to choose, so
+            nothing is filled in for you — your artist name is only a
+            suggestion.
+          </p>
           <HandleField
             id="origin-network-handle"
             value={handle}
             onChange={onHandleChange}
             onStateChange={onHandleStateChange}
             currentArtistId={artistId}
+            suggestion={suggestHandle(artistName)}
+            problem={handleProblem}
             disabled={disabled}
           />
         </div>

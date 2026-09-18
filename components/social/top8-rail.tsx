@@ -40,6 +40,14 @@ export function Top8Rail({
   saving,
   onChange,
 }: Top8RailProps) {
+  // Keep a local copy so a pick shows up the moment it is chosen, instead of
+  // waiting on the network round-trip — and so a failed save can still toast
+  // without looking like the click did nothing.
+  const [localTop8, setLocalTop8] = React.useState(top8);
+  React.useEffect(() => {
+    setLocalTop8(top8);
+  }, [top8]);
+
   const [pickingIndex, setPickingIndex] = React.useState<number | null>(null);
   const [query, setQuery] = React.useState("");
   const [mounted, setMounted] = React.useState(false);
@@ -56,8 +64,10 @@ export function Top8Rail({
     () => new Map(candidates.map((c) => [c.id, c])),
     [candidates]
   );
-  const picked = top8.map((id) => byId.get(id)).filter((c): c is Top8Candidate => !!c);
-  const pickable = candidates.filter((c) => !top8.includes(c.id));
+  const picked = localTop8
+    .map((id) => byId.get(id))
+    .filter((c): c is Top8Candidate => !!c);
+  const pickable = candidates.filter((c) => !localTop8.includes(c.id));
   const matches = filterTop8Candidates(pickable, query);
   const picking = pickingIndex !== null;
 
@@ -91,33 +101,55 @@ export function Top8Rail({
   React.useEffect(() => {
     if (!picking) return;
     placePanel();
-    function onPointer(e: MouseEvent) {
-      const t = e.target as Node;
-      if (anchorRef.current?.contains(t) || panelRef.current?.contains(t)) return;
+    function eventPath(e: Event): EventTarget[] {
+      const withPath = e as Event & { composedPath?: () => EventTarget[] };
+      if (typeof withPath.composedPath === "function") return withPath.composedPath();
+      return e.target ? [e.target] : [];
+    }
+    function isInsidePicker(e: Event) {
+      const path = eventPath(e);
+      return path.some(
+        (node) =>
+          node === panelRef.current ||
+          node === anchorRef.current ||
+          (node instanceof Node &&
+            (panelRef.current?.contains(node) || anchorRef.current?.contains(node)))
+      );
+    }
+    function onPointer(e: PointerEvent) {
+      // Ignore the same gesture that opened the picker (button already handled it).
+      if (isInsidePicker(e)) return;
       closePicker();
     }
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") closePicker();
     }
-    document.addEventListener("mousedown", onPointer);
+    // pointerdown (not click): a click-based dismiss races the option's click
+    // and can close the panel before the pick registers.
+    document.addEventListener("pointerdown", onPointer, true);
     document.addEventListener("keydown", onKey);
     window.addEventListener("resize", placePanel);
     window.addEventListener("scroll", placePanel, true);
     return () => {
-      document.removeEventListener("mousedown", onPointer);
+      document.removeEventListener("pointerdown", onPointer, true);
       document.removeEventListener("keydown", onKey);
       window.removeEventListener("resize", placePanel);
       window.removeEventListener("scroll", placePanel, true);
     };
   }, [picking, pickingIndex, placePanel]);
 
+  function commit(next: string[]) {
+    setLocalTop8(next);
+    onChange(next);
+  }
+
   function remove(id: string) {
-    onChange(top8.filter((x) => x !== id));
+    commit(localTop8.filter((x) => x !== id));
   }
 
   function add(id: string) {
-    if (top8.includes(id) || top8.length >= SLOTS) return;
-    onChange([...top8, id]);
+    if (localTop8.includes(id) || localTop8.length >= SLOTS) return;
+    commit([...localTop8, id]);
     closePicker();
   }
 
@@ -220,7 +252,7 @@ export function Top8Rail({
                 bottom: panelPos.bottom,
                 maxHeight: panelPos.maxHeight,
               }}
-              className="z-[80] flex flex-col overflow-hidden rounded-card border border-line bg-bg-1 p-1.5 shadow-e2"
+              className="z-[100] flex flex-col overflow-hidden rounded-card border border-line bg-bg-1 p-1.5 shadow-e2"
             >
               <div className="relative shrink-0">
                 <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-text-lo" />
@@ -248,7 +280,14 @@ export function Top8Rail({
                       key={c.id}
                       type="button"
                       role="option"
-                      onClick={() => add(c.id)}
+                      // pointerdown + stopPropagation: the outside-dismiss
+                      // listener used to win the race and close the panel
+                      // before click ever fired, so picks never stuck.
+                      onPointerDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        add(c.id);
+                      }}
                       className="flex w-full items-center gap-2.5 rounded-input px-2 py-1.5 text-left hover:bg-bg-2"
                     >
                       <ArtistMark

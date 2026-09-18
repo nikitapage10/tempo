@@ -299,6 +299,52 @@ async function seedProfile(supabase: Client, artistId: string): Promise<void> {
 }
 
 /**
+ * Links every real (non-demo) profile on this account to the demo profile both
+ * ways. Migration 120 allows that same-owner exception; strangers still cannot
+ * follow a demo. Best-effort — missing profiles or an unapplied migration must
+ * not fail the rest of the seed.
+ */
+export async function ensureOwnerDemoMutualFollows(
+  supabase: Client,
+  demoArtistId: string
+): Promise<void> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const { data: demoProfile } = await supabase
+    .from("artist_profiles")
+    .select("id")
+    .eq("artist_id", demoArtistId)
+    .maybeSingle();
+  if (!demoProfile) return;
+
+  const { data: realProfiles } = await supabase
+    .from("artist_profiles")
+    .select("id, artists!inner(demo_kind)")
+    .eq("owner_user_id", user.id)
+    .is("artists.demo_kind", null);
+  if (!realProfiles?.length) return;
+
+  const rows = realProfiles.flatMap((real) => [
+    {
+      follower_profile_id: real.id,
+      followee_profile_id: demoProfile.id,
+    },
+    {
+      follower_profile_id: demoProfile.id,
+      followee_profile_id: real.id,
+    },
+  ]);
+
+  await supabase.from("profile_follows").upsert(rows, {
+    onConflict: "follower_profile_id,followee_profile_id",
+    ignoreDuplicates: true,
+  });
+}
+
+/**
  * Seeds the demo. Safe to call twice: a current demo is returned untouched,
  * while an older version is removed and rebuilt from the latest shared data.
  */
@@ -319,6 +365,9 @@ export async function seedPresidentDemo(supabase: Client): Promise<SeedResult> {
       // rebuild cleanly instead of reopening a permanently partial catalog.
       await removeDemo(supabase, existing.artistId);
     } else {
+      await ensureOwnerDemoMutualFollows(supabase, existing.artistId).catch(
+        () => {}
+      );
       return {
         ...existing,
         alreadyExisted: true,
@@ -592,6 +641,9 @@ async function buildWorkspace(
   // for a reason outside this account's control (a handle someone else took),
   // and it must never cost the member the catalog they came to look at.
   await seedProfile(supabase, artistId).catch(() => {});
+  // After the demo profile exists, put it on the owner's Social graph so they
+  // can open it from Follows without publishing it to anyone else.
+  await ensureOwnerDemoMutualFollows(supabase, artistId).catch(() => {});
 
   return {
     artistId,

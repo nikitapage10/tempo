@@ -471,7 +471,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             ) : null}
             <DesktopUpdateBanner />
             <OfflineBanner />
-            <div className="pb-6 pt-0">
+            {/* Page tours only ever point at the page itself. Marking the
+                content wrapper keeps the toolbar (search, notifications,
+                profile) and the banners above it out of every step's
+                selector, so a step never highlights shell chrome. */}
+            <div data-page-content className="pb-6 pt-0">
               <TaskCategoryProvider artistId={activeArtist?.id ?? null}>
                 {children}
               </TaskCategoryProvider>

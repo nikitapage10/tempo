@@ -1,4 +1,7 @@
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+import { MEMBER_ROLES } from "@/lib/team/roles";
 import {
   ALBUM_RELEASE,
   DEMO_BOARD_NOTES,
@@ -9,6 +12,7 @@ import {
   DEMO_SPACES,
   DEMO_STAGES,
   DEMO_TASKS,
+  DEMO_TEAM,
   DEMO_TRACKS,
   DEMO_TRACK_GROUPS,
   DEMO_PROFILE,
@@ -170,5 +174,40 @@ describe("PRESIDENT demo dataset", () => {
     expect((DEMO_PROFILE.currentFocusTitle ?? "").length).toBeLessThanOrEqual(120);
     expect(DEMO_PROFILE.bio.length).toBeLessThanOrEqual(2000);
     expect(DEMO_PROFILE.bio.split("\n\n")).toHaveLength(3);
+  });
+
+  it("gives the demo artist a team whose photos actually exist", () => {
+    expect(DEMO_TEAM.length).toBeGreaterThanOrEqual(5);
+    expect(new Set(DEMO_TEAM.map((m) => m.ref)).size).toBe(DEMO_TEAM.length);
+    for (const member of DEMO_TEAM) {
+      expect(MEMBER_ROLES).toContain(member.role);
+      expect(member.title.length).toBeGreaterThan(0);
+      expect(member.holding.length).toBeGreaterThan(0);
+      if (!member.photo) continue;
+      expect(member.photo.startsWith("/demo/president/team/")).toBe(true);
+      expect(
+        existsSync(resolve("public", member.photo.replace(/^\//, ""))),
+        `${member.name} has no photo file at ${member.photo}`
+      ).toBe(true);
+    }
+  });
+
+  it("covers the roles an artist actually asks about", () => {
+    const titles = DEMO_TEAM.map((m) => m.title.toLowerCase()).join(" | ");
+    for (const job of ["manager", "agent", "press", "guitar", "drums", "vocals"]) {
+      expect(titles, `no one on the sample team does ${job}`).toContain(job);
+    }
+    // Everyone in the fan on Team has a face; the one without a photo is the
+    // invite still out, which is why it reads as unfinished rather than empty.
+    for (const member of DEMO_TEAM) {
+      if (!member.photo) expect(member.pending).toBe(true);
+    }
+  });
+
+  it("never presents the sample team as real memberships", () => {
+    const seed = readFileSync(resolve("lib/demo/seed.ts"), "utf8");
+    expect(seed).not.toContain("artist_members");
+    const panel = readFileSync(resolve("components/demo/demo-team-panel.tsx"), "utf8");
+    expect(panel).toContain("real TEMPO accounts");
   });
 });

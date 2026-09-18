@@ -40,6 +40,18 @@ const URGENCY_RANK: Record<PulseUrgency, number> = {
   awareness: 3,
 };
 
+/** Section headings in the digest, in the order they are read. */
+export const PULSE_CATEGORY_LABELS: Record<PulseCategory, string> = {
+  attention: "Needs attention",
+  due: "Due",
+  feedback: "Feedback",
+  collaboration: "Collaboration",
+  calendar: "Calendar",
+  messages: "Messages",
+  progress: "Progress",
+  product: "From TEMPO",
+};
+
 const CATEGORY_PRIORITY: Record<PulseCategory, number> = {
   attention: 0,
   due: 1,

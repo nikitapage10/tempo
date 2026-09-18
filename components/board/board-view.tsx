@@ -896,6 +896,7 @@ export function BoardView() {
           ) : (
             <LayoutGroup id="tempo-board">
             <div
+              data-tour="board-stages"
               className={cn(
                 "flex flex-col gap-2 pb-3 lg:grid lg:items-stretch lg:transition-[grid-template-columns] lg:will-change-[grid-template-columns] motion-reduce:transition-none",
                 allowOverflow ? "lg:overflow-visible" : "lg:overflow-hidden"

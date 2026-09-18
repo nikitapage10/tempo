@@ -45,7 +45,7 @@ export default function SessionsPage() {
         title="Sessions"
         subtitle="Rooms where you and your people plan, talk, and work on a song together."
         actions={
-          <Button type="button" onClick={() => setCreateOpen(true)}>
+          <Button type="button" data-tour="session-create" onClick={() => setCreateOpen(true)}>
             New session
           </Button>
         }
@@ -77,7 +77,7 @@ export default function SessionsPage() {
           title="No sessions yet"
           copy="Start a room for a song, a night, or a record that will take months. Agenda, notes, chat, and the people stay here."
           action={
-            <Button type="button" onClick={() => setCreateOpen(true)}>
+            <Button type="button" data-tour="session-create" onClick={() => setCreateOpen(true)}>
               New session
             </Button>
           }

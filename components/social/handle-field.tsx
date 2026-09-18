@@ -29,6 +29,8 @@ export function HandleField({
   onStateChange,
   currentArtistId,
   currentHandle,
+  suggestion,
+  problem,
   autoFocus,
   disabled,
   id = "network-handle",
@@ -39,6 +41,14 @@ export function HandleField({
   /** Lets the artist keep the handle they already hold. */
   currentArtistId?: string;
   currentHandle?: string | null;
+  /**
+   * Offered as one tap while the field is empty, never typed in for them.
+   * A handle that arrived pre-filled got accepted by people who had not
+   * decided on it, which is how an artist name ends up being a handle.
+   */
+  suggestion?: string | null;
+  /** A refusal from the surrounding form, shown in place of the hint. */
+  problem?: string | null;
   autoFocus?: boolean;
   disabled?: boolean;
   id?: string;
@@ -111,9 +121,21 @@ export function HandleField({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="font-mono text-[11px] uppercase tracking-wider text-text-lo">
-        Your handle
-      </label>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <label htmlFor={id} className="font-mono text-[11px] uppercase tracking-wider text-text-lo">
+          Your handle
+        </label>
+        {suggestion && !normalized ? (
+          <button
+            type="button"
+            onClick={() => onChange(suggestion)}
+            disabled={disabled}
+            className="text-xs text-ice hover:underline disabled:opacity-50"
+          >
+            Use @{suggestion}
+          </button>
+        ) : null}
+      </div>
       <div className="relative">
         <span
           aria-hidden
@@ -133,7 +155,7 @@ export function HandleField({
           disabled={disabled}
           autoFocus={autoFocus}
           aria-describedby={hintId}
-          aria-invalid={status === "taken" || status === "invalid"}
+          aria-invalid={status === "taken" || status === "invalid" || Boolean(problem)}
           className="pl-7 pr-9 lowercase"
         />
         <span className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -148,13 +170,21 @@ export function HandleField({
       </div>
       <p
         id={hintId}
-        role={message ? "alert" : undefined}
-        className={cn("text-xs leading-relaxed", message ? "text-warn" : "text-text-lo/80")}
+        role={problem || message ? "alert" : undefined}
+        className={cn(
+          "text-xs leading-relaxed",
+          problem || message ? "text-warn" : "text-text-lo/80"
+        )}
       >
-        {message ??
+        {problem ??
+          message ??
           (status === "free" && normalized
-            ? `@${normalized} is free. Your page will live at mytempo.dev/artist/${normalized}.`
-            : HANDLE_RULE_HINT)}
+            ? unchanged
+              ? `@${normalized} is yours.`
+              : `@${normalized} is available. Your page will live at mytempo.dev/artist/${normalized}.`
+            : status === "checking"
+              ? "Checking whether that handle is free…"
+              : HANDLE_RULE_HINT)}
       </p>
     </div>
   );

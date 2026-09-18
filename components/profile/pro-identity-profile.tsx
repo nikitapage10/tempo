@@ -11,6 +11,7 @@ import {
 } from "@/components/artist/profile-story";
 import { CityInput } from "@/components/artists/city-input";
 import { JoinNetworkDialog } from "@/components/social/join-network-dialog";
+import { HandleField, type HandleState } from "@/components/social/handle-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,7 +25,7 @@ import {
   needsPassageProfileRepair,
   passageProfilePatch,
 } from "@/lib/passage/profile-mapping";
-import { validateHandle } from "@/lib/social/handle";
+import { normalizeHandle, validateHandle } from "@/lib/social/handle";
 import type {
   ArtistProfileUpdate,
   ProfileDmPolicy,
@@ -262,7 +263,7 @@ export function ProIdentityProfile() {
         onJoined={() => toast("Your professional profile is now on the network.", "ok")}
       />
 
-      <div className="panel flex flex-col gap-4 p-5 sm:flex-row sm:items-start sm:justify-between">
+      <div data-tour="pro-identity" className="panel flex flex-col gap-4 p-5 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <p className="label-mono text-ice">Professional identity</p>
           <h2 className="mt-2 font-display text-xl text-text-hi">
@@ -309,6 +310,8 @@ export function ProIdentityProfile() {
           draft={draft}
           setDraft={setDraft}
           busy={busy}
+          artistId={activeArtist?.id}
+          currentHandle={profile?.handle}
           onSave={() => void handleSave()}
           onCancel={() => { setEditing(false); setDraft(null); }}
         />
@@ -323,14 +326,18 @@ export function ProIdentityProfile() {
   );
 }
 
-function ProProfileEditor({ draft, setDraft, busy, onSave, onCancel }: {
+function ProProfileEditor({ draft, setDraft, busy, artistId, currentHandle, onSave, onCancel }: {
   draft: Draft;
   setDraft: React.Dispatch<React.SetStateAction<Draft | null>>;
   busy: boolean;
+  artistId?: string;
+  currentHandle?: string | null;
   onSave: () => void;
   onCancel: () => void;
 }) {
   const [role, setRole] = React.useState("");
+  const [handleState, setHandleState] = React.useState<HandleState>({ value: "", ready: false });
+  const handleBlocksSave = Boolean(normalizeHandle(draft.handle)) && !handleState.ready;
   const patch = (next: Partial<Draft>) => setDraft((current) => current ? { ...current, ...next } : current);
   const addRole = () => {
     const value = role.trim();
@@ -344,9 +351,17 @@ function ProProfileEditor({ draft, setDraft, busy, onSave, onCancel }: {
   return (
     <div className="panel space-y-6 p-6">
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Handle" hint="Your unique TEMPO address and @mention.">
-          <div className="flex items-center gap-1.5"><span className="text-text-lo">@</span><Input value={draft.handle} onChange={(event) => patch({ handle: event.target.value.toLowerCase() })} placeholder="yourname" maxLength={30} /></div>
-        </Field>
+        <div className="sm:col-span-2 sm:max-w-md">
+          <HandleField
+            id="pro-profile-handle"
+            value={draft.handle}
+            onChange={(next) => patch({ handle: next.toLowerCase() })}
+            onStateChange={setHandleState}
+            currentArtistId={artistId}
+            currentHandle={currentHandle}
+            disabled={busy}
+          />
+        </div>
         <Field label="Professional headline" hint="One clear line about what you do.">
           <Input value={draft.tagline} onChange={(event) => patch({ tagline: event.target.value })} placeholder="Artist manager · touring and long-term strategy" maxLength={140} />
         </Field>
@@ -379,7 +394,7 @@ function ProProfileEditor({ draft, setDraft, busy, onSave, onCancel }: {
 
       <Field label="Who can message you"><select value={draft.accepts_dms} onChange={(event) => patch({ accepts_dms: event.target.value as ProfileDmPolicy })} className="h-9 rounded-input border border-line bg-bg-2 px-3 text-sm text-text-hi">{DM_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></Field>
 
-      <div className="flex justify-end gap-2 border-t border-line pt-4"><Button type="button" variant="secondary" onClick={onCancel} disabled={busy}><X className="size-3.5" /> Cancel</Button><Button type="button" onClick={onSave} disabled={busy}><Check className="size-3.5" /> {busy ? "Saving…" : "Save profile"}</Button></div>
+      <div className="flex justify-end gap-2 border-t border-line pt-4"><Button type="button" variant="secondary" onClick={onCancel} disabled={busy}><X className="size-3.5" /> Cancel</Button><Button type="button" onClick={onSave} disabled={busy || handleBlocksSave}><Check className="size-3.5" /> {busy ? "Saving…" : "Save profile"}</Button></div>
     </div>
   );
 }

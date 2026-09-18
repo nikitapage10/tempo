@@ -89,6 +89,7 @@ export function OriginLookStep({
     value: "",
     ready: false,
   });
+  const [handleProblem, setHandleProblem] = React.useState<string | null>(null);
   const [joining, setJoining] = React.useState(false);
 
   const logoInputRef = React.useRef<HTMLInputElement>(null);
@@ -150,7 +151,17 @@ export function OriginLookStep({
       onFinish();
       return;
     }
-    if (!handleState.ready || !handleState.value) return;
+    if (!handleState.ready || !handleState.value) {
+      // Say why, rather than letting Next quietly do nothing. The field is
+      // deliberately empty at this point, so silence here reads as a bug.
+      setHandleProblem(
+        handle.trim()
+          ? "Give this handle a moment to be checked, or pick a different one."
+          : "Type the handle you want before you continue."
+      );
+      document.getElementById("origin-network-handle")?.focus();
+      return;
+    }
     setJoining(true);
     try {
       await publish.mutateAsync({
@@ -411,10 +422,14 @@ export function OriginLookStep({
               choice={networkChoice}
               onChoiceChange={setNetworkChoice}
               handle={handle}
-              onHandleChange={setHandle}
+              onHandleChange={(next) => {
+                setHandle(next);
+                setHandleProblem(null);
+              }}
               onHandleStateChange={setHandleState}
               artistId={artist.id}
               artistName={artist.name}
+              handleProblem={handleProblem}
               disabled={busy || joining}
             />
           </div>
@@ -438,12 +453,9 @@ export function OriginLookStep({
           <Button
             type="button"
             onClick={() => void completeLook()}
-            disabled={
-              busy ||
-              imageBusy ||
-              joining ||
-              (networkChoice === "join" && !handleState.ready)
-            }
+            // Stays clickable without a handle so pressing it explains what is
+            // missing. A disabled button with no reason beside it is a wall.
+            disabled={busy || imageBusy || joining}
             className="ml-auto rounded-full px-5"
           >
             {joining ? "Joining…" : "Continue"} <ArrowRight className="size-4" />

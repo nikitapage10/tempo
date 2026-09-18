@@ -24,7 +24,6 @@ describe("first-class Pro profiles", () => {
     const editor = read("components/profile/pro-identity-profile.tsx");
     expect(page).toContain("<ProIdentityProfile />");
     for (const label of [
-      "Handle",
       "Professional headline",
       "About",
       "Roles",
@@ -35,6 +34,8 @@ describe("first-class Pro profiles", () => {
     ]) {
       expect(editor).toContain(`label=\"${label}\"`);
     }
+    expect(editor).toContain("HandleField");
+    expect(editor).toContain("handleBlocksSave");
     expect(editor).toContain('profile_kind: "pro"');
     expect(editor).toContain('if (mode !== "work") return null');
     expect(editor).toContain("checkHandleAvailable");

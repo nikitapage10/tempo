@@ -82,7 +82,7 @@ export function ArtistProfileStoryView({
   return (
     <div className="grid gap-4 lg:grid-cols-12">
       {hasIdentity ? (
-        <section className="panel-quiet relative overflow-hidden p-6 sm:p-7 lg:col-span-8">
+        <section data-tour="artist-story" className="panel-quiet relative overflow-hidden p-6 sm:p-7 lg:col-span-8">
           <ProfileSectionHeading
             kicker="About"
             title={isPro ? "Who they are and how they work" : "Who they are and what they make"}

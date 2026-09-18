@@ -31,7 +31,7 @@ export function DemoScenesView() {
         <p>This is a read-only demo Scene. Its artists and conversations show how a community can feel without creating fake memberships or changing the live network.</p>
       </div>
 
-      <section className="panel overflow-hidden">
+      <section data-tour="scene-open" className="panel overflow-hidden">
         <div className="relative min-h-64 overflow-hidden bg-[radial-gradient(circle_at_18%_15%,rgb(239_68_68_/_0.22),transparent_38%),radial-gradient(circle_at_82%_75%,rgb(139_92_246_/_0.2),transparent_42%),linear-gradient(135deg,#17131d,#09090c)] p-6 sm:p-8">
           <div className="scene-hero-grain absolute inset-0 opacity-[0.08]" />
           <div className="relative flex min-h-48 items-end">

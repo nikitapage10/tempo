@@ -23,17 +23,22 @@ export type FanPose = {
 
 /**
  * Artist sits at the center, in front. Members fan left/right behind.
+ *
+ * A full team spreads further than a laptop is wide, so the step between
+ * ranks tightens as the roster grows and the tilt stops before the outer
+ * cards lie on their side.
  */
-export function teamFanPose(featured: boolean, memberIndex: number): FanPose {
+export function teamFanPose(featured: boolean, memberIndex: number, memberCount = 0): FanPose {
   if (featured) {
     return { x: 0, y: 6, rotate: 0, zIndex: 40 };
   }
   const side = memberIndex % 2 === 0 ? -1 : 1;
   const rank = Math.floor(memberIndex / 2) + 1;
+  const step = memberCount > 4 ? Math.max(130, Math.round(900 / memberCount)) : 220;
   return {
-    x: side * rank * 220,
+    x: side * rank * step,
     y: rank * 18,
-    rotate: side * rank * 8,
+    rotate: side * Math.min(rank * 8, 18),
     zIndex: 12 - rank,
   };
 }
@@ -91,12 +96,15 @@ export function TeamConstellation({
     visible: { transition: { staggerChildren: 0.1 } },
   };
 
+  const memberCount = memberIndexById.size;
+
   const itemVariants = {
     hidden: { opacity: 0, scale: 0.92, x: 0, y: 0, rotate: 0 },
     visible: (person: ConstellationPerson) => {
       const { x, y, rotate } = teamFanPose(
         !!person.featured,
-        memberIndexById.get(person.id) ?? 0
+        memberIndexById.get(person.id) ?? 0,
+        memberCount
       );
       return {
         opacity: 1,
@@ -133,7 +141,11 @@ export function TeamConstellation({
         animate={controls}
       >
         {paintOrder.map((person) => {
-          const pose = teamFanPose(!!person.featured, memberIndexById.get(person.id) ?? 0);
+          const pose = teamFanPose(
+            !!person.featured,
+            memberIndexById.get(person.id) ?? 0,
+            memberCount
+          );
           return (
             <motion.button
               key={person.id}

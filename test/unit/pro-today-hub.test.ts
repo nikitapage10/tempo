@@ -97,6 +97,6 @@ describe("Pro Today hub", () => {
     expect(hub).toContain('data-tour="pro-today-hub"');
     expect(hub).toContain("Waiting on you");
     expect(hub).toContain("Artists you work with");
-    expect(tour).toContain("main [data-tour='pro-today-hub']");
+    expect(tour).toContain('anchor("pro-today-hub")');
   });
 });

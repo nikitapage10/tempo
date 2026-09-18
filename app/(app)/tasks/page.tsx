@@ -332,6 +332,7 @@ function TasksContent() {
         onCreate={handleComposerCreate}
       />
 
+      <div data-tour="task-views">
       <FilterToolbar className="mb-4">
         <FilterGroup label="Type">
           <Chip size="sm" active={categoryFilter === "all"} onClick={() => setCategoryFilter("all")}>
@@ -392,6 +393,7 @@ function TasksContent() {
           ) : null}
         </FilterGroup>
       </FilterToolbar>
+      </div>
 
       {isLoading ? (
         <div className="space-y-2">

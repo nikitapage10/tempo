@@ -135,7 +135,7 @@ export default function ArtistStatsPage() {
   return (
     <div className="space-y-5">
       {/* Identity hero — glass shell; inner field window restores Spectra. */}
-      <div className="glass-hero prism-edge relative overflow-hidden">
+      <div data-tour="page-header" className="glass-hero prism-edge relative overflow-hidden">
         <div className="absolute inset-0">
           <LfWindow field className="absolute inset-0" aria-hidden />
           {activeArtist ? (
@@ -257,14 +257,16 @@ export default function ArtistStatsPage() {
             />
           ) : null}
 
-          <ModularWorkspace
-            layout={shown}
-            modules={modules}
-            editing={editing}
-            onChange={(next) => (editing ? setDraft(next) : setLayout(next))}
-            vocabulary={vocabulary}
-            labelOverrides={labelOverrides}
-          />
+          <div data-tour="stats-modules">
+            <ModularWorkspace
+              layout={shown}
+              modules={modules}
+              editing={editing}
+              onChange={(next) => (editing ? setDraft(next) : setLayout(next))}
+              vocabulary={vocabulary}
+              labelOverrides={labelOverrides}
+            />
+          </div>
         </>
       )}
     </div>

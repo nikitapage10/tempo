@@ -1,5 +1,5 @@
-import type { RawPulseItem } from "./normalize";
-import { labelForEmail } from "./normalize";
+import type { PulseCategory, RawPulseItem } from "./normalize";
+import { buildDigestSections, labelForEmail, PULSE_CATEGORY_LABELS } from "./normalize";
 
 function escapeHtml(value: string) {
   return value.replace(
@@ -26,12 +26,38 @@ export type DigestEmailInput = {
  * signed storage URLs; items only ever carry the generic/named label chosen
  * by the Pulse aggregator, never raw content.
  */
+/**
+ * Reading order: what is wrong, then what is due, then what people said,
+ * then everything else. A digest is scanned in about two seconds, so the
+ * line that might cost the member something has to be first.
+ */
+const SECTION_ORDER: PulseCategory[] = [
+  "attention",
+  "due",
+  "feedback",
+  "collaboration",
+  "calendar",
+  "messages",
+  "progress",
+  "product",
+];
+
 export function renderDigestEmail(input: DigestEmailInput) {
   const title = input.kind === "daily_digest" ? "Your TEMPO Pulse — today" : "Your TEMPO Pulse — this week";
-  const rows = input.items
-    .map((item) => {
-      const label = escapeHtml(labelForEmail(item, input.includeEntityNames));
-      return `<tr><td style="padding:10px 0;border-bottom:1px solid #26262E;color:#D7D6DC;font-size:14px">${label}</td></tr>`;
+  const sections = buildDigestSections(input.items, SECTION_ORDER);
+  const rows = sections
+    .map((section) => {
+      const heading = `<tr><td style="padding:18px 0 6px;color:#8B8B96;font-size:11px;letter-spacing:1px;text-transform:uppercase">${escapeHtml(PULSE_CATEGORY_LABELS[section.category])}</td></tr>`;
+      const lines = section.items
+        .map((item) => {
+          const label = escapeHtml(labelForEmail(item, input.includeEntityNames));
+          return `<tr><td style="padding:10px 0;border-bottom:1px solid #26262E;color:#D7D6DC;font-size:14px">${label}</td></tr>`;
+        })
+        .join("");
+      const overflow = section.overflowCount
+        ? `<tr><td style="padding:8px 0;color:#8B8B96;font-size:12px">and ${section.overflowCount} more</td></tr>`
+        : "";
+      return heading + lines + overflow;
     })
     .join("");
 
@@ -40,8 +66,12 @@ export function renderDigestEmail(input: DigestEmailInput) {
   const text = [
     title,
     "",
-    ...input.items.map((item) => `- ${labelForEmail(item, input.includeEntityNames)}`),
-    "",
+    ...sections.flatMap((section) => [
+      `${PULSE_CATEGORY_LABELS[section.category]}:`,
+      ...section.items.map((item) => `- ${labelForEmail(item, input.includeEntityNames)}`),
+      ...(section.overflowCount ? [`- and ${section.overflowCount} more`] : []),
+      "",
+    ]),
     `Open TEMPO: ${siteUrl()}`,
     `Manage preferences: ${input.manageUrl}`,
     `Unsubscribe: ${input.unsubscribeUrl}`,

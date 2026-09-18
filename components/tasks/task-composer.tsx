@@ -207,7 +207,7 @@ export function TaskComposer({
   }
 
   return (
-    <div className="glass flex flex-col gap-3 px-4 py-3.5">
+    <div data-tour="task-composer" className="glass flex flex-col gap-3 px-4 py-3.5">
       <form onSubmit={submit} className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <Sparkles className="hidden size-4 shrink-0 text-violet sm:block" aria-hidden />
         <label htmlFor="task-composer" className="sr-only">

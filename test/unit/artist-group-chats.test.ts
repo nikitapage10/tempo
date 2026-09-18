@@ -23,10 +23,36 @@ describe("artist group chats", () => {
     expect(panel).toContain('setMode("group")');
     expect(panel).toContain("startGroup.mutateAsync");
     expect(inbox).toContain("Groups");
-    expect(inbox).toContain("Start a group from New message.");
     expect(inbox).toContain("isArtistGroupConversation");
     expect(api).toContain("start_group_conversation");
     expect(api).toContain("isMessagesInboxConversation");
+  });
+
+  it("only shows a section of the inbox once something is in it", () => {
+    const inbox = read("app/(app)/messages/messages-view.tsx");
+    // Five standing headings, each explaining a kind of conversation the
+    // member did not have, pushed the one real thread to the bottom.
+    for (const placeholder of [
+      "Support tickets you submit will appear here.",
+      "Team rooms appear when an artist opens one.",
+      "Session chats appear when you join a room.",
+      "Start a group from New message.",
+    ]) {
+      expect(inbox, `${placeholder} is still rendered`).not.toContain(placeholder);
+    }
+    for (const group of [
+      "visibleSupport.length ?",
+      "teamConversations.length ?",
+      "sessionConversations.length ?",
+      "groupConversations.length ?",
+      "directConversations.length ?",
+    ]) {
+      expect(inbox).toContain(group);
+    }
+    // An inbox that is empty for real still says so, once.
+    expect(inbox).toContain("inboxCount === 0");
+    expect(inbox).toContain("No conversations yet.");
+    expect(inbox).toContain('inboxQuery ? "No matching conversations."');
   });
 
   it("expands a 1:1 into a new group without replacing the original chat", () => {

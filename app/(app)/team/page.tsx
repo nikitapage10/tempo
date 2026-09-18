@@ -20,6 +20,8 @@ import { ProSchedulePanel } from "@/components/team/pro-schedule-panel";
 import { TeamBriefPanel } from "@/components/team/team-brief-panel";
 import { ArtistWaitingPanel } from "@/components/team/artist-waiting-panel";
 import { StarterKitSetup } from "@/components/team/starter-kit-setup";
+import { DemoTeamPanel } from "@/components/demo/demo-team-panel";
+import { DEMO_TEAM } from "@/lib/demo/president";
 import { fetchMemberProfiles } from "@/lib/api/member-profile";
 import { listMemberOfArtists } from "@/lib/api/artist-members";
 import { AREA_DESCRIPTIONS, AREA_KEYS, AREA_LABELS, type AreaLevel } from "@/lib/team/areas";
@@ -88,6 +90,18 @@ export default function TeamPage() {
     );
   }
 
+  // The demo artist has no real memberships — a membership needs a real
+  // person behind it — so its team is sample people, shown the same way.
+  const isDemo = Boolean(activeArtist?.demo_kind);
+  const demoPeople: ConstellationPerson[] = isDemo
+    ? DEMO_TEAM.filter((member) => !member.pending).map((member) => ({
+        id: `demo-${member.ref}`,
+        name: member.name,
+        subtitle: member.title,
+        avatarUrl: member.photo,
+      }))
+    : [];
+
   const people: ConstellationPerson[] = [
     {
       id: activeArtist?.id ?? "artist",
@@ -96,6 +110,7 @@ export default function TeamPage() {
       avatarUrl: activeArtist?.emblem_url ?? activeArtist?.logo_url ?? null,
       featured: true,
     },
+    ...demoPeople,
     ...activeMembers.map((m) => {
       const profile = profilesQuery.data?.get(m.userId!);
       return {
@@ -139,7 +154,9 @@ export default function TeamPage() {
         </div>
       </div>
 
-      {!activeArtist ? null : isOwner ? (
+      {!activeArtist ? null : isDemo ? (
+        <DemoTeamPanel />
+      ) : isOwner ? (
         <div className="space-y-6">
           <ArtistTeamRequests artistId={activeArtist.id} />
           <TeamManager artistId={activeArtist.id} />

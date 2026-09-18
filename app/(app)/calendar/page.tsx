@@ -345,7 +345,7 @@ function CalendarContent() {
           </div>
         ) : (
           <div className="flex min-h-0 flex-1 items-stretch gap-4">
-            <div className="min-h-0 min-w-0 flex-1">
+            <div data-tour="calendar-canvas" className="min-h-0 min-w-0 flex-1">
               {vs.view === "timeline" ? (
                 <CalendarTimeline
                   items={filteredItems}

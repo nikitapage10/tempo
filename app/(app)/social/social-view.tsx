@@ -3,6 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { Lock, MessageSquare, Search, Users } from "lucide-react";
 import { useActiveArtist } from "@/components/active-artist-provider";
 import { useWorkspaceMode } from "@/hooks/use-workspace-mode";
@@ -29,7 +30,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { useToast } from "@/components/ui/toast";
 import { resolveArtistAccent } from "@/lib/artist-theme";
 import { resolveLocation } from "@/lib/geo";
-import type { Person } from "@/lib/types";
+import type { ArtistProfile, Person } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { DemoSocialView } from "@/components/demo/demo-social-view";
 import { PersonBadges } from "@/components/social/person-badges";
@@ -51,6 +52,7 @@ function activityLabel(value: string) {
 export default function SocialView() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const { activeArtist } = useActiveArtist();
   const { socialArtistId, mode } = useWorkspaceMode();
   const authorArtistId = socialArtistId ?? (mode === "artist" ? activeArtist?.id ?? null : null);
@@ -289,8 +291,29 @@ export default function SocialView() {
 
   const top8 = profile?.top8 ?? [];
   function saveTop8(next: string[]) {
-    if (!profile) return;
-    save.mutate({ patch: { top8: next }, displayName: profile.display_name });
+    if (!profile || !authorArtistId) {
+      toast("Couldn’t update Top 8 — try refreshing.");
+      return;
+    }
+    const queryKey = ["artist-profile", authorArtistId] as const;
+    const previous = queryClient.getQueryData<ArtistProfile | null>(queryKey);
+    // Show the pick immediately; roll it back if the write fails.
+    queryClient.setQueryData<ArtistProfile | null>(queryKey, (current) =>
+      current ? { ...current, top8: next } : current
+    );
+    save.mutate(
+      { patch: { top8: next }, displayName: profile.display_name },
+      {
+        onError: (err) => {
+          queryClient.setQueryData(queryKey, previous);
+          toast(
+            err instanceof Error
+              ? err.message
+              : "Couldn’t save that Top 8 pick. Try again."
+          );
+        },
+      }
+    );
   }
 
   /**
@@ -411,7 +434,7 @@ export default function SocialView() {
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_23rem]">
         {/* ---------- Left: your people ---------- */}
-        <div className="min-w-0 space-y-4">
+        <div data-tour="social-people" className="min-w-0 space-y-4">
           <div className="flex flex-wrap gap-1.5">
             {tabs.map((t) => (
               <button

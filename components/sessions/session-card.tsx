@@ -26,6 +26,7 @@ export function SessionCard({ room }: { room: SessionRoom }) {
   return (
     <Link
       href={`/sessions/${room.id}`}
+      data-tour="session-room"
       className={cn(
         "panel group relative flex min-h-[9.5rem] flex-col overflow-hidden p-4 transition-transform duration-hover hover:-translate-y-0.5",
         live && "border-amber/35"

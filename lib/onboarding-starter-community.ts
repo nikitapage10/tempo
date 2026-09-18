@@ -87,12 +87,20 @@ const LEGACY_SOCIAL_STARTERS = [
   "Use this feed like an open studio door. Ask for ears, share a small win, or leave a note about the process.",
 ] as const;
 
-const SCENE_STARTERS = [
+/**
+ * Retired. These were posted into the Green Room feed and chat under real
+ * members' names — people who never wrote them and were never asked. Kept
+ * here only so migration 119 and its test can identify the rows to remove.
+ * Nothing writes them any more, and nothing should: the room's welcome
+ * checklist already tells a new member what to do, without inventing a
+ * conversation that did not happen.
+ */
+export const RETIRED_SCENE_STARTERS = [
   "Welcome to the Green Room. Introduce yourself and tell us what kind of music you are working on.",
   "A good place to begin: share one thing you want to finish this month and one thing you want feedback on.",
 ] as const;
 
-const CHAT_STARTERS = [
+export const RETIRED_CHAT_STARTERS = [
   "Welcome in! This room is here so you can see how a Scene conversation feels.",
   "Say hello whenever you are ready, or share the song that has been living in your head lately.",
 ] as const;
@@ -224,26 +232,13 @@ async function starterProfiles(
     }
   }
 
-  // An explicitly configured demo identity, the inviter, and TEMPO team
-  // accounts are meant to welcome new members. Make those identities visible
-  // inside TEMPO even if their profile was left on its default private state.
-  const preferredProfiles = Array.from(byId.values()).filter(
-    (profile) =>
-      profile.visibility === "private" &&
-      (handles.includes(profile.handle ?? "") || preferredUserIds.has(profile.owner_user_id))
-  );
-  if (preferredProfiles.length) {
-    const publishedAt = new Date().toISOString();
-    const ids = preferredProfiles.map((profile) => profile.id);
-    const { error } = await service
-      .from("artist_profiles")
-      .update({ visibility: "members", published_at: publishedAt })
-      .in("id", ids);
-    if (error) throw error;
-    for (const profile of preferredProfiles) {
-      profile.visibility = "members";
-      profile.published_at = publishedAt;
-    }
+  // Visibility belongs to the person who set it. This used to publish the
+  // inviter's and the team's profiles to all TEMPO members so a new arrival
+  // had someone to look at — changing a privacy setting on an account whose
+  // owner was not present and never asked. A private profile now simply stays
+  // private and is not offered as a welcome identity.
+  for (const [profileId, profile] of Array.from(byId.entries())) {
+    if (profile.visibility === "private") byId.delete(profileId);
   }
 
   const handleRank = new Map(handles.map((handle, index) => [handle, index]));
@@ -390,38 +385,17 @@ async function addMemberToScene(
   if (error) throw error;
 }
 
-async function seedSceneContent(
+/**
+ * Creates the Green Room's chat thread so the Chat tab opens on an empty room
+ * rather than an error. It deliberately posts nothing: the feed and the chat
+ * fill up when actual members say something.
+ */
+async function ensureSceneConversation(
   service: AdminClient,
   scene: { id: string; name: string },
   profiles: StarterProfile[]
 ) {
-  const sceneProfiles = profiles.slice(0, 2);
-  for (let index = 0; index < sceneProfiles.length; index += 1) {
-    const profile = sceneProfiles[index];
-    const body = SCENE_STARTERS[index];
-    const { data: existing, error: existingError } = await service
-      .from("posts")
-      .select("id")
-      .eq("scene_id", scene.id)
-      .eq("body", body)
-      .limit(1)
-      .maybeSingle();
-    if (existingError) throw existingError;
-    if (!existing) {
-      const { error } = await service.from("posts").insert({
-        author_profile_id: profile.id,
-        author_user_id: profile.owner_user_id,
-        body,
-        media: [],
-        visibility: "members",
-        scene_id: scene.id,
-        kind: "post",
-      });
-      if (error) throw error;
-    }
-  }
-
-  let { data: conversation } = await service
+  const { data: conversation } = await service
     .from("conversations")
     .select("id")
     .eq("scene_id", scene.id)
@@ -436,31 +410,6 @@ async function seedSceneContent(
       scene_id: scene.id,
     }).select("id").single();
     if (error || !data) throw error ?? new Error("Starter Scene chat could not be created");
-    conversation = data;
-  }
-
-  const chatProfiles = profiles.slice(0, 2);
-  for (let index = 0; index < chatProfiles.length; index += 1) {
-    const profile = chatProfiles[index];
-    const body = CHAT_STARTERS[index];
-    const { data: existing, error: existingError } = await service
-      .from("messages")
-      .select("id")
-      .eq("conversation_id", conversation.id)
-      .eq("body", body)
-      .limit(1)
-      .maybeSingle();
-    if (existingError) throw existingError;
-    if (!existing) {
-      const { error } = await service.from("messages").insert({
-        conversation_id: conversation.id,
-        sender_profile_id: profile.id,
-        sender_user_id: profile.owner_user_id,
-        body,
-        suppress_notification: true,
-      });
-      if (error) throw error;
-    }
   }
 }
 
@@ -502,6 +451,6 @@ export async function provisionStarterCommunity(
     await addMemberToScene(service, scene.id, profile.owner_user_id, profile);
   }
   await addMemberToScene(service, scene.id, userId, memberProfile as StarterProfile);
-  await seedSceneContent(service, scene, sceneProfiles.length ? sceneProfiles : [memberProfile as StarterProfile]);
+  await ensureSceneConversation(service, scene, sceneProfiles.length ? sceneProfiles : [memberProfile as StarterProfile]);
   return true;
 }

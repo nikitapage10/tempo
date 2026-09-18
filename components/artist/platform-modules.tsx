@@ -81,7 +81,7 @@ function PlatformShell({
   }
 
   return (
-    <section className={cn(quiet ? "panel-quiet" : "panel", "p-5")}>
+    <section data-tour="stats-platforms" className={cn(quiet ? "panel-quiet" : "panel", "p-5")}>
       <SectionHeader
         label={label}
         aside={

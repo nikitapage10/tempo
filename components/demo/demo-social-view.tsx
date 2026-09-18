@@ -62,7 +62,7 @@ export function DemoSocialView() {
       </section>
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_23rem]">
-        <section className="min-w-0">
+        <section data-tour="social-people" className="min-w-0">
           <div className="mb-3 flex items-center justify-between gap-3">
             <p className="label-mono flex items-center gap-1.5">
               <Users className="size-3" /> Connected artists

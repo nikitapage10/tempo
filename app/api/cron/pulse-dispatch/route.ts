@@ -149,7 +149,11 @@ async function run(req: NextRequest) {
         continue;
       }
 
-      const items = await aggregatePulseItemsForUser(admin, claimed.user_id);
+      const items = await aggregatePulseItemsForUser(admin, claimed.user_id, {
+        kind: claimed.delivery_kind === "weekly_digest" ? "weekly_digest" : "daily_digest",
+        preferences: freshPref,
+        timezone: freshPref.timezone,
+      });
       if (items.length === 0) {
         await admin
           .from("notification_deliveries")
@@ -180,7 +184,12 @@ async function run(req: NextRequest) {
           status: "sent",
           sent_at: new Date().toISOString(),
           provider_message_id: result.providerId,
-          item_counts: { messages: items.length },
+          // Per-category counts, so a digest that went out can be explained
+          // later without re-running the aggregation that produced it.
+          item_counts: items.reduce<Record<string, number>>((counts, item) => {
+            counts[item.category] = (counts[item.category] ?? 0) + item.count;
+            return counts;
+          }, {}),
         })
         .eq("id", claimed.id);
       await admin

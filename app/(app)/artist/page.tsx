@@ -33,6 +33,8 @@ import { useProfileReleasedTracks } from "@/hooks/use-profile-released-tracks";
 import { useWorkspaceMode } from "@/hooks/use-workspace-mode";
 import { checkHandleAvailable } from "@/lib/api/artist-profile";
 import { JoinNetworkDialog } from "@/components/social/join-network-dialog";
+import { HandleField, type HandleState } from "@/components/social/handle-field";
+import { normalizeHandle } from "@/lib/social/handle";
 import type {
   ArtistProfileUpdate,
   ProfileDmPolicy,
@@ -224,7 +226,7 @@ export default function ArtistProfilePage() {
           )
         }
       />
-      <div className="glass-hero prism-edge relative overflow-hidden">
+      <div data-tour="page-header" className="glass-hero prism-edge relative overflow-hidden">
         <div className="absolute inset-0">
           <LfWindow field className="absolute inset-0" aria-hidden />
           {activeArtist ? (
@@ -330,6 +332,8 @@ export default function ArtistProfilePage() {
           draft={draft}
           setDraft={setDraft}
           busy={busy}
+          artistId={activeArtist?.id}
+          currentHandle={profile?.handle}
           onCancel={() => {
             setEditing(false);
             setDraft(null);
@@ -368,17 +372,27 @@ function ProfileEditor({
   draft,
   setDraft,
   busy,
+  artistId,
+  currentHandle,
   onCancel,
   onSave,
 }: {
   draft: Draft;
   setDraft: React.Dispatch<React.SetStateAction<Draft | null>>;
   busy: boolean;
+  artistId?: string;
+  currentHandle?: string | null;
   onCancel: () => void;
   onSave: () => void;
 }) {
   const [genreInput, setGenreInput] = React.useState("");
   const [roleInput, setRoleInput] = React.useState("");
+  const [handleState, setHandleState] = React.useState<HandleState>({
+    value: "",
+    ready: false,
+  });
+  // Empty is allowed (private profiles). Anything typed has to be valid and free.
+  const handleBlocksSave = Boolean(normalizeHandle(draft.handle)) && !handleState.ready;
 
   function patch(next: Partial<Draft>) {
     setDraft((d) => (d ? { ...d, ...next } : d));
@@ -456,19 +470,19 @@ function ProfileEditor({
   }
 
   return (
-    <div className="panel flex flex-col gap-6 p-6">
+    <div data-tour="artist-story" className="panel flex flex-col gap-6 p-6">
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Handle" hint="Lowercase, 3–30 chars — letters, numbers, _ or .">
-          <div className="flex items-center gap-1.5">
-            <span className="text-sm text-text-lo">@</span>
-            <Input
-              value={draft.handle}
-              onChange={(e) => patch({ handle: e.target.value.toLowerCase() })}
-              placeholder="nikitapage"
-              maxLength={30}
-            />
-          </div>
-        </Field>
+        <div className="sm:col-span-2 sm:max-w-md">
+          <HandleField
+            id="artist-profile-handle"
+            value={draft.handle}
+            onChange={(next) => patch({ handle: next.toLowerCase() })}
+            onStateChange={setHandleState}
+            currentArtistId={artistId}
+            currentHandle={currentHandle}
+            disabled={busy}
+          />
+        </div>
         <Field label="Tagline" hint="One line, up to 140 characters.">
           <Input
             value={draft.tagline}
@@ -714,7 +728,7 @@ function ProfileEditor({
           <X className="size-3.5" />
           Cancel
         </Button>
-        <Button type="button" onClick={onSave} disabled={busy}>
+        <Button type="button" onClick={onSave} disabled={busy || handleBlocksSave}>
           <Check className="size-3.5" />
           {busy ? "Saving…" : "Save"}
         </Button>

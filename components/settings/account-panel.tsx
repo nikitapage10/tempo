@@ -24,6 +24,7 @@ import { Label } from "@/components/ui/label";
 import { SupportReportDialog } from "@/components/support/support-report-dialog";
 import { useToast } from "@/components/ui/toast";
 import { AudioInputPanel } from "@/components/settings/audio-input-panel";
+import { HandlePanel } from "@/components/settings/handle-panel";
 
 type IdentityProvider = "email" | "google" | "azure" | "apple" | string;
 
@@ -213,6 +214,8 @@ export function AccountPanel() {
           </div>
         </div>
       </section>
+
+      <HandlePanel />
 
       <section className="panel p-5">
         <div className="flex items-start gap-3">

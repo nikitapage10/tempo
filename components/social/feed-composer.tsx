@@ -115,6 +115,7 @@ export function FeedComposer({
   return (
     <form
       onSubmit={onSubmit}
+      data-tour="social-composer"
       className={cn(
         "panel space-y-3 transition-[padding] duration-150",
         expanded ? "p-4" : "p-2.5",
