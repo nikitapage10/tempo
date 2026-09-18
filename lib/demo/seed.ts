@@ -262,11 +262,15 @@ async function claimHandle(
 }
 
 async function seedProfile(supabase: Client, artistId: string): Promise<void> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const { data: profile, error } = await supabase
     .from("artist_profiles")
     .upsert(
       {
         artist_id: artistId,
+        ...(user?.id ? { owner_user_id: user.id } : {}),
         display_name: DEMO_PROFILE.displayName,
         palette_id: DEMO_PROFILE.paletteId,
         tagline: DEMO_PROFILE.tagline,
@@ -291,11 +295,13 @@ async function seedProfile(supabase: Client, artistId: string): Promise<void> {
       },
       { onConflict: "artist_id" }
     )
-    .select("id")
+    .select("id, handle")
     .single();
 
   if (error || !profile) return;
-  await claimHandle(supabase, profile.id, DEMO_PROFILE.handle);
+  if (!profile.handle) {
+    await claimHandle(supabase, profile.id, DEMO_PROFILE.handle);
+  }
 }
 
 /**
@@ -303,29 +309,54 @@ async function seedProfile(supabase: Client, artistId: string): Promise<void> {
  * ways. Migration 120 allows that same-owner exception; strangers still cannot
  * follow a demo. Best-effort — missing profiles or an unapplied migration must
  * not fail the rest of the seed.
+ *
+ * Pass `ownerUserId` when calling with the service-role client (no session).
  */
 export async function ensureOwnerDemoMutualFollows(
   supabase: Client,
-  demoArtistId: string
+  demoArtistId: string,
+  ownerUserId?: string
 ): Promise<void> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return;
+  let userId = ownerUserId ?? null;
+  if (!userId) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    userId = user?.id ?? null;
+  }
+  if (!userId) return;
 
   const { data: demoProfile } = await supabase
     .from("artist_profiles")
-    .select("id")
+    .select("id, handle, owner_user_id")
     .eq("artist_id", demoArtistId)
     .maybeSingle();
   if (!demoProfile) return;
 
-  const { data: realProfiles } = await supabase
+  // Keep the sample identity readable and linkable from the owner's Social.
+  if (demoProfile.owner_user_id !== userId) {
+    await supabase
+      .from("artist_profiles")
+      .update({ owner_user_id: userId })
+      .eq("id", demoProfile.id);
+  }
+  if (!demoProfile.handle) {
+    await claimHandle(supabase, demoProfile.id, DEMO_PROFILE.handle);
+  }
+
+  const { data: ownedProfiles } = await supabase
     .from("artist_profiles")
-    .select("id, artists!inner(demo_kind)")
-    .eq("owner_user_id", user.id)
-    .is("artists.demo_kind", null);
-  if (!realProfiles?.length) return;
+    .select("id, artists(demo_kind)")
+    .eq("owner_user_id", userId);
+  const realProfiles = (ownedProfiles ?? []).filter((row) => {
+    const artist = row.artists as
+      | { demo_kind?: string | null }
+      | { demo_kind?: string | null }[]
+      | null;
+    const kind = Array.isArray(artist) ? artist[0]?.demo_kind : artist?.demo_kind;
+    return kind == null;
+  });
+  if (!realProfiles.length) return;
 
   const rows = realProfiles.flatMap((real) => [
     {
@@ -338,10 +369,15 @@ export async function ensureOwnerDemoMutualFollows(
     },
   ]);
 
-  await supabase.from("profile_follows").upsert(rows, {
+  const { error } = await supabase.from("profile_follows").upsert(rows, {
     onConflict: "follower_profile_id,followee_profile_id",
     ignoreDuplicates: true,
   });
+  if (error) {
+    // Trigger silently skipping still returns no error; a real failure should
+    // not take down Social or demo status checks.
+    console.warn("[demo] ensureOwnerDemoMutualFollows:", error.message);
+  }
 }
 
 /**

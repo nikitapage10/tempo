@@ -121,9 +121,12 @@ export default function SocialView() {
   const { like, unlike, edit, remove } = useFeedMutations(myProfileId);
 
   React.useEffect(() => {
-    if (!onNetwork) return;
-    void fetch("/api/network/team-follows", { method: "POST" });
-  }, [onNetwork, myProfileId]);
+    if (!onNetwork || !myProfileId) return;
+    void fetch("/api/network/team-follows", { method: "POST" }).then(() => {
+      void queryClient.invalidateQueries({ queryKey: ["following", myProfileId] });
+      void queryClient.invalidateQueries({ queryKey: ["followers", myProfileId] });
+    });
+  }, [onNetwork, myProfileId, queryClient]);
 
   React.useEffect(() => {
     const p = searchParams.get("post");
@@ -505,31 +508,56 @@ export default function SocialView() {
                     {following.length === 0 ? (
                       <li className="text-sm text-text-lo">Not following anyone yet</li>
                     ) : (
-                      following.map((f) => (
-                        <li key={f.followee_profile_id}>
-                          {f.profile?.handle ? (
-                            <Link
-                              href={`/artist/${f.profile.handle}`}
-                              className="well lift flex items-center gap-3 rounded-input px-3 py-2"
-                            >
-                              <ArtistMark
-                                emblemUrl={f.profile.emblem_url}
-                                paletteId={f.profile.palette_id}
-                                iceColor={f.profile.ice_color}
-                                amberColor={f.profile.amber_color}
-                                name={f.profile.display_name}
-                                size={18}
-                                className="size-[18px]"
-                              />
-                              <span className="truncate text-sm text-text-hi">
-                                {f.profile.display_name}
+                      following.map((f) => {
+                        const p = f.profile;
+                        const name = p?.display_name?.trim() || p?.handle;
+                        if (!p || !name) {
+                          return (
+                            <li key={f.followee_profile_id}>
+                              <span className="text-sm text-text-lo">
+                                Profile unavailable
                               </span>
-                            </Link>
-                          ) : (
-                            <span className="text-sm text-text-lo">Unknown profile</span>
-                          )}
-                        </li>
-                      ))
+                            </li>
+                          );
+                        }
+                        const body = (
+                          <>
+                            <ArtistMark
+                              emblemUrl={p.emblem_url}
+                              paletteId={p.palette_id}
+                              iceColor={p.ice_color}
+                              amberColor={p.amber_color}
+                              name={name}
+                              size={18}
+                              className="size-[18px]"
+                            />
+                            <span className="min-w-0 flex-1 truncate text-sm text-text-hi">
+                              {name}
+                              {!p.handle ? (
+                                <span className="ml-1.5 text-xs text-text-lo">
+                                  (no @handle yet)
+                                </span>
+                              ) : null}
+                            </span>
+                          </>
+                        );
+                        return (
+                          <li key={f.followee_profile_id}>
+                            {p.handle ? (
+                              <Link
+                                href={`/artist/${p.handle}`}
+                                className="well lift flex items-center gap-3 rounded-input px-3 py-2"
+                              >
+                                {body}
+                              </Link>
+                            ) : (
+                              <div className="well flex items-center gap-3 rounded-input px-3 py-2">
+                                {body}
+                              </div>
+                            )}
+                          </li>
+                        );
+                      })
                     )}
                   </ul>
                 </section>
@@ -541,31 +569,56 @@ export default function SocialView() {
                     {followers.length === 0 ? (
                       <li className="text-sm text-text-lo">No followers yet</li>
                     ) : (
-                      followers.map((f) => (
-                        <li key={f.follower_profile_id}>
-                          {f.profile?.handle ? (
-                            <Link
-                              href={`/artist/${f.profile.handle}`}
-                              className="well lift flex items-center gap-3 rounded-input px-3 py-2"
-                            >
-                              <ArtistMark
-                                emblemUrl={f.profile.emblem_url}
-                                paletteId={f.profile.palette_id}
-                                iceColor={f.profile.ice_color}
-                                amberColor={f.profile.amber_color}
-                                name={f.profile.display_name}
-                                size={18}
-                                className="size-[18px]"
-                              />
-                              <span className="truncate text-sm text-text-hi">
-                                {f.profile.display_name}
+                      followers.map((f) => {
+                        const p = f.profile;
+                        const name = p?.display_name?.trim() || p?.handle;
+                        if (!p || !name) {
+                          return (
+                            <li key={f.follower_profile_id}>
+                              <span className="text-sm text-text-lo">
+                                Profile unavailable
                               </span>
-                            </Link>
-                          ) : (
-                            <span className="text-sm text-text-lo">Unknown profile</span>
-                          )}
-                        </li>
-                      ))
+                            </li>
+                          );
+                        }
+                        const body = (
+                          <>
+                            <ArtistMark
+                              emblemUrl={p.emblem_url}
+                              paletteId={p.palette_id}
+                              iceColor={p.ice_color}
+                              amberColor={p.amber_color}
+                              name={name}
+                              size={18}
+                              className="size-[18px]"
+                            />
+                            <span className="min-w-0 flex-1 truncate text-sm text-text-hi">
+                              {name}
+                              {!p.handle ? (
+                                <span className="ml-1.5 text-xs text-text-lo">
+                                  (no @handle yet)
+                                </span>
+                              ) : null}
+                            </span>
+                          </>
+                        );
+                        return (
+                          <li key={f.follower_profile_id}>
+                            {p.handle ? (
+                              <Link
+                                href={`/artist/${p.handle}`}
+                                className="well lift flex items-center gap-3 rounded-input px-3 py-2"
+                              >
+                                {body}
+                              </Link>
+                            ) : (
+                              <div className="well flex items-center gap-3 rounded-input px-3 py-2">
+                                {body}
+                              </div>
+                            )}
+                          </li>
+                        );
+                      })
                     )}
                   </ul>
                 </section> : null}

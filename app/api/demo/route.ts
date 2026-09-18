@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { findDemoArtist, removeDemo, seedPresidentDemo } from "@/lib/demo/seed";
+import { findDemoArtist, removeDemo, seedPresidentDemo, ensureOwnerDemoMutualFollows } from "@/lib/demo/seed";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
@@ -34,6 +34,13 @@ export async function GET() {
   }
 
   const demo = await findDemoArtist(supabase);
+  if (demo) {
+    // Migration 120's backfill can miss accounts that got a demo later, or
+    // where the profile row was not ready yet. Re-link whenever we check.
+    await ensureOwnerDemoMutualFollows(supabase, demo.artistId, user.id).catch(
+      () => {}
+    );
+  }
   return NextResponse.json({ demo }, { headers: noStore() });
 }
 

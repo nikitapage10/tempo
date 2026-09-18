@@ -101,37 +101,28 @@ export function Top8Rail({
   React.useEffect(() => {
     if (!picking) return;
     placePanel();
-    function eventPath(e: Event): EventTarget[] {
-      const withPath = e as Event & { composedPath?: () => EventTarget[] };
-      if (typeof withPath.composedPath === "function") return withPath.composedPath();
-      return e.target ? [e.target] : [];
-    }
-    function isInsidePicker(e: Event) {
-      const path = eventPath(e);
-      return path.some(
-        (node) =>
-          node === panelRef.current ||
-          node === anchorRef.current ||
-          (node instanceof Node &&
-            (panelRef.current?.contains(node) || anchorRef.current?.contains(node)))
-      );
-    }
     function onPointer(e: PointerEvent) {
-      // Ignore the same gesture that opened the picker (button already handled it).
-      if (isInsidePicker(e)) return;
+      const target = e.target;
+      if (!(target instanceof Node)) {
+        closePicker();
+        return;
+      }
+      // Bubble phase (not capture): option buttons get pointerdown first and
+      // stopPropagation, so a pick never races the outside-dismiss.
+      if (panelRef.current?.contains(target) || anchorRef.current?.contains(target)) {
+        return;
+      }
       closePicker();
     }
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") closePicker();
     }
-    // pointerdown (not click): a click-based dismiss races the option's click
-    // and can close the panel before the pick registers.
-    document.addEventListener("pointerdown", onPointer, true);
+    document.addEventListener("pointerdown", onPointer);
     document.addEventListener("keydown", onKey);
     window.addEventListener("resize", placePanel);
     window.addEventListener("scroll", placePanel, true);
     return () => {
-      document.removeEventListener("pointerdown", onPointer, true);
+      document.removeEventListener("pointerdown", onPointer);
       document.removeEventListener("keydown", onKey);
       window.removeEventListener("resize", placePanel);
       window.removeEventListener("scroll", placePanel, true);
@@ -280,10 +271,11 @@ export function Top8Rail({
                       key={c.id}
                       type="button"
                       role="option"
-                      // pointerdown + stopPropagation: the outside-dismiss
-                      // listener used to win the race and close the panel
-                      // before click ever fired, so picks never stuck.
                       onPointerDown={(e) => {
+                        // Stop the bubble-phase outside-dismiss from seeing this.
+                        e.stopPropagation();
+                      }}
+                      onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
                         add(c.id);

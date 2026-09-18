@@ -4,6 +4,8 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-09-18
 
+- Fixed (v0.222.0): your demo artist no longer shows up on Social as “Unknown profile.” Follows lists the real name even before an @handle is ready, and opening Social re-links PRESIDENT both ways when you already have the demo. Top 8 picks from the search list stick again — the outside-click handler was still beating the tap on some setups.
+  - Under the hood: migration 121 repairs demo profile ownership and missing handles (applied automatically on push).
 - Fixed (v0.221.1): the automated Pulse delivery check no longer fails after digests started covering more than unread messages. It now turns the category switches off for that empty-digest path, so CI still proves scheduling without needing a real email send.
 - Added (v0.221.0): your own demo artist now shows up under Social → Follows on your real artist, and follows you back — so you can open PRESIDENT’s profile from Nikita Page (or whoever you are) without publishing the sample identity to anyone else. Strangers still cannot follow a demo, and you do not get a “followed you” notification for that scaffolding.
   - Under the hood: run migration 120 in Supabase. If you already have the demo, that migration links it; a fresh Explore demo does the same.
