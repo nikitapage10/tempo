@@ -4,6 +4,7 @@ Plain-English history of what changed in TEMPO, newest first.
 
 ## 2026-09-18
 
+- Fixed (v0.221.1): the automated Pulse delivery check no longer fails after digests started covering more than unread messages. It now turns the category switches off for that empty-digest path, so CI still proves scheduling without needing a real email send.
 - Added (v0.221.0): your own demo artist now shows up under Social → Follows on your real artist, and follows you back — so you can open PRESIDENT’s profile from Nikita Page (or whoever you are) without publishing the sample identity to anyone else. Strangers still cannot follow a demo, and you do not get a “followed you” notification for that scaffolding.
   - Under the hood: run migration 120 in Supabase. If you already have the demo, that migration links it; a fresh Explore demo does the same.
 - Added (v0.215.0): the demo artist now comes with a team. PRESIDENT’s Team page shows a manager, a booking agent, a mix engineer, and the three people who play the live show, each with a photo and a line about what they are actually holding on this record — plus one press and marketing invite still waiting to be accepted, so you can see what that looks like too. They are clearly labelled as examples and are not real TEMPO accounts: nothing was sent to anyone, and removing the demo removes them with it.

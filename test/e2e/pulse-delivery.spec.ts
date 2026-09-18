@@ -18,6 +18,8 @@ test("pulse-dispatch schedules and processes a due digest end to end (no_content
 
   // Force the owner fixture's cadence to be due right now, in a timezone
   // that makes the assertion independent of wall-clock time at test-run.
+  // Categories are all off so the digest stays empty even though the fixture
+  // owner has tracks and tasks — this path must not need Resend credentials.
   await admin.from("notification_preferences").upsert(
     {
       user_id: manifest.users.owner.id,
@@ -25,12 +27,17 @@ test("pulse-dispatch schedules and processes a due digest end to end (no_content
       digest_frequency: "daily",
       delivery_local_time: "00:00",
       last_digest_window_end: null,
+      category_due: false,
+      category_attention: false,
+      category_feedback: false,
+      category_collaboration: false,
+      category_messages: false,
+      category_calendar: false,
+      category_progress: false,
     },
     { onConflict: "user_id" }
   );
   await admin.from("notification_deliveries").delete().eq("user_id", manifest.users.owner.id);
-  // Ensure a clean slate: no unread messages, so this exercises the
-  // no_content path without needing real Resend credentials.
   await admin.from("notifications").delete().eq("user_id", manifest.users.owner.id).eq("type", "dm_message");
 
   const res = await request.get("/api/cron/pulse-dispatch", {
