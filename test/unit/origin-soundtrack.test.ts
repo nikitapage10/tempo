@@ -23,6 +23,11 @@ describe("onboarding Tempo Theme playback", () => {
     expect(tryPlay).not.toContain("startedRef.current = true");
   });
 
+  it("clamps fade progress so a slightly early rAF timestamp cannot silence the bed", () => {
+    expect(hook).toContain("fadeProgress");
+    expect(hook).toContain("clampMediaVolume");
+  });
+
   it("uses inline audio in both artist and Pro onboarding", () => {
     expect(origin).toContain("playsInline");
     expect(passage).toContain("playsInline");

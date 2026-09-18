@@ -8,21 +8,41 @@ export const TEMPO_THEME_VOLUME = 0.22;
 export const TEMPO_THEME_FADE_IN_MS = 1400;
 export const TEMPO_THEME_FADE_OUT_MS = 900;
 
+/**
+ * HTMLMediaElement.volume must stay in [0, 1] — a value outside that range
+ * throws, which aborts any fade loop mid-flight and leaves the bed silent.
+ *
+ * requestAnimationFrame's first `now` can land a hair before a `performance.now()`
+ * captured just before scheduling, so unclamped fade progress goes negative.
+ */
+export function clampMediaVolume(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  if (value <= 0) return 0;
+  if (value >= 1) return 1;
+  return value;
+}
+
+export function fadeProgress(now: number, startedAt: number, durationMs: number): number {
+  if (durationMs <= 0) return 1;
+  return clampMediaVolume((now - startedAt) / durationMs);
+}
+
 export function fadeAudioTo(
   audio: HTMLAudioElement,
   targetVolume: number,
   durationMs: number,
   onDone?: () => void
 ): () => void {
-  const from = audio.volume;
+  const from = clampMediaVolume(audio.volume);
+  const to = clampMediaVolume(targetVolume);
   const startedAt = performance.now();
   let raf = 0;
   let cancelled = false;
 
   const tick = (now: number) => {
     if (cancelled) return;
-    const progress = durationMs <= 0 ? 1 : Math.min(1, (now - startedAt) / durationMs);
-    audio.volume = from + (targetVolume - from) * progress;
+    const progress = fadeProgress(now, startedAt, durationMs);
+    audio.volume = clampMediaVolume(from + (to - from) * progress);
     if (progress < 1) {
       raf = requestAnimationFrame(tick);
       return;

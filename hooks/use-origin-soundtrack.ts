@@ -1,6 +1,10 @@
 "use client";
 
 import * as React from "react";
+import {
+  clampMediaVolume,
+  fadeProgress,
+} from "@/lib/audio/tempo-theme-bed";
 
 /**
  * The quiet Tempo Theme bed that runs under the onboarding film.
@@ -49,8 +53,10 @@ export function useOriginSoundtrack(): OriginSoundtrack {
     const startedAt = performance.now();
     const fadeIn = (now: number) => {
       if (!wantedRef.current) return;
-      const progress = Math.min(1, (now - startedAt) / SOUNDTRACK_FADE_IN_MS);
-      soundtrack.volume = SOUNDTRACK_VOLUME * progress;
+      // Clamp — an unclamped first frame can go slightly negative (rAF `now`
+      // vs performance.now()), throw on volume=, and leave the bed silent.
+      const progress = fadeProgress(now, startedAt, SOUNDTRACK_FADE_IN_MS);
+      soundtrack.volume = clampMediaVolume(SOUNDTRACK_VOLUME * progress);
       if (progress < 1) {
         fadeRef.current = requestAnimationFrame(fadeIn);
       } else {
@@ -147,10 +153,10 @@ export function useOriginSoundtrack(): OriginSoundtrack {
     if (fadeRef.current !== null) cancelAnimationFrame(fadeRef.current);
 
     const startedAt = performance.now();
-    const startVolume = soundtrack.volume;
+    const startVolume = clampMediaVolume(soundtrack.volume);
     const fadeOut = (now: number) => {
-      const progress = Math.min(1, (now - startedAt) / SOUNDTRACK_FADE_OUT_MS);
-      soundtrack.volume = startVolume * (1 - progress);
+      const progress = fadeProgress(now, startedAt, SOUNDTRACK_FADE_OUT_MS);
+      soundtrack.volume = clampMediaVolume(startVolume * (1 - progress));
       if (progress < 1) {
         fadeRef.current = requestAnimationFrame(fadeOut);
       } else {
